@@ -92,6 +92,7 @@
 # Docs
 !docs/
 !docs/philosophy.md
+!docs/shogun-vs-agent-teams-report.md
 
 # Screenshots (masked — no secrets)
 !images/
