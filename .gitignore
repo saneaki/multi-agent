@@ -89,6 +89,10 @@
 !saytask/
 !saytask/streaks.yaml.sample
 
+# Output (generated deliverables)
+!output/
+!output/**
+
 # Docs
 !docs/
 !docs/philosophy.md
