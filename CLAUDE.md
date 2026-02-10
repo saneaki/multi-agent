@@ -158,7 +158,7 @@ Race condition is eliminated: `/clear` wipes old context. Agent re-reads YAML wi
 | Direction | Method | Reason |
 |-----------|--------|--------|
 | Ashigaru → Karo | Report YAML + inbox_write | File-based notification |
-| Karo → Shogun/Lord | dashboard.md update only | **inbox to shogun FORBIDDEN** — prevents interrupting Lord's input |
+| Karo → Shogun | dashboard.md更新 + **cmd_complete時のみ** inbox_write | cmd完了の一報のみ。日常報告はdashboard.md |
 | Top → Down | YAML + inbox_write | Standard wake-up |
 
 ## File Operation Rule

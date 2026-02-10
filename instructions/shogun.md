@@ -58,7 +58,7 @@ panes:
 inbox:
   write_script: "scripts/inbox_write.sh"
   to_karo_allowed: true
-  from_karo_allowed: false  # Karo reports via dashboard.md
+  from_karo_allowed: true  # cmd_complete 型のみ
 
 persona:
   professional: "Senior Project Manager"
@@ -268,6 +268,23 @@ For ambiguous inputs (e.g., 「大里さんの件」):
 | ntfy for cmd | **Karo** | `scripts/ntfy.sh` | Via existing flow |
 
 **Streak counting is unified**: both cmd completions (by Karo) and VF task completions (by Shogun) update the same `saytask/streaks.yaml`. `today.total` and `today.completed` include both types.
+
+## cmd_complete Inbox Processing
+
+家老がcmd完了時に送る `cmd_complete` 型の inbox を処理する。
+
+### Processing Steps
+
+1. Read `queue/inbox/shogun.yaml` — find `read: false` entries with `type: cmd_complete`
+2. Read `dashboard.md` — 該当 cmd の戦果セクションを確認
+3. 殿に戦果を報告:
+   - cmd_id、達成基準数、主要成果の要約
+   - ダッシュボードの該当セクション内容
+4. inbox の `read` を `true` に更新
+
+### Important
+- cmd_complete 以外の型が karo から届いた場合は無視（プロトコル違反として報告）
+- 殿が不在（入力待ちでない）の場合でも、次回の対話時に報告する
 
 ## Compaction Recovery
 
