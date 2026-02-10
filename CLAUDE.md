@@ -115,6 +115,10 @@ Special cases (CLI commands sent via `tmux send-keys`):
 - `type: clear_command` → sends `/clear` + Enter via send-keys
 - `type: model_switch` → sends the /model command via send-keys
 
+Auto-report types (Shogun pane prompt injection via `shogun_report_hook.sh`):
+- `type: cmd_complete` → cmd全体完了時の戦果報告を将軍ペインに注入
+- `type: cmd_milestone` → cmd未完了だがPhase完了・承認待ち等の中間報告を将軍ペインに注入
+
 **Escalation** (when nudge is not processed):
 
 | Elapsed | Action | Trigger |
@@ -158,7 +162,7 @@ Race condition is eliminated: `/clear` wipes old context. Agent re-reads YAML wi
 | Direction | Method | Reason |
 |-----------|--------|--------|
 | Ashigaru → Karo | Report YAML + inbox_write | File-based notification |
-| Karo → Shogun | dashboard.md更新 + **cmd_complete時のみ** inbox_write | cmd完了の一報のみ。日常報告はdashboard.md |
+| Karo → Shogun | dashboard.md更新 + **cmd_complete/cmd_milestone時のみ** inbox_write | cmd完了またはPhase完了・承認待ち等の中間報告。日常報告はdashboard.md |
 | Top → Down | YAML + inbox_write | Standard wake-up |
 
 ## File Operation Rule

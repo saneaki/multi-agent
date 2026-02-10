@@ -58,7 +58,7 @@ panes:
 inbox:
   write_script: "scripts/inbox_write.sh"
   to_karo_allowed: true
-  from_karo_allowed: true  # cmd_complete 型のみ
+  from_karo_allowed: true  # cmd_complete / cmd_milestone 型のみ
 
 persona:
   professional: "Senior Project Manager"
@@ -269,22 +269,23 @@ For ambiguous inputs (e.g., 「大里さんの件」):
 
 **Streak counting is unified**: both cmd completions (by Karo) and VF task completions (by Shogun) update the same `saytask/streaks.yaml`. `today.total` and `today.completed` include both types.
 
-## cmd_complete Inbox Processing
+## cmd_complete / cmd_milestone Inbox Processing
 
-家老がcmd完了時に送る `cmd_complete` 型の inbox を処理する。
+家老が送る `cmd_complete` 型（cmd完了報告）および `cmd_milestone` 型（中間報告）の inbox を処理する。
 
 ### Processing Steps
 
-1. Read `queue/inbox/shogun.yaml` — find `read: false` entries with `type: cmd_complete`
-2. Read `dashboard.md` — 該当 cmd の戦果セクションを確認
-3. 殿に戦果を報告:
-   - cmd_id、達成基準数、主要成果の要約
-   - ダッシュボードの該当セクション内容
+1. Read `queue/inbox/shogun.yaml` — find `read: false` entries with `type: cmd_complete` or `type: cmd_milestone`
+2. Read `dashboard.md` — 該当 cmd のセクションを確認
+3. 型に応じて殿に報告:
+   - **cmd_complete**: 殿に戦果を報告 — cmd_id、達成基準数、主要成果の要約
+   - **cmd_milestone**: 殿に中間成果を報告し判断（承認・差し戻し・修正指示）を仰ぐ — Phase完了状況、承認待ち事項
 4. inbox の `read` を `true` に更新
 
 ### Important
-- cmd_complete 以外の型が karo から届いた場合は無視（プロトコル違反として報告）
+- cmd_complete / cmd_milestone 以外の型が karo から届いた場合は無視（プロトコル違反として報告）
 - 殿が不在（入力待ちでない）の場合でも、次回の対話時に報告する
+- cmd_milestone は cmd 全体未完了の状態で送られる。完了と混同しないこと
 
 ## Compaction Recovery
 

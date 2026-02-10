@@ -78,17 +78,22 @@ try:
     # Special types that need direct pty write (CLI commands, not conversation)
     special_types = ('clear_command', 'model_switch')
     specials = [m for m in unread if m.get('type') in special_types]
-    # Mark specials as read immediately (they'll be delivered directly)
-    if specials:
+    # cmd_complete/cmd_milestone: Shogun auto-report hook (separate from CLI specials)
+    report_types = ('cmd_complete', 'cmd_milestone')
+    cmd_completes = [m for m in unread if m.get('type') in report_types]
+    # Mark specials and cmd_completes/cmd_milestones as read immediately
+    mark_read_types = special_types + report_types
+    if specials or cmd_completes:
         for m in data['messages']:
-            if not m.get('read', False) and m.get('type') in special_types:
+            if not m.get('read', False) and m.get('type') in mark_read_types:
                 m['read'] = True
         with open('$INBOX', 'w') as f:
             yaml.dump(data, f, default_flow_style=False, allow_unicode=True)
-    normal_count = len(unread) - len(specials)
+    normal_count = len(unread) - len(specials) - len(cmd_completes)
     print(json.dumps({
         'count': normal_count,
-        'specials': [{'type': m.get('type',''), 'content': m.get('content','')} for m in specials]
+        'specials': [{'type': m.get('type',''), 'content': m.get('content','')} for m in specials],
+        'cmd_completes': [{'content': m.get('content',''), 'type': m.get('type','')} for m in cmd_completes]
     }))
 except Exception as e:
     print(json.dumps({'count': 0, 'specials': []}), file=sys.stderr)
@@ -249,6 +254,26 @@ send_wakeup_with_escape() {
     return 1
 }
 
+# ─── Handle cmd_complete/cmd_milestone (Shogun auto-report hook) ───
+# Calls shogun_report_hook.sh to extract dashboard section and inject prompt.
+# Only processes for Shogun agent (safety guard for misdirected messages).
+handle_cmd_complete() {
+    local content="$1"
+    local msg_type="${2:-cmd_complete}"
+
+    if [[ "$AGENT_ID" != "shogun" ]]; then
+        echo "[$(date)] WARNING: ${msg_type} received by non-shogun agent $AGENT_ID, ignoring" >&2
+        return 0
+    fi
+
+    echo "[$(date)] [${msg_type^^}] Processing for $AGENT_ID: $content" >&2
+
+    # Call the hook script (errors are logged but don't kill the watcher)
+    if ! bash "$SCRIPT_DIR/scripts/shogun_report_hook.sh" "$content" "$PANE_TARGET" "$SCRIPT_DIR/dashboard.md" "$msg_type"; then
+        echo "[$(date)] WARNING: shogun_report_hook.sh failed for: $content" >&2
+    fi
+}
+
 # ─── Process cycle ───
 process_unread() {
     local info
@@ -270,6 +295,21 @@ for s in data.get('specials', []):
     if [ -n "$specials" ]; then
         echo "$specials" | while IFS= read -r cmd; do
             [ -n "$cmd" ] && send_cli_command "$cmd"
+        done
+    fi
+
+    # Handle cmd_complete/cmd_milestone reports (Shogun auto-report hook)
+    local cmd_completes
+    cmd_completes=$(echo "$info" | python3 -c "
+import sys, json
+data = json.load(sys.stdin)
+for c in data.get('cmd_completes', []):
+    print(c.get('type','cmd_complete') + '\t' + c['content'])
+" 2>/dev/null)
+
+    if [ -n "$cmd_completes" ]; then
+        echo "$cmd_completes" | while IFS=$'\t' read -r msg_type content; do
+            [ -n "$content" ] && handle_cmd_complete "$content" "$msg_type"
         done
     fi
 
