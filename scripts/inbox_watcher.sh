@@ -63,6 +63,14 @@ ESCALATE_PHASE1=${ESCALATE_PHASE1:-120}
 ESCALATE_PHASE2=${ESCALATE_PHASE2:-240}
 ESCALATE_COOLDOWN=${ESCALATE_COOLDOWN:-300}
 
+# ─── Nudge throttle ───
+# Avoid spamming the same "inboxN" into the pane every timeout tick.
+LAST_NUDGE_TS=${LAST_NUDGE_TS:-0}
+LAST_NUDGE_COUNT=${LAST_NUDGE_COUNT:-""}
+NUDGE_COOLDOWN_SEC=${NUDGE_COOLDOWN_SEC:-60}
+# Codex は「思考中に入力が入ると即拾う」挙動があり、思考がループすることがあるため長めにする。
+NUDGE_COOLDOWN_SEC_CODEX=${NUDGE_COOLDOWN_SEC_CODEX:-300}
+
 # ─── Phase feature flags (cmd_107 Phase 1/2/3) ───
 # ASW_PHASE:
 #   1 = self-watch base (compatible)
@@ -113,6 +121,32 @@ EOF
 
 disable_normal_nudge() {
     [ "${ASW_DISABLE_NORMAL_NUDGE:-0}" = "1" ]
+}
+
+should_throttle_nudge() {
+    local unread_count="${1:-0}"
+    local now
+    now=$(date +%s)
+
+    local effective_cli
+    effective_cli=$(get_effective_cli_type)
+
+    local cooldown_sec="${NUDGE_COOLDOWN_SEC:-60}"
+    if [[ "$effective_cli" == "codex" ]]; then
+        cooldown_sec="${NUDGE_COOLDOWN_SEC_CODEX:-300}"
+    fi
+
+    if [ "${LAST_NUDGE_COUNT:-}" = "$unread_count" ] && [ "${LAST_NUDGE_TS:-0}" -gt 0 ]; then
+        local age=$((now - LAST_NUDGE_TS))
+        if [ "$age" -lt "${cooldown_sec}" ]; then
+            echo "[$(date)] [SKIP] Throttling nudge for $AGENT_ID: inbox${unread_count} (${age}s < ${cooldown_sec}s, cli=$effective_cli)" >&2
+            return 0
+        fi
+    fi
+
+    LAST_NUDGE_COUNT="$unread_count"
+    LAST_NUDGE_TS="$now"
+    return 1
 }
 
 is_valid_cli_type() {
@@ -275,18 +309,12 @@ try:
 
     messages = data.get("messages", []) or []
     unread = [m for m in messages if not m.get("read", False)]
-    # Special types that need direct pty write (CLI commands, not conversation)
     special_types = ("clear_command", "model_switch")
     specials = [m for m in unread if m.get("type") in special_types]
-    # cmd_complete/cmd_milestone: Shogun auto-report hook (separate from CLI specials)
-    report_types = ("cmd_complete", "cmd_milestone")
-    cmd_completes = [m for m in unread if m.get("type") in report_types]
 
-    # Mark specials and cmd_completes/cmd_milestones as read immediately
-    mark_read_types = special_types + report_types
-    if specials or cmd_completes:
+    if specials:
         for m in messages:
-            if not m.get("read", False) and m.get("type") in mark_read_types:
+            if not m.get("read", False) and m.get("type") in special_types:
                 m["read"] = True
 
         tmp_path = f"{inbox}.tmp.{os.getpid()}"
@@ -300,11 +328,10 @@ try:
             )
         os.replace(tmp_path, inbox)
 
-    normal_count = len(unread) - len(specials) - len(cmd_completes)
+    normal_count = len(unread) - len(specials)
     payload = {
         "count": normal_count,
         "specials": [{"type": m.get("type", ""), "content": m.get("content", "")} for m in specials],
-        "cmd_completes": [{"content": m.get("content", ""), "type": m.get("type", "")} for m in cmd_completes],
     }
     print(json.dumps(payload))
 except Exception:
@@ -322,6 +349,13 @@ send_cli_command() {
     local cmd="$1"
     local effective_cli
     effective_cli=$(get_effective_cli_type)
+
+    # Safety: never inject CLI commands into the shogun pane.
+    # Shogun is controlled by the Lord; keystroke injection can clobber human input.
+    if [ "$AGENT_ID" = "shogun" ]; then
+        echo "[$(date)] [SKIP] shogun: suppressing CLI command injection ($cmd)" >&2
+        return 0
+    fi
 
     # CLI別コマンド変換
     local actual_cmd="$cmd"
@@ -393,14 +427,38 @@ agent_has_self_watch() {
 # Sending nudge during Working causes text to queue but Enter to be lost.
 # Returns 0 (true) if agent is busy, 1 if idle.
 agent_is_busy() {
-    local pane_content
-    pane_content=$(timeout 2 tmux capture-pane -t "$PANE_TARGET" -p 2>/dev/null | tail -15)
-    # Codex CLI: "Working", "Thinking", "Planning", "Sending"
-    # Claude CLI: thinking spinner, tool execution
-    if echo "$pane_content" | grep -qiE '(Working|Thinking|Planning|Sending|esc to interrupt)'; then
+    local pane_tail
+    # Only check the bottom 5 lines of the pane. Old busy markers ("esc to interrupt",
+    # "Working") linger in scroll-back and cause false-busy if we scan too many lines.
+    pane_tail=$(timeout 2 tmux capture-pane -t "$PANE_TARGET" -p 2>/dev/null | tail -5)
+
+    # ── Idle check (takes priority) ──
+    if echo "$pane_tail" | grep -qE '(\? for shortcuts|context left)'; then
+        return 1  # idle — Codex idle prompt
+    fi
+    if echo "$pane_tail" | grep -qE '^(❯|›)\s*$'; then
+        return 1  # idle — Claude Code or Codex bare prompt
+    fi
+
+    # ── Busy markers (bottom 5 lines only) ──
+    if echo "$pane_tail" | grep -qiF 'esc to interrupt'; then
+        return 0  # busy
+    fi
+    if echo "$pane_tail" | grep -qiF 'background terminal running'; then
+        return 0  # busy
+    fi
+    if echo "$pane_tail" | grep -qiE '(Working|Thinking|Planning|Sending|task is in progress|Compacting conversation|thought for|思考中|考え中|計画中|送信中|処理中|実行中)'; then
         return 0  # busy
     fi
     return 1  # idle
+}
+
+# ─── Pane focus detection (human safety) ───
+# If the target pane is currently active, avoid injecting keystrokes.
+pane_is_active() {
+    local active=""
+    active=$(timeout 2 tmux display-message -p -t "$PANE_TARGET" '#{pane_active}' 2>/dev/null || true)
+    [ "$active" = "1" ]
 }
 
 # ─── Send wake-up nudge ───
@@ -429,6 +487,18 @@ send_wakeup() {
         return 0
     fi
 
+    if should_throttle_nudge "$unread_count"; then
+        return 0
+    fi
+
+    # Shogun: if the pane is focused, never inject keys (it can clobber the Lord's input).
+    # Instead, show a tmux message. If not focused, we can safely send the normal nudge.
+    if [ "$AGENT_ID" = "shogun" ] && pane_is_active; then
+        echo "[$(date)] [DISPLAY] shogun pane is active — showing nudge: inbox${unread_count}" >&2
+        timeout 2 tmux display-message -t "$PANE_TARGET" -d 5000 "inbox${unread_count}" 2>/dev/null || true
+        return 0
+    fi
+
     # 優先度3: tmux send-keys（テキストとEnterを分離 — Codex TUI対策）
     echo "[$(date)] [SEND-KEYS] Sending nudge to $PANE_TARGET for $AGENT_ID" >&2
     if timeout 5 tmux send-keys -t "$PANE_TARGET" "$nudge" 2>/dev/null; then
@@ -451,6 +521,21 @@ send_wakeup_with_escape() {
     local effective_cli
     effective_cli=$(get_effective_cli_type)
     local c_ctrl_state="skipped"
+
+    # Safety: never send Escape escalation to shogun. It can wipe the Lord's input.
+    if [ "$AGENT_ID" = "shogun" ]; then
+        echo "[$(date)] [SKIP] shogun: suppressing Escape escalation; sending plain nudge" >&2
+        send_wakeup "$unread_count"
+        return 0
+    fi
+
+    # Codex CLI: ESC は「中断」になりやすく、人間操作中の事故も多い。
+    # Phase 2 の Escape エスカレーションは無効化し、通常 nudge のみに落とす。
+    if [[ "$effective_cli" == "codex" ]]; then
+        echo "[$(date)] [SKIP] codex: suppressing Escape escalation for $AGENT_ID; sending plain nudge" >&2
+        send_wakeup "$unread_count"
+        return 0
+    fi
 
     if [ "${FINAL_ESCALATION_ONLY:-0}" = "1" ]; then
         echo "[$(date)] [SKIP] FINAL_ESCALATION_ONLY=1, suppressing phase2 nudge for $AGENT_ID" >&2
@@ -488,26 +573,6 @@ send_wakeup_with_escape() {
     return 1
 }
 
-# ─── Handle cmd_complete/cmd_milestone (Shogun auto-report hook) ───
-# Calls shogun_report_hook.sh to extract dashboard section and inject prompt.
-# Only processes for Shogun agent (safety guard for misdirected messages).
-handle_cmd_complete() {
-    local content="$1"
-    local msg_type="${2:-cmd_complete}"
-
-    if [[ "$AGENT_ID" != "shogun" ]]; then
-        echo "[$(date)] WARNING: ${msg_type} received by non-shogun agent $AGENT_ID, ignoring" >&2
-        return 0
-    fi
-
-    echo "[$(date)] [${msg_type^^}] Processing for $AGENT_ID: $content" >&2
-
-    # Call the hook script (errors are logged but don't kill the watcher)
-    if ! bash "$SCRIPT_DIR/scripts/shogun_report_hook.sh" "$content" "$PANE_TARGET" "$SCRIPT_DIR/dashboard.md" "$msg_type"; then
-        echo "[$(date)] WARNING: shogun_report_hook.sh failed for: $content" >&2
-    fi
-}
-
 # ─── Process cycle ───
 process_unread() {
     local trigger="${1:-event}"
@@ -526,7 +591,10 @@ process_unread() {
         fi
         FIRST_UNREAD_SEEN=0
         if ! agent_is_busy; then
-            timeout 2 tmux send-keys -t "$PANE_TARGET" C-u 2>/dev/null
+            # Shogun is human-controlled; never clear the input line automatically.
+            if [ "$AGENT_ID" != "shogun" ]; then
+                timeout 2 tmux send-keys -t "$PANE_TARGET" C-u 2>/dev/null
+            fi
         fi
         return 0
     fi
@@ -575,21 +643,6 @@ for s in data.get('specials', []):
         info=$(get_unread_info)
     fi
 
-    # Handle cmd_complete/cmd_milestone reports (Shogun auto-report hook)
-    local cmd_completes
-    cmd_completes=$(echo "$info" | python3 -c "
-import sys, json
-data = json.load(sys.stdin)
-for c in data.get('cmd_completes', []):
-    print(c.get('type','cmd_complete') + '\t' + c['content'])
-" 2>/dev/null)
-
-    if [ -n "$cmd_completes" ]; then
-        echo "$cmd_completes" | while IFS=$'\t' read -r msg_type content; do
-            [ -n "$content" ] && handle_cmd_complete "$content" "$msg_type"
-        done
-    fi
-
     # Send wake-up nudge for normal messages (with escalation)
     local normal_count
     normal_count=$(echo "$info" | python3 -c "import sys,json; print(json.load(sys.stdin).get('count',0))" 2>/dev/null)
@@ -597,6 +650,15 @@ for c in data.get('cmd_completes', []):
     if [ "$normal_count" -gt 0 ] 2>/dev/null; then
         local now
         now=$(date +%s)
+
+        # When the agent is busy/thinking, do NOT escalate. Interrupting with Escape or /clear
+        # can terminate the current thought. Also pause the escalation timer while busy so we
+        # don't immediately jump to Phase 2/3 once it becomes idle.
+        if agent_is_busy; then
+            FIRST_UNREAD_SEEN=$now
+            echo "[$(date)] $normal_count unread for $AGENT_ID but agent is busy — pausing escalation timer" >&2
+            return 0
+        fi
 
         # Track when we first saw unread messages
         if [ "$FIRST_UNREAD_SEEN" -eq 0 ]; then
@@ -630,10 +692,19 @@ for c in data.get('cmd_completes', []):
         else
             # Phase 3 (4+ min): /clear (throttled to once per 5 min)
             if [ "$LAST_CLEAR_TS" -lt "$((now - ESCALATE_COOLDOWN))" ]; then
-                echo "[$(date)] ESCALATION Phase 3: Agent $AGENT_ID unresponsive for ${age}s. Sending /clear." >&2
-                send_cli_command "/clear"
-                LAST_CLEAR_TS=$now
-                FIRST_UNREAD_SEEN=0  # Reset — will re-detect on next cycle
+                local effective_cli
+                effective_cli=$(get_effective_cli_type)
+                if [[ "$effective_cli" == "codex" ]]; then
+                    # Codex /clear -> /new は会話を切ってしまうため、安全側に倒す。
+                    echo "[$(date)] ESCALATION Phase 3: $AGENT_ID unresponsive for ${age}s, but cli=codex — skipping /clear." >&2
+                    FIRST_UNREAD_SEEN=$now  # Reset timer (no destructive action)
+                    send_wakeup "$normal_count"
+                else
+                    echo "[$(date)] ESCALATION Phase 3: Agent $AGENT_ID unresponsive for ${age}s. Sending /clear." >&2
+                    send_cli_command "/clear"
+                    LAST_CLEAR_TS=$now
+                    FIRST_UNREAD_SEEN=0  # Reset — will re-detect on next cycle
+                fi
             else
                 # Cooldown active — fall back to Escape+nudge
                 echo "[$(date)] $normal_count unread for $AGENT_ID (${age}s — /clear cooldown, using Escape+nudge)" >&2
@@ -649,7 +720,10 @@ for c in data.get('cmd_completes', []):
         # Clear stale nudge text from input field (Codex CLI prefills last input on idle).
         # Only send C-u when agent is idle — during Working it would be disruptive.
         if ! agent_is_busy; then
-            timeout 2 tmux send-keys -t "$PANE_TARGET" C-u 2>/dev/null
+            # Shogun is human-controlled; never clear the input line automatically.
+            if [ "$AGENT_ID" != "shogun" ]; then
+                timeout 2 tmux send-keys -t "$PANE_TARGET" C-u 2>/dev/null
+            fi
         fi
     fi
 }

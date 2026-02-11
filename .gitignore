@@ -94,6 +94,10 @@
 !saytask/
 !saytask/streaks.yaml.sample
 
+# Memory (global context only, personal memory stays local)
+!memory/
+!memory/global_context.md
+
 # Output (generated deliverables)
 !output/
 !output/**
@@ -104,15 +108,19 @@
 
 # Screenshots (masked — no secrets)
 !images/
+!images/company-creed-all-panes.png
 !images/screenshots/
-!images/screenshots/ntfy_saytask_rename.jpg
-!images/screenshots/ntfy_cmd043_progress.jpg
-!images/screenshots/ntfy_bloom_oc_test.jpg
-!images/screenshots/ntfy_persona_eval_complete.jpg
-!images/screenshots/ntfy_tasklist_v1_before.jpg
-!images/screenshots/ntfy_tasklist_v2_aligned.jpg
-!images/screenshots/ntfy_tasklist_final.jpg
 !images/screenshots/tdd_ndd_rdd.png
+!images/screenshots/masked/
+!images/screenshots/masked/ntfy_saytask_rename.jpg
+!images/screenshots/masked/ntfy_cmd043_progress.jpg
+!images/screenshots/masked/ntfy_bloom_oc_test.jpg
+!images/screenshots/masked/ntfy_persona_eval_complete.jpg
+!images/screenshots/masked/ntfy_tasklist_v1_before.jpg
+!images/screenshots/masked/ntfy_tasklist_v2_aligned.jpg
+!images/screenshots/hero/
+!images/screenshots/hero/latest-translucent-20260210-190453.png
+!images/screenshots/hero/latest-translucent-20260208-084602.png
 
 # Skills (skill-creator only)
 !skills/

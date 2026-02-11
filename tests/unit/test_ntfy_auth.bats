@@ -119,7 +119,7 @@ EOF
 # --- T-AUTH-007: 正常トピック名 ---
 
 @test "T-AUTH-007: ntfy_validate_topic accepts secure topic name" {
-    run ntfy_validate_topic "sho-y0uhey-secret123"
+    run ntfy_validate_topic "sample-topic-secret123"
     [ "$status" -eq 0 ]
 }
 

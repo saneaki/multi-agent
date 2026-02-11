@@ -166,6 +166,10 @@ Two layers:
 The nudge is minimal: `inboxN` (e.g. `inbox3` = 3 unread). That's it.
 **Agent reads the inbox file itself.** Message content never travels through tmux — only a short wake-up signal.
 
+Safety note (shogun):
+- If the Shogun pane is active (the Lord is typing), `inbox_watcher.sh` must not inject keystrokes. It should use tmux `display-message` only.
+- Escalation keystrokes (`Escape×2`, `/clear`, `C-u`) must be suppressed for shogun to avoid clobbering human input.
+
 Special cases (CLI commands sent via `tmux send-keys`):
 - `type: clear_command` → sends `/clear` + Enter via send-keys
 - `type: model_switch` → sends the /model command via send-keys
@@ -263,6 +267,84 @@ The inbox_write guarantees persistence. inbox_watcher handles delivery.
 Lord: command → Shogun: write YAML → inbox_write → Karo: decompose → inbox_write → Ashigaru: execute → report YAML → inbox_write → Karo: update dashboard → Shogun: read dashboard
 ```
 
+## Status Reference (Single Source)
+
+Status is defined per YAML file type. **Keep it minimal. Simple is best.**
+
+Fixed status set (do not add casually):
+- `queue/shogun_to_karo.yaml`: `pending`, `in_progress`, `done`, `cancelled`
+- `queue/tasks/ashigaruN.yaml`: `assigned`, `blocked`, `done`, `failed`
+- `queue/tasks/pending.yaml`: `pending_blocked`
+- `queue/ntfy_inbox.yaml`: `pending`, `processed`
+
+Do NOT invent new status values without updating this section.
+
+### Command Queue: `queue/shogun_to_karo.yaml`
+
+Meanings and allowed/forbidden actions (short):
+
+- `pending`: not acknowledged yet
+  - Allowed: Karo reads and immediately ACKs (`pending → in_progress`)
+  - Forbidden: dispatching subtasks while still `pending`
+
+- `in_progress`: acknowledged and being worked
+  - Allowed: decompose/dispatch/collect/consolidate
+  - Forbidden: moving goalposts (editing acceptance_criteria), or marking `done` without meeting all criteria
+
+- `done`: complete and validated
+  - Allowed: read-only (history)
+  - Forbidden: editing old cmd to "reopen" (use a new cmd instead)
+
+- `cancelled`: intentionally stopped
+  - Allowed: read-only (history)
+  - Forbidden: continuing work under this cmd (use a new cmd instead)
+
+**Karo rule (ack fast)**:
+- The moment Karo starts processing a cmd (after reading it), update that cmd status:
+  - `pending` → `in_progress`
+  - This prevents "nobody is working" confusion and stabilizes escalation logic.
+
+### Ashigaru Task File: `queue/tasks/ashigaruN.yaml`
+
+Meanings and allowed/forbidden actions (short):
+
+- `assigned`: start now
+  - Allowed: assignee ashigaru executes and updates to `done/failed` + report + inbox_write
+  - Forbidden: other agents editing that ashigaru YAML
+
+- `blocked`: do NOT start yet (prereqs missing)
+  - Allowed: Karo unblocks by changing to `assigned` when ready, then inbox_write
+  - Forbidden: nudging or starting work while `blocked`
+
+- `done`: completed
+  - Allowed: read-only; used for consolidation
+  - Forbidden: reusing task_id for redo (use redo protocol)
+
+- `failed`: failed with reason
+  - Allowed: report must include reason + unblock suggestion
+  - Forbidden: silent failure
+
+Note:
+- Normally, "idle" is a UI state (no active task), not a YAML status value.
+- Exception (placeholder only): `status: idle` is allowed **only** when `task_id: null` (clean start template written by `shutsujin_departure.sh --clean`).
+  - In that state, the file is a placeholder and should be treated as "no task assigned yet".
+
+### Pending Tasks (Karo-managed): `queue/tasks/pending.yaml`
+
+- `pending_blocked`: holding area; **must not** be assigned yet
+  - Allowed: Karo moves it to an `ashigaruN.yaml` as `assigned` after prerequisites complete
+  - Forbidden: pre-assigning to ashigaru before ready
+
+### NTFY Inbox (Lord phone): `queue/ntfy_inbox.yaml`
+
+- `pending`: needs processing
+  - Allowed: Shogun processes and sets `processed`
+  - Forbidden: leaving it pending without reason
+
+- `processed`: processed; keep record
+  - Allowed: read-only
+  - Forbidden: flipping back to pending without creating a new entry
+
 ## Immediate Delegation Principle (Shogun)
 
 **Delegate to Karo immediately and end your turn** so the Lord can input next command.
@@ -342,6 +424,23 @@ date "+%Y-%m-%d %H:%M"       # For dashboard.md
 date "+%Y-%m-%dT%H:%M:%S"    # For YAML (ISO 8601)
 ```
 
+## Pre-Commit Gate (CI-Aligned)
+
+Rule:
+- Run the same checks as GitHub Actions *before* committing.
+- Only commit when checks are OK.
+- Ask the Lord before any `git push`.
+
+Minimum local checks:
+```bash
+# Unit tests (same as CI)
+bats tests/*.bats tests/unit/*.bats
+
+# Instruction generation must be in sync (same as CI "Build Instructions Check")
+bash scripts/build_instructions.sh
+git diff --exit-code instructions/generated/
+```
+
 # Forbidden Actions
 
 ## Common Forbidden Actions (All Agents)
@@ -350,6 +449,8 @@ date "+%Y-%m-%dT%H:%M:%S"    # For YAML (ISO 8601)
 |----|--------|---------|--------|
 | F004 | Polling/wait loops | Event-driven (inbox) | Wastes API credits |
 | F005 | Skip context reading | Always read first | Prevents errors |
+| F006 | Edit generated files directly (`instructions/generated/*.md`, `AGENTS.md`, `.github/copilot-instructions.md`, `agents/default/system.md`) | Edit source templates (`CLAUDE.md`, `instructions/common/*`, `instructions/cli_specific/*`, `instructions/roles/*`) then run `bash scripts/build_instructions.sh` | CI "Build Instructions Check" fails when generated files drift from templates |
+| F007 | `git push` without the Lord's explicit approval | Ask the Lord first | Prevents leaking secrets / unreviewed changes |
 
 ## Shogun Forbidden Actions
 

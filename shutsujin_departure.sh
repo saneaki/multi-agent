@@ -353,9 +353,9 @@ else
 fi
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# STEP 3: ダッシュボード初期化（--clean時 または dashboard.md が存在しない場合）
+# STEP 3: ダッシュボード初期化（--clean時のみ）
 # ═══════════════════════════════════════════════════════════════════════════════
-if [ "$CLEAN_MODE" = true ] || [ ! -f "./dashboard.md" ]; then
+if [ "$CLEAN_MODE" = true ]; then
     log_info "📊 戦況報告板を初期化中..."
     TIMESTAMP=$(date "+%Y-%m-%d %H:%M")
 
@@ -613,10 +613,6 @@ if [ "$SETUP_ONLY" = false ]; then
         log_info "  └─ 将軍（${_shogun_cli_type}）、召喚完了"
     fi
 
-    # Claude起動後、Session Start手順を開始するための空Enter送信
-    sleep 2
-    tmux send-keys -t shogun:main "" Enter
-
     # 少し待機（安定のため）
     sleep 1
 
@@ -632,10 +628,6 @@ if [ "$SETUP_ONLY" = false ]; then
     tmux send-keys -t "multiagent:agents.${p}" "$_karo_cmd"
     tmux send-keys -t "multiagent:agents.${p}" Enter
     log_info "  └─ 家老（${_karo_cli_type}）、召喚完了"
-
-    # Claude起動後、Session Start手順を開始するための空Enter送信
-    sleep 2
-    tmux send-keys -t "multiagent:agents.${p}" "" Enter
 
     if [ "$KESSEN_MODE" = true ]; then
         # 決戦の陣: CLI Adapter経由（claudeはOpus強制）
@@ -657,13 +649,6 @@ if [ "$SETUP_ONLY" = false ]; then
             tmux send-keys -t "multiagent:agents.${p}" Enter
         done
         log_info "  └─ 足軽1-8（決戦の陣）、召喚完了"
-
-        # Claude起動後、Session Start手順を開始するための空Enter送信
-        sleep 2
-        for i in {1..8}; do
-            p=$((PANE_BASE + i))
-            tmux send-keys -t "multiagent:agents.${p}" "" Enter
-        done
     else
         # 平時の陣: CLI Adapter経由（デフォルト: 1-4=Sonnet, 5-8=Opus）
         for i in {1..8}; do
@@ -683,13 +668,6 @@ if [ "$SETUP_ONLY" = false ]; then
             tmux send-keys -t "multiagent:agents.${p}" Enter
         done
         log_info "  └─ 足軽1-8（平時の陣）、召喚完了"
-
-        # Claude起動後、Session Start手順を開始するための空Enter送信
-        sleep 2
-        for i in {1..8}; do
-            p=$((PANE_BASE + i))
-            tmux send-keys -t "multiagent:agents.${p}" "" Enter
-        done
     fi
 
     if [ "$KESSEN_MODE" = true ]; then
@@ -797,7 +775,7 @@ NINJA_EOF
     pkill -f "inotifywait.*queue/inbox" 2>/dev/null || true
     sleep 1
 
-    # 将軍のwatcher（cmd_complete自動報告Hook + ntfy受信の自動起床に必要）
+    # 将軍のwatcher（ntfy受信の自動起床に必要）
     # 安全モード: phase2/phase3エスカレーションは無効、timeout周期処理も無効（event-drivenのみ）
     _shogun_watcher_cli=$(tmux show-options -p -t "shogun:main" -v @agent_cli 2>/dev/null || echo "claude")
     nohup env ASW_DISABLE_ESCALATION=1 ASW_PROCESS_TIMEOUT=0 ASW_DISABLE_NORMAL_NUDGE=0 \
@@ -820,7 +798,7 @@ NINJA_EOF
         disown
     done
 
-    log_success "  └─ 10エージェント分のinbox_watcher起動完了（将軍含む）"
+    log_success "  └─ 10エージェント分のinbox_watcher起動完了"
 
     # STEP 6.7 は廃止 — CLAUDE.md Session Start (step 1: tmux agent_id) で各自が自律的に
     # 自分のinstructions/*.mdを読み込む。検証済み (2026-02-08)。
