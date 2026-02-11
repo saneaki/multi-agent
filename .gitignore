@@ -72,6 +72,10 @@
 !templates/
 !templates/**
 
+# Memory (global context only, personal memory stays local)
+!memory/
+!memory/global_context.md
+
 # Context README
 !context/
 !context/README.md
