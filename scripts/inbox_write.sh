@@ -90,6 +90,30 @@ except Exception as e:
 
     ) 200>"$LOCKFILE"; then
         # Success
+
+        # ntfy auto-notification (cmd_complete/cmd_milestone → shogun only)
+        if [[ "$TARGET" == "shogun" ]] && [[ "$TYPE" == "cmd_complete" || "$TYPE" == "cmd_milestone" ]]; then
+            # Check if ntfy_topic is configured
+            NTFY_TOPIC=$(grep 'ntfy_topic:' "$SCRIPT_DIR/config/settings.yaml" 2>/dev/null | awk '{print $2}' | tr -d '"')
+            if [ -n "$NTFY_TOPIC" ]; then
+                # Format message based on type
+                if [[ "$TYPE" == "cmd_complete" ]]; then
+                    PREFIX="✅"
+                else
+                    PREFIX="📌"
+                fi
+
+                # Extract first 80 chars of content
+                CONTENT_PREVIEW="${CONTENT:0:80}"
+                NTFY_MSG="$PREFIX $CONTENT_PREVIEW"
+
+                # Call ntfy.sh (non-blocking, log errors only)
+                if ! bash "$SCRIPT_DIR/scripts/ntfy.sh" "$NTFY_MSG" 2>/dev/null; then
+                    echo "[inbox_write] ntfy notification failed for $TYPE to $TARGET" >&2
+                fi
+            fi
+        fi
+
         exit 0
     else
         # Lock timeout or error
