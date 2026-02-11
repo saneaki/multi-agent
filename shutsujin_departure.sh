@@ -169,7 +169,7 @@ while [[ $# -gt 0 ]]; do
             echo "  silent（--silent）:   echo表示なし（API節約）"
             echo ""
             echo "エイリアス:"
-            echo "  csst  → cd /mnt/c/tools/multi-agent-shogun && ./shutsujin_departure.sh"
+            echo "  shu   → ./shutsujin_departure.sh"
             echo "  css   → tmux attach-session -t shogun"
             echo "  csm   → tmux attach-session -t multiagent"
             echo ""
@@ -613,6 +613,10 @@ if [ "$SETUP_ONLY" = false ]; then
         log_info "  └─ 将軍（${_shogun_cli_type}）、召喚完了"
     fi
 
+    # Claude起動後、Session Start手順を開始するための空Enter送信
+    sleep 2
+    tmux send-keys -t shogun:main "" Enter
+
     # 少し待機（安定のため）
     sleep 1
 
@@ -628,6 +632,10 @@ if [ "$SETUP_ONLY" = false ]; then
     tmux send-keys -t "multiagent:agents.${p}" "$_karo_cmd"
     tmux send-keys -t "multiagent:agents.${p}" Enter
     log_info "  └─ 家老（${_karo_cli_type}）、召喚完了"
+
+    # Claude起動後、Session Start手順を開始するための空Enter送信
+    sleep 2
+    tmux send-keys -t "multiagent:agents.${p}" "" Enter
 
     if [ "$KESSEN_MODE" = true ]; then
         # 決戦の陣: CLI Adapter経由（claudeはOpus強制）
@@ -649,6 +657,13 @@ if [ "$SETUP_ONLY" = false ]; then
             tmux send-keys -t "multiagent:agents.${p}" Enter
         done
         log_info "  └─ 足軽1-8（決戦の陣）、召喚完了"
+
+        # Claude起動後、Session Start手順を開始するための空Enter送信
+        sleep 2
+        for i in {1..8}; do
+            p=$((PANE_BASE + i))
+            tmux send-keys -t "multiagent:agents.${p}" "" Enter
+        done
     else
         # 平時の陣: CLI Adapter経由（デフォルト: 1-4=Sonnet, 5-8=Opus）
         for i in {1..8}; do
@@ -668,6 +683,13 @@ if [ "$SETUP_ONLY" = false ]; then
             tmux send-keys -t "multiagent:agents.${p}" Enter
         done
         log_info "  └─ 足軽1-8（平時の陣）、召喚完了"
+
+        # Claude起動後、Session Start手順を開始するための空Enter送信
+        sleep 2
+        for i in {1..8}; do
+            p=$((PANE_BASE + i))
+            tmux send-keys -t "multiagent:agents.${p}" "" Enter
+        done
     fi
 
     if [ "$KESSEN_MODE" = true ]; then

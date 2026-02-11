@@ -610,6 +610,7 @@ SCRIPTS=(
     "setup.sh"
     "shutsujin_departure.sh"
     "first_setup.sh"
+    "scripts/install_aliases.sh"
 )
 
 for script in "${SCRIPTS[@]}"; do
@@ -673,6 +674,27 @@ if [ -f "$BASHRC_FILE" ]; then
         ALIAS_ADDED=true
     else
         log_info "alias csm は既に正しく設定されています"
+    fi
+
+    # shu alias (出陣スクリプトの起動)
+    EXPECTED_SHU="alias shu='./shutsujin_departure.sh'"
+    if ! grep -q "alias shu=" "$BASHRC_FILE" 2>/dev/null; then
+        if [ "$ALIAS_ADDED" = false ]; then
+            echo "" >> "$BASHRC_FILE"
+            echo "# multi-agent-shogun aliases (added by first_setup.sh)" >> "$BASHRC_FILE"
+        fi
+        echo "$EXPECTED_SHU" >> "$BASHRC_FILE"
+        log_info "alias shu を追加しました（出陣スクリプトの起動）"
+        ALIAS_ADDED=true
+    elif ! grep -qF "$EXPECTED_SHU" "$BASHRC_FILE" 2>/dev/null; then
+        if sed -i "s|alias shu=.*|$EXPECTED_SHU|" "$BASHRC_FILE" 2>/dev/null; then
+            log_info "alias shu を更新しました（パス変更検出）"
+        else
+            log_warn "alias shu の更新に失敗しました"
+        fi
+        ALIAS_ADDED=true
+    else
+        log_info "alias shu は既に正しく設定されています"
     fi
 else
     log_warn "$BASHRC_FILE が見つかりません"
