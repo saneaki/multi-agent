@@ -746,7 +746,7 @@ process_unread_once
 # ─── Main loop: event-driven via inotifywait ───
 # Timeout 30s: WSL2 /mnt/c/ can miss inotify events.
 # Shorter timeout = faster escalation retry for stuck agents.
-INOTIFY_TIMEOUT=30
+INOTIFY_TIMEOUT=60
 
 while true; do
     # Block until file is modified OR timeout (safety net for WSL2)
