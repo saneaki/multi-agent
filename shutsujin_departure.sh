@@ -169,7 +169,7 @@ while [[ $# -gt 0 ]]; do
             echo "  silent（--silent）:   echo表示なし（API節約）"
             echo ""
             echo "エイリアス:"
-            echo "  csst  → cd /mnt/c/tools/multi-agent-shogun && ./shutsujin_departure.sh"
+            echo "  shu   → ./shutsujin_departure.sh"
             echo "  css   → tmux attach-session -t shogun"
             echo "  csm   → tmux attach-session -t multiagent"
             echo ""

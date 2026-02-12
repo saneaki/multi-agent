@@ -72,6 +72,10 @@
 !templates/
 !templates/**
 
+# Memory (global context only, personal memory stays local)
+!memory/
+!memory/global_context.md
+
 # Context README
 !context/
 !context/README.md
@@ -92,6 +96,14 @@
 # SayTask (sample template only, not actual data)
 !saytask/
 !saytask/streaks.yaml.sample
+
+# Memory (global context only, personal memory stays local)
+!memory/
+!memory/global_context.md
+
+# Output (generated deliverables)
+!output/
+!output/**
 
 # Docs
 !docs/
