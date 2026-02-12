@@ -800,6 +800,26 @@ NINJA_EOF
 
     log_success "  └─ 10エージェント分のinbox_watcher起動完了"
 
+    # watcher マニフェスト書き出し（supervisor が期待エージェントを把握するため）
+    MANIFEST_FILE="$SCRIPT_DIR/logs/watcher_manifest.txt"
+    {
+        echo "shogun|shogun:main|${_shogun_watcher_cli}|ASW_DISABLE_ESCALATION=1 ASW_PROCESS_TIMEOUT=0 ASW_DISABLE_NORMAL_NUDGE=0"
+        echo "karo|multiagent:agents.${PANE_BASE}|${_karo_watcher_cli}|"
+        for i in {1..8}; do
+            p=$((PANE_BASE + i))
+            _cli=$(tmux show-options -p -t "multiagent:agents.${p}" -v @agent_cli 2>/dev/null || echo "claude")
+            echo "ashigaru${i}|multiagent:agents.${p}|${_cli}|"
+        done
+    } > "$MANIFEST_FILE"
+
+    # STEP 6.6.1: watcher_supervisor起動（inbox_watcherの自動復旧）
+    pkill -f "watcher_supervisor.sh" 2>/dev/null || true
+    sleep 1
+    nohup bash "$SCRIPT_DIR/scripts/watcher_supervisor.sh" \
+        >> "$SCRIPT_DIR/logs/watcher_supervisor.log" 2>&1 &
+    disown
+    log_success "  └─ watcher_supervisor起動完了"
+
     # STEP 6.7 は廃止 — CLAUDE.md Session Start (step 1: tmux agent_id) で各自が自律的に
     # 自分のinstructions/*.mdを読み込む。検証済み (2026-02-08)。
     log_info "📜 指示書読み込みは各エージェントが自律実行（CLAUDE.md Session Start）"
