@@ -88,6 +88,8 @@
 !scripts/ntfy.sh
 !scripts/ntfy_listener.sh
 !scripts/build_instructions.sh
+!scripts/worktree_create.sh
+!scripts/worktree_cleanup.sh
 
 # Output (cmd reports)
 !output/
@@ -144,3 +146,6 @@
 !.github/
 !.github/workflows/
 !.github/workflows/*.yml
+
+# git worktree directories
+.trees/

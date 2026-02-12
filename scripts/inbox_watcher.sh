@@ -315,9 +315,10 @@ try:
     report_types = ("cmd_complete", "cmd_milestone")
     cmd_completes = [m for m in unread if m.get("type") in report_types]
 
-    # Mark specials and cmd_completes/cmd_milestones as read immediately
-    mark_read_types = special_types + report_types
-    if specials or cmd_completes:
+    # Mark specials as read immediately
+    # cmd_complete/cmd_milestone は hook成功後にbash側で個別処理
+    mark_read_types = special_types
+    if specials:
         for m in messages:
             if not m.get("read", False) and m.get("type") in mark_read_types:
                 m["read"] = True
@@ -592,6 +593,59 @@ send_wakeup_with_escape() {
     return 1
 }
 
+# ─── Mark cmd_complete/cmd_milestone as read ───
+# Called after successful hook execution to mark the message as read
+mark_cmd_complete_read() {
+    local content="$1"
+    local inbox="$INBOX"
+
+    (
+        flock -w 10 200 || {
+            echo "[$(date)] WARNING: Failed to acquire lock for marking cmd_complete read" >&2
+            return 1
+        }
+
+        python3 -c "
+import sys, os, yaml
+
+inbox = '$inbox'
+content = '''$content'''
+
+try:
+    with open(inbox, 'r', encoding='utf-8') as f:
+        data = yaml.safe_load(f) or {}
+except Exception as e:
+    print(f'[ERROR] Failed to read inbox: {e}', file=sys.stderr)
+    sys.exit(1)
+
+messages = data.get('messages', []) or []
+marked = False
+
+for m in messages:
+    if not m.get('read', False) and m.get('content', '') == content:
+        m['read'] = True
+        marked = True
+        break
+
+if not marked:
+    print('[WARNING] No matching unread cmd_complete message found', file=sys.stderr)
+    sys.exit(0)
+
+tmp_path = f'{inbox}.tmp.{os.getpid()}'
+try:
+    with open(tmp_path, 'w', encoding='utf-8') as f:
+        yaml.safe_dump(data, f, default_flow_style=False, allow_unicode=True, sort_keys=False)
+    os.replace(tmp_path, inbox)
+except Exception as e:
+    print(f'[ERROR] Failed to write inbox: {e}', file=sys.stderr)
+    sys.exit(1)
+" || return 1
+
+    ) 200>"${inbox}.lock"
+
+    return 0
+}
+
 # ─── Handle cmd_complete/cmd_milestone (Shogun auto-report hook) ───
 # Calls shogun_report_hook.sh to extract dashboard section and inject prompt.
 # Only processes for Shogun agent (safety guard for misdirected messages).
@@ -607,8 +661,26 @@ handle_cmd_complete() {
     echo "[$(date)] [${msg_type^^}] Processing for $AGENT_ID: $content" >&2
 
     # Call the hook script (errors are logged but don't kill the watcher)
-    if ! bash "$SCRIPT_DIR/scripts/shogun_report_hook.sh" "$content" "$PANE_TARGET" "$SCRIPT_DIR/dashboard.md" "$msg_type"; then
-        echo "[$(date)] WARNING: shogun_report_hook.sh failed for: $content" >&2
+    if bash "$SCRIPT_DIR/scripts/shogun_report_hook.sh" "$content" "$PANE_TARGET" "$SCRIPT_DIR/dashboard.md" "$msg_type"; then
+        # Hook成功 → メッセージをread:trueに更新
+        if mark_cmd_complete_read "$content"; then
+            echo "[$(date)] [HOOK-OK] Marked as read: $content" >&2
+        else
+            echo "[$(date)] WARNING: Failed to mark cmd_complete as read" >&2
+        fi
+    else
+        # Hook失敗 → フォールバックnudge送信
+        echo "[$(date)] [HOOK-FAIL] shogun_report_hook.sh failed for: $content" >&2
+        # 通常nudgeをフォールバックとして送信
+        local unread_count=1
+        local nudge="inbox${unread_count}"
+        if timeout 5 tmux send-keys -t "$PANE_TARGET" "$nudge" 2>/dev/null; then
+            sleep 0.3
+            timeout 5 tmux send-keys -t "$PANE_TARGET" Enter 2>/dev/null || true
+            echo "[$(date)] [HOOK-FAIL] Fallback nudge sent: $nudge" >&2
+        else
+            echo "[$(date)] WARNING: Fallback nudge send-keys failed" >&2
+        fi
     fi
 }
 

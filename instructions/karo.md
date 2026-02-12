@@ -767,6 +767,117 @@ External PRs are reinforcements. Treat with respect.
 | Critical (design flaw, fatal bug) | Request revision with specific fix guidance. Tone: "Fix this and we can merge." |
 | Fundamental design disagreement | Escalate to shogun. Explain politely. |
 
+## Worktree運用手順
+
+Phase 1 PoC（cmd_126）および Phase 2 実動テスト（cmd_128）で検証済みの手順。
+
+### Worktree使用判断基準
+
+| 条件 | 判断 | 理由 |
+|------|------|------|
+| 同一cmd内で複数足軽が同一ファイル領域を編集 | **使用する** | RACE-001回避 |
+| 外部プロジェクト（multi-agent以外のリポジトリ）の作業 | **使用する** | メインworktreeの汚染防止 |
+| RACE-001リスクが高いが並列化したい | **使用する** | ブランチ分離で安全に並列化 |
+| 足軽が異なるファイルを編集（通常運用） | 使用しない | 現行方式で十分 |
+| 単一足軽に割り当て | 使用しない | worktreeのオーバーヘッド不要 |
+
+### タスクYAML記載方法
+
+```yaml
+task:
+  task_id: subtask_XXX
+  parent_cmd: cmd_XXX
+  bloom_level: L3
+  target_worktree: true
+  branch: agent/ashigaru{N}/cmd_{CMD_ID}
+  description: |
+    ... 通常のタスク記述 ...
+```
+
+- `target_worktree: true` → 家老がworktree_create.shを実行してからdispatch
+- `branch:` → ブランチ命名規則に準拠
+
+### ブランチ命名規則
+
+| パターン | 形式 | 例 |
+|---------|------|-----|
+| 通常 | `agent/ashigaru{N}/cmd_{CMD_ID}` | `agent/ashigaru3/cmd_130` |
+| サブタスク指定 | `agent/ashigaru{N}/subtask_{TASK_ID}` | `agent/ashigaru1/subtask_130a` |
+
+一意性と追跡性を確保するため、エージェントIDとタスクIDを必ず含める。
+
+### Worktreeディスパッチ手順
+
+通常のディスパッチ（Step 5〜7）に加え、以下を実施:
+
+```
+STEP 5.5: Worktree作成
+  bash scripts/worktree_create.sh ashigaru{N} agent/ashigaru{N}/cmd_{CMD_ID}
+  ※ symlink自動作成: queue/, logs/, dashboard.md → メインworktree
+
+STEP 6: タスクYAML書き込み（通常通り）
+
+STEP 6.5: ペインラベル設定（通常通り）
+
+STEP 7: inbox_write（通常通り）
+```
+
+足軽はinbox受信後、CLAUDE.mdの回復手順でタスクYAMLを読み、worktree内で作業を開始する。
+
+### 家老のマージワークフロー
+
+足軽からの完了報告受領後:
+
+```
+a. 報告内容と品質を確認（通常の報告処理）
+b. cd /home/saneaki/multi-agent（メインworktreeに移動）
+c. git merge <足軽ブランチ名>
+   ※ Fast-forwardマージが基本（worktreeは同一コミットから分岐するため）
+d. コンフリクト発生時 → 下記「コンフリクト発生時の対応フロー」
+e. マージ確認: git log --oneline -3
+f. bash scripts/worktree_cleanup.sh <agent_id>
+   ※ symlink安全解除→リンク先整合性確認→worktree除去→ブランチ削除を自動実行
+g. git status でクリーンを確認
+h. ペインラベルリセット（通常通り）
+```
+
+### コンフリクト発生時の対応フロー
+
+```
+a. git merge --abort でマージを中断
+b. コンフリクト内容を分析
+c. 対応判断:
+   - 軽微な場合: 家老が手動解決（マージは家老の正当な業務、F001例外）
+   - 複雑な場合: 足軽にコンフリクト解決タスクを割り当て（worktree内で解決→再コミット）
+d. 解決後: git add <解決済みファイル> → git commit
+```
+
+### 足軽向けworktree作業ルール
+
+CLAUDE.mdへの追記候補として記載。worktreeタスクを割り当てる際、タスクYAMLのdescriptionに以下を含めること:
+
+```
+■ Worktree作業ルール
+- 自分のworktree内（.trees/{agent_id}/）のみで作業すること
+- 成果物はoutput/配下に配置すること
+- コミットしてからinbox_writeで報告すること
+- inbox_write.shは絶対パスで実行:
+  bash /home/saneaki/multi-agent/scripts/inbox_write.sh
+  ※ SHOGUN_ROOTまたはsymlinkにより、worktree内のscripts/からでも正常動作するが、
+    絶対パスが最も確実
+- worktreeのクリーンアップは家老が行う（足軽は触らない）
+```
+
+### 技術的根拠（Phase 2検証結果）
+
+| 項目 | 検証結果 |
+|------|---------|
+| symlink経由のinbox_write | メインqueueに正常到達（SHOGUN_ROOT未設定でもsymlink経由でOK） |
+| inotifywait + symlink | 双方向でイベント検知成功（`-L`オプション不要） |
+| worktree_cleanup.shのsymlink処理 | unlink→リンク先整合性確認→worktree除去が正常動作 |
+| Fast-forwardマージ | worktreeからの通常マージは問題なし |
+| inbox_watcher.sh | 改修不要（既存のinotifywaitがsymlinkを自動追跡） |
+
 ## Compaction Recovery
 
 > See CLAUDE.md for base recovery procedure. Below is karo-specific.
