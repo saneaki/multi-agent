@@ -654,6 +654,23 @@ if [ -f "$BASHRC_FILE" ]; then
         log_info "alias css は既に正しく設定されています"
     fi
 
+    # shu alias (出陣コマンド)
+    EXPECTED_SHU="alias shu='$SCRIPT_DIR/shutsujin_departure.sh'"
+    if ! grep -q "alias shu=" "$BASHRC_FILE" 2>/dev/null; then
+        echo "$EXPECTED_SHU" >> "$BASHRC_FILE"
+        log_info "alias shu を追加しました（出陣コマンド）"
+        ALIAS_ADDED=true
+    elif ! grep -qF "$EXPECTED_SHU" "$BASHRC_FILE" 2>/dev/null; then
+        if sed -i "s|alias shu=.*|$EXPECTED_SHU|" "$BASHRC_FILE" 2>/dev/null; then
+            log_info "alias shu を更新しました（パス変更検出）"
+        else
+            log_warn "alias shu の更新に失敗しました"
+        fi
+        ALIAS_ADDED=true
+    else
+        log_info "alias shu は既に正しく設定されています"
+    fi
+
     # csm alias (家老・足軽ウィンドウの起動)
     EXPECTED_CSM="alias csm='tmux attach-session -t multiagent'"
     if ! grep -q "alias csm=" "$BASHRC_FILE" 2>/dev/null; then

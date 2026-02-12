@@ -311,10 +311,15 @@ try:
     unread = [m for m in messages if not m.get("read", False)]
     special_types = ("clear_command", "model_switch")
     specials = [m for m in unread if m.get("type") in special_types]
+    # cmd_complete/cmd_milestone: Shogun auto-report hook (separate from CLI specials)
+    report_types = ("cmd_complete", "cmd_milestone")
+    cmd_completes = [m for m in unread if m.get("type") in report_types]
 
-    if specials:
+    # Mark specials and cmd_completes/cmd_milestones as read immediately
+    mark_read_types = special_types + report_types
+    if specials or cmd_completes:
         for m in messages:
-            if not m.get("read", False) and m.get("type") in special_types:
+            if not m.get("read", False) and m.get("type") in mark_read_types:
                 m["read"] = True
 
         tmp_path = f"{inbox}.tmp.{os.getpid()}"
@@ -328,10 +333,11 @@ try:
             )
         os.replace(tmp_path, inbox)
 
-    normal_count = len(unread) - len(specials)
+    normal_count = len(unread) - len(specials) - len(cmd_completes)
     payload = {
         "count": normal_count,
         "specials": [{"type": m.get("type", ""), "content": m.get("content", "")} for m in specials],
+        "cmd_completes": [{"content": m.get("content", ""), "type": m.get("type", "")} for m in cmd_completes],
     }
     print(json.dumps(payload))
 except Exception:
@@ -573,6 +579,26 @@ send_wakeup_with_escape() {
     return 1
 }
 
+# ─── Handle cmd_complete/cmd_milestone (Shogun auto-report hook) ───
+# Calls shogun_report_hook.sh to extract dashboard section and inject prompt.
+# Only processes for Shogun agent (safety guard for misdirected messages).
+handle_cmd_complete() {
+    local content="$1"
+    local msg_type="${2:-cmd_complete}"
+
+    if [[ "$AGENT_ID" != "shogun" ]]; then
+        echo "[$(date)] WARNING: ${msg_type} received by non-shogun agent $AGENT_ID, ignoring" >&2
+        return 0
+    fi
+
+    echo "[$(date)] [${msg_type^^}] Processing for $AGENT_ID: $content" >&2
+
+    # Call the hook script (errors are logged but don't kill the watcher)
+    if ! bash "$SCRIPT_DIR/scripts/shogun_report_hook.sh" "$content" "$PANE_TARGET" "$SCRIPT_DIR/dashboard.md" "$msg_type"; then
+        echo "[$(date)] WARNING: shogun_report_hook.sh failed for: $content" >&2
+    fi
+}
+
 # ─── Process cycle ───
 process_unread() {
     local trigger="${1:-event}"
@@ -630,6 +656,21 @@ for s in data.get('specials', []):
             cmd=$(normalize_special_command "$msg_type" "$msg_content")
             [ -n "$cmd" ] && send_cli_command "$cmd"
         done <<< "$specials"
+    fi
+
+    # Handle cmd_complete/cmd_milestone reports (Shogun auto-report hook)
+    local cmd_completes
+    cmd_completes=$(echo "$info" | python3 -c "
+import sys, json
+data = json.load(sys.stdin)
+for c in data.get('cmd_completes', []):
+    print(c.get('type','cmd_complete') + '\t' + c['content'])
+" 2>/dev/null)
+
+    if [ -n "$cmd_completes" ]; then
+        echo "$cmd_completes" | while IFS=$'\t' read -r msg_type content; do
+            [ -n "$content" ] && handle_cmd_complete "$content" "$msg_type"
+        done
     fi
 
     # /clear は Codex で /new へ変換される。再起動直後の取りこぼし防止として

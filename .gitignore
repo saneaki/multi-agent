@@ -85,6 +85,9 @@
 !scripts/ntfy_listener.sh
 !scripts/build_instructions.sh
 
+# Output (cmd reports)
+!output/
+!output/*.md
 
 # SayTask (sample template only, not actual data)
 !saytask/
