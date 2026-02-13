@@ -270,9 +270,8 @@ tmux kill-session -t shogun 2>/dev/null && log_info "  └─ shogun本陣、撤
 # メインworktreeの絶対パスをSHOGUN_ROOTに設定
 # 用途: worktree内のスクリプトがメインworktreeのqueueにアクセスするため
 export SHOGUN_ROOT="$(pwd)"
-# tmuxサーバー全体の環境変数として設定（後から作成したペインでも利用可能にする）
-tmux set-environment -g SHOGUN_ROOT "$SHOGUN_ROOT"
-log_info "🏯 SHOGUN_ROOT設定完了: $SHOGUN_ROOT"
+# tmux set-environment は STEP 5 でセッション作成後に実行（サーバー未起動エラー回避）
+log_info "🏯 SHOGUN_ROOT設定: $SHOGUN_ROOT（tmux環境変数はセッション作成後に設定）"
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # STEP 1.5: 前回記録のバックアップ（--clean時のみ、内容がある場合）
@@ -460,6 +459,9 @@ log_war "👑 将軍の本陣を構築中..."
 if ! tmux has-session -t shogun 2>/dev/null; then
     tmux new-session -d -s shogun -n main
 fi
+
+# tmuxサーバーが起動したので、グローバル環境変数を設定（STEP 1.4 の続き）
+tmux set-environment -g SHOGUN_ROOT "$SHOGUN_ROOT"
 
 # 将軍ペインはウィンドウ名 "main" で指定（base-index 1 環境でも動く）
 SHOGUN_PROMPT=$(generate_prompt "将軍" "magenta" "$SHELL_SETTING")
