@@ -502,17 +502,16 @@ send_wakeup() {
         return 0
     fi
 
-    # Shogun: if the pane is focused AND agent is idle (❯ prompt, Lord not typing),
-    # it's safe to inject send-keys — the Shogun will auto-process inbox and report.
-    # Only fall back to display-message when the agent is busy (Lord's input at risk).
-    if [ "$AGENT_ID" = "shogun" ] && pane_is_active; then
-        if agent_is_busy; then
-            echo "[$(date)] [DISPLAY] shogun pane active + busy — showing nudge: inbox${unread_count}" >&2
-            timeout 2 tmux display-message -t "$PANE_TARGET" -d 5000 "inbox${unread_count}" 2>/dev/null || true
-            return 0
+    # Shogun protection: never inject keystrokes into shogun pane (send-keys禁止).
+    # Only show display-message when the pane is focused (Lord can see it).
+    if [ "$AGENT_ID" = "shogun" ]; then
+        if pane_is_active; then
+            echo "[$(date)] [DISPLAY] shogun pane active — showing nudge: inbox${unread_count}" >&2
+            timeout 2 tmux display-message -t "$PANE_TARGET" -d 5000 "📬 inbox: ${unread_count} 件" 2>/dev/null || true
+        else
+            echo "[$(date)] [SKIP] shogun pane not active — suppressing nudge" >&2
         fi
-        # Agent is idle at ❯ prompt — safe to inject, fall through to send-keys below
-        echo "[$(date)] [SEND-KEYS] shogun pane active + idle — injecting nudge: inbox${unread_count}" >&2
+        return 0
     fi
 
     # 優先度3: tmux send-keys（テキストとEnterを分離 — Codex TUI対策）
@@ -539,10 +538,9 @@ send_wakeup_with_escape() {
     effective_cli=$(get_effective_cli_type)
     local c_ctrl_state="skipped"
 
-    # Safety: never send Escape escalation to shogun. It can wipe the Lord's input.
+    # Safety: never send Escape escalation to shogun (即 return 0).
     if [ "$AGENT_ID" = "shogun" ]; then
-        echo "[$(date)] [SKIP] shogun: suppressing Escape escalation; sending plain nudge" >&2
-        send_wakeup "$unread_count"
+        echo "[$(date)] [SKIP] shogun: suppressing Escape escalation" >&2
         return 0
     fi
 

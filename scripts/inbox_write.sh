@@ -99,19 +99,36 @@ except Exception as e:
             # Check if ntfy_topic is configured
             NTFY_TOPIC=$(grep 'ntfy_topic:' "$SCRIPT_DIR/config/settings.yaml" 2>/dev/null | awk '{print $2}' | tr -d '"')
             if [ -n "$NTFY_TOPIC" ]; then
-                # Format message based on type
-                if [[ "$TYPE" == "cmd_complete" ]]; then
-                    PREFIX="✅"
+                # Extract cmd_id for title
+                cmd_id=$(echo "$CONTENT" | grep -oP 'cmd_\d+' | head -1)
+
+                # Generate title based on TYPE
+                case "$TYPE" in
+                    cmd_complete)
+                        NTFY_TITLE="✅ ${cmd_id}完了"
+                        ;;
+                    cmd_milestone)
+                        NTFY_TITLE="📌 ${cmd_id}中間報告"
+                        ;;
+                    report_received)
+                        NTFY_TITLE="📋 報告受信"
+                        ;;
+                    *)
+                        NTFY_TITLE="📬 ${TYPE}"
+                        ;;
+                esac
+
+                # Send full content (truncate if exceeds 4096 bytes)
+                MAX_BYTES=4096
+                if [[ ${#CONTENT} -gt $MAX_BYTES ]]; then
+                    NTFY_BODY="${CONTENT:0:$((MAX_BYTES - 30))}...
+（全文はinboxを確認）"
                 else
-                    PREFIX="📌"
+                    NTFY_BODY="$CONTENT"
                 fi
 
-                # Extract first 80 chars of content
-                CONTENT_PREVIEW="${CONTENT:0:80}"
-                NTFY_MSG="$PREFIX $CONTENT_PREVIEW"
-
-                # Call ntfy.sh (non-blocking, log errors only)
-                if ! bash "$SCRIPT_DIR/scripts/ntfy.sh" "$NTFY_MSG" 2>/dev/null; then
+                # Call ntfy.sh with new format (non-blocking, log errors only)
+                if ! bash "$SCRIPT_DIR/scripts/ntfy.sh" "$NTFY_BODY" "$NTFY_TITLE" 2>/dev/null; then
                     echo "[inbox_write] ntfy notification failed for $TYPE to $TARGET" >&2
                 fi
             fi

@@ -149,3 +149,6 @@
 
 # git worktree directories
 .trees/
+
+# Exclude Windows-style paths created by mistake
+C:\\*

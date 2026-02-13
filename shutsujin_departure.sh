@@ -785,13 +785,14 @@ NINJA_EOF
     pkill -f "inotifywait.*queue/inbox" 2>/dev/null || true
     sleep 1
 
-    # 将軍のwatcher（ntfy受信の自動起床に必要）
-    # 安全モード: phase2/phase3エスカレーションは無効、timeout周期処理も無効（event-drivenのみ）
-    _shogun_watcher_cli=$(tmux show-options -p -t "shogun:main" -v @agent_cli 2>/dev/null || echo "claude")
-    nohup env ASW_DISABLE_ESCALATION=1 ASW_PROCESS_TIMEOUT=0 ASW_DISABLE_NORMAL_NUDGE=0 \
-        bash "$SCRIPT_DIR/scripts/inbox_watcher.sh" shogun "shogun:main" "$_shogun_watcher_cli" \
-        >> "$SCRIPT_DIR/logs/inbox_watcher_shogun.log" 2>&1 &
-    disown
+    # [cmd_136] 将軍watcher廃止（upstream fe63232準拠）
+    # 将軍ペインは殿が直接操作するため、nudgeが邪魔になる。
+    # 殿への通知はntfy/Google Chatに集約。
+    # _shogun_watcher_cli=$(tmux show-options -p -t "shogun:main" -v @agent_cli 2>/dev/null || echo "claude")
+    # nohup env ASW_DISABLE_ESCALATION=1 ASW_PROCESS_TIMEOUT=0 ASW_DISABLE_NORMAL_NUDGE=0 \
+    #     bash "$SCRIPT_DIR/scripts/inbox_watcher.sh" shogun "shogun:main" "$_shogun_watcher_cli" \
+    #     >> "$SCRIPT_DIR/logs/inbox_watcher_shogun.log" 2>&1 &
+    # disown
 
     # 家老のwatcher
     _karo_watcher_cli=$(tmux show-options -p -t "multiagent:agents.${PANE_BASE}" -v @agent_cli 2>/dev/null || echo "claude")
@@ -808,12 +809,13 @@ NINJA_EOF
         disown
     done
 
-    log_success "  └─ 10エージェント分のinbox_watcher起動完了"
+    log_success "  └─ 9エージェント分のinbox_watcher起動完了（将軍除く）"
 
     # watcher マニフェスト書き出し（supervisor が期待エージェントを把握するため）
     MANIFEST_FILE="$SCRIPT_DIR/logs/watcher_manifest.txt"
     {
-        echo "shogun|shogun:main|${_shogun_watcher_cli}|ASW_DISABLE_ESCALATION=1 ASW_PROCESS_TIMEOUT=0 ASW_DISABLE_NORMAL_NUDGE=0"
+        # [cmd_136] 将軍watcher廃止 - マニフェストから将軍を除外
+        # echo "shogun|shogun:main|${_shogun_watcher_cli}|ASW_DISABLE_ESCALATION=1 ASW_PROCESS_TIMEOUT=0 ASW_DISABLE_NORMAL_NUDGE=0"
         echo "karo|multiagent:agents.${PANE_BASE}|${_karo_watcher_cli}|"
         for i in {1..8}; do
             p=$((PANE_BASE + i))
