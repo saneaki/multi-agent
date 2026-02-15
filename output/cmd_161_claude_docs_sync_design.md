@@ -1,13 +1,16 @@
 # cmd_161: Claude Code公式ドキュメント自動収集・和訳・日次更新システム設計書
 
+**改訂版 v2** — 翻訳エンジンを Gemini 2.5 Flash (Free Tier) に変更、自動化を n8n ワークフローに統合。
+
 ## 概要
 
 Claude Code公式ドキュメント（約57ページ）を自動収集・体系整理・和訳し、1日1回更新する仕組みを設計する。
 既存のECC日本語翻訳資産（147ファイル, 35,702行）との統合を前提とする。
 
 **対象**: Claude Code公式ドキュメント（code.claude.com/docs）
-**動作環境**: WSL2 (Ubuntu) + Python 3.10+
-**更新頻度**: 1日1回（cron）
+**動作環境**: WSL2 (Ubuntu) + n8n (self-hosted) + Gemini API
+**更新頻度**: 1日1回（n8n Schedule Trigger）
+**翻訳コスト**: $0/月（Gemini 2.5 Flash Free Tier）
 
 ---
 
@@ -79,23 +82,24 @@ code.claude.com/docs/en/
 
 | 方式 | メリット | デメリット | 推奨度 |
 |------|----------|-----------|--------|
-| **llms.txt + WebFetch** | 公式提供のインデックス、構造化済み、安定 | HTML→Markdownの変換品質に依存 | ★★★★★ |
+| **llms.txt + HTTP Request** | 公式提供のインデックス、構造化済み、安定 | HTML→Markdownの変換品質に依存 | ★★★★★ |
 | **GitHub API** | 構造化データ、レート制限内で安定 | ドキュメントサイトのコンテンツは含まない | ★★★★☆ |
 | **Scrapy/BeautifulSoup** | 柔軟、全ページ取得可能 | メンテナンスコスト高、HTML構造変更に弱い | ★★★☆☆ |
-| **Playwright** | JavaScript描画後のコンテンツ取得可能 | リソース消費大、速度遅 | ★★☆☆☆ |
 
-### 2.2 推奨方式: ハイブリッド2層収集
+### 2.2 推奨方式: n8n HTTP Request ノードによるハイブリッド2層収集
 
 ```
 Layer 1: llms.txt インデックス取得 (公式ドキュメント)
-         ↓ ページURL一覧を取得
-         ↓ 各ページを requests + markdownify で取得
-         ↓ Markdown変換して保存
+         ↓ HTTP Request ノードでページURL一覧を取得
+         ↓ SplitInBatches → 各ページを HTTP Request で取得
+         ↓ Code ノードで HTML → Markdown 変換
+         ↓ ファイル保存
 
 Layer 2: GitHub API (リポジトリドキュメント)
-         ↓ gh api repos/anthropics/claude-code/contents
+         ↓ HTTP Request ノード (GitHub API)
          ↓ README, CHANGELOG, plugins/ を取得
-         ↓ Base64デコードして保存
+         ↓ Code ノードで Base64デコード
+         ↓ ファイル保存
 ```
 
 ### 2.3 変更差分検知
@@ -109,22 +113,15 @@ Layer 2: GitHub API (リポジトリドキュメント)
 
 ### 2.4 技術スタック
 
-```python
-# 収集
-requests          # HTTP クライアント
-markdownify       # HTML → Markdown 変換
-PyGithub          # GitHub API ラッパー（または gh CLI）
-
-# 差分検知
-hashlib           # SHA-256 ハッシュ
-json              # メタデータ管理
-
-# 翻訳
-anthropic         # Claude API クライアント
-
-# 自動化
-cron              # スケジューリング（WSL2 systemd有効時）
-```
+| コンポーネント | 技術 | 役割 |
+|---------------|------|------|
+| **オーケストレーション** | n8n (self-hosted) | ワークフロー管理、スケジューリング |
+| **収集** | n8n HTTP Request ノード | Web/API からのデータ取得 |
+| **変換・差分検知** | n8n Code ノード (JavaScript) | HTML→Markdown変換、SHA-256ハッシュ計算 |
+| **翻訳** | Gemini 2.5 Flash API (n8n HTTP Request) | 英→日翻訳 |
+| **ファイル操作** | n8n Execute Command ノード | ファイル読み書き |
+| **通知** | n8n HTTP Request ノード | Google Chat Webhook |
+| **メタデータ管理** | metadata.json (ローカルファイル) | ハッシュ・ステータス管理 |
 
 ---
 
@@ -137,9 +134,6 @@ cron              # スケジューリング（WSL2 systemd有効時）
 ├── sync/                          # 自動収集システム
 │   ├── config.yaml                # 設定ファイル
 │   ├── metadata.json              # ハッシュ・更新日時・翻訳ステータス
-│   ├── sync_docs.py               # メインスクリプト
-│   ├── translate.py               # 翻訳スクリプト
-│   ├── notify.py                  # 通知スクリプト
 │   └── logs/                      # 実行ログ
 │       └── sync_YYYYMMDD.log
 │
@@ -222,128 +216,289 @@ cron              # スケジューリング（WSL2 systemd有効時）
 
 ## 4. 和訳の仕組み
 
-### 4.1 翻訳方式の比較
+### 4.1 翻訳エンジン比較
 
-| 方式 | 品質 | コスト | 速度 | 一貫性 |
-|------|------|--------|------|--------|
-| **Claude API (Haiku 4.5)** | 高 | 低 ($0.25/100万入力) | 高速 | 高（プロンプトで制御） |
-| **Claude API (Sonnet 4.5)** | 最高 | 中 ($3/100万入力) | 中 | 最高 |
-| **足軽による手動翻訳** | 最高 | 高（エージェント時間） | 低 | 用語集依存 |
-| **Google Translate API** | 中 | 低 | 最速 | 低 |
+| 方式 | 品質 | コスト | 速度 | コンテキスト | 推奨度 |
+|------|------|--------|------|-------------|--------|
+| **Gemini 2.5 Flash (Free Tier)** | 高 | **$0** | 高速 | 1Mトークン | ★★★★★ |
+| **Gemini 2.5 Flash (Paid)** | 高 | $0.30/1M入力, $2.50/1M出力 | 高速 | 1Mトークン | ★★★★☆ |
+| Claude API (Haiku 4.5) | 高 | $0.80/1M入力, $4.00/1M出力 | 高速 | 200Kトークン | ★★★☆☆ |
+| Claude API (Sonnet 4.5) | 最高 | $3.00/1M入力, $15.00/1M出力 | 中 | 200Kトークン | ★★☆☆☆ |
 
-### 4.2 推奨方式: Claude API (Haiku 4.5) + 用語集注入
+### 4.2 推奨方式: Gemini 2.5 Flash (Free Tier) + 用語集注入
 
-```python
-TRANSLATION_PROMPT = """
-あなたは技術ドキュメントの日英翻訳者です。以下のルールに従って翻訳してください。
+**選定理由:**
+
+1. **コスト$0**: Free Tierで完全に無料運用可能
+2. **十分な制限**: 10 RPM / 250 RPD / 250K TPM — 日次57ページ翻訳に十分
+3. **1Mトークンコンテキスト**: 長文ドキュメントも分割不要
+4. **思考機能搭載**: 翻訳品質向上に寄与
+5. **n8n統合容易**: HTTP RequestノードでREST API直接呼び出し
+
+**Gemini 2.5 Flash Free Tier 制限:**
+
+| 制限項目 | 数値 | 日次同期での使用量 |
+|---------|------|------------------|
+| RPM (リクエスト/分) | 10 | 最大10（6秒間隔で十分） |
+| RPD (リクエスト/日) | 250 | 最大72（57サイト + 15 GitHub） |
+| TPM (トークン/分) | 250,000 | 1ページ平均5,000トークン → 余裕 |
+| コンテキスト | 1,000,000トークン | 1ページ最大10,000トークン → 余裕 |
+
+### 4.3 n8nからGemini APIを呼ぶノード構成
+
+```
+[HTTP Request ノード: Gemini API]
+  Method: POST
+  URL: https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent
+  Authentication: Generic Credential (Header Auth)
+    Header Name: x-goog-api-key
+    Header Value: {{ $credentials.geminiApiKey }}
+  Body (JSON):
+  {
+    "contents": [{
+      "parts": [{
+        "text": "{{ $json.translationPrompt }}"
+      }]
+    }],
+    "generationConfig": {
+      "temperature": 0.3,
+      "maxOutputTokens": 65536
+    }
+  }
+```
+
+**n8n Credentials 設定:**
+- Type: Header Auth
+- Name: `Gemini API Key`
+- Header Name: `x-goog-api-key`
+- Header Value: (Google AI Studio で取得した API Key)
+
+### 4.4 翻訳プロンプト
+
+```
+あなたは技術ドキュメントの英日翻訳者です。以下のルールに従って翻訳してください。
 
 ## 用語集（必ず準拠）
 {terminology_content}
 
 ## 翻訳ルール
-1. 技術用語・プロダクト名・略語は英語のまま
+1. 技術用語・プロダクト名・略語は英語のまま（Claude Code, MCP, API, CLI等）
 2. コードブロック・コマンド例は翻訳しない
 3. Markdownの書式（見出し、リスト、テーブル等）を維持
 4. 文体は「です・ます」調
 5. 原文の情報を一切省略しない
 6. URLは変更しない
+7. 出力はMarkdownのみ（説明や注釈は不要）
 
 ## 原文
 {source_content}
-"""
 ```
 
-### 4.3 差分翻訳フロー
+### 4.5 差分翻訳フロー
 
 ```
 1. metadata.json の content_hash を前回値と比較
-2. 変更があったページのみ翻訳対象
-3. 翻訳結果を ja-JP/site/ に保存
-4. translation_hash を更新
-5. TRANSLATION_STATUS.md を自動更新
+2. 変更があったページのみ翻訳対象（IF ノードで分岐）
+3. Gemini API で翻訳（6秒間隔でレート制限回避）
+4. 翻訳結果を ja-JP/site/ に保存
+5. translation_hash を更新
+6. TRANSLATION_STATUS.md を自動更新
 ```
 
-### 4.4 翻訳品質管理
+### 4.6 翻訳品質管理
 
 - **用語統一**: TERMINOLOGY.md を翻訳プロンプトに注入
-- **フォーマット検証**: markdownlint で翻訳後のMDを検証
-- **文字化け検知**: 翻訳結果にASCII外の制御文字がないことを確認
-- **長さ検証**: 翻訳結果が原文の80%-150%の範囲内であることを確認
+- **フォーマット検証**: Code ノードで Markdown 構造チェック
+- **文長検証**: 翻訳結果が原文の80%-150%の範囲内であることを確認
+- **Paid Tier フォールバック**: Free Tier制限超過時は Paid Tier ($0.30/1M) に自動切替
 
 ---
 
-## 5. 自動更新の仕組み
+## 5. 自動更新の仕組み（n8n ワークフロー）
 
-### 5.1 実行フロー
+### 5.1 n8n ワークフロー全体構成
 
 ```
-┌──────────────────────────────────────────┐
-│         日次cron (毎朝 06:00 JST)          │
-└──────────────┬───────────────────────────┘
-               │
-               ▼
-┌──────────────────────────────────────────┐
-│  Step 1: llms.txt 取得                    │
-│  - ページ一覧の差分チェック               │
-│  - 新規ページ検知 / 削除ページ検知         │
-└──────────────┬───────────────────────────┘
-               │
-               ▼
-┌──────────────────────────────────────────┐
-│  Step 2: 変更ページ取得                    │
-│  - HTTP GET + ETag 比較                   │
-│  - HTML → Markdown 変換                   │
-│  - content_hash 計算・比較                 │
-│  - 変更のあったページのみ en/ に保存        │
-└──────────────┬───────────────────────────┘
-               │
-               ▼
-┌──────────────────────────────────────────┐
-│  Step 3: GitHub API 取得                   │
-│  - README, CHANGELOG のコミットSHA比較     │
-│  - 変更ファイルのみ取得・保存              │
-└──────────────┬───────────────────────────┘
-               │
-               ▼
-┌──────────────────────────────────────────┐
-│  Step 4: 差分翻訳                          │
-│  - content_hash が変化したページのみ        │
-│  - Claude API (Haiku 4.5) で翻訳          │
-│  - 翻訳結果を ja-JP/site/ に保存           │
-│  - TRANSLATION_STATUS.md 更新              │
-└──────────────┬───────────────────────────┘
-               │
-               ▼
-┌──────────────────────────────────────────┐
-│  Step 5: 通知                              │
-│  - 変更サマリーを生成                      │
-│  - Google Chat Webhook 送信                │
-│  - 実行ログを logs/ に保存                 │
-└──────────────────────────────────────────┘
+[Schedule Trigger]
+  毎日 06:00 JST
+      │
+      ▼
+[HTTP Request: llms.txt取得]
+  URL: https://code.claude.com/docs/llms.txt
+  Method: GET
+      │
+      ▼
+[Code: ページURL一覧パース]
+  llms.txt からURL一覧を抽出
+  metadata.json と比較して変更/新規を検知
+      │
+      ▼
+[IF: 変更あり？]
+  ├── Yes ──────────────────────────────────┐
+  │                                         │
+  │   [SplitInBatches: ページ取得]           │
+  │     Batch Size: 5                       │
+  │         │                               │
+  │         ▼                               │
+  │   [HTTP Request: ページ取得]             │
+  │     URL: {{ $json.pageUrl }}            │
+  │     Method: GET                         │
+  │         │                               │
+  │         ▼                               │
+  │   [Code: HTML→Markdown変換 + ハッシュ]   │
+  │     markdownify相当の変換               │
+  │     SHA-256 ハッシュ計算                 │
+  │     metadata.json 更新                  │
+  │         │                               │
+  │         ▼                               │
+  │   [IF: ハッシュ変更あり？]               │
+  │     ├── Yes: en/site/ に保存            │
+  │     │        翻訳キューに追加            │
+  │     └── No: スキップ                    │
+  │                                         │
+  │   [Merge: 翻訳キュー集約]               │
+  │         │                               │
+  │         ▼                               │
+  │   [SplitInBatches: 翻訳実行]            │
+  │     Batch Size: 1                       │
+  │     Wait Between: 6000ms (10RPM制限)    │
+  │         │                               │
+  │         ▼                               │
+  │   [Code: プロンプト生成]                 │
+  │     TERMINOLOGY.md + 翻訳ルール注入     │
+  │         │                               │
+  │         ▼                               │
+  │   [HTTP Request: Gemini API]            │
+  │     POST gemini-2.5-flash              │
+  │     Body: 翻訳プロンプト                │
+  │         │                               │
+  │         ▼                               │
+  │   [Code: 翻訳結果処理]                  │
+  │     ja-JP/site/ に保存                  │
+  │     metadata.json 翻訳ステータス更新    │
+  │         │                               │
+  │         ▼                               │
+  │   [Merge: 結果集約]                     │
+  │                                         │
+  ├── No ──────────────────────────────────┐│
+  │   (変更なし → 通知のみ)                ││
+  │                                        ││
+  └────────────────────────────────────────┘│
+      │                                     │
+      ▼                                     │
+[Code: レポート生成]  ◄─────────────────────┘
+  更新サマリー作成
+  metadata.json 最終更新
+      │
+      ▼
+[HTTP Request: Google Chat通知]
+  URL: {{ $env.GOOGLE_CHAT_WEBHOOK }}
+  Method: POST
+  Body: { "text": "{{ $json.report }}" }
+      │
+      ▼
+[NoOp: 完了]
 ```
 
-### 5.2 スケジューリング
+### 5.2 主要ノードの設定詳細
 
-```bash
-# crontab -e
-0 6 * * * /home/saneaki/.claude/docs/sync/sync_docs.py >> /home/saneaki/.claude/docs/sync/logs/cron.log 2>&1
+#### Schedule Trigger
+```json
+{
+  "rule": {
+    "interval": [{"field": "cronExpression", "expression": "0 6 * * *"}]
+  }
+}
 ```
 
-代替案（WSL2でcronが不安定な場合）:
-- **n8n ワークフロー**: HTTP Request → Code Node (Python) → Google Chat
-- **systemd timer**: WSL2でsystemd有効化済みの場合
+#### HTTP Request (llms.txt取得)
+```json
+{
+  "method": "GET",
+  "url": "https://code.claude.com/docs/llms.txt",
+  "options": {
+    "timeout": 30000,
+    "response": { "response": { "fullResponse": true } }
+  }
+}
+```
 
-### 5.3 エラーハンドリング
+#### Code (ページURL一覧パース)
+```javascript
+// llms.txt からURLを抽出
+const body = $input.first().json.body;
+const urls = body.match(/https:\/\/code\.claude\.com\/docs\/en\/[\w-]+/g) || [];
 
-| エラー | 対策 |
-|--------|------|
-| HTTP 429 (Rate Limit) | 指数バックオフ（初回30秒、最大5分、3回リトライ） |
-| HTTP 5xx | 30秒後リトライ、3回失敗で該当ページスキップ |
-| Claude API エラー | 5回リトライ、失敗ページは `pending` ステータスのまま次回に持ち越し |
-| ネットワーク断 | 全体をスキップ、次回実行時に全差分を処理 |
-| llms.txt 取得失敗 | 前回のページ一覧を使用（新規ページ検知のみスキップ） |
+// metadata.json を読み込み（Execute Command で事前に読み込み済み）
+const metadata = JSON.parse($('Read Metadata').first().json.stdout || '{}');
 
-### 5.4 通知テンプレート（Google Chat）
+const pages = urls.map(url => {
+  const slug = url.split('/').pop();
+  const existing = metadata.pages?.[`site/${slug}.md`];
+  return {
+    url,
+    slug,
+    previousHash: existing?.content_hash || null,
+    isNew: !existing
+  };
+});
+
+return pages.map(p => ({ json: p }));
+```
+
+#### HTTP Request (Gemini API)
+```json
+{
+  "method": "POST",
+  "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
+  "authentication": "genericCredentialType",
+  "genericAuthType": "httpHeaderAuth",
+  "sendBody": true,
+  "specifyBody": "json",
+  "jsonBody": "={{ JSON.stringify({ contents: [{ parts: [{ text: $json.translationPrompt }] }], generationConfig: { temperature: 0.3, maxOutputTokens: 65536 } }) }}"
+}
+```
+
+#### HTTP Request (Google Chat通知)
+```json
+{
+  "method": "POST",
+  "url": "={{ $env.GOOGLE_CHAT_WEBHOOK }}",
+  "sendBody": true,
+  "specifyBody": "json",
+  "jsonBody": "={{ JSON.stringify({ text: $json.report }) }}"
+}
+```
+
+### 5.3 n8n環境変数・Credentials
+
+| 種別 | 名前 | 値 |
+|------|------|-----|
+| **Environment Variable** | `GOOGLE_CHAT_WEBHOOK` | Google Chat Webhook URL |
+| **Environment Variable** | `DOCS_BASE_PATH` | `~/.claude/docs` |
+| **n8n Credential** | `Gemini API Key` | Header Auth (x-goog-api-key) |
+| **n8n Credential** | `GitHub API Token` | Header Auth (Authorization: Bearer) |
+
+### 5.4 エラーハンドリング
+
+| エラー | n8nでの対策 |
+|--------|-----------|
+| HTTP 429 (Rate Limit) | SplitInBatches の Wait Between を 6000ms→12000ms に動的増加。Error Workflow でリトライ |
+| HTTP 5xx | Retry on Fail: true, Max Retries: 3, Wait: 30000ms |
+| Gemini API エラー | Error Workflow → 該当ページを `pending` ステータスで記録 → 翌日リトライ |
+| ネットワーク断 | Error Workflow → Google Chat にエラー通知 → 翌日全差分処理 |
+| llms.txt 取得失敗 | IF ノードで分岐 → 前回のページ一覧を使用 |
+| Free Tier制限超過 | IF (statusCode === 429) → 残りページを翌日に持ち越し |
+
+### 5.5 n8n MCP サーバーとの連携
+
+既存の n8n MCP サーバー（`.mcp.json` に設定済み）を活用:
+
+- **ワークフロー管理**: n8n MCP の `workflow_get` / `workflow_update` でワークフロー設定を動的変更
+- **実行監視**: `execution_get` で日次実行の成否を確認
+- **足軽からの操作**: 家老/足軽が n8n MCP ツール経由でワークフローの有効/無効を制御可能
+
+### 5.6 通知テンプレート（Google Chat）
 
 ```
 📚 Claude Code ドキュメント日次更新レポート
@@ -362,7 +517,8 @@ TRANSLATION_PROMPT = """
   - changelog.md: v2.1.42 リリースノート
 
 ⏱ 実行時間: 2分34秒
-💰 翻訳コスト: $0.012
+💰 翻訳コスト: $0 (Free Tier)
+📡 Gemini API: 3/250 RPD使用
 ```
 
 ---
@@ -379,49 +535,70 @@ TRANSLATION_PROMPT = """
 | 推定トークン数（入力） | 約180,000トークン（1文字≒0.25トークン） |
 | 推定トークン数（出力） | 約270,000トークン（日本語は英語の1.5倍） |
 
-### 6.2 全量翻訳コスト（初回）
+### 6.2 Gemini 2.5 Flash Free Tier での運用シミュレーション
 
-| モデル | 入力単価 | 出力単価 | 入力コスト | 出力コスト | 合計 |
-|--------|----------|----------|-----------|-----------|------|
-| **Haiku 4.5** | $0.80/1M | $4.00/1M | $0.14 | $1.08 | **$1.22** |
-| **Sonnet 4.5** | $3.00/1M | $15.00/1M | $0.54 | $4.05 | **$4.59** |
-| **Opus 4.5** | $15.00/1M | $75.00/1M | $2.70 | $20.25 | **$22.95** |
+#### 初回全量翻訳
 
-### 6.3 差分翻訳コスト（日次）
+| 項目 | 数値 | Free Tier制限 | 判定 |
+|------|------|-------------|------|
+| 総リクエスト数 | 72回 | 250 RPD | OK (29%使用) |
+| 総入力トークン | 180,000 | 250,000 TPM | OK (72%/分 — ただし分散実行) |
+| 所要時間 | 72回 × 6秒 = 約7.2分 | — | OK |
+| **コスト** | **$0** | Free Tier | **完全無料** |
 
-| 想定 | 変更ページ数 | Haiku月額 | Sonnet月額 |
-|------|-------------|----------|-----------|
-| **少ない変更** (週1-2ページ) | 2ページ/週 | **$0.14/月** | **$0.52/月** |
-| **中程度の変更** (週5ページ) | 5ページ/週 | **$0.34/月** | **$1.30/月** |
-| **大規模更新** (週10ページ) | 10ページ/週 | **$0.69/月** | **$2.61/月** |
+#### 日次差分翻訳
 
-### 6.4 年間コスト概算
+| 想定 | 変更ページ数 | リクエスト/日 | Free Tier使用率 | コスト |
+|------|-------------|-------------|----------------|--------|
+| **変更なし** | 0ページ | 1 (llms.txt確認のみ) | 0.4% | $0 |
+| **少ない変更** | 2-3ページ/日 | 4-7 | 1.6-2.8% | $0 |
+| **中程度** | 5ページ/日 | 11 | 4.4% | $0 |
+| **大規模更新** | 10ページ/日 | 21 | 8.4% | $0 |
+| **全量再翻訳** | 72ページ/日 | 73 | 29.2% | $0 |
+
+### 6.3 年間コスト概算
 
 | プラン | 初回 | 月額 | 年額 |
 |--------|------|------|------|
-| **Haiku (推奨)** | $1.22 | $0.14 - $0.69 | **$2.90 - $9.50** |
-| **Sonnet** | $4.59 | $0.52 - $2.61 | **$10.83 - $35.91** |
+| **Gemini Free Tier (推奨)** | $0 | $0 | **$0** |
+| Gemini Paid (フォールバック時) | $0.50 | $0.01-$0.05 | $0.62-$1.10 |
+| n8n self-hosted | $0 | $0 | $0 |
+| **合計** | **$0** | **$0** | **$0** |
+
+### 6.4 Free Tier vs Paid Tier 比較
+
+| 項目 | Free Tier | Paid Tier |
+|------|-----------|-----------|
+| 入力コスト | $0 | $0.30/1Mトークン |
+| 出力コスト | $0 | $2.50/1Mトークン |
+| RPM | 10 | 2,000 |
+| RPD | 250 | 無制限 |
+| TPM | 250,000 | 1,000,000 |
+| コンテキストキャッシュ | 不可 | 可（$0.03/1Mトークン） |
+| **日次同期に十分か** | **はい** | はい |
+| **推奨** | **通常運用** | Free Tier超過時のフォールバック |
 
 ### 6.5 コスト最適化戦略
 
-1. **差分翻訳**: 変更ページのみ翻訳（最大95%のコスト削減）
-2. **Haiku 4.5使用**: Sonnet比で1/4のコスト（品質は技術翻訳に十分）
-3. **バッチ処理**: 小変更は蓄積して週1回まとめて翻訳（API呼び出し削減）
-4. **キャッシュ**: 翻訳結果をハッシュで管理し、同一内容の再翻訳を防止
-5. **プロンプトキャッシュ**: 用語集+翻訳ルール部分をキャッシュ（入力トークン90%削減）
+1. **Free Tier最大活用**: 日次250 RPDのうち最大72しか使わない（29%）
+2. **差分翻訳**: 変更ページのみ翻訳（通常は日次5ページ以下 = 2%使用）
+3. **6秒間隔**: SplitInBatches の Wait Between で10 RPM制限を確実に回避
+4. **Paid自動切替**: Free Tier 429エラー検知時のみ Paid Tier にフォールバック
+5. **バッチ翻訳**: 1ページ1リクエスト（1Mコンテキストで分割不要）
 
 ---
 
 ## 7. 実装スケジュール（参考）
 
-| Phase | 内容 | 見積もり |
-|-------|------|---------|
-| Phase 1 | 収集スクリプト（llms.txt + GitHub API） | 足軽1名 |
-| Phase 2 | 差分検知 + メタデータ管理 | 足軽1名 |
-| Phase 3 | 翻訳スクリプト（Claude API） | 足軽1名 |
-| Phase 4 | 通知 + cron設定 + 統合テスト | 足軽1名 |
+| Phase | 内容 | 詳細 |
+|-------|------|------|
+| Phase 1 | **n8nワークフロー基盤** | Schedule Trigger + llms.txt取得 + ページ一覧パース + 差分検知 |
+| Phase 2 | **収集パイプライン** | HTTP Request ループ + HTML→Markdown変換 + en/保存 + metadata.json管理 |
+| Phase 3 | **翻訳パイプライン** | Gemini API呼び出し + 翻訳結果保存 + ja-JP/保存 + 品質チェック |
+| Phase 4 | **GitHub API連携** | README/CHANGELOG取得 + Base64デコード + 差分検知 + 翻訳 |
+| Phase 5 | **通知 + 統合テスト** | Google Chat通知 + Error Workflow + 全体テスト + n8n MCP連携 |
 
-Phase 1-3は独立して並列実行可能。Phase 4は全Phase完了後。
+Phase 1-4は独立して並列実行可能。Phase 5は全Phase完了後。
 
 ---
 
@@ -429,9 +606,12 @@ Phase 1-3は独立して並列実行可能。Phase 4は全Phase完了後。
 
 | リスク | 影響 | 対策 |
 |--------|------|------|
-| code.claude.com のHTML構造変更 | 収集失敗 | llms.txt ベースで影響最小化、markdownifyのフォールバック |
+| **Gemini Free Tier制限変更** | 翻訳不可 | Paid Tier自動フォールバック（$0.30/1M）、月額上限$1設定 |
+| **Gemini Free Tier廃止** | 翻訳コスト発生 | Paid Tier ($0.50/月程度)、またはClaude API Haikuに切替 |
+| code.claude.com HTML構造変更 | 収集失敗 | llms.txt ベースで影響最小化 |
 | llms.txt の廃止・URL変更 | ページ一覧取得不可 | sitemap.xml へのフォールバック、手動URL登録 |
-| Claude API のレート制限 | 翻訳遅延 | バッチ処理、指数バックオフ、翌日持ち越し |
-| 翻訳品質の劣化 | 誤訳 | TERMINOLOGY.md による用語統一、文長検証、手動レビュー |
-| WSL2でのcron不安定 | 実行漏れ | n8n ワークフローへの代替、systemd timer |
-| ドキュメント大規模改変 | 全量再翻訳 | ハッシュベースで変更ページのみ翻訳、コスト上限設定 |
+| **n8n サーバー停止** | 日次更新停止 | systemd による自動再起動、Error通知で検知 |
+| **n8n ワークフロー障害** | 部分的失敗 | Error Workflow で障害ページを特定 → 翌日リトライ |
+| 翻訳品質の劣化 | 誤訳 | TERMINOLOGY.md、文長検証、temperature=0.3で安定性確保 |
+| ドキュメント大規模改変 | 全量再翻訳 | Free Tier内で72ページ翻訳可能（29%使用）、問題なし |
+| GitHub API レート制限 | 取得失敗 | 認証トークン使用（5,000 RPH）、差分取得で呼び出し最小化 |
