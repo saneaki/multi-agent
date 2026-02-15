@@ -110,3 +110,12 @@ candidates:
     evaluation: "Gemini APIを使った技術文書翻訳プロンプト+用語集注入+品質検証。1回目のため経過観察。"
     evaluated_at: "2026-02-15"
     next_review: "2026-05-15"
+
+  - id: SC-013
+    name: n8n-manual-execution-api
+    source_cmd: cmd_149
+    occurrences: 2
+    status: created
+    evaluation: "n8n内部REST APIによるWF手動実行。足軽5号（subtask_149c）・足軽8号（subtask_149b2）が独立発見。POST /rest/workflows/{id}/run、triggerToStartFrom必須、Cookie認証。"
+    evaluated_at: "2026-02-15"
+    skill_path: "shogun-n8n-manual-execution-api/SKILL.md"
