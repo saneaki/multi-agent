@@ -20,7 +20,7 @@
 
 ### 仕様
 
-- **入力項目**: 科目コード（英字4桁）、日付、金額、摘要
+- **入力項目**: 科目コード（英字8桁）、日付、金額、摘要
 - **入力先**: スプレッドシートID `1Guaf49W0wOpRkr5FXIz6oylsmipWSfNj55nnm-XLLK4`
 - **列マッピング**: C列=コード、D列=額、E列=日付、F列=摘要
 - **行検索ロジック**: E列（日付）が空の行を上から検索し、最初に見つかった空行に入力
@@ -70,8 +70,8 @@ function doGet() {
 function processForm(formData) {
   try {
     // 入力値の検証
-    if (!formData.code || formData.code.length !== 4) {
-      throw new Error('科目コードは英字4桁で入力してください');
+    if (!formData.code || formData.code.length !== 8) {
+      throw new Error('科目コードは英字8桁で入力してください');
     }
 
     if (!formData.date) {
@@ -105,7 +105,7 @@ function processForm(formData) {
     }
 
     // C, D, E, F列に書き込み
-    sheet.getRange(targetRow, 3).setValue(formData.code.toUpperCase());  // C列: コード（大文字変換）
+    sheet.getRange(targetRow, 3).setValue(formData.code);  // C列: コード
     sheet.getRange(targetRow, 4).setValue(Number(formData.amount));      // D列: 金額
     sheet.getRange(targetRow, 5).setValue(new Date(formData.date));      // E列: 日付
     sheet.getRange(targetRow, 6).setValue(formData.description || '');   // F列: 摘要
@@ -209,7 +209,6 @@ function processForm(formData) {
     }
 
     .code-input {
-      text-transform: uppercase;
       letter-spacing: 2px;
       font-weight: bold;
     }
@@ -307,10 +306,10 @@ function processForm(formData) {
         <input type="text"
                id="code"
                class="code-input"
-               placeholder="例: ABCD"
-               maxlength="4"
+               placeholder="例: ABCDEFGH"
+               maxlength="8"
                autocomplete="off">
-        <div class="hint">英字4桁（自動的に大文字に変換されます）</div>
+        <div class="hint">英字8桁</div>
       </div>
 
       <!-- 日付 -->
@@ -375,12 +374,12 @@ function processForm(formData) {
       var description = document.getElementById('description').value.trim();
 
       // 入力チェック
-      if (!code || code.length !== 4) {
-        showMessage('科目コードは英字4桁で入力してください', 'error');
+      if (!code || code.length !== 8) {
+        showMessage('科目コードは英字8桁で入力してください', 'error');
         return;
       }
 
-      if (!/^[A-Za-z]{4}$/.test(code)) {
+      if (!/^[A-Za-z]{8}$/.test(code)) {
         showMessage('科目コードは英字のみで入力してください', 'error');
         return;
       }
@@ -397,7 +396,7 @@ function processForm(formData) {
 
       // 確認ダイアログ
       var confirmMsg = '以下の内容で登録しますか？\n\n'
-        + '科目コード: ' + code.toUpperCase() + '\n'
+        + '科目コード: ' + code + '\n'
         + '日付: ' + date + '\n'
         + '金額: ¥' + Number(amount).toLocaleString() + '\n'
         + '摘要: ' + (description || '（なし）');
@@ -537,7 +536,7 @@ function processForm(formData) {
 ### 日常の入力フロー
 
 1. スマホのホーム画面から「仕訳入力」アイコンをタップ
-2. 科目コードを英字4桁で入力（例: `ABCD`）
+2. 科目コードを英字8桁で入力（例: `ABCDEFGH`）
 3. 日付を選択（初期値は今日）
 4. 金額を入力（例: `1200`）
 5. 摘要を入力（例: `渋谷→新宿`）※任意
@@ -550,7 +549,7 @@ function processForm(formData) {
 
 入力されたデータはスプレッドシートで確認できます:
 
-- **C列**: 科目コード（英字4桁、自動的に大文字変換）
+- **C列**: 科目コード（英字8桁）
 - **D列**: 金額
 - **E列**: 日付
 - **F列**: 摘要
@@ -568,8 +567,8 @@ function processForm(formData) {
 
 - ✅ 1. GAS Web Appのコード一式（Code.gs + index.html）が成果物として提供されている
 - ✅ 2. スマホからアクセス可能なWeb App URLが発行できる状態のコードになっている
-- ✅ 3. 入力項目は4つ: 科目コード（英字4桁）、日付（デフォルト今日）、金額、摘要
-- ✅ 4. 科目マスタは不要。コードは殿が直接入力する（英字4桁）
+- ✅ 3. 入力項目は4つ: 科目コード（英字8桁）、日付（デフォルト今日）、金額、摘要
+- ✅ 4. 科目マスタは不要。コードは殿が直接入力する（英字8桁）
 - ✅ 5. 入力先はスプレッドシートID 1Guaf49W0wOpRkr5FXIz6oylsmipWSfNj55nnm-XLLK4 のC列:コード、D列:額、E列:日付、F列:摘要
 - ✅ 6. E列（日付）が空の行を検索し、最上行から入力する（既存データを上書きしない）
 - ✅ 7. 入力成功時にフィードバック表示がある（登録完了メッセージ）
