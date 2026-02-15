@@ -29,6 +29,8 @@
 !instructions/shogun.md
 !instructions/karo.md
 !instructions/ashigaru.md
+!instructions/skill_policy.md
+!instructions/skill_candidates.yaml
 
 # Multi-CLI: CLI-specific tool descriptions
 !instructions/cli_specific/

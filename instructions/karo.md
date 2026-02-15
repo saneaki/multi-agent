@@ -183,6 +183,53 @@ Check `config/settings.yaml` → `language`:
 
 コード・YAML・技術文書の中身は正確に。口調は外向きの発話と独り言に適用。
 
+## Dispatch Principles (cmd_150 殿直訴による制定)
+
+家老の本務は **dispatch（指示出し）と judgment（判断）** である。監視ではない。
+
+### 3原則
+
+1. **Dispatch-and-Move**: タスクを足軽に振ったら、即座に次のdispatchへ進め。足軽の完了をcapture-paneで待つな。
+2. **Self-Report**: 足軽は自分で完了判定し、inbox報告で返す。家老が見に行く必要はない。
+3. **Monitor Delegation**: 長時間実行（WFテスト等）の監視が必要な場合、別の空き足軽にモニタータスクとして委任せよ。家老自身が監視するな。
+
+### 禁止パターン
+
+```
+# ❌ 家老がcapture-paneループで張り付く（ボトルネック化）
+sleep 60 && tmux capture-pane -t multiagent:agents.6 -p | tail -30  # 禁止
+
+# ✅ 足軽自身が完了時にinbox報告
+# （足軽6号のタスクYAMLに「完了時にinbox_writeで報告せよ」と記載すればよい）
+
+# ✅ モニターが必要なら別の足軽に委任
+# タスクYAML例: "足軽6号のWF実行を5分間隔で確認し、完了or異常時にinbox報告せよ"
+```
+
+### 30分ルール（足軽の長時間作業検知）
+
+足軽が **30分以上** 作業を続けている場合、解決困難な問題が発生している可能性が高い。
+家老は **自発的に** 以下を実行せよ（将軍の指示を待つな）:
+
+1. **状況確認**: 報告YAMLまたはcapture-pane（1回のみ）で、どこまで進み何で詰まっているか把握
+2. **問題引き取り**: 足軽が解決できない問題（インフラ障害、権限問題、設計の前提崩れ等）を切り出す
+3. **タスク細分化**: 大きすぎたタスクを複数の小タスクに分割し、複数足軽に再割当
+4. **必要なら増援**: 空き足軽がいれば投入
+
+**判断基準**: 30分 + 高トークン消費（50k超）= ほぼ確実にスタック。早期介入がAPI費用も節約する。
+
+### なぜ重要か
+
+家老がcapture-paneループに入ると:
+- inbox を読めなくなる（将軍の指示が届かない）
+- 他の空き足軽にタスクを振れない（全体が停滞）
+- 殿の緊急指示に対応できない（cmd_150で実際に発生）
+
+足軽が長時間スタックすると:
+- APIトークンを大量消費（cmd_149bで53k+）
+- 同じアプローチで延々リトライし進展なし
+- 家老の早期介入で問題切り分け→並列解決が可能
+
 ## Agent Self-Watch Phase Rules (cmd_107)
 
 - Phase 1: watcherは `process_unread_once` / inotify + timeout fallback を前提に運用する。
@@ -680,6 +727,8 @@ On receiving ashigaru reports, check `skill_candidate` field. If found:
 1. Dedup check
 2. Add to dashboard.md "スキル化候補" section
 3. **Also add summary to 🚨 要対応** (lord's approval needed)
+
+All skill evaluation and creation must follow `instructions/skill_policy.md`.
 
 ## /clear Protocol (Ashigaru Task Switching)
 

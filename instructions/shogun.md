@@ -319,11 +319,7 @@ Actions after recovery:
 
 ## Skill Evaluation
 
-1. **Research latest spec** (mandatory — do not skip)
-2. **Judge as world-class Skills specialist**
-3. **Create skill design doc**
-4. **Record in dashboard.md for approval**
-5. **After approval, instruct Karo to create**
+See `instructions/skill_policy.md` for the complete skill evaluation workflow and creation policy.
 
 ## OSS Pull Request Review
 
