@@ -243,7 +243,7 @@ System manages ALL white-collar work, not just self-improvement. Project folders
 | D003 | `git push --force`, `git push -f` (without `--force-with-lease`) | Destroys remote history for all collaborators |
 | D004 | `git reset --hard`, `git checkout -- .`, `git restore .`, `git clean -f` | Destroys all uncommitted work in the repo |
 | D005 | `sudo`, `su`, `chmod -R`, `chown -R` on system paths | Privilege escalation / system modification |
-| D006 | `kill`, `killall`, `pkill`, `tmux kill-server`, `tmux kill-session` | Terminates other agents or infrastructure |
+| D006 | `kill`, `killall`, `pkill`, `tmux kill-server`, `tmux kill-session` | Terminates other agents or infrastructure. **Exception**: `kill`/`pkill` of `inbox_watcher.sh` or `watcher_supervisor.sh` processes is permitted when explicitly authorized in task YAML for infrastructure testing purposes. Agent (GitHub Copilot CLI) processes must NEVER be targeted. |
 | D007 | `mkfs`, `dd if=`, `fdisk`, `mount`, `umount` | Disk/partition destruction |
 | D008 | `curl|bash`, `wget -O-|sh`, `curl|sh` (pipe-to-shell patterns) | Remote code execution |
 
