@@ -29,8 +29,7 @@
 !instructions/shogun.md
 !instructions/karo.md
 !instructions/ashigaru.md
-!instructions/skill_policy.md
-!instructions/skill_candidates.yaml
+!instructions/gunshi.md
 
 # Multi-CLI: CLI-specific tool descriptions
 !instructions/cli_specific/
@@ -74,13 +73,12 @@
 !templates/
 !templates/**
 
-# Memory (global context only, personal memory stays local)
-!memory/
-!memory/global_context.md
-
 # Context README
 !context/
 !context/README.md
+
+# Python venv
+!requirements.txt
 
 # Scripts
 !scripts/
@@ -90,24 +88,16 @@
 !scripts/ntfy.sh
 !scripts/ntfy_listener.sh
 !scripts/build_instructions.sh
-!scripts/worktree_create.sh
-!scripts/worktree_cleanup.sh
+!scripts/slim_yaml.sh
+!scripts/slim_yaml.py
+!scripts/seo_qc.py
+!scripts/seo_qc.sh
+!scripts/stop_hook_inbox.sh
 
-# Output (cmd reports)
-!output/
-!output/*.md
 
 # SayTask (sample template only, not actual data)
 !saytask/
 !saytask/streaks.yaml.sample
-
-# Memory (global context only, personal memory stays local)
-!memory/
-!memory/global_context.md
-
-# Output (generated deliverables)
-!output/
-!output/**
 
 # Docs
 !docs/
@@ -141,6 +131,15 @@
 !tests/unit/*.bats
 !tests/integration/
 !tests/integration/*.bats
+!tests/e2e/
+!tests/e2e/*.bats
+!tests/e2e/mock_cli.sh
+!tests/e2e/helpers/
+!tests/e2e/helpers/*.bash
+!tests/e2e/fixtures/
+!tests/e2e/fixtures/*.yaml
+!tests/e2e/mock_behaviors/
+!tests/e2e/mock_behaviors/*.sh
 !tests/test_helper/
 !tests/test_helper/README.md
 
@@ -148,9 +147,3 @@
 !.github/
 !.github/workflows/
 !.github/workflows/*.yml
-
-# git worktree directories
-.trees/
-
-# Exclude Windows-style paths created by mistake
-C:\\*
