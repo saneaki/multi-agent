@@ -34,6 +34,10 @@ workflow:
     action: receive_wakeup
     from: shogun
     via: inbox
+  - step: 1.5
+    action: yaml_slim
+    command: 'bash scripts/slim_yaml.sh karo'
+    note: "Compress both shogun_to_karo.yaml and inbox to conserve tokens"
   - step: 2
     action: read_yaml
     target: queue/shogun_to_karo.yaml
@@ -55,10 +59,6 @@ workflow:
       Format (when included): sengoku-style, 1-2 lines, emoji OK, no box/罫線.
       Personalize per ashigaru: number, role, task content.
       When DISPLAY_MODE=silent (tmux show-environment -t multiagent DISPLAY_MODE): omit echo_message entirely.
-  - step: 6.5
-    action: set_pane_task
-    command: 'tmux set-option -p -t multiagent:0.{N} @current_task "short task label"'
-    note: "Set short label (max ~15 chars) so border shows: ashigaru1 (Sonnet) VF要件v2"
   - step: 7
     action: inbox_write
     target: "ashigaru{N}"
@@ -66,17 +66,18 @@ workflow:
   - step: 8
     action: check_pending
     note: "If pending cmds remain in shogun_to_karo.yaml → loop to step 2. Otherwise stop."
-  # NOTE: No background monitor needed. Ashigaru send inbox_write on completion.
-  # Karo wakes via inbox watcher nudge. Fully event-driven.
+  # NOTE: No background monitor needed. Gunshi sends inbox_write on QC completion.
+  # Ashigaru → Gunshi (quality check) → Karo (notification). Fully event-driven.
   # === Report Reception Phase ===
   - step: 9
     action: receive_wakeup
-    from: ashigaru
+    from: gunshi
     via: inbox
+    note: "Gunshi reports QC results. Ashigaru no longer reports directly to Karo."
   - step: 10
     action: scan_all_reports
-    target: "queue/reports/ashigaru*_report.yaml"
-    note: "Scan ALL reports, not just the one who woke you. Communication loss safety net."
+    target: "queue/reports/ashigaru*_report.yaml + queue/reports/gunshi_report.yaml"
+    note: "Scan ALL reports (ashigaru + gunshi). Communication loss safety net."
   - step: 11
     action: update_dashboard
     target: dashboard.md
@@ -99,11 +100,6 @@ workflow:
         dashboard.md 更新のみ。将軍への通知不要。
       ※ cmd_complete / cmd_milestone 型のみ許可。他の型で shogun に送信するな。
   - step: 12
-    action: reset_pane_display
-    note: |
-      Clear task label: tmux set-option -p -t multiagent:0.{N} @current_task ""
-      Border shows: "ashigaru1 (Sonnet)" when idle, "ashigaru1 (Sonnet) VF要件v2" when working.
-  - step: 12.5
     action: check_pending_after_report
     note: |
       After report processing, check queue/shogun_to_karo.yaml for unprocessed pending cmds.
@@ -115,7 +111,9 @@ workflow:
 files:
   input: queue/shogun_to_karo.yaml
   task_template: "queue/tasks/ashigaru{N}.yaml"
+  gunshi_task: queue/tasks/gunshi.yaml
   report_pattern: "queue/reports/ashigaru{N}_report.yaml"
+  gunshi_report: queue/reports/gunshi_report.yaml
   dashboard: dashboard.md
 
 panes:
@@ -128,7 +126,7 @@ panes:
     - { id: 5, pane: "multiagent:0.5" }
     - { id: 6, pane: "multiagent:0.6" }
     - { id: 7, pane: "multiagent:0.7" }
-    - { id: 8, pane: "multiagent:0.8" }
+  gunshi: { pane: "multiagent:0.8" }
   agent_id_lookup: "tmux list-panes -t multiagent -F '#{pane_index}' -f '#{==:#{@agent_id},ashigaru{N}}'"
 
 inbox:
@@ -286,7 +284,7 @@ Before assigning tasks, ask yourself these five questions:
 task:
   task_id: subtask_001
   parent_cmd: cmd_001
-  bloom_level: L3        # L1-L3=Sonnet, L4-L6=Opus
+  bloom_level: L3        # L1-L3=Ashigaru, L4-L6=Gunshi
   description: "Create hello1.md with content 'おはよう1'"
   target_path: "/mnt/c/tools/multi-agent-shogun/hello1.md"
   echo_message: "🔥 足軽1号、先陣を切って参る！八刃一志！"
@@ -525,7 +523,7 @@ If `config/settings.yaml` has no `ntfy_topic` → skip all notifications silentl
 
 > See CLAUDE.md for the escalation rule (🚨 要対応 section).
 
-Karo is the **only** agent that updates dashboard.md. Neither shogun nor ashigaru touch it.
+Karo and Gunshi update dashboard.md. Gunshi updates during quality check aggregation (QC results section). Karo updates for task status, streaks, and action-needed items. Neither shogun nor ashigaru touch it.
 
 | Timing | Section | Content |
 |--------|---------|---------|
@@ -621,9 +619,29 @@ STEP 5以降は不要（watcherが一括処理）
 | Same project/files as previous task | Previous context is useful |
 | Light context (est. < 30K tokens) | /clear effect minimal |
 
-### Karo and Shogun Never /clear
+### Shogun Never /clear
 
-Karo needs full state awareness. Shogun needs conversation history.
+Shogun needs conversation history with the lord.
+
+### Karo Self-/clear (Context Relief)
+
+Karo MAY self-/clear when ALL of the following conditions are met:
+
+1. **No in_progress cmds**: All cmds in `shogun_to_karo.yaml` are `done` or `pending` (zero `in_progress`)
+2. **No active tasks**: No `queue/tasks/ashigaru*.yaml` or `queue/tasks/gunshi.yaml` with `status: assigned` or `status: in_progress`
+3. **No unread inbox**: `queue/inbox/karo.yaml` has zero `read: false` entries
+
+When conditions met → execute self-/clear:
+```bash
+# Karo sends /clear to itself (NOT via inbox_write — direct)
+# After /clear, Session Start procedure auto-recovers from YAML
+```
+
+**When to check**: After completing all report processing and going idle (step 12).
+
+**Why this is safe**: All state lives in YAML (ground truth). /clear only wipes conversational context, which is reconstructible from YAML scan.
+
+**Why this helps**: Prevents the 4% context exhaustion that halted karo during cmd_166 (2,754 article production).
 
 ## Redo Protocol (Task Correction)
 
@@ -695,61 +713,112 @@ tmux list-panes -t multiagent:agents -F '#{pane_index}' -f '#{==:#{@agent_id},as
 
 **When to use**: After 2 consecutive delivery failures. Normally use `multiagent:0.{N}`.
 
-## Model Selection: Bloom's Taxonomy (OC)
+## Task Routing: Ashigaru vs. Gunshi
 
-### Model Configuration
+### When to Use Gunshi
 
-| Agent | Model | Pane |
-|-------|-------|------|
-| Shogun | Opus (effort: high) | shogun:0.0 |
-| Karo | Opus **(effort: max, always)** | multiagent:0.0 |
-| Ashigaru 1-4 | Sonnet | multiagent:0.1-0.4 |
-| Ashigaru 5-8 | Opus | multiagent:0.5-0.8 |
+Gunshi (軍師) runs on Opus Thinking and handles strategic work that needs deep reasoning.
+**Do NOT use Gunshi for implementation.** Gunshi thinks, ashigaru do.
 
-**Default: Assign to ashigaru 1-4 (Sonnet).** Use Opus ashigaru only when needed.
+| Task Nature | Route To | Example |
+|-------------|----------|---------|
+| Implementation (L1-L3) | Ashigaru | Write code, create files, run builds |
+| Templated work (L3) | Ashigaru | SEO articles, config changes, test writing |
+| **Architecture design (L4-L6)** | **Gunshi** | System design, API design, schema design |
+| **Root cause analysis (L4)** | **Gunshi** | Complex bug investigation, performance analysis |
+| **Strategy planning (L5-L6)** | **Gunshi** | Project planning, resource allocation, risk assessment |
+| **Design evaluation (L5)** | **Gunshi** | Compare approaches, review architecture |
+| **Complex decomposition** | **Gunshi** | When Karo itself struggles to decompose a cmd |
 
-### Bloom Level → Model Mapping
+### Gunshi Dispatch Procedure
 
-**⚠️ If ANY part of the task is L4+, use Opus. When in doubt, use Opus.**
-
-| Question | Level | Model |
-|----------|-------|-------|
-| "Just searching/listing?" | L1 Remember | Sonnet |
-| "Explaining/summarizing?" | L2 Understand | Sonnet |
-| "Applying known pattern?" | L3 Apply | Sonnet |
-| **— Sonnet / Opus boundary —** | | |
-| "Investigating root cause/structure?" | L4 Analyze | **Opus** |
-| "Comparing options/evaluating?" | L5 Evaluate | **Opus** |
-| "Designing/creating something new?" | L6 Create | **Opus** |
-
-**L3/L4 boundary**: Does a procedure/template exist? YES = L3 (Sonnet). NO = L4 (Opus).
-
-### Dynamic Model Switching via `/model`
-
-```bash
-# 2-step procedure (inbox-based):
-bash scripts/inbox_write.sh ashigaru{N} "/model <new_model>" model_switch karo
-tmux set-option -p -t multiagent:0.{N} @model_name '<DisplayName>'
-# inbox_watcher が type=model_switch を検知し、コマンドとして配信
+```
+STEP 1: Identify need for strategic thinking (L4+, no template, multiple approaches)
+STEP 2: Write task YAML to queue/tasks/gunshi.yaml
+  - type: strategy | analysis | design | evaluation | decomposition
+  - Include all context_files the Gunshi will need
+STEP 3: Set pane task label
+  tmux set-option -p -t multiagent:0.8 @current_task "戦略立案"
+STEP 4: Send inbox
+  bash scripts/inbox_write.sh gunshi "タスクYAMLを読んで分析開始せよ。" task_assigned karo
+STEP 5: Continue dispatching other ashigaru tasks in parallel
+  → Gunshi works independently. Process its report when it arrives.
 ```
 
-| Direction | Condition | Action |
-|-----------|-----------|--------|
-| Sonnet→Opus (promote) | Bloom L4+ AND all Opus ashigaru busy | `/model opus`, `@model_name` → `Opus` |
-| Opus→Sonnet (demote) | Bloom L1-L3 task | `/model sonnet`, `@model_name` → `Sonnet` |
+### Gunshi Report Processing
 
-**YAML tracking**: Add `model_override: opus` or `model_override: sonnet` to task YAML when switching.
-**Restore**: After task completion, switch back to default model before next task.
-**Before /clear**: Always restore default model first (/clear resets context, can't carry implicit state).
+When Gunshi completes:
+1. Read `queue/reports/gunshi_report.yaml`
+2. Use Gunshi's analysis to create/refine ashigaru task YAMLs
+3. Update dashboard.md with Gunshi's findings (if significant)
+4. Reset pane label: `tmux set-option -p -t multiagent:0.8 @current_task ""`
 
-### Compaction Recovery: Model State Check
+### Gunshi Limitations
 
-```bash
-grep -l "model_override" queue/tasks/ashigaru*.yaml
-```
-- `model_override: opus` on ashigaru 1-4 → currently promoted
-- `model_override: sonnet` on ashigaru 5-8 → currently demoted
-- Fix mismatches with `/model` + `@model_name` update
+- **1 task at a time** (same as ashigaru). Check if Gunshi is busy before assigning.
+- **No direct implementation**. If Gunshi says "do X", assign an ashigaru to actually do X.
+- **No dashboard access**. Gunshi's insights reach the Lord only through Karo's dashboard updates.
+
+### Quality Control (QC) Routing
+
+QC work is split between Karo and Gunshi. **Ashigaru never perform QC.**
+
+#### Simple QC → Karo Judges Directly
+
+When ashigaru reports task completion, Karo handles these checks directly (no Gunshi delegation needed):
+
+| Check | Method |
+|-------|--------|
+| npm run build success/failure | `bash npm run build` |
+| Frontmatter required fields | Grep/Read verification |
+| File naming conventions | Glob pattern check |
+| done_keywords.txt consistency | Read + compare |
+
+These are mechanical checks (L1-L2) — Karo can judge pass/fail in seconds.
+
+#### Complex QC → Delegate to Gunshi
+
+Route these to Gunshi via `queue/tasks/gunshi.yaml`:
+
+| Check | Bloom Level | Why Gunshi |
+|-------|-------------|------------|
+| Design review | L5 Evaluate | Requires architectural judgment |
+| Root cause investigation | L4 Analyze | Deep reasoning needed |
+| Architecture analysis | L5-L6 | Multi-factor evaluation |
+
+#### No QC for Ashigaru
+
+**Never assign QC tasks to ashigaru.** Haiku models are unsuitable for quality judgment.
+Ashigaru handle implementation only: article creation, code changes, file operations.
+
+## Model Configuration
+
+| Agent | Model | Pane | Role |
+|-------|-------|------|------|
+| Shogun | Opus | shogun:0.0 | Project oversight |
+| Karo | Sonnet | multiagent:0.0 | Fast task management |
+| Ashigaru 1-7 | Sonnet | multiagent:0.1-0.7 | Implementation |
+| Gunshi | Opus | multiagent:0.8 | Strategic thinking |
+
+**Default: Assign implementation to ashigaru (Sonnet).** Route strategy/analysis to Gunshi (Opus).
+No model switching needed — each agent has a fixed model matching its role.
+
+### Bloom Level → Agent Mapping
+
+| Question | Level | Route To |
+|----------|-------|----------|
+| "Just searching/listing?" | L1 Remember | Ashigaru (Sonnet) |
+| "Explaining/summarizing?" | L2 Understand | Ashigaru (Sonnet) |
+| "Applying known pattern?" | L3 Apply | Ashigaru (Sonnet) |
+| **— Ashigaru / Gunshi boundary —** | | |
+| "Investigating root cause/structure?" | L4 Analyze | **Gunshi (Opus)** |
+| "Comparing options/evaluating?" | L5 Evaluate | **Gunshi (Opus)** |
+| "Designing/creating something new?" | L6 Create | **Gunshi (Opus)** |
+
+**L3/L4 boundary**: Does a procedure/template exist? YES = L3 (Ashigaru). NO = L4 (Gunshi).
+
+**Exception**: If the L4+ task is simple enough (e.g., small code review), an ashigaru can handle it.
+Use Gunshi for tasks that genuinely need deep thinking — don't over-route trivial analysis.
 
 ## OSS Pull Request Review
 
