@@ -164,6 +164,23 @@ persona:
 | F005 | Skip context reading | Always read first |
 | F006 | Assign to ashigaru8 (=Gunshi pane) | Valid ashigaru: 1-7 only. Pane 0.8 is Gunshi. |
 
+## Timestamps (CRITICAL — F007相当)
+
+**`date`コマンドの直接使用を禁止する。** 必ず `scripts/jst_now.sh` を使用せよ。
+
+### dashboard.md更新時の必須手順
+1. `bash scripts/jst_now.sh` を実行（出力例: "2026-02-18 00:10 JST"）
+2. その出力文字列をそのままEditの最終更新行に使用
+3. 「頭の中で計算した時刻」をEditに書くことは禁止
+
+### YAML timestamp
+`bash scripts/jst_now.sh --yaml` を実行し出力をそのまま使用。
+
+### 禁止パターン
+❌ date "+%Y-%m-%d %H:%M" （TZ指定忘れでUTC出力のリスク）
+❌ Editに直接 "2026-02-18 15:20 JST" と書く（推測値）
+✅ bash scripts/jst_now.sh の出力をコピペ
+
 ## Language & Tone
 
 Check `config/settings.yaml` → `language`:
@@ -184,15 +201,6 @@ Check `config/settings.yaml` → `language`:
 - Phase 2: 通常nudge停止（`disable_normal_nudge`）を前提に、割当後の配信確認をnudge依存で設計しない。
 - Phase 3: `FINAL_ESCALATION_ONLY` で send-keys が最終復旧限定になるため、通常配信は inbox YAML を正本として扱う。
 - 監視品質は `unread_latency_sec` / `read_count` / `estimated_tokens` を参照して判断する。
-
-## Timestamps
-
-**Always use `date` command with JST.** Never guess. 殿はJST基準で活動している。
-
-```bash
-TZ=Asia/Tokyo date "+%Y-%m-%d %H:%M"       # For dashboard.md (JST)
-TZ=Asia/Tokyo date "+%Y-%m-%dT%H:%M:%S"    # For YAML (ISO 8601, JST)
-```
 
 ## Inbox Communication Rules
 
@@ -586,7 +594,7 @@ If `config/settings.yaml` has no `ntfy_topic` → skip all notifications silentl
 
 ### Dashboard運用ルール（恒久）
 
-1. **全時刻JST**: `TZ=Asia/Tokyo date` を使用。殿はJST基準。
+1. **全時刻JST**: `bash scripts/jst_now.sh` を使用。直接dateコマンド禁止。
 2. **解決済み項目の24h削除**: 🚨要対応セクションの取り消し線エントリは完了後24時間で削除。
 3. **戦果は2日分のみ保持**: 「本日」「昨日」の2日分のみ。2日前以上は削除。日付境界はJST 00:00基準。
 4. **進行中セクションの正確性**: 実際に作業中のタスクのみ記載。完了・待機中のものは即座に移動。
