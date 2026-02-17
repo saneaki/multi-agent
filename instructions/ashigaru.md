@@ -283,6 +283,29 @@ Act without waiting for Karo's instruction:
 - Context below 30% → write progress to report YAML, tell Karo "context running low"
 - Task larger than expected → include split proposal in report
 
+## n8n WF修正プロトコル（必須）
+
+n8n WF修正タスクを受けた足軽は、以下のテストループを必ず実行すること:
+
+1. 修正前のWF JSONバックアップ（/tmp/wf_{id}_backup.json）
+2. 修正適用（PUT /api/v1/workflows/{id}）
+3. テスト用WF作成（Manual Trigger + 修正対象ノード群）
+   - POST /api/v1/workflows で作成
+   - テストデータは固定ファイルID or サンプルデータを使用
+4. テストループ:
+   a. POST /rest/workflows/{test_id}/run で手動実行
+      (Cookie認証が必要ならn8n UIから手動実行)
+   b. GET /api/v1/executions/{exec_id}?includeData=true で結果取得
+   c. 全ノードのstatus確認
+   d. エラーあり → 修正して4aに戻る（最大3回）
+   e. 全ノードsuccess → 次へ
+5. 本番WF更新 + deactivate/activate
+6. テスト用WF削除（DELETE /api/v1/workflows/{test_id}）
+7. 報告にexecution IDとstatus=successを必ず含める
+
+テストループ内でのリトライ上限は3回。3回失敗したら報告して判断を仰ぐこと。
+「手動実行テスト未実施」での完了報告は禁止。
+
 ## Shout Mode (echo_message)
 
 After task completion, check whether to echo a battle cry:

@@ -190,8 +190,8 @@ Race condition is eliminated: `/clear` wipes old context. Agent re-reads YAML wi
 
 | Direction | Method | Reason |
 |-----------|--------|--------|
-| Ashigaru → Gunshi | Report YAML + inbox_write | Quality check & dashboard aggregation |
-| Gunshi → Karo | Report YAML + inbox_write | Quality check result + strategic reports |
+| Ashigaru → Gunshi | Report YAML + inbox_write | Quality check |
+| Gunshi → Karo | Report YAML + inbox_write | Quality check result + strategic reports (Karo reflects to dashboard) |
 | Karo → Shogun/Lord | dashboard.md update only | **inbox to shogun FORBIDDEN** — prevents interrupting Lord's input |
 | Karo → Gunshi | YAML + inbox_write | Strategic task or quality check delegation |
 | Top → Down | YAML + inbox_write | Standard wake-up |
@@ -203,11 +203,14 @@ Race condition is eliminated: `/clear` wipes old context. Agent re-reads YAML wi
 # Context Layers
 
 ```
-Layer 1: Memory MCP     — persistent across sessions (preferences, rules, lessons)
-Layer 2: Project files   — persistent per-project (config/, projects/, context/)
-Layer 3: YAML Queue      — persistent task data (queue/ — authoritative source of truth)
-Layer 4: Session context — volatile (CLAUDE.md auto-loaded, instructions/*.md, lost on /clear)
+Layer 1: memory/global_context.md — persistent learning notes (git-managed, all agents share)
+Layer 2: Memory MCP     — persistent across sessions (preferences, rules, lessons)
+Layer 3: Project files   — persistent per-project (config/, projects/, context/)
+Layer 4: YAML Queue      — persistent task data (queue/ — authoritative source of truth)
+Layer 5: Session context — volatile (CLAUDE.md auto-loaded, instructions/*.md, lost on /clear)
 ```
+
+**学習メモの保存先: `memory/global_context.md` のみ。** Claude Code auto memory (MEMORY.md) には書き込み禁止。
 
 # Project Management
 
@@ -215,7 +218,7 @@ System manages ALL white-collar work, not just self-improvement. Project folders
 
 # Shogun Mandatory Rules
 
-1. **Dashboard**: Karo + Gunshi update. Gunshi: QC results aggregation. Karo: task status/streaks/action items. Shogun reads it, never writes it.
+1. **Dashboard**: **Karoの専権事項**。dashboard.mdの更新は家老のみが行う。軍師はQC結果をinbox経由で家老に報告。Shogun reads it, never writes it.
 2. **Chain of command**: Shogun → Karo → Ashigaru/Gunshi. Never bypass Karo.
 3. **Reports**: Check `queue/reports/ashigaru{N}_report.yaml` and `queue/reports/gunshi_report.yaml` when waiting.
 4. **Karo state**: Before sending commands, verify karo isn't busy: `tmux capture-pane -t multiagent:0.0 -p | tail -20`

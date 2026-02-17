@@ -119,3 +119,43 @@ candidates:
     evaluation: "n8n内部REST APIによるWF手動実行。足軽5号（subtask_149c）・足軽8号（subtask_149b2）が独立発見。POST /rest/workflows/{id}/run、triggerToStartFrom必須、Cookie認証。"
     evaluated_at: "2026-02-15"
     skill_path: "shogun-n8n-manual-execution-api/SKILL.md"
+
+  - id: SC-014
+    name: n8n-gemini-pdf-analysis
+    source_cmd: cmd_159
+    occurrences: 2
+    status: created
+    evaluation: "Gemini 2.5 Flash APIでPDF文書を分析し構造化JSON出力→MD変換するn8nワークフローパターン。法律文書・契約書等の自動分析に有用。maxOutputTokens 8192確保（thinking token対策）、responseMimeType: application/json、Google Drive連携。cmd_159+cmd_164で2回使用。"
+    evaluated_at: "2026-02-16"
+    approved_at: "2026-02-16"
+    skill_path: "shogun-n8n-gemini-pdf-analysis/SKILL.md"
+
+  - id: SC-015
+    name: n8n-filesystem-v2-binary
+    source_cmd: cmd_161
+    occurrences: 1
+    status: created
+    evaluation: "n8n filesystem-v2モードでbinaryProp.dataがファイル参照文字列になる問題。fs.readFileSync()による実バイナリ読取+base64変換が必要。領収書WF(cmd_161c)で発見。"
+    evaluated_at: "2026-02-16"
+    approved_at: "2026-02-16"
+    skill_path: "shogun-n8n-filesystem-v2-binary/SKILL.md"
+
+  - id: SC-016
+    name: n8n-http-request-version-guard
+    source_cmd: cmd_164
+    occurrences: 1
+    status: created
+    evaluation: "n8n HTTP RequestノードのtypeVersionによりサポートされるパラメータが異なる（v4ではspecifyBody/jsonBody未サポート→v4.2必要）。PUT更新時にサイレント無視される危険。cmd_164で発見。"
+    evaluated_at: "2026-02-16"
+    approved_at: "2026-02-16"
+    skill_path: "shogun-n8n-http-request-version-guard/SKILL.md"
+
+  - id: SC-017
+    name: n8n-telegram-markdown-escape
+    source_cmd: cmd_165
+    occurrences: 1
+    status: created
+    evaluation: "Telegram Bot API送信時のMarkdownエスケープ処理パターン。特殊文字（_*[]()~`>#+-=|{}.!）がparse_mode: Markdownで送信エラーを引き起こす。Gmailダイジェスト通知WF(cmd_165)で発生。"
+    evaluated_at: "2026-02-16"
+    approved_at: "2026-02-16"
+    skill_path: "shogun-n8n-telegram-markdown-escape/SKILL.md"
