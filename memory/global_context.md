@@ -56,3 +56,17 @@ googlechatに通知するようにいわれたときは、環境変数 `GCHAT_WE
 - 手動実行: POST /rest/workflows/{id}/run (triggerToStartFrom必須)
 - アクティベーション: POST /rest/workflows/{id}/activate (versionId必須)
 - 公開API v1にはworkflow実行エンドポイントなし
+
+### n8n expression {{ }} terminator衝突 (cmd_184で判明)
+- `={{ JSON.stringify({...nested...}) }}` でJS内の `}}` がn8n式終了と誤判定される
+- 症状: curlは成功するのにn8nで "invalid syntax" → expression評価エラー
+- 回避策: JSON.stringifyをやめ、JSONリテラルに `{{ $json.field }}` を埋め込む
+- 例: `{"filter":{"property":"名前","title":{"contains":"{{ $json.name }}"}}}` (= prefix不要)
+
+### n8n Merge node v2→v3 モード名変更 (cmd_183で判明)
+- v2: `mode: "combineMergeByPosition"` / v3: `mode: "combine"` + `combineBy: "combineByPosition"`
+- v3に旧モード名を使うと `Cannot read properties of undefined (reading 'execute')`
+
+### n8n HTTP Request credential空参照 (cmd_183で判明)
+- `authentication: "genericCredentialType"` に `credentials` フィールドなし → "Credentials not found"
+- 手動ヘッダーで認証する場合は `authentication: "none"` を使う

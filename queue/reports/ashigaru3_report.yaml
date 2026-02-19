@@ -1,225 +1,51 @@
-task_id: subtask_181d_phase2_noindex_kyutoki
-worker_id: ashigaru3
-parent_cmd: cmd_181
-timestamp: "2026-02-16T19:04:25+09:00"
-status: done
-result:
-  summary: "kyutoki noindex phase2: mizumore_shuri / C-B tierのnoindex対象を追加反映し、合計202件を更新"
-  target_count: 202
-  modified_count: 202
-  target_tiers:
-    A: 73
-    B: 77
-    C: 52
-  target_variants:
-    koukan_hiyou: 3
-    mizumore_shuri: 75
-    other: 124
-  files_modified:
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/chiba-shi-kyutoki-mizumore-shuri.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/chiba-shi-kyutoki-toire-shuri.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/chiba-shi-mizumore-shuri.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/chiba-shi-toire-shuri.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/fukuoka-shi-kyutoki-mizumore-shuri.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/fukuoka-shi-kyutoki-toire-shuri.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/fukuoka-shi-mizumore-shuri.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/fukuoka-shi-toire-shuri.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/funabashi-shi-kyutoki-mizumore-shuri.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/funabashi-shi-kyutoki-toire-shuri.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/funabashi-shi-mizumore-shuri.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/funabashi-shi-toire-shuri.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/hachioji-shi-kyutoki-mizumore-shuri.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/hachioji-shi-kyutoki-toire-shuri.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/hachioji-shi-mizumore-shuri.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/hachioji-shi-toire-shuri.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/hamamatsu-shi-mizumore-shuri.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/hiroshima-shi-kyutoki-mizumore-shuri.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/hiroshima-shi-kyutoki-toire-shuri.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/hiroshima-shi-mizumore-shuri.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/hiroshima-shi-toire-shuri.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/kawaguchi-shi-kyutoki-mizumore-shuri.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/kawaguchi-shi-kyutoki-toire-shuri.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/kawaguchi-shi-mizumore-shuri.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/kawaguchi-shi-toire-shuri.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/kawasaki-shi-kyutoki-mizumore-shuri.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/kawasaki-shi-kyutoki-toire-shuri.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/kawasaki-shi-mizumore-shuri.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/kawasaki-shi-toire-shuri.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/kitakyushu-shi-kyutoki-mizumore-shuri.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/kitakyushu-shi-kyutoki-toire-shuri.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/kitakyushu-shi-mizumore-shuri.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/kitakyushu-shi-toire-shuri.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/kobe-shi-kyutoki-mizumore-shuri.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/kobe-shi-kyutoki-toire-shuri.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/kobe-shi-mizumore-shuri.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/kobe-shi-toire-shuri.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/kumamoto-shi-mizumore-shuri.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/kyoto-shi-kyutoki-mizumore-shuri.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/kyoto-shi-kyutoki-toire-shuri.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/kyoto-shi-mizumore-shuri.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/kyoto-shi-toire-shuri.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/meguro-ku-kyutoki-koukan.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/mitaka-shi-kyutoki-koukan-hiyou.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/mitaka-shi-kyutoki-mizumore-shuri.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/mitaka-shi-mizumore-shuri.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/nagoya-shi-mizumore-shuri.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/nagoya-shi-toire-shuri.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/niigata-shi-mizumore-shuri.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/niigata-shi-toire-shuri.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/osaka-shi-kyutoki-mizumore-shuri.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/osaka-shi-kyutoki-toire-shuri.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/osaka-shi-mizumore-shuri.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/osaka-shi-toire-shuri.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/sagamihara-shi-kyutoki-mizumore-shuri.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/sagamihara-shi-mizumore-shuri.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/saitama-shi-kyutoki-mizumore-shuri.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/saitama-shi-kyutoki-toire-shuri.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/saitama-shi-mizumore-shuri.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/saitama-shi-toire-shuri.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/sakai-shi-mizumore-shuri.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/sakai-shi-toire-shuri.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/sapporo-shi-mizumore-shuri.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/sapporo-shi-toire-shuri.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/sendai-shi-mizumore-shuri.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/sendai-shi-toire-shuri.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/setagaya-ku-mizumore-shuri.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/shinagawa-ku-kyutoki-koukan.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/shinjuku-ku-kyutoki-mizumore-shuri.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/shinjuku-ku-mizumore-shuuri.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/shizuoka-shi-mizumore-shuri.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/suginami-ku-mizumore-shuri.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/suginami-ku-toilet-mizumore.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/suginami-ku-toire-shuri-hiyou.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/yokohama-shi-kyutoki-mizumore-shuri.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/yokohama-shi-kyutoki-toire-shuri.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/yokohama-shi-mizumore-shuri.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/yokohama-shi-toire-shuri.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/一宮市-トイレ修理.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/一宮市-水漏れ修理.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/一宮市-給湯器交換-費用.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/中野区-トイレ修理.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/中野区-水漏れ修理.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/中野区-給湯器交換-費用.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/久留米市-トイレ修理.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/久留米市-水漏れ修理.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/久留米市-給湯器交換-費用.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/北区-トイレ修理.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/北区-水漏れ修理.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/北区-給湯器交換-費用.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/厚木市-水漏れ修理.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/厚木市-給湯器交換-費用.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/台東区-トイレ修理.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/台東区-水漏れ修理.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/台東区-給湯器交換-費用.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/吹田市-トイレ修理.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/吹田市-水漏れ修理.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/吹田市-給湯器交換-費用.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/品川区-トイレ修理.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/品川区-水漏れ修理.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/品川区-給湯器交換-費用.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/国分寺市-水漏れ修理.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/国分寺市-給湯器交換-費用.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/墨田区-トイレ修理.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/墨田区-水漏れ修理.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/墨田区-給湯器交換-費用.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/大和市-水漏れ修理.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/大和市-給湯器交換-費用.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/宇治市-トイレ修理.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/宇治市-水漏れ修理.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/宇治市-給湯器交換-費用.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/小金井市-水漏れ修理.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/小金井市-給湯器交換-費用.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/尼崎市-トイレ修理.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/尼崎市-水漏れ修理.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/尼崎市-給湯器交換-費用.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/岡崎市-トイレ修理.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/岡崎市-水漏れ修理.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/岡崎市-給湯器交換-費用.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/川越市-トイレ修理.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/川越市-水漏れ修理.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/川越市-給湯器交換-費用.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/市川市-水漏れ修理.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/市川市-給湯器交換-費用.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/府中市-水漏れ修理.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/府中市-給湯器交換-費用.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/所沢市-トイレ修理.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/所沢市-水漏れ修理.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/所沢市-給湯器交換-費用.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/文京区-トイレ修理.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/文京区-水漏れ修理.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/文京区-給湯器交換-費用.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/日野市-水漏れ修理.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/日野市-給湯器交換-費用.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/春日部市-水漏れ修理.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/春日部市-給湯器交換-費用.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/東大阪市-トイレ修理.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/東大阪市-水漏れ修理.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/東大阪市-給湯器交換-費用.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/松戸市-トイレ修理.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/松戸市-水漏れ修理.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/松戸市-給湯器交換-費用.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/枚方市-トイレ修理.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/枚方市-水漏れ修理.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/枚方市-給湯器交換-費用.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/柏市-トイレ修理.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/柏市-水漏れ修理.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/柏市-給湯器交換-費用.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/横須賀市-トイレ修理.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/横須賀市-水漏れ修理.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/横須賀市-給湯器交換-費用.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/武蔵野市-トイレ修理.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/武蔵野市-水漏れ修理.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/武蔵野市-給湯器交換-費用.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/浦安市-水漏れ修理.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/浦安市-給湯器交換-費用.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/町田市-トイレ修理.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/町田市-水漏れ修理.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/町田市-給湯器交換-費用.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/目黒区-トイレ修理.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/目黒区-水漏れ修理.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/目黒区-給湯器交換-費用.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/立川市-トイレ修理.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/立川市-水漏れ修理.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/立川市-給湯器交換-費用.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/芦屋市-水漏れ修理.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/芦屋市-給湯器交換-費用.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/草加市-水漏れ修理.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/草加市-給湯器交換-費用.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/荒川区-トイレ修理.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/荒川区-水漏れ修理.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/荒川区-給湯器交換-費用.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/葛飾区-トイレ修理.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/葛飾区-水漏れ修理.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/葛飾区-給湯器交換-費用.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/藤沢市-トイレ修理.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/藤沢市-水漏れ修理.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/藤沢市-給湯器交換-費用.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/西宮市-トイレ修理.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/西宮市-水漏れ修理.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/西宮市-給湯器交換-費用.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/調布市-水漏れ修理.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/調布市-給湯器交換-費用.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/豊中市-トイレ修理.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/豊中市-水漏れ修理.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/豊中市-給湯器交換-費用.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/豊島区-トイレ修理.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/豊島区-水漏れ修理.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/豊島区-給湯器交換-費用.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/豊田市-トイレ修理.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/豊田市-水漏れ修理.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/豊田市-給湯器交換-費用.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/越谷市-水漏れ修理.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/越谷市-給湯器交換-費用.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/那覇市-トイレ修理.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/那覇市-水漏れ修理.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/那覇市-給湯器交換-費用.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/鎌倉市-水漏れ修理.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/鎌倉市-給湯器交換-費用.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/高槻市-トイレ修理.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/高槻市-水漏れ修理.md
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area/高槻市-給湯器交換-費用.md
-  output_paths:
-    - /home/yohei/seo-affiliate/kyutoki/src/content/area
-    - queue/reports/phase2_noindex_kyutoki.txt
-skill_candidate:
-  found: false
+task_id: subtask_193c
+cmd_id: cmd_193
+agent: ashigaru3
+status: completed
+completed_at: "2026-02-19T14:40:00+09:00"
+
+result: |
+  cmd_193 パート2調査（Python/Node.js系ライブラリ + 外部ツール）完了。
+  output/cmd_193_part2_python_node_libs.md に調査結果を保存。
+  Python系7件・Node.js系5件・外部ツール3件+参考4件を調査。
+  各ライブラリの対応形式・変換品質・コスト・n8n利用可否・難易度を記載。
+  n8n Code node制約まとめ・ユースケース別選択指針も含む。
+
+deliverables:
+  - path: "output/cmd_193_part2_python_node_libs.md"
+    note: "Python系/Node.js系ライブラリ+外部ツール調査レポート"
+
+acceptance_criteria_check:
+  - "[OK] Python系ライブラリ最低4件: PyMuPDF4LLM, pdfplumber, python-docx, markdownify, marker-pdf, docling, MarkItDown（7件）"
+  - "[OK] Node.js系ライブラリ最低3件: pdf-parse, mammoth, turndown, unified/remark, pdf2md（5件）"
+  - "[OK] 各ライブラリの対応形式・変換品質・コスト・難易度を記載"
+  - "[OK] n8n Code node内での利用可否（npm/pip）を全件記載"
+  - "[OK] output/cmd_193_part2_python_node_libs.md に保存済み"
+  - "[OK] 外部ツール3件以上: Pandoc, Mathpix, MinerU（3件）"
+
+libraries_surveyed:
+  python:
+    - PyMuPDF4LLM: "PDF→Markdown高品質。pip軽量。n8n自ホスト可"
+    - pdfplumber: "PDF表抽出特化。pip軽量。n8n自ホスト可"
+    - python-docx: "Docx低レベルAPI。pip軽量。Markdown変換は手動実装要"
+    - markdownify: "HTML→Markdown。中間変換に活用。pip軽量"
+    - marker-pdf: "最高品質PDF変換。PyTorch依存で重い。Execute Command推奨"
+    - docling: "IBM製。高品質。重いML依存。Execute Command推奨"
+    - MarkItDown: "Microsoft製。多形式対応。軽量"
+  nodejs:
+    - pdf-parse: "PDF→テキスト。npm軽量。Markdown変換は別途必要"
+    - mammoth: "Docx→HTML高品質。npm軽量。turndownと組み合わせ推奨"
+    - turndown: "HTML→Markdown。npm軽量。mammothと定番コンビ"
+    - unified_remark: "Markdown処理パイプライン。後処理に強力"
+    - pdf2md: "PDF→Markdown。メンテ減少傾向"
+  external_tools:
+    - Pandoc: "Docx→Markdown最適解。apt install一行。Execute Command"
+    - Mathpix: "数式専用。有料API。HTTP Requestノードで呼び出し"
+    - MinerU: "学術PDF特化。重いML依存。Execute Command"
+
+key_findings:
+  - "n8n Cloud環境では外部npm/pip不可。自己ホスト限定での利用"
+  - "重いMLライブラリ（marker, docling, MinerU）はExecute Commandノード経由を推奨"
+  - "Docx→Markdown変換の実用最適解: Pandoc（apt install）またはmammoth+turndown"
+  - "PDF→Markdown変換の推奨: PyMuPDF4LLM（軽量）またはmarker-pdf（高精度）"
+  - "HTML中間変換パターンが多く活用される（PDF/Docx→HTML→Markdown）"

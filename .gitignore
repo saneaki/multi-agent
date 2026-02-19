@@ -106,6 +106,10 @@
 !reports/
 !reports/requirements_*.md
 
+# Output (design docs, investigation reports)
+!output/
+!output/*.md
+
 # Docs
 !docs/
 !docs/philosophy.md

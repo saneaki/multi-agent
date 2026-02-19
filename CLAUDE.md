@@ -232,6 +232,10 @@ System manages ALL white-collar work, not just self-improvement. Project folders
 2. **Preflight check**: テスト実行前に前提条件（依存ツール、エージェント稼働状態等）を確認。満たせないなら実行せず報告。
 3. **E2Eテストは家老が担当**: 全エージェント操作権限を持つ家老がE2Eを実行。足軽はユニットテストのみ。
 4. **テスト計画レビュー**: 家老はテスト計画を事前レビューし、前提条件の実現可能性を確認してから実行に移す。
+5. **テスト自走原則**: テストは殿に依頼せず、タスク内で完結させること。殿への依頼は最終手段。
+   - n8n Gmail WF: `python3 scripts/send_test_email.py` でテストメール自動送信 → Trigger発火 → exec確認
+   - n8n WF全般: exec結果はn8n API (`GET /api/v1/executions/{id}?includeData=true`) で確認
+   - テストツール一覧は `scripts/` を参照
 
 # Critical Thinking Rule (all agents)
 
@@ -240,6 +244,7 @@ System manages ALL white-collar work, not just self-improvement. Project folders
 3. **問題の早期報告**: 実行中に前提崩れや設計欠陥を検知したら、即座に inbox で共有する。
 4. **過剰批判の禁止**: 批判だけで停止しない。判断不能でない限り、最善案を選んで前進する。
 5. **実行バランス**: 「批判的検討」と「実行速度」の両立を常に優先する。
+6. **Web検索義務**: エラーが1回の修正で解決しなかった場合、2回目の修正前にWebSearch/WebFetchで公式ドキュメント・GitHub Issues・Communityを調査すること。自前の推測だけで繰り返し修正するのは禁止。調査結果（URL含む）を報告に含める。
 
 # Destructive Operation Safety (all agents)
 

@@ -159,3 +159,13 @@ candidates:
     evaluated_at: "2026-02-16"
     approved_at: "2026-02-16"
     skill_path: "shogun-n8n-telegram-markdown-escape/SKILL.md"
+
+  - id: SC-018
+    name: shogun-notion-multi-source-db
+    source_cmd: cmd_188
+    occurrences: 2
+    status: created
+    evaluation: "Notion linked database（multi-source DB）へのAPIクエリ。/v1/databases/{id}/queryでは400エラー。専用エンドポイント/v1/data_sources/{id}/query + Notion-Version: 2025-09-03が必要。cmd_188/189で発見・解決。"
+    evaluated_at: "2026-02-19"
+    approved_at: "2026-02-19"
+    skill_path: "~/.claude/skills/shogun-notion-multi-source-db"
