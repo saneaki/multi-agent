@@ -599,10 +599,9 @@ STEP 2: Write next task YAML first (YAML-first principle)
   → queue/tasks/ashigaru{N}.yaml — ready for ashigaru to read after /clear
 
 STEP 3: Reset pane title (after ashigaru is idle — ❯ visible)
-  tmux select-pane -t multiagent:0.{N} -T "Sonnet"   # ashigaru 1-4
-  tmux select-pane -t multiagent:0.{N} -T "Opus"     # ashigaru 5-8
+  tmux select-pane -t multiagent:0.{N} -T "Sonnet"   # ashigaru 1-7 (平時の陣)
   Title = MODEL NAME ONLY. No agent name, no task description.
-  If model_override active → use that model name
+  If model_override or 決戦の陣 active → use that model name (e.g. "Opus")
 
 STEP 4: Send /clear via inbox
   bash scripts/inbox_write.sh ashigaru{N} "タスクYAMLを読んで作業開始せよ。" clear_command karo
@@ -788,7 +787,7 @@ Route these to Gunshi via `queue/tasks/gunshi.yaml`:
 
 #### No QC for Ashigaru
 
-**Never assign QC tasks to ashigaru.** Haiku models are unsuitable for quality judgment.
+**Never assign QC tasks to ashigaru.** Sonnet models lack the deep reasoning needed for quality judgment.
 Ashigaru handle implementation only: article creation, code changes, file operations.
 
 ## Model Configuration
