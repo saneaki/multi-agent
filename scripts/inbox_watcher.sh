@@ -286,6 +286,24 @@ try:
             print("SKIP_DUPLICATE")
             raise SystemExit(0)
 
+    # Task YAML status guard: skip auto-recovery if task is cancelled or idle.
+    # This prevents restarting a task that Karo intentionally cancelled via clear_command.
+    task_yaml_path = os.path.join(
+        os.path.dirname(os.path.dirname(inbox)), "tasks", f"{agent_id}.yaml"
+    )
+    if os.path.exists(task_yaml_path):
+        try:
+            with open(task_yaml_path, "r", encoding="utf-8") as tf:
+                task_data = yaml.safe_load(tf) or {}
+            task_status = str(task_data.get("status") or "").strip().strip("'\"")
+            if task_status in ("cancelled", "idle"):
+                print(f"SKIP_CANCELLED:{task_status}")
+                raise SystemExit(0)
+        except SystemExit:
+            raise
+        except Exception:
+            pass  # If task YAML is unreadable, proceed with auto-recovery as safety net
+
     now = datetime.datetime.now(datetime.timezone.utc).astimezone()
     msg = {
         "content": (
@@ -480,6 +498,7 @@ send_cli_command() {
 
     # /clear needs extra wait time before follow-up
     if [[ "$actual_cmd" == "/clear" ]]; then
+        LAST_CLEAR_TS=$(date +%s)
         sleep 3
     else
         sleep 1
@@ -534,9 +553,12 @@ send_context_reset() {
     local effective_cli
     effective_cli=$(get_effective_cli_type)
 
-    # Safety: never inject CLI commands into the shogun pane.
-    if [ "$AGENT_ID" = "shogun" ]; then
-        echo "[$(date)] [SKIP] shogun: suppressing context reset" >&2
+    # Safety: never auto-reset context for command-layer agents.
+    # Only ashigaru should receive automatic context resets (clear stale task context).
+    # Shogun (human-controlled), Karo (coordinator state), Gunshi (strategic state)
+    # all maintain complex running context that should not be wiped automatically.
+    if [ "$AGENT_ID" = "shogun" ] || [ "$AGENT_ID" = "karo" ] || [ "$AGENT_ID" = "gunshi" ]; then
+        echo "[$(date)] [SKIP] $AGENT_ID: suppressing context reset (command-layer agent)" >&2
         return 0
     fi
 
@@ -574,6 +596,10 @@ send_context_reset() {
     timeout 5 tmux send-keys -t "$PANE_TARGET" "$reset_cmd" 2>/dev/null || true
     sleep 0.3
     timeout 5 tmux send-keys -t "$PANE_TARGET" Enter 2>/dev/null || true
+    # Mark /clear timestamp so agent_is_busy() treats it as busy during processing
+    if [[ "$reset_cmd" == "/clear" ]]; then
+        LAST_CLEAR_TS=$(date +%s)
+    fi
 
     # Poll until agent becomes idle (prompt ready) instead of fixed sleep.
     # Max 15s (3 attempts × 5s). If still busy after 15s, proceed anyway.
@@ -623,6 +649,16 @@ agent_has_self_watch() {
 # Returns 0 (true) if agent is busy, 1 if idle.
 # Implementation: delegates to lib/agent_status.sh (shared library).
 agent_is_busy() {
+    # /clear cooldown: treat agent as busy for 30s after /clear was sent.
+    # Claude Code's /clear takes 10-30s (CLAUDE.md reload + context init).
+    # Without this, nudges sent during /clear processing queue up at the prompt
+    # and cause race conditions (inbox1 arrives before /clear completes).
+    local now_busy
+    now_busy=$(date +%s)
+    if [ "${LAST_CLEAR_TS:-0}" -gt 0 ] && [ "$((now_busy - LAST_CLEAR_TS))" -lt 30 ]; then
+        return 0  # busy — /clear still processing
+    fi
+
     if type agent_is_busy_check &>/dev/null; then
         agent_is_busy_check "$PANE_TARGET"
     else
@@ -857,10 +893,17 @@ for s in data.get('specials', []):
 
     # /clear は Codex で /new へ変換される。再起動直後の取りこぼし防止として
     # 追加 task_assigned を自動投入し、次サイクルで確実に wake-up 可能にする。
+    # 案B+待機: Karo がタスク YAML を cancelled に更新するまでの猶予を確保してから
+    # status チェックを行い、cancelled/idle の場合はスキップする。
     if [ "$clear_seen" -eq 1 ]; then
+        # Wait for Karo to update task YAML status (cancellation race condition mitigation).
+        # send_cli_command already slept 3s for /clear; add 5s more = ~8s total before check.
+        sleep 5
         local recovery_id
         recovery_id=$(enqueue_recovery_task_assigned)
-        if [ -n "$recovery_id" ] && [ "$recovery_id" != "SKIP_DUPLICATE" ] && [ "$recovery_id" != "ERROR" ]; then
+        if [[ "$recovery_id" == SKIP_CANCELLED:* ]]; then
+            echo "[$(date)] [AUTO-RECOVERY] skipped for $AGENT_ID — task is ${recovery_id#SKIP_CANCELLED:} (not restarting)" >&2
+        elif [ -n "$recovery_id" ] && [ "$recovery_id" != "SKIP_DUPLICATE" ] && [ "$recovery_id" != "ERROR" ]; then
             echo "[$(date)] [AUTO-RECOVERY] queued task_assigned for $AGENT_ID ($recovery_id)" >&2
         fi
         info=$(get_unread_info)
@@ -955,6 +998,11 @@ for s in data.get('specials', []):
                     echo "[$(date)] ESCALATION Phase 3: $AGENT_ID unresponsive for ${age}s, but cli=codex — skipping /clear." >&2
                     FIRST_UNREAD_SEEN=$now  # Reset timer (no destructive action)
                     send_wakeup "$normal_count"
+                elif [ "$AGENT_ID" = "shogun" ] || [ "$AGENT_ID" = "karo" ] || [ "$AGENT_ID" = "gunshi" ]; then
+                    # Command-layer agents (karo/gunshi/shogun): suppress /clear even in Phase 3
+                    echo "[$(date)] [SKIP] ESCALATION Phase 3: $AGENT_ID suppressed (command-layer agent, ${age}s). Using Escape+nudge." >&2
+                    FIRST_UNREAD_SEEN=$now  # Reset timer
+                    send_wakeup_with_escape "$normal_count"
                 else
                     echo "[$(date)] ESCALATION Phase 3: Agent $AGENT_ID unresponsive for ${age}s. Sending /clear." >&2
                     send_cli_command "/clear"
