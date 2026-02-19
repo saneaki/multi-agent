@@ -68,33 +68,35 @@ workflow:
     action: bloom_routing
     condition: "bloom_routing != 'off' in config/settings.yaml"
     note: |
-      Dynamic Model Routing (Issue #53) — bloom_routing が off 以外の時のみ実行。
-      bloom_routing: "manual" → 必要に応じて手動でルーティング
-      bloom_routing: "auto"   → 全タスクで自動ルーティング
+      Bloom→Agent Routing — bloom_routing が off 以外の時のみ実行。
+      タスクの認知レベル（Bloom's Taxonomy L1-L6）に基づき、
+      足軽（実装）と軍師（戦略）に適切にルーティングする。
 
+      ■ bloom_routing: "off"
+      このステップをスキップ。全タスクを足軽に割り当てる。
+
+      ■ bloom_routing: "manual"
+      家老が自らbloom_levelを判定し、ルーティングする。
+      → step 5の分解時に各サブタスクのbloom_levelを設定済み。
+      → L1-L3 → Ashigaru（足軽）へ割当（queue/tasks/ashigaru{N}.yaml）
+      → L4-L6 → Gunshi（軍師）へ委任（queue/tasks/gunshi.yaml）
+
+      ■ bloom_routing: "auto"
+      全サブタスクを軍師がBloom分析してからルーティング。
       手順:
-      1. タスクYAMLのbloom_levelを読む（L1-L6 または 1-6）
-         例: bloom_level: L4 → 数値4として扱う
-      2. 推奨モデルを取得:
-         source lib/cli_adapter.sh
-         recommended=$(get_recommended_model 4)
-      3. 推奨モデルを使用しているアイドル足軽を探す:
-         target_agent=$(find_agent_for_model "$recommended")
-      4. ルーティング判定:
-         case "$target_agent" in
-           QUEUE)
-             # 全足軽ビジー → タスクを保留キューに積む
-             # 次の足軽完了時に再試行
-             ;;
-           ashigaru*)
-             # 現在割り当て予定の足軽 vs target_agent が異なる場合:
-             # target_agent が異なるCLI → アイドルなのでCLI再起動OK（kill禁止はビジーペインのみ）
-             # target_agent と割り当て予定が同じ → そのまま
-             ;;
-         esac
+      1. step 5で分解したサブタスク一覧を gunshi.yaml に記載
+         type: bloom_analysis, subtasks: [{task_id, title, description}, ...]
+      2. 軍師にinbox_writeで分析依頼
+      3. 軍師がL1-L6を判定し報告（queue/reports/gunshi_report.yaml）
+      4. 家老が軍師の判定に基づきルーティング:
+         L1-L3 → Ashigaru（足軽タスクYAML作成→dispatch）
+         L4-L6 → Gunshi（別タスクとして再投入）
 
-      ビジーペインは絶対に触らない。アイドルペインはCLI切り替えOK。
-      target_agentが別CLIを使う場合、shutsujin互換コマンドで再起動してから割り当てる。
+      ■ 判定基準（手動/自動共通） — 下記「Bloom Level → Agent Mapping」参照
+      L1-L3: 足軽向き（実装・テンプレート適用・定型作業）
+      L4-L6: 軍師向き（分析・評価・設計）
+      ※ L3/L4境界: 手順書・テンプレートが存在するか？YES=L3, NO=L4
+      ※ L4+でも軽微なもの（小規模コードレビュー等）は足軽で可
   - step: 7
     action: inbox_write
     target: "ashigaru{N}"
