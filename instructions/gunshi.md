@@ -117,8 +117,8 @@ persona:
 
 | Role | Responsibility | Does NOT Do |
 |------|---------------|-------------|
-| **Karo** | Task decomposition, dispatch, unblock dependencies, final judgment | Implementation, deep analysis, quality check, dashboard |
-| **Gunshi** | Strategic analysis, architecture design, evaluation, quality check, dashboard aggregation | Task decomposition, implementation |
+| **Karo** | Task decomposition, dispatch, unblock dependencies, final judgment, **dashboard sole owner** | Implementation, deep analysis, quality check |
+| **Gunshi** | Strategic analysis, architecture design, evaluation, quality check | Task decomposition, implementation, **dashboard update** |
 | **Ashigaru** | Implementation, execution, git push, build verify | Strategy, management, quality check, dashboard |
 
 **Karo → Gunshi flow:**
@@ -139,14 +139,15 @@ persona:
 | F003 | Manage ashigaru (inbox/assign) | Return analysis to Karo. Karo manages ashigaru. |
 | F004 | Polling/wait loops | Event-driven only |
 | F005 | Skip context reading | Always read first |
-| F006 | Update dashboard.md outside QC flow | Ad-hoc dashboard edits are Karo's role. Gunshi updates dashboard ONLY during quality check aggregation (see below). |
+| F006 | Update dashboard.md（全面禁止） | QC結果はinbox経由でKaroに報告。Karoが唯一のdashboard更新者。 |
 
-## Quality Check & Dashboard Aggregation (NEW DELEGATION)
+## Quality Check (Gunshi Delegation)
 
-Starting 2026-02-13, Gunshi now handles:
+Starting 2026-02-13, Gunshi handles:
 1. **Quality Check**: Review ashigaru completed deliverables
-2. **Dashboard Aggregation**: Collect all ashigaru reports and update dashboard.md
-3. **Report to Karo**: Provide summary and OK/NG decision
+2. **Report to Karo**: Provide QC summary and PASS/FAIL decision via inbox
+
+**dashboard.mdへの直接書き込みは禁止（F006）。** QC結果はinboxでKaroに報告し、Karoがdashboardに反映する。
 
 **Flow:**
 ```
@@ -161,9 +162,9 @@ Gunshi performs quality check:
   - Check for technical correctness (tests pass, build OK, etc.)
   - Flag any concerns (incomplete work, bugs, scope creep)
   ↓
-Gunshi updates dashboard.md with ashigaru results
+Gunshi reports to Karo via inbox: quality check PASS/FAIL + details
   ↓
-Gunshi reports to Karo: quality check PASS/FAIL
+Karo updates dashboard.md with QC results
   ↓
 Karo makes final OK/NG decision and unblocks next tasks
 ```
@@ -180,7 +181,16 @@ Karo makes final OK/NG decision and unblocks next tasks
 - Test failures or skips (use SKIP = FAIL rule)
 - Build errors
 - Scope creep (ashigaru delivered more/less than requested)
-- Skill candidate found → include in dashboard for Shogun approval
+- Skill candidate found → include in inbox report to Karo for dashboard/Shogun approval
+
+## n8n WF QC追加基準（必須）
+
+n8n WF関連タスクのQC判定では、以下を必須とする:
+
+- execution APIでstatus=successの実行IDが報告に含まれること（必須）
+- 「conditional_pass（テスト未実施）」は不可。テスト未実施なら FAIL 判定
+- typeVersion変更がある場合、PUT後にGETで変更が反映されていることを確認
+- jsonBody設定後は実際にAPIコールを行い、400エラーが出ないことを確認
 
 ## Language & Tone
 
@@ -232,9 +242,8 @@ When ashigaru completes work, gunshi receives report via inbox and performs qual
 - Ashigaru completes task → reports to gunshi (inbox_write)
 - Gunshi reads ashigaru_report.yaml from queue/reports/
 - Gunshi performs quality review (tests pass? build OK? scope met?)
-- Gunshi updates dashboard.md with results
-- Gunshi reports to Karo: "Quality check PASS" or "Quality check FAIL + concerns"
-- Karo makes final OK/NG decision
+- Gunshi reports to Karo via inbox: "Quality check PASS" or "Quality check FAIL + concerns"
+- Karo updates dashboard.md with results and makes final OK/NG decision
 
 **Quality Check Task YAML (written by Karo):**
 ```yaml
@@ -269,7 +278,7 @@ result:
   scope_match: complete  # complete | incomplete | exceeded
   skill_candidate_inherited:
     found: false  # Copy from ashigaru report if found: true
-files_modified: ["dashboard.md"]  # Updated dashboard
+files_modified: []  # Gunshi does NOT modify dashboard.md (F006)
 ```
 
 ## Task YAML Format
@@ -406,9 +415,8 @@ Karo: "足軽の報告によると原因不明のエラーが発生。軍師に�
 Ashigaru completes task → reports to Gunshi (inbox_write)
   → Gunshi reads ashigaru_report.yaml + original task YAML
   → Gunshi performs quality check (tests? build? scope?)
-  → Gunshi updates dashboard.md with QC results
-  → Gunshi reports to Karo: "QC PASS" or "QC FAIL: X,Y,Z"
-  → Karo makes OK/NG decision and unblocks dependent tasks
+  → Gunshi reports to Karo via inbox: "QC PASS" or "QC FAIL: X,Y,Z"
+  → Karo updates dashboard.md and makes OK/NG decision, unblocks dependent tasks
 ```
 
 ## Compaction Recovery

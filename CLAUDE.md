@@ -68,7 +68,7 @@ language:
 **This is the FULL procedure for tmux-launched agents** (via `css`/`csm` commands): fresh start, compaction, session continuation, or any state where you see CLAUDE.md. You cannot distinguish these cases, and you don't need to. **Always follow the same steps.**
 
 1. Identify self: `tmux display-message -t "$TMUX_PANE" -p '#{@agent_id}'`
-2. `mcp__memory__read_graph` — restore rules, preferences, lessons
+2. `mcp__memory__read_graph` — restore rules, preferences, lessons **(shogun/karo/gunshi only. ashigaru skip this step — task YAML is sufficient)**
 3. **Read your instructions file**: shogun→`instructions/shogun.md`, karo→`instructions/karo.md`, ashigaru→`instructions/ashigaru.md`, gunshi→`instructions/gunshi.md`. **NEVER SKIP** — even if a conversation summary exists. Summaries do NOT preserve persona, speech style, or forbidden actions.
 4. Rebuild state from primary YAML data (queue/, tasks/, reports/)
 5. Review forbidden actions, then start work
@@ -93,7 +93,7 @@ Lightweight recovery using only CLAUDE.md (auto-loaded). Do NOT read instruction
 
 ```
 Step 1: tmux display-message -t "$TMUX_PANE" -p '#{@agent_id}' → ashigaru{N} or gunshi
-Step 2: mcp__memory__read_graph (skip on failure — task exec still possible)
+Step 2: (gunshi only) mcp__memory__read_graph (skip on failure). Ashigaru skip — task YAML is sufficient.
 Step 3: Read queue/tasks/{your_id}.yaml → assigned=work, idle=wait
 Step 4: If task has "project:" field → read context/{project}.md
         If task has "target_path:" → read that file
@@ -190,10 +190,9 @@ Race condition is eliminated: `/clear` wipes old context. Agent re-reads YAML wi
 
 | Direction | Method | Reason |
 |-----------|--------|--------|
-| Ashigaru → Karo | Report YAML + inbox_write | File-based notification |
-| Ashigaru → Gunshi | Report YAML + inbox_write | Quality check & dashboard aggregation |
-| Gunshi → Karo | Report YAML + inbox_write | Quality check result + strategic reports |
-| Karo → Shogun | dashboard.md更新 + **cmd_complete/cmd_milestone時のみ** inbox_write | cmd完了またはPhase完了・承認待ち等の中間報告。日常報告はdashboard.md |
+| Ashigaru → Gunshi | Report YAML + inbox_write | Quality check |
+| Gunshi → Karo | Report YAML + inbox_write | Quality check result + strategic reports (Karo reflects to dashboard) |
+| Karo → Shogun/Lord | dashboard.md update only | **inbox to shogun FORBIDDEN** — prevents interrupting Lord's input |
 | Karo → Gunshi | YAML + inbox_write | Strategic task or quality check delegation |
 | Top → Down | YAML + inbox_write | Standard wake-up |
 
@@ -204,11 +203,14 @@ Race condition is eliminated: `/clear` wipes old context. Agent re-reads YAML wi
 # Context Layers
 
 ```
-Layer 1: Memory MCP     — persistent across sessions (preferences, rules, lessons)
-Layer 2: Project files   — persistent per-project (config/, projects/, context/)
-Layer 3: YAML Queue      — persistent task data (queue/ — authoritative source of truth)
-Layer 4: Session context — volatile (CLAUDE.md auto-loaded, instructions/*.md, lost on /clear)
+Layer 1: memory/global_context.md — persistent learning notes (git-managed, all agents share)
+Layer 2: Memory MCP     — persistent across sessions (preferences, rules, lessons)
+Layer 3: Project files   — persistent per-project (config/, projects/, context/)
+Layer 4: YAML Queue      — persistent task data (queue/ — authoritative source of truth)
+Layer 5: Session context — volatile (CLAUDE.md auto-loaded, instructions/*.md, lost on /clear)
 ```
+
+**学習メモの保存先: `memory/global_context.md` のみ。** Claude Code auto memory (MEMORY.md) には書き込み禁止。
 
 # Project Management
 
@@ -216,7 +218,7 @@ System manages ALL white-collar work, not just self-improvement. Project folders
 
 # Shogun Mandatory Rules
 
-1. **Dashboard**: Karo + Gunshi update. Gunshi: QC results aggregation. Karo: task status/streaks/action items. Shogun reads it, never writes it.
+1. **Dashboard**: **Karoの専権事項**。dashboard.mdの更新は家老のみが行う。軍師はQC結果をinbox経由で家老に報告。Shogun reads it, never writes it.
 2. **Chain of command**: Shogun → Karo → Ashigaru/Gunshi. Never bypass Karo.
 3. **Reports**: Check `queue/reports/ashigaru{N}_report.yaml` and `queue/reports/gunshi_report.yaml` when waiting.
 4. **Karo state**: Before sending commands, verify karo isn't busy: `tmux capture-pane -t multiagent:0.0 -p | tail -20`

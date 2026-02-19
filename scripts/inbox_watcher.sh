@@ -55,6 +55,12 @@ if [ "${__INBOX_WATCHER_TESTING__:-}" != "1" ]; then
         echo "[$(date)] cli_adapter.sh loaded (get_startup_prompt available)" >&2
     fi
 
+    # Source shared agent status library (busy/idle detection)
+    _agent_status_lib="${SCRIPT_DIR}/lib/agent_status.sh"
+    if [ -f "$_agent_status_lib" ]; then
+        source "$_agent_status_lib"
+    fi
+
     # Detect OS and select file-watching backend
     INBOX_WATCHER_OS="$(uname -s)"
     if [ "$INBOX_WATCHER_OS" = "Darwin" ]; then
@@ -360,15 +366,10 @@ try:
     unread = [m for m in messages if not m.get("read", False)]
     special_types = ("clear_command", "model_switch")
     specials = [m for m in unread if m.get("type") in special_types]
-    # cmd_complete/cmd_milestone: Shogun auto-report hook (separate from CLI specials)
-    report_types = ("cmd_complete", "cmd_milestone")
-    cmd_completes = [m for m in unread if m.get("type") in report_types]
 
-    # Mark specials and cmd_completes/cmd_milestones as read immediately
-    mark_read_types = special_types + report_types
-    if specials or cmd_completes:
+    if specials:
         for m in messages:
-            if not m.get("read", False) and m.get("type") in mark_read_types:
+            if not m.get("read", False) and m.get("type") in special_types:
                 m["read"] = True
 
         tmp_path = f"{inbox}.tmp.{os.getpid()}"
@@ -382,14 +383,13 @@ try:
             )
         os.replace(tmp_path, inbox)
 
-    normal_count = len(unread) - len(specials) - len(cmd_completes)
+    normal_count = len(unread) - len(specials)
     normal_msgs = [m for m in unread if m.get("type") not in special_types]
     has_task_assigned = any(m.get("type") == "task_assigned" for m in normal_msgs)
     payload = {
         "count": normal_count,
         "has_task_assigned": has_task_assigned,
         "specials": [{"type": m.get("type", ""), "content": m.get("content", "")} for m in specials],
-        "cmd_completes": [{"content": m.get("content", ""), "type": m.get("type", "")} for m in cmd_completes],
     }
     print(json.dumps(payload))
 except Exception:
@@ -422,6 +422,11 @@ send_cli_command() {
             # Codex: /clear不存在→/newで新規会話開始, /model非対応→スキップ
             # /clearはCodexでは未定義コマンドでCLI終了してしまうため、/newに変換
             if [[ "$cmd" == "/clear" ]]; then
+                # Guard: skip duplicate /new if already sent for this batch
+                if [ "${NEW_CONTEXT_SENT:-0}" -eq 1 ]; then
+                    echo "[$(date)] [SKIP] Codex /new already sent for $AGENT_ID — skipping duplicate clear_command" >&2
+                    return 0
+                fi
                 echo "[$(date)] [SEND-KEYS] Codex /clear→/new: starting new conversation for $AGENT_ID" >&2
                 # Dismiss suggestion UI first (typing "x" clears autocomplete prompt)
                 timeout 5 tmux send-keys -t "$PANE_TARGET" "x" 2>/dev/null || true
@@ -432,6 +437,9 @@ send_cli_command() {
                 sleep 0.3
                 timeout 5 tmux send-keys -t "$PANE_TARGET" Enter 2>/dev/null || true
                 sleep 3
+                # Send startup prompt immediately (don't defer to context-reset cycle)
+                send_codex_startup_prompt
+                NEW_CONTEXT_SENT=1
                 return 0
             fi
             if [[ "$cmd" == /model* ]]; then
@@ -478,6 +486,45 @@ send_cli_command() {
     fi
 }
 
+# ─── Send Codex startup prompt after /new ───
+# Waits for agent to become idle, then sends a startup prompt that includes
+# full recovery steps (identify, read task YAML, read inbox, start work).
+# Called from both send_cli_command (clear_command) and send_context_reset.
+send_codex_startup_prompt() {
+    # Poll until agent becomes idle (prompt ready) instead of fixed sleep.
+    # Max 15s (3 attempts × 5s). If still busy after 15s, proceed anyway.
+    local attempt
+    for attempt in 1 2 3; do
+        sleep 5
+        if ! agent_is_busy; then
+            echo "[$(date)] [STARTUP] $AGENT_ID idle after ${attempt}×5s — sending startup prompt" >&2
+            break
+        fi
+        echo "[$(date)] [STARTUP] $AGENT_ID still busy after ${attempt}×5s — retrying" >&2
+    done
+    if agent_is_busy; then
+        echo "[$(date)] [STARTUP] $AGENT_ID still busy after 15s — proceeding with startup prompt anyway" >&2
+    fi
+
+    local startup_prompt=""
+    if type get_startup_prompt &>/dev/null; then
+        startup_prompt=$(get_startup_prompt "$AGENT_ID" 2>/dev/null || true)
+    fi
+    if [[ -z "$startup_prompt" ]]; then
+        startup_prompt="Session Start — do ALL of this in one turn, do NOT stop early: 1) tmux display-message to identify yourself. 2) Read queue/tasks/${AGENT_ID}.yaml. 3) Read queue/inbox/${AGENT_ID}.yaml, mark read:true. 4) Read context_files. 5) Execute the assigned task to completion — edit files, run commands, write reports. Keep working until done."
+    fi
+    echo "[$(date)] [STARTUP] Sending startup prompt to $AGENT_ID (codex): ${startup_prompt:0:80}..." >&2
+    # Dismiss suggestion UI, then send startup prompt
+    timeout 5 tmux send-keys -t "$PANE_TARGET" "x" 2>/dev/null || true
+    sleep 0.3
+    timeout 5 tmux send-keys -t "$PANE_TARGET" C-u 2>/dev/null || true
+    sleep 0.3
+    timeout 5 tmux send-keys -t "$PANE_TARGET" "$startup_prompt" 2>/dev/null || true
+    sleep 0.3
+    timeout 5 tmux send-keys -t "$PANE_TARGET" Enter 2>/dev/null || true
+    STARTUP_PROMPT_SENT=1
+}
+
 # ─── Send context reset before new task ───
 # Called when task_assigned is detected in unread messages.
 # Sends the appropriate "new conversation" command per CLI type to clear
@@ -504,14 +551,25 @@ send_context_reset() {
 
     echo "[$(date)] [CONTEXT-RESET] Sending $reset_cmd before task_assigned for $AGENT_ID ($effective_cli)" >&2
 
-    # Dismiss Codex suggestion UI before sending reset command
+    # Codex: send /new + startup prompt as a single atomic operation.
+    # When called from clear_command path, NEW_CONTEXT_SENT=1 prevents reaching here.
+    # When called for standalone task_assigned, this is the only /new send.
     if [[ "$effective_cli" == "codex" ]]; then
+        # Dismiss suggestion UI + send /new
         timeout 5 tmux send-keys -t "$PANE_TARGET" "x" 2>/dev/null || true
         sleep 0.3
         timeout 5 tmux send-keys -t "$PANE_TARGET" C-u 2>/dev/null || true
         sleep 0.3
+        timeout 5 tmux send-keys -t "$PANE_TARGET" "/new" 2>/dev/null || true
+        sleep 0.3
+        timeout 5 tmux send-keys -t "$PANE_TARGET" Enter 2>/dev/null || true
+        sleep 3
+        # Wait for idle + send startup prompt via shared helper
+        send_codex_startup_prompt
+        return 0
     fi
 
+    # Non-Codex CLIs: send /clear and wait for idle
     # Send the command (text and Enter separated for TUI compatibility)
     timeout 5 tmux send-keys -t "$PANE_TARGET" "$reset_cmd" 2>/dev/null || true
     sleep 0.3
@@ -529,32 +587,7 @@ send_context_reset() {
         echo "[$(date)] [CONTEXT-RESET] $AGENT_ID still busy after ${attempt}×5s — retrying" >&2
     done
     if agent_is_busy; then
-        echo "[$(date)] [CONTEXT-RESET] $AGENT_ID still busy after 15s — proceeding with startup prompt anyway" >&2
-    fi
-
-    # Codex CLI: /new does NOT auto-trigger Session Start (unlike Claude Code /clear).
-    # Must send startup prompt explicitly to kick off the agent.
-    # The startup prompt includes ALL recovery steps (identify, read task YAML, read inbox,
-    # start work) so no separate nudge is needed afterward.
-    if [[ "$effective_cli" == "codex" ]]; then
-        local startup_prompt=""
-        if type get_startup_prompt &>/dev/null; then
-            startup_prompt=$(get_startup_prompt "$AGENT_ID" 2>/dev/null || true)
-        fi
-        if [[ -z "$startup_prompt" ]]; then
-            startup_prompt="Session Start — do ALL of this in one turn, do NOT stop early: 1) tmux display-message to identify yourself. 2) Read queue/tasks/${AGENT_ID}.yaml. 3) Read queue/inbox/${AGENT_ID}.yaml, mark read:true. 4) Read context_files. 5) Execute the assigned task to completion — edit files, run commands, write reports. Keep working until done."
-        fi
-        echo "[$(date)] [CONTEXT-RESET] Sending startup prompt to $AGENT_ID (codex): ${startup_prompt:0:80}..." >&2
-        # Dismiss suggestion UI, then send startup prompt
-        timeout 5 tmux send-keys -t "$PANE_TARGET" "x" 2>/dev/null || true
-        sleep 0.3
-        timeout 5 tmux send-keys -t "$PANE_TARGET" C-u 2>/dev/null || true
-        sleep 0.3
-        timeout 5 tmux send-keys -t "$PANE_TARGET" "$startup_prompt" 2>/dev/null || true
-        sleep 0.3
-        timeout 5 tmux send-keys -t "$PANE_TARGET" Enter 2>/dev/null || true
-        # Startup prompt includes full recovery — suppress follow-up nudge for this cycle
-        STARTUP_PROMPT_SENT=1
+        echo "[$(date)] [CONTEXT-RESET] $AGENT_ID still busy after 15s — proceeding anyway" >&2
     fi
 }
 
@@ -588,31 +621,14 @@ agent_has_self_watch() {
 # Check if the agent's CLI is currently processing (Working/thinking/etc).
 # Sending nudge during Working causes text to queue but Enter to be lost.
 # Returns 0 (true) if agent is busy, 1 if idle.
+# Implementation: delegates to lib/agent_status.sh (shared library).
 agent_is_busy() {
-    local pane_tail
-    # Only check the bottom 5 lines of the pane. Old busy markers ("esc to interrupt",
-    # "Working") linger in scroll-back and cause false-busy if we scan too many lines.
-    pane_tail=$(timeout 2 tmux capture-pane -t "$PANE_TARGET" -p 2>/dev/null | tail -5)
-
-    # ── Idle check (takes priority) ──
-    if echo "$pane_tail" | grep -qE '(\? for shortcuts|context left)'; then
-        return 1  # idle — Codex idle prompt
+    if type agent_is_busy_check &>/dev/null; then
+        agent_is_busy_check "$PANE_TARGET"
+    else
+        # Fallback: if shared library not loaded, assume idle
+        return 1
     fi
-    if echo "$pane_tail" | grep -qE '^(❯|›)\s*$'; then
-        return 1  # idle — Claude Code or Codex bare prompt
-    fi
-
-    # ── Busy markers (bottom 5 lines only) ──
-    if echo "$pane_tail" | grep -qiF 'esc to interrupt'; then
-        return 0  # busy
-    fi
-    if echo "$pane_tail" | grep -qiF 'background terminal running'; then
-        return 0  # busy
-    fi
-    if echo "$pane_tail" | grep -qiE '(Working|Thinking|Planning|Sending|task is in progress|Compacting conversation|thought for|思考中|考え中|計画中|送信中|処理中|実行中)'; then
-        return 0  # busy
-    fi
-    return 1  # idle
 }
 
 # ─── Pane focus detection (human safety) ───
@@ -777,26 +793,6 @@ send_wakeup_with_escape() {
     return 0  # Never return 1 — set -euo pipefail would kill the watcher daemon
 }
 
-# ─── Handle cmd_complete/cmd_milestone (Shogun auto-report hook) ───
-# Calls shogun_report_hook.sh to extract dashboard section and inject prompt.
-# Only processes for Shogun agent (safety guard for misdirected messages).
-handle_cmd_complete() {
-    local content="$1"
-    local msg_type="${2:-cmd_complete}"
-
-    if [[ "$AGENT_ID" != "shogun" ]]; then
-        echo "[$(date)] WARNING: ${msg_type} received by non-shogun agent $AGENT_ID, ignoring" >&2
-        return 0
-    fi
-
-    echo "[$(date)] [${msg_type^^}] Processing for $AGENT_ID: $content" >&2
-
-    # Call the hook script (errors are logged but don't kill the watcher)
-    if ! bash "$SCRIPT_DIR/scripts/shogun_report_hook.sh" "$content" "$PANE_TARGET" "$SCRIPT_DIR/dashboard.md" "$msg_type"; then
-        echo "[$(date)] WARNING: shogun_report_hook.sh failed for: $content" >&2
-    fi
-}
-
 # ─── Process cycle ───
 process_unread() {
     local trigger="${1:-event}"
@@ -857,21 +853,6 @@ for s in data.get('specials', []):
             cmd=$(normalize_special_command "$msg_type" "$msg_content")
             [ -n "$cmd" ] && send_cli_command "$cmd"
         done <<< "$specials"
-    fi
-
-    # Handle cmd_complete/cmd_milestone reports (Shogun auto-report hook)
-    local cmd_completes
-    cmd_completes=$(echo "$info" | python3 -c "
-import sys, json
-data = json.load(sys.stdin)
-for c in data.get('cmd_completes', []):
-    print(c.get('type','cmd_complete') + '\t' + c['content'])
-" 2>/dev/null)
-
-    if [ -n "$cmd_completes" ]; then
-        echo "$cmd_completes" | while IFS=$'\t' read -r msg_type content; do
-            [ -n "$content" ] && handle_cmd_complete "$content" "$msg_type"
-        done
     fi
 
     # /clear は Codex で /new へ変換される。再起動直後の取りこぼし防止として
@@ -1077,3 +1058,11 @@ while true; do
 done
 
 fi  # end testing guard
+
+# Source shared agent status library outside the testing guard so that
+# agent_is_busy_check() is available in test mode too.
+# In normal mode it was already sourced above; double-sourcing is harmless.
+_agent_status_lib="${SCRIPT_DIR}/lib/agent_status.sh"
+if [ -f "$_agent_status_lib" ] && ! type agent_is_busy_check &>/dev/null; then
+    source "$_agent_status_lib"
+fi

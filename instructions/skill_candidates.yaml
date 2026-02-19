@@ -1,0 +1,161 @@
+# Skill Candidates Registry
+# 家老がスキル候補を管理するファイル
+# Updated by karo on cmd completion
+
+candidates:
+  - id: SC-001
+    name: n8n-cron-stagger
+    source_cmd: cmd_134
+    occurrences: 2
+    status: created
+    evaluation: "cmd_134でRSSフロー3件同時発火→429エラー。cron分散+retry+batchIntervalの三段構え対策。cmd_142でスキル作成済み。"
+    evaluated_at: "2026-02-15"
+    skill_path: "shogun-n8n-cron-stagger/SKILL.md"
+
+  - id: SC-002
+    name: docker-env-audit
+    source_cmd: cmd_133
+    occurrences: 2
+    status: merged
+    evaluation: "環境変数消失の三点照合パターン（.env↔docker-compose.yml↔docker exec env）。既存docker-volume-recoveryスキルに統合が適切。"
+    evaluated_at: "2026-02-15"
+    merged_into: shogun-docker-volume-recovery
+
+  - id: SC-003
+    name: n8n-split-in-batches-antipattern
+    source_cmd: cmd_135
+    occurrences: 2
+    status: merged
+    evaluation: "Split In Batchesノードの誤用パターン。既存n8n-pipeline-cut-guardにSiBアンチパターンとして統合済み。"
+    evaluated_at: "2026-02-15"
+    merged_into: n8n-pipeline-cut-guard
+
+  - id: SC-004
+    name: notion-db-schema-audit
+    source_cmd: cmd_137
+    occurrences: 2
+    status: merged
+    evaluation: "Notion DB構造調査パターン。既存shogun-notion-db-id-validatorに§7として統合済み。"
+    evaluated_at: "2026-02-15"
+    merged_into: shogun-notion-db-id-validator
+
+  - id: SC-005
+    name: n8n-gdrive-api-via-http
+    source_cmd: cmd_137
+    occurrences: 1
+    status: hold
+    evaluation: "Google DriveノードバグをHTTP Requestで回避。1回目のため経過観察。"
+    evaluated_at: "2026-02-15"
+    next_review: "2026-05-15"
+
+  - id: SC-006
+    name: n8n-wf-analyzer
+    source_cmd: cmd_137
+    occurrences: 2
+    status: created
+    evaluation: "WF JSON自動解析・データフロー図生成。cmd_137+cmd_138で2回使用。SC-007と統合済み。"
+    evaluated_at: "2026-02-15"
+    skill_path: "shogun-n8n-wf-analyzer/SKILL.md"
+
+  - id: SC-007
+    name: n8n-wf-enhancement-planner
+    source_cmd: cmd_137
+    occurrences: 2
+    status: merged
+    evaluation: "既存WFへの機能追加計画策定。SC-006(n8n-wf-analyzer)のPattern 6-7として統合済み（373行、500行以内）。"
+    evaluated_at: "2026-02-15"
+    merged_into: shogun-n8n-wf-analyzer
+
+  - id: SC-008
+    name: n8n-notion-property-sync
+    source_cmd: cmd_141
+    occurrences: 2
+    status: created
+    evaluation: "NotionプロパティとWF参照の不一致検出・修正。cmd_141+cmd_123/124で2回以上発生。"
+    evaluated_at: "2026-02-15"
+    skill_path: "shogun-n8n-notion-property-sync/SKILL.md"
+
+  - id: SC-009
+    name: llms-txt-doc-fetcher
+    source_cmd: cmd_138
+    occurrences: 1
+    status: hold
+    evaluation: "llms.txt仕様に基づくドキュメント自動収集。1回目のため経過観察。"
+    evaluated_at: "2026-02-15"
+    next_review: "2026-05-15"
+
+  - id: SC-010
+    name: n8n-docs-sync-workflow
+    source_cmd: cmd_138
+    occurrences: 1
+    status: hold
+    evaluation: "n8n WFによるドキュメント自動収集・翻訳。1回目のため経過観察。"
+    evaluated_at: "2026-02-15"
+    next_review: "2026-05-15"
+
+  - id: SC-011
+    name: n8n-env-access-guard
+    source_cmd: cmd_139
+    occurrences: 2
+    status: created
+    evaluation: "n8nバージョンアップ時の$envアクセス制限変更検知・修正。cmd_139+cmd_140+cmd_141で3回発生。"
+    evaluated_at: "2026-02-15"
+    skill_path: "shogun-n8n-env-access-guard/SKILL.md"
+
+  - id: SC-012
+    name: gemini-translation-prompt
+    source_cmd: cmd_138
+    occurrences: 1
+    status: hold
+    evaluation: "Gemini APIを使った技術文書翻訳プロンプト+用語集注入+品質検証。1回目のため経過観察。"
+    evaluated_at: "2026-02-15"
+    next_review: "2026-05-15"
+
+  - id: SC-013
+    name: n8n-manual-execution-api
+    source_cmd: cmd_149
+    occurrences: 2
+    status: created
+    evaluation: "n8n内部REST APIによるWF手動実行。足軽5号（subtask_149c）・足軽8号（subtask_149b2）が独立発見。POST /rest/workflows/{id}/run、triggerToStartFrom必須、Cookie認証。"
+    evaluated_at: "2026-02-15"
+    skill_path: "shogun-n8n-manual-execution-api/SKILL.md"
+
+  - id: SC-014
+    name: n8n-gemini-pdf-analysis
+    source_cmd: cmd_159
+    occurrences: 2
+    status: created
+    evaluation: "Gemini 2.5 Flash APIでPDF文書を分析し構造化JSON出力→MD変換するn8nワークフローパターン。法律文書・契約書等の自動分析に有用。maxOutputTokens 8192確保（thinking token対策）、responseMimeType: application/json、Google Drive連携。cmd_159+cmd_164で2回使用。"
+    evaluated_at: "2026-02-16"
+    approved_at: "2026-02-16"
+    skill_path: "shogun-n8n-gemini-pdf-analysis/SKILL.md"
+
+  - id: SC-015
+    name: n8n-filesystem-v2-binary
+    source_cmd: cmd_161
+    occurrences: 1
+    status: created
+    evaluation: "n8n filesystem-v2モードでbinaryProp.dataがファイル参照文字列になる問題。fs.readFileSync()による実バイナリ読取+base64変換が必要。領収書WF(cmd_161c)で発見。"
+    evaluated_at: "2026-02-16"
+    approved_at: "2026-02-16"
+    skill_path: "shogun-n8n-filesystem-v2-binary/SKILL.md"
+
+  - id: SC-016
+    name: n8n-http-request-version-guard
+    source_cmd: cmd_164
+    occurrences: 1
+    status: created
+    evaluation: "n8n HTTP RequestノードのtypeVersionによりサポートされるパラメータが異なる（v4ではspecifyBody/jsonBody未サポート→v4.2必要）。PUT更新時にサイレント無視される危険。cmd_164で発見。"
+    evaluated_at: "2026-02-16"
+    approved_at: "2026-02-16"
+    skill_path: "shogun-n8n-http-request-version-guard/SKILL.md"
+
+  - id: SC-017
+    name: n8n-telegram-markdown-escape
+    source_cmd: cmd_165
+    occurrences: 1
+    status: created
+    evaluation: "Telegram Bot API送信時のMarkdownエスケープ処理パターン。特殊文字（_*[]()~`>#+-=|{}.!）がparse_mode: Markdownで送信エラーを引き起こす。Gmailダイジェスト通知WF(cmd_165)で発生。"
+    evaluated_at: "2026-02-16"
+    approved_at: "2026-02-16"
+    skill_path: "shogun-n8n-telegram-markdown-escape/SKILL.md"

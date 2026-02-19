@@ -59,16 +59,10 @@ language:
 
 ## Session Start / Recovery (all agents)
 
-**Environment Detection**: Check `$TMUX_PANE` environment variable to determine execution context.
-
-※ **Note**: This environment branching is a custom modification unique to this fork. It does not exist in the upstream repository (yohey-w/multi-agent-shogun).
-
-### Pattern A: tmux Environment (`$TMUX_PANE` is set)
-
-**This is the FULL procedure for tmux-launched agents** (via `css`/`csm` commands): fresh start, compaction, session continuation, or any state where you see copilot-instructions.md. You cannot distinguish these cases, and you don't need to. **Always follow the same steps.**
+**This is ONE procedure for ALL situations**: fresh start, compaction, session continuation, or any state where you see copilot-instructions.md. You cannot distinguish these cases, and you don't need to. **Always follow the same steps.**
 
 1. Identify self: `tmux display-message -t "$TMUX_PANE" -p '#{@agent_id}'`
-2. `mcp__memory__read_graph` — restore rules, preferences, lessons
+2. `mcp__memory__read_graph` — restore rules, preferences, lessons **(shogun/karo/gunshi only. ashigaru skip this step — task YAML is sufficient)**
 3. **Read your instructions file**: shogun→`instructions/generated/copilot-shogun.md`, karo→`instructions/generated/copilot-karo.md`, ashigaru→`instructions/generated/copilot-ashigaru.md`, gunshi→`instructions/generated/copilot-gunshi.md`. **NEVER SKIP** — even if a conversation summary exists. Summaries do NOT preserve persona, speech style, or forbidden actions.
 4. Rebuild state from primary YAML data (queue/, tasks/, reports/)
 5. Review forbidden actions, then start work
@@ -77,23 +71,13 @@ language:
 
 **CRITICAL**: dashboard.md is secondary data (karo's summary). Primary data = YAML files. Always verify from YAML.
 
-### Pattern B: VSCode Environment (`$TMUX_PANE` is not set)
-
-**Lightweight startup for VSCode extension** (non-tmux context):
-
-1. `mcp__memory__read_graph` — restore rules, preferences, lessons
-2. Skip instructions/*.md files (no agent persona needed)
-3. Respond as standard GitHub Copilot CLI (no sengoku-style speech)
-
-In VSCode, you are the standard GitHub Copilot CLI assistant, not a multi-agent system participant.
-
 ## /clear Recovery (ashigaru/gunshi only)
 
 Lightweight recovery using only copilot-instructions.md (auto-loaded). Do NOT read instructions/*.md (cost saving).
 
 ```
 Step 1: tmux display-message -t "$TMUX_PANE" -p '#{@agent_id}' → ashigaru{N} or gunshi
-Step 2: mcp__memory__read_graph (skip on failure — task exec still possible)
+Step 2: (gunshi only) mcp__memory__read_graph (skip on failure). Ashigaru skip — task YAML is sufficient.
 Step 3: Read queue/tasks/{your_id}.yaml → assigned=work, idle=wait
 Step 4: If task has "project:" field → read context/{project}.md
         If task has "target_path:" → read that file
@@ -190,7 +174,6 @@ Race condition is eliminated: `/clear` wipes old context. Agent re-reads YAML wi
 
 | Direction | Method | Reason |
 |-----------|--------|--------|
-| Ashigaru → Karo | Report YAML + inbox_write | File-based notification |
 | Ashigaru → Gunshi | Report YAML + inbox_write | Quality check & dashboard aggregation |
 | Gunshi → Karo | Report YAML + inbox_write | Quality check result + strategic reports |
 | Karo → Shogun | dashboard.md更新 + **cmd_complete/cmd_milestone時のみ** inbox_write | cmd完了またはPhase完了・承認待ち等の中間報告。日常報告はdashboard.md |
