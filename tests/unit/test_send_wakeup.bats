@@ -52,6 +52,13 @@
 #   T-CRESET-003: send_context_reset — sends /clear for ashigaru
 #   T-COPILOT-001: send_cli_command — copilot /clear → Ctrl-C + restart
 #   T-COPILOT-002: send_cli_command — copilot /model → skip
+#   T-KARO-WATCHDOG-001: check_karo_uncommitted — karo idle + uncommitted → nudge sent
+#   T-KARO-WATCHDOG-002: check_karo_uncommitted — karo idle + clean git → no nudge
+#   T-KARO-WATCHDOG-003: check_karo_uncommitted — karo idle + uncommitted + cooldown → no nudge
+#   T-SHOGUN-AUTOSTART-001: check_shogun_autostart — CLI not running + unread>0 + detached → auto-start
+#   T-SHOGUN-AUTOSTART-002: check_shogun_autostart — CLI running + unread>0 → no auto-start
+#   T-SHOGUN-AUTOSTART-003: check_shogun_autostart — CLI not running + unread=0 → no auto-start
+#   T-SHOGUN-AUTOSTART-004: check_shogun_autostart — CLI not running + active+attached → no auto-start
 
 # --- セットアップ ---
 
@@ -88,6 +95,23 @@ MOCK
     export MOCK_PANE_CLI=""
     export MOCK_PANE_ACTIVE=""
     export MOCK_LIST_CLIENTS=""
+    export MOCK_GIT_STATUS=""       # git status --porcelain output ("" = clean)
+    export MOCK_PANE_PID="99999"    # tmux list-panes #{pane_pid} output
+    export MOCK_CLI_RUNNING=0       # pgrep -P $pid -f claude: 0=found, 1=not found
+
+    # Create mock git
+    export MOCK_GIT="$TEST_TMPDIR/mock_git"
+    cat > "$MOCK_GIT" << 'MOCK'
+#!/bin/bash
+# Pass through all args; only intercept "status --porcelain"
+if echo "$*" | grep -q "status.*porcelain"; then
+    echo "${MOCK_GIT_STATUS:-}"
+    exit 0
+fi
+# Fallback to real git for other commands
+git "$@"
+MOCK
+    chmod +x "$MOCK_GIT"
 
     # Test harness: sets up mocks, then sources the REAL inbox_watcher.sh
     # __INBOX_WATCHER_TESTING__=1 skips arg parsing, inotifywait check, and main loop.
@@ -121,6 +145,10 @@ tmux() {
         [ -n "\${MOCK_LIST_CLIENTS:-}" ] && echo "\$MOCK_LIST_CLIENTS"
         return 0
     fi
+    if echo "\$*" | grep -q "list-panes"; then
+        echo "\${MOCK_PANE_PID:-99999}"
+        return 0
+    fi
     if echo "\$*" | grep -q "display-message"; then
         if echo "\$*" | grep -q "pane_active"; then
             echo "\${MOCK_PANE_ACTIVE:-0}"
@@ -131,10 +159,17 @@ tmux() {
     fi
     return 0
 }
+git() { "$MOCK_GIT" "\$@"; }
 timeout() { shift; "\$@"; }
-pgrep() { "$MOCK_PGREP" "\$@"; }
+pgrep() {
+    # is_cli_running uses pgrep -P $pid -f claude
+    if echo "\$*" | grep -q "\-P"; then
+        return \${MOCK_CLI_RUNNING:-1}
+    fi
+    "$MOCK_PGREP" "\$@"
+}
 sleep() { :; }
-export -f tmux timeout pgrep sleep
+export -f tmux git timeout pgrep sleep
 
 # Source the REAL inbox_watcher.sh (testing guard skips startup & main loop)
 export __INBOX_WATCHER_TESTING__=1
@@ -1015,4 +1050,149 @@ YAML
 
     # /clear should have been sent via send-keys
     grep -q "send-keys.*/clear" "$MOCK_LOG"
+}
+
+# --- T-KARO-WATCHDOG-001: karo idle + uncommitted → nudge sent ---
+
+@test "T-KARO-WATCHDOG-001: check_karo_uncommitted karo idle + uncommitted changes → nudge sent" {
+    export MOCK_GIT_STATUS=" M scripts/inbox_watcher.sh"
+    run bash -c '
+        MOCK_CAPTURE_PANE="› Summarize recent commits
+  ? for shortcuts                100% context left"
+        source "'"$TEST_HARNESS"'"
+        AGENT_ID="karo"
+        KARO_PREV_BUSY=1   # was busy
+        LAST_UNCOMMITTED_NUDGE_TS=0  # no recent nudge
+        check_karo_uncommitted
+    '
+    [ "$status" -eq 0 ]
+
+    # "uncommitted" nudge should have been sent
+    grep -q "send-keys.*uncommitted" "$MOCK_LOG"
+    grep -q "send-keys.*Enter" "$MOCK_LOG"
+
+    # WATCHDOG log message should appear
+    echo "$output" | grep -q "KARO-WATCHDOG"
+}
+
+# --- T-KARO-WATCHDOG-002: karo idle + clean git → no nudge ---
+
+@test "T-KARO-WATCHDOG-002: check_karo_uncommitted karo idle + clean git → no nudge" {
+    export MOCK_GIT_STATUS=""  # clean
+    run bash -c '
+        MOCK_CAPTURE_PANE="› Summarize recent commits
+  ? for shortcuts                100% context left"
+        source "'"$TEST_HARNESS"'"
+        AGENT_ID="karo"
+        KARO_PREV_BUSY=1
+        LAST_UNCOMMITTED_NUDGE_TS=0
+        check_karo_uncommitted
+    '
+    [ "$status" -eq 0 ]
+
+    # No nudge should have been sent
+    ! grep -q "send-keys.*uncommitted" "$MOCK_LOG"
+
+    # Clean message in log
+    echo "$output" | grep -q "clean"
+}
+
+# --- T-KARO-WATCHDOG-003: karo idle + uncommitted + cooldown → no nudge ---
+
+@test "T-KARO-WATCHDOG-003: check_karo_uncommitted karo idle + uncommitted + cooldown未経過 → no nudge" {
+    export MOCK_GIT_STATUS=" M scripts/inbox_watcher.sh"
+    run bash -c '
+        MOCK_CAPTURE_PANE="› Summarize recent commits
+  ? for shortcuts                100% context left"
+        source "'"$TEST_HARNESS"'"
+        AGENT_ID="karo"
+        KARO_PREV_BUSY=1
+        # Set recent nudge (10 seconds ago — well within 120s cooldown)
+        LAST_UNCOMMITTED_NUDGE_TS=$(($(date +%s) - 10))
+        check_karo_uncommitted
+    '
+    [ "$status" -eq 0 ]
+
+    # No nudge due to cooldown
+    ! grep -q "send-keys.*uncommitted" "$MOCK_LOG"
+
+    # Cooldown message in log
+    echo "$output" | grep -q "cooldown"
+}
+
+# --- T-SHOGUN-AUTOSTART-001: CLI not running + unread>0 + detached → auto-start ---
+
+@test "T-SHOGUN-AUTOSTART-001: check_shogun_autostart CLI not running + unread>0 + detached → auto-start" {
+    run bash -c '
+        MOCK_PANE_ACTIVE="0"   # pane not active
+        MOCK_LIST_CLIENTS=""   # no client (detached)
+        MOCK_CLI_RUNNING=1     # pgrep returns 1 = CLI not running
+        source "'"$TEST_HARNESS"'"
+        AGENT_ID="shogun"
+        LAST_AUTO_START_TS=0
+        check_shogun_autostart 2
+    '
+    [ "$status" -eq 0 ]
+
+    # "claude" start command should have been sent
+    grep -q "send-keys.*claude" "$MOCK_LOG"
+
+    # AUTOSTART log message should appear
+    echo "$output" | grep -q "SHOGUN-AUTOSTART"
+}
+
+# --- T-SHOGUN-AUTOSTART-002: CLI running + unread>0 → no auto-start ---
+
+@test "T-SHOGUN-AUTOSTART-002: check_shogun_autostart CLI running + unread>0 → no auto-start (normal flow)" {
+    run bash -c '
+        MOCK_PANE_ACTIVE="0"
+        MOCK_LIST_CLIENTS=""
+        MOCK_CLI_RUNNING=0     # pgrep returns 0 = CLI is running
+        source "'"$TEST_HARNESS"'"
+        AGENT_ID="shogun"
+        LAST_AUTO_START_TS=0
+        check_shogun_autostart 2
+    '
+    [ "$status" -eq 0 ]
+
+    # No "claude" start command (already running)
+    ! grep -q "send-keys.*claude" "$MOCK_LOG"
+}
+
+# --- T-SHOGUN-AUTOSTART-003: CLI not running + unread=0 → no auto-start ---
+
+@test "T-SHOGUN-AUTOSTART-003: check_shogun_autostart CLI not running + unread=0 → no auto-start" {
+    run bash -c '
+        MOCK_PANE_ACTIVE="0"
+        MOCK_LIST_CLIENTS=""
+        MOCK_CLI_RUNNING=1     # not running
+        source "'"$TEST_HARNESS"'"
+        AGENT_ID="shogun"
+        LAST_AUTO_START_TS=0
+        check_shogun_autostart 0  # unread=0
+    '
+    [ "$status" -eq 0 ]
+
+    # No auto-start when no unread messages
+    ! grep -q "send-keys.*claude" "$MOCK_LOG"
+}
+
+# --- T-SHOGUN-AUTOSTART-004: CLI not running + active+attached → no auto-start ---
+
+@test "T-SHOGUN-AUTOSTART-004: check_shogun_autostart CLI not running + active+attached → no auto-start" {
+    run bash -c '
+        MOCK_PANE_ACTIVE="1"   # pane is active (Lord is present)
+        MOCK_LIST_CLIENTS="/dev/pts/1: mock_session [200x50 xterm-256color]"  # client attached
+        MOCK_CLI_RUNNING=1     # not running
+        source "'"$TEST_HARNESS"'"
+        AGENT_ID="shogun"
+        LAST_AUTO_START_TS=0
+        check_shogun_autostart 2
+    '
+    [ "$status" -eq 0 ]
+
+    # No auto-start when Lord may be intentionally using shell
+    ! grep -q "send-keys.*claude" "$MOCK_LOG"
+
+    echo "$output" | grep -q "skip auto-start"
 }

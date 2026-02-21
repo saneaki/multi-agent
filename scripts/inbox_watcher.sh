@@ -110,6 +110,17 @@ ESCALATE_PHASE1=${ESCALATE_PHASE1:-120}
 ESCALATE_PHASE2=${ESCALATE_PHASE2:-240}
 ESCALATE_COOLDOWN=${ESCALATE_COOLDOWN:-300}
 
+# ─── Karo idle watchdog ───
+# busy→idle遷移後にgit statusを確認し、未コミット変更があれば"uncommitted"nudgeを送信。
+KARO_PREV_BUSY=${KARO_PREV_BUSY:-0}  # 0=idle, 1=busy (前回サイクルの状態)
+LAST_UNCOMMITTED_NUDGE_TS=${LAST_UNCOMMITTED_NUDGE_TS:-0}
+UNCOMMITTED_NUDGE_COOLDOWN=${UNCOMMITTED_NUDGE_COOLDOWN:-120}
+
+# ─── Shogun auto-start ───
+# Claude未起動 + unread>0 + detached 時にclaudeを自動起動する。
+LAST_AUTO_START_TS=${LAST_AUTO_START_TS:-0}
+AUTO_START_COOLDOWN=${AUTO_START_COOLDOWN:-60}
+
 # ─── Nudge throttle ───
 # Avoid spamming the same "inboxN" into the pane every timeout tick.
 LAST_NUDGE_TS=${LAST_NUDGE_TS:-0}
@@ -697,6 +708,9 @@ send_wakeup() {
     local unread_count="$1"
     local nudge="inbox${unread_count}"
 
+    # Shogun auto-start: Claude未起動 + detached + unread>0 → claudeを自動起動
+    check_shogun_autostart "$unread_count"
+
     if [ "${FINAL_ESCALATION_ONLY:-0}" = "1" ]; then
         echo "[$(date)] [SKIP] FINAL_ESCALATION_ONLY=1, suppressing normal nudge for $AGENT_ID" >&2
         return 0
@@ -828,6 +842,100 @@ send_wakeup_with_escape() {
 
     echo "[$(date)] WARNING: send-keys failed for Escape+nudge ($AGENT_ID)" >&2
     return 0  # Never return 1 — set -euo pipefail would kill the watcher daemon
+}
+
+# check_karo_uncommitted — karo idle watchdog
+# busy→idle遷移後にgit statusを確認し、未コミット変更があれば"uncommitted"nudgeを送信。
+# 適用範囲: AGENT_ID=karo のみ
+check_karo_uncommitted() {
+    [ "$AGENT_ID" = "karo" ] || return 0
+
+    local now
+    now=$(date +%s)
+
+    # 現在のbusy状態を取得
+    local current_busy=0
+    if agent_is_busy; then
+        current_busy=1
+    fi
+
+    # busy→idle遷移のみ処理（同じidle状態での連発防止）
+    if [ "${KARO_PREV_BUSY:-0}" -eq 1 ] && [ "$current_busy" -eq 0 ]; then
+        echo "[$(date)] [KARO-WATCHDOG] busy→idle transition detected" >&2
+
+        # クールダウンチェック（120秒以内の再送を防止）
+        if [ "$((now - ${LAST_UNCOMMITTED_NUDGE_TS:-0}))" -lt "${UNCOMMITTED_NUDGE_COOLDOWN:-120}" ]; then
+            echo "[$(date)] [KARO-WATCHDOG] cooldown active, skip" >&2
+            KARO_PREV_BUSY=$current_busy
+            return 0
+        fi
+
+        # git statusチェック（未コミット変更の有無）
+        local git_status
+        git_status=$(git -C "${SCRIPT_DIR:-.}" status --porcelain 2>/dev/null || echo "")
+        if [ -n "$git_status" ]; then
+            echo "[$(date)] [KARO-WATCHDOG] uncommitted changes detected — sending nudge" >&2
+            timeout 5 tmux send-keys -t "$PANE_TARGET" "uncommitted" 2>/dev/null || true
+            sleep 0.3
+            timeout 5 tmux send-keys -t "$PANE_TARGET" Enter 2>/dev/null || true
+            LAST_UNCOMMITTED_NUDGE_TS=$now
+        else
+            echo "[$(date)] [KARO-WATCHDOG] git status clean, no nudge needed" >&2
+        fi
+    fi
+
+    KARO_PREV_BUSY=$current_busy
+}
+
+# check_shogun_autostart — shogun Claude未起動時の自動起動
+# Claude Codeが終了している状態でntfy到達 → bashプロンプトに消滅するのを防ぐ。
+# 適用範囲: AGENT_ID=shogun のみ
+check_shogun_autostart() {
+    [ "$AGENT_ID" = "shogun" ] || return 0
+
+    local unread_count="${1:-0}"
+    [ "$unread_count" -gt 0 ] || return 0
+
+    # active+attached の場合は自動起動しない（殿が意図的にClaude終了してシェル操作中の可能性）
+    if pane_is_active && session_has_client; then
+        echo "[$(date)] [SHOGUN-AUTOSTART] pane active + client attached — skip auto-start" >&2
+        return 0
+    fi
+
+    # CLI起動チェック
+    if is_cli_running "$PANE_TARGET"; then
+        return 0  # 既に起動中 — 通常のnudge配信へ
+    fi
+
+    local now
+    now=$(date +%s)
+
+    # クールダウンチェック（60秒以内の再起動を防止）
+    if [ "$((now - ${LAST_AUTO_START_TS:-0}))" -lt "${AUTO_START_COOLDOWN:-60}" ]; then
+        echo "[$(date)] [SHOGUN-AUTOSTART] cooldown active, skip" >&2
+        return 0
+    fi
+
+    echo "[$(date)] [SHOGUN-AUTOSTART] claude not running, unread=$unread_count — starting claude" >&2
+    LAST_AUTO_START_TS=$now
+
+    # Claude起動
+    timeout 5 tmux send-keys -t "$PANE_TARGET" "claude" 2>/dev/null || true
+    sleep 0.3
+    timeout 5 tmux send-keys -t "$PANE_TARGET" Enter 2>/dev/null || true
+
+    # 起動待機（最大30秒、5秒間隔でidle確認）
+    local waited=0
+    while [ "$waited" -lt 30 ]; do
+        sleep 5
+        waited=$((waited + 5))
+        if ! agent_is_busy; then
+            echo "[$(date)] [SHOGUN-AUTOSTART] claude started and idle after ${waited}s" >&2
+            return 0
+        fi
+    done
+
+    echo "[$(date)] [SHOGUN-AUTOSTART] WARNING: claude start timeout (30s)" >&2
 }
 
 # ─── Process cycle ───
@@ -1104,6 +1212,9 @@ while true; do
     else
         process_unread "event"
     fi
+
+    # Karo idle watchdog: busy→idle遷移検出 → 未コミット変更チェック
+    check_karo_uncommitted
 done
 
 fi  # end testing guard

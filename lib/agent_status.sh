@@ -49,6 +49,17 @@ agent_is_busy_check() {
     return 1  # idle (default)
 }
 
+# is_cli_running <pane_target>
+# ペインのシェルPIDの子プロセスにclaudeが含まれるか確認する。
+# Returns: 0=running, 1=not running
+is_cli_running() {
+    local pane_target="$1"
+    local pane_pid
+    pane_pid=$(timeout 2 tmux list-panes -t "$pane_target" -F '#{pane_pid}' 2>/dev/null | head -1)
+    if [ -z "$pane_pid" ]; then return 1; fi
+    pgrep -P "$pane_pid" -f "claude" &>/dev/null && return 0 || return 1
+}
+
 # get_pane_state_label <pane_target>
 # 人間が読めるラベルを返す。
 get_pane_state_label() {
