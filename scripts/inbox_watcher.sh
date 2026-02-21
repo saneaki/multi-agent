@@ -121,7 +121,7 @@ ESCALATE_COOLDOWN=${ESCALATE_COOLDOWN:-300}
 # busy→idle遷移後にgit statusを確認し、未コミット変更があれば"uncommitted"nudgeを送信。
 KARO_PREV_BUSY=${KARO_PREV_BUSY:-0}  # 0=idle, 1=busy (前回サイクルの状態)
 LAST_UNCOMMITTED_NUDGE_TS=${LAST_UNCOMMITTED_NUDGE_TS:-0}
-UNCOMMITTED_NUDGE_COOLDOWN=${UNCOMMITTED_NUDGE_COOLDOWN:-120}
+UNCOMMITTED_NUDGE_COOLDOWN=${UNCOMMITTED_NUDGE_COOLDOWN:-600}
 
 # ─── Shogun auto-start ───
 # Claude未起動 + unread>0 + detached 時にclaudeを自動起動する。
