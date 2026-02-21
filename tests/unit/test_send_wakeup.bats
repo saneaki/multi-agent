@@ -825,9 +825,9 @@ YAML
     [ "$status" -ne 0 ]
 }
 
-# --- T-SHOGUN-003: shogun + active pane + client attached → display-message only ---
+# --- T-SHOGUN-003: shogun + active pane + client attached → display-message AND send-keys ---
 
-@test "T-SHOGUN-003: send_wakeup shogun + active + attached uses display-message only" {
+@test "T-SHOGUN-003: send_wakeup shogun + active + attached uses display-message AND send-keys" {
     run bash -c '
         MOCK_PANE_ACTIVE="1"
         MOCK_LIST_CLIENTS="/dev/pts/1: mock_session [200x50 xterm-256color]"
@@ -837,11 +837,12 @@ YAML
     '
     [ "$status" -eq 0 ]
 
-    # display-message was used for nudge
+    # display-message was used for visual notification
     echo "$output" | grep -q "DISPLAY"
 
-    # send-keys with inbox should NOT have occurred
-    ! grep -q "send-keys.*inbox" "$MOCK_LOG"
+    # send-keys with inbox ALSO occurred (Claude needs nudge to process inbox)
+    grep -q "send-keys.*inbox2" "$MOCK_LOG"
+    grep -q "send-keys.*Enter" "$MOCK_LOG"
 }
 
 # --- T-SHOGUN-004: shogun + active pane + no client → send-keys fallthrough ---

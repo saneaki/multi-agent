@@ -725,13 +725,14 @@ send_wakeup() {
         return 0
     fi
 
-    # Shogun: if the pane is focused AND a human is attached, never inject keys
-    # (it can clobber the Lord's input). Show a tmux message instead.
-    # If session is detached, no human is watching — safe to send-keys normally.
+    # Shogun: if the pane is focused AND a human is attached, show a tmux display-message
+    # for visual notification. Also fall through to send-keys so Claude can process the nudge.
+    # Busy case is already handled above (L713) — this block is only reached when idle.
+    # If session is detached, no human is watching — fall through to send-keys normally.
     if [ "$AGENT_ID" = "shogun" ] && pane_is_active && session_has_client; then
         echo "[$(date)] [DISPLAY] shogun pane is active + attached — showing nudge: inbox${unread_count}" >&2
         timeout 2 tmux display-message -t "$PANE_TARGET" -d 5000 "inbox${unread_count}" 2>/dev/null || true
-        return 0
+        # Fall through to send-keys — Claude needs the nudge to process inbox (no return)
     fi
 
     # 優先度3: tmux send-keys（テキストとEnterを分離 — Codex TUI対策）
