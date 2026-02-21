@@ -96,6 +96,7 @@
 !scripts/stop_hook_inbox.sh
 !scripts/agent_status.sh
 !scripts/ratelimit_check.sh
+!scripts/update_dashboard_timestamp.sh
 
 
 # SayTask (sample template only, not actual data)
