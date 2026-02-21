@@ -79,6 +79,13 @@ if [ "${__INBOX_WATCHER_TESTING__:-}" != "1" ]; then
         WATCH_BACKEND="inotifywait"
     fi
     echo "[$(date)] File watch backend: $WATCH_BACKEND" >&2
+
+    # ─── Auto-reload: スクリプト変更検知の初期mtime記録 ───
+    SCRIPT_PATH="${BASH_SOURCE[0]}"
+    SCRIPT_MTIME_AT_START=$(stat -c %Y "$SCRIPT_PATH" 2>/dev/null || stat -f %m "$SCRIPT_PATH" 2>/dev/null || echo "0")
+    # LAST_RELOAD_TS: 前回exec再起動時刻。環境変数で引き継ぎ（無限ループ防止）
+    LAST_RELOAD_TS="${LAST_RELOAD_TS:-0}"
+    echo "[$(date)] [AUTO-RELOAD] watching mtime: $SCRIPT_MTIME_AT_START (LAST_RELOAD_TS=${LAST_RELOAD_TS})" >&2
 fi
 
 # ─── timeout command compatibility wrapper (macOS support) ───
@@ -844,6 +851,34 @@ send_wakeup_with_escape() {
     return 0  # Never return 1 — set -euo pipefail would kill the watcher daemon
 }
 
+# check_script_reload — inbox_watcher自動再起動チェック
+# スクリプトのmtimeが起動時から変化した場合、ログを出力して0を返す（exec再起動すべし）。
+# 10秒以内の再起動はスキップしmtimeを更新して1を返す（無限ループ防止）。
+# mtime未変更の場合は1を返す。
+check_script_reload() {
+    local current_mtime
+    current_mtime=$(stat -c %Y "${SCRIPT_PATH:-/dev/null}" 2>/dev/null \
+        || stat -f %m "${SCRIPT_PATH:-/dev/null}" 2>/dev/null \
+        || echo "0")
+
+    # mtime未変更 → 再起動不要
+    if [ "$current_mtime" = "${SCRIPT_MTIME_AT_START:-0}" ]; then
+        return 1
+    fi
+
+    # 無限ループ防止: 10秒以内の再起動はスキップしてmtimeを更新
+    local now
+    now=$(date +%s)
+    if [ "${LAST_RELOAD_TS:-0}" -gt 0 ] && [ "$((now - LAST_RELOAD_TS))" -lt 10 ]; then
+        echo "[$(date)] [AUTO-RELOAD] recent restart (${LAST_RELOAD_TS}), updating mtime and skipping" >&2
+        SCRIPT_MTIME_AT_START="$current_mtime"
+        return 1
+    fi
+
+    echo "[$(date)] [AUTO-RELOAD] Script changed (mtime: ${SCRIPT_MTIME_AT_START:-0} → $current_mtime), restarting..." >&2
+    return 0  # 再起動すべし
+}
+
 # check_karo_uncommitted — karo idle watchdog
 # busy→idle遷移後にgit statusを確認し、未コミット変更があれば"uncommitted"nudgeを送信。
 # 適用範囲: AGENT_ID=karo のみ
@@ -1215,6 +1250,13 @@ while true; do
 
     # Karo idle watchdog: busy→idle遷移検出 → 未コミット変更チェック
     check_karo_uncommitted
+
+    # Auto-reload: スクリプト変更検知 → exec再起動
+    if check_script_reload; then
+        export LAST_RELOAD_TS
+        LAST_RELOAD_TS=$(date +%s)
+        exec bash "$SCRIPT_PATH" "$AGENT_ID" "$PANE_TARGET" "$CLI_TYPE"
+    fi
 done
 
 fi  # end testing guard

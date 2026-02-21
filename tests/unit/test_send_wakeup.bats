@@ -59,6 +59,9 @@
 #   T-SHOGUN-AUTOSTART-002: check_shogun_autostart — CLI running + unread>0 → no auto-start
 #   T-SHOGUN-AUTOSTART-003: check_shogun_autostart — CLI not running + unread=0 → no auto-start
 #   T-SHOGUN-AUTOSTART-004: check_shogun_autostart — CLI not running + active+attached → no auto-start
+#   T-AUTORELOAD-001: check_script_reload — mtime changed → returns 0 (reload needed)
+#   T-AUTORELOAD-002: check_script_reload — mtime unchanged → returns 1 (no reload)
+#   T-AUTORELOAD-003: check_script_reload — mtime changed + recent restart → skip (loop prevention)
 
 # --- セットアップ ---
 
@@ -98,6 +101,7 @@ MOCK
     export MOCK_GIT_STATUS=""       # git status --porcelain output ("" = clean)
     export MOCK_PANE_PID="99999"    # tmux list-panes #{pane_pid} output
     export MOCK_CLI_RUNNING=0       # pgrep -P $pid -f claude: 0=found, 1=not found
+    export MOCK_STAT_MTIME=""       # stat output for auto-reload tests ("" = use real stat)
 
     # Create mock git
     export MOCK_GIT="$TEST_TMPDIR/mock_git"
@@ -160,6 +164,13 @@ tmux() {
     return 0
 }
 git() { "$MOCK_GIT" "\$@"; }
+stat() {
+    if [ -n "\${MOCK_STAT_MTIME:-}" ]; then
+        echo "\$MOCK_STAT_MTIME"
+        return 0
+    fi
+    command stat "\$@"
+}
 timeout() { shift; "\$@"; }
 pgrep() {
     # is_cli_running uses pgrep -P $pid -f claude
@@ -169,7 +180,7 @@ pgrep() {
     "$MOCK_PGREP" "\$@"
 }
 sleep() { :; }
-export -f tmux git timeout pgrep sleep
+export -f tmux git stat timeout pgrep sleep
 
 # Source the REAL inbox_watcher.sh (testing guard skips startup & main loop)
 export __INBOX_WATCHER_TESTING__=1
@@ -1195,4 +1206,69 @@ YAML
     ! grep -q "send-keys.*claude" "$MOCK_LOG"
 
     echo "$output" | grep -q "skip auto-start"
+}
+
+# --- T-AUTORELOAD-001: mtime changed → returns 0 (reload needed) ---
+
+@test "T-AUTORELOAD-001: check_script_reload mtime changed → returns 0 (reload needed)" {
+    export MOCK_STAT_MTIME="9999999999"  # different from AT_START value
+    run bash -c '
+        source "'"$TEST_HARNESS"'"
+        SCRIPT_PATH="/tmp/fake_script.sh"
+        SCRIPT_MTIME_AT_START="1111111111"  # old mtime
+        LAST_RELOAD_TS=0
+        if check_script_reload; then
+            echo "RELOAD_NEEDED"
+        else
+            echo "NO_RELOAD"
+        fi
+    '
+    [ "$status" -eq 0 ]
+
+    echo "$output" | grep -q "RELOAD_NEEDED"
+    echo "$output" | grep -q "AUTO-RELOAD.*restarting"
+}
+
+# --- T-AUTORELOAD-002: mtime unchanged → returns 1 (no reload) ---
+
+@test "T-AUTORELOAD-002: check_script_reload mtime unchanged → returns 1 (no reload)" {
+    export MOCK_STAT_MTIME="1111111111"  # same as AT_START value
+    run bash -c '
+        source "'"$TEST_HARNESS"'"
+        SCRIPT_PATH="/tmp/fake_script.sh"
+        SCRIPT_MTIME_AT_START="1111111111"  # same mtime
+        LAST_RELOAD_TS=0
+        if check_script_reload; then
+            echo "RELOAD_NEEDED"
+        else
+            echo "NO_RELOAD"
+        fi
+    '
+    [ "$status" -eq 0 ]
+
+    echo "$output" | grep -q "NO_RELOAD"
+    ! echo "$output" | grep -q "AUTO-RELOAD"
+}
+
+# --- T-AUTORELOAD-003: mtime changed + recent restart → skip (loop prevention) ---
+
+@test "T-AUTORELOAD-003: check_script_reload mtime changed + recent restart → skip (loop prevention)" {
+    export MOCK_STAT_MTIME="9999999999"  # different from AT_START
+    run bash -c '
+        source "'"$TEST_HARNESS"'"
+        SCRIPT_PATH="/tmp/fake_script.sh"
+        SCRIPT_MTIME_AT_START="1111111111"
+        # Set recent restart (3 seconds ago — within 10s cooldown)
+        LAST_RELOAD_TS=$(($(date +%s) - 3))
+        if check_script_reload; then
+            echo "RELOAD_NEEDED"
+        else
+            echo "SKIPPED"
+        fi
+    '
+    [ "$status" -eq 0 ]
+
+    echo "$output" | grep -q "SKIPPED"
+    echo "$output" | grep -q "skipping"
+    ! echo "$output" | grep -q "RELOAD_NEEDED"
 }

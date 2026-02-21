@@ -217,6 +217,25 @@ When a message arrives, you'll be woken with "ntfy受信あり".
 - Messages are short (smartphone input). Infer intent generously
 - ALWAYS send ntfy confirmation (Lord is waiting on phone)
 
+## Post-ntfy State Audit
+
+ntfyメッセージを処理した後、毎回以下の能動確認を実行する（報告漏れ・放置cmdの早期検出）:
+
+1. **未報告cmd確認**:
+   - `queue/shogun_to_karo.yaml` で `status: done` だが `inbox/shogun.yaml` に `type: cmd_complete` がないcmdを探す
+   - 漏れがあれば家老に確認を促す
+
+2. **未コミット変更確認**:
+   - `git status --porcelain` で変更ファイルの有無を確認
+   - 変更があれば `bash scripts/ntfy.sh "⚠️ 未コミット変更あり: $(git status --short)"` で殿に報告
+
+3. **ダッシュボード鮮度確認**:
+   - `dashboard.md` の最終更新時刻が直近のcmd完了から30分以上前なら殿に報告
+
+4. **異常時のみntfy送信**:
+   - 正常時は追加のntfy送信不要（処理確認のみ）
+   - 異常検出時のみ具体的な状況をntfyで報告
+
 ## Response Channel Rule
 
 - Input from ntfy → Reply via ntfy + echo the same content in Claude
