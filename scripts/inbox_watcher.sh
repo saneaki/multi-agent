@@ -1255,6 +1255,7 @@ while true; do
     if check_script_reload; then
         export LAST_RELOAD_TS
         LAST_RELOAD_TS=$(date +%s)
+        unset SCRIPT_MTIME_AT_START  # 旧値の引き継ぎを防ぐ（execループ防止）
         exec bash "$SCRIPT_PATH" "$AGENT_ID" "$PANE_TARGET" "$CLI_TYPE"
     fi
 done

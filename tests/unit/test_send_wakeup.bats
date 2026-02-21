@@ -1272,3 +1272,24 @@ YAML
     echo "$output" | grep -q "skipping"
     ! echo "$output" | grep -q "RELOAD_NEEDED"
 }
+
+# --- T-AUTORELOAD-004: exec前にSCRIPT_MTIME_AT_STARTがunsetされる ---
+
+@test "T-AUTORELOAD-004: inbox_watcher.sh unsets SCRIPT_MTIME_AT_START before exec (loop prevention)" {
+    # inbox_watcher.shのexec直前にunset SCRIPT_MTIME_AT_STARTが記述されていることを確認
+    # （新プロセスが旧mtimeを引き継いで即時リロードするループを防ぐ）
+    grep -q 'unset SCRIPT_MTIME_AT_START' "$WATCHER_SCRIPT"
+
+    # exec bashの直前にunsetが存在することを確認（前後数行を取得して検証）
+    local context
+    context=$(grep -n 'unset SCRIPT_MTIME_AT_START\|exec bash.*SCRIPT_PATH' "$WATCHER_SCRIPT")
+
+    # unsetのline numberがexecのline numberより小さいこと（直前にある）
+    local unset_line exec_line
+    unset_line=$(echo "$context" | grep 'unset SCRIPT_MTIME_AT_START' | head -1 | cut -d: -f1)
+    exec_line=$(echo "$context" | grep 'exec bash.*SCRIPT_PATH' | head -1 | cut -d: -f1)
+
+    [ -n "$unset_line" ]
+    [ -n "$exec_line" ]
+    [ "$unset_line" -lt "$exec_line" ]
+}
