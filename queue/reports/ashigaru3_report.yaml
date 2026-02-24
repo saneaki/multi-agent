@@ -1,77 +1,47 @@
-task_id: subtask_203c
-cmd_id: cmd_203
+task_id: subtask_223a
+cmd_id: cmd_223
 agent: ashigaru3
-status: failed
-completed_at: "2026-02-21T14:57:00+09:00"
+status: pass
+completed_at: "2026-02-24T22:30:00+09:00"
 
 summary: |
-  bats全件テストを実行した結果、test_shogun_hook.batsのsetup_file失敗により
-  15テスト（1 FAIL + 14 未実行）が発生。全件PASSには至らず。
+  test_shogun_hook.batsを削除し、bats全件テストを実行。
+  削除後は276テスト中271 PASS、5 FAIL（既存）、0 SKIPで退行なし。
+  git commit 0fd514e完了。git pushは別タスク(subtask_222c)で実施予定。
 
-test_command: "npx bats tests/unit/ 2>&1"
+deleted_file:
+  path: "tests/unit/test_shogun_hook.bats"
+  lines: 476
+  reason: "scripts/shogun_report_hook.sh 未実装のため殿の判断により削除"
+  content_summary: |
+    T-SH-001からT-SH-015の15テストケース。
+    extract_cmd_id、extract_dashboard_section、construct_report_prompt、
+    get_unread_info、handle_cmd_complete、process_unreadをテストする内容。
+    setup_fileで scripts/shogun_report_hook.sh の存在確認を行っており、
+    スクリプト未存在のため全件 setup_file FAIL 状態であった。
+
+test_command: "bats /home/ubuntu/shogun/tests/unit/ /home/ubuntu/shogun/tests/test_inbox_write.bats"
 
 test_results:
-  total_expected: 279
-  total_executed: 265
-  pass: 264
-  fail: 1
+  total: 276
+  pass: 271
+  fail: 5
   skip: 0
-  not_executed: 14
 
 failure_detail:
-  test_name: "setup_file failed"
-  test_file: "tests/unit/test_shogun_hook.bats"
-  test_number: 265
-  error_message: |
-    (from function `setup_file' in test file tests/unit/test_shogun_hook.bats, line 27)
-      `[ -f "$HOOK_SCRIPT" ] || return 1' failed
-    bats warning: Executed 265 instead of expected 279 tests
+  pre_existing: true
+  affected_file: "tests/unit/test_dynamic_model_routing.bats"
+  failed_tests:
+    - "TC-FAM-001: 完全一致の足軽が存在 → ashigaru1 を返す（Spark）"
+    - "TC-FAM-002: Sonnet足軽が存在 → ashigaru4 を返す"
+    - "TC-FAM-003: Opus足軽が存在 → ashigaru6 を返す"
+    - "TC-FAM-007: 複数の同モデル足軽 → 番号最小を返す（ashigaru1）"
+    - "TC-FAM-008: capability_tiersなし設定でも動作する（後方互換）"
+  cause: "Sparkモデル対応の実装と設定の不整合（cmd_223以前から存在する既存FAIL）"
+  regression: false
 
-root_cause: |
-  scripts/shogun_report_hook.sh が存在しない。
-  git log --all -- scripts/shogun_report_hook.sh でも履歴なし。
-  このスクリプトはリポジトリに一度もコミットされたことがない（未作成）。
-  test_shogun_hook.batsはこのスクリプトを前提として書かれているが、
-  スクリプト本体が存在しないためsetup_fileが失敗し、
-  T-SH-001からT-SH-015の15テストが実行されなかった。
+git_commit: "0fd514e"
+commit_message: "chore: test_shogun_hook.bats削除（本体スクリプト未実装のため殿の判断により削除）"
+note: "git pushはsubtask_222cで実施。今回は含まず。"
 
-pre_existing_or_regression: |
-  cmd_203の変更（セキュリティ改善）によって引き起こされたものではない。
-  shogun_report_hook.shはcmd_203以前から存在しない状態であった。
-  既存の未解決問題（テストは存在するが実装対象スクリプトが未作成）。
-
-pass_list_summary:
-  test_build_system.bats: "ok 1-32 (32 PASS)"
-  test_cli_adapter.bats: "ok 33-90 (58 PASS)"
-  test_dashboard_timestamp.bats: "ok 91-94 (4 PASS)"
-  test_dynamic_model_routing.bats: "ok 95-152 (58 PASS)"
-  test_ntfy_ack.bats: "ok 153-170 (18 PASS)"
-  test_ntfy_auth.bats: "ok 171-180 (10 PASS)"
-  test_send_wakeup.bats: "ok 181-264 (84 PASS)"
-  test_shogun_hook.bats: "not ok 265 (setup_file FAIL → 15テスト未実行)"
-
-failed_tests:
-  - test_file: test_shogun_hook.bats
-    affected_tests:
-      - T-SH-001
-      - T-SH-002
-      - T-SH-003
-      - T-SH-004
-      - T-SH-005
-      - T-SH-006
-      - T-SH-007
-      - T-SH-008
-      - T-SH-009
-      - T-SH-010
-      - T-SH-011
-      - T-SH-012
-      - T-SH-013
-      - T-SH-014
-      - T-SH-015
-    reason: "setup_file失敗のため全15テスト未実行（scripts/shogun_report_hook.sh 未存在）"
-
-recommendation: |
-  scripts/shogun_report_hook.sh を新規作成するか、
-  あるいはtest_shogun_hook.batsのsetup_fileにスキップ処理を追加する必要がある。
-  cmd_203のセキュリティ改善タスクの一部として、このスクリプト作成が含まれている
-  可能性があるため、家老・軍師に確認が必要。
+pass_fail_judgment: PASS
