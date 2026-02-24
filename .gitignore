@@ -52,6 +52,7 @@
 !lib/
 !lib/cli_adapter.sh
 !lib/ntfy_auth.sh
+!lib/agent_status.sh
 
 # Multi-CLI: Codex auto-load file
 !AGENTS.md
@@ -93,11 +94,23 @@
 !scripts/seo_qc.py
 !scripts/seo_qc.sh
 !scripts/stop_hook_inbox.sh
+!scripts/agent_status.sh
+!scripts/ratelimit_check.sh
+!scripts/update_dashboard_timestamp.sh
 
 
 # SayTask (sample template only, not actual data)
 !saytask/
 !saytask/streaks.yaml.sample
+
+# Reports (requirements docs only — other reports may contain secrets)
+!reports/
+!reports/requirements_*.md
+
+# Output (design docs, investigation reports)
+!output/
+!output/*.md
+!output/*.drawio
 
 # Docs
 !docs/
@@ -119,14 +132,27 @@
 !images/screenshots/hero/latest-translucent-20260210-190453.png
 !images/screenshots/hero/latest-translucent-20260208-084602.png
 
-# Skills (skill-creator only)
+# Skills (public OSS skills committed to repo)
 !skills/
 !skills/skill-creator/
 !skills/skill-creator/SKILL.md
+!skills/shogun-agent-status/
+!skills/shogun-agent-status/SKILL.md
+!skills/shogun-model-list/
+!skills/shogun-model-list/SKILL.md
+!skills/shogun-bloom-config/
+!skills/shogun-bloom-config/SKILL.md
+
+# Test specs
+!tests/specs/
+!tests/specs/*.md
 
 # Tests
 !tests/
 !tests/*.bats
+!tests/*.sh
+!tests/fixtures/
+!tests/fixtures/*.yaml
 !tests/unit/
 !tests/unit/*.bats
 !tests/integration/

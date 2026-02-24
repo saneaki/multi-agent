@@ -48,6 +48,19 @@ if [ "${__INBOX_WATCHER_TESTING__:-}" != "1" ]; then
 
     echo "[$(date)] inbox_watcher started — agent: $AGENT_ID, pane: $PANE_TARGET, cli: $CLI_TYPE" >&2
 
+    # Source cli_adapter for get_startup_prompt() (Codex needs startup prompt after /new)
+    _cli_adapter="${SCRIPT_DIR}/lib/cli_adapter.sh"
+    if [ -f "$_cli_adapter" ]; then
+        source "$_cli_adapter"
+        echo "[$(date)] cli_adapter.sh loaded (get_startup_prompt available)" >&2
+    fi
+
+    # Source shared agent status library (busy/idle detection)
+    _agent_status_lib="${SCRIPT_DIR}/lib/agent_status.sh"
+    if [ -f "$_agent_status_lib" ]; then
+        source "$_agent_status_lib"
+    fi
+
     # Detect OS and select file-watching backend
     INBOX_WATCHER_OS="$(uname -s)"
     if [ "$INBOX_WATCHER_OS" = "Darwin" ]; then
@@ -66,6 +79,13 @@ if [ "${__INBOX_WATCHER_TESTING__:-}" != "1" ]; then
         WATCH_BACKEND="inotifywait"
     fi
     echo "[$(date)] File watch backend: $WATCH_BACKEND" >&2
+
+    # ─── Auto-reload: スクリプト変更検知の初期mtime記録 ───
+    SCRIPT_PATH="${BASH_SOURCE[0]}"
+    SCRIPT_MTIME_AT_START=$(stat -c %Y "$SCRIPT_PATH" 2>/dev/null || stat -f %m "$SCRIPT_PATH" 2>/dev/null || echo "0")
+    # LAST_RELOAD_TS: 前回exec再起動時刻。環境変数で引き継ぎ（無限ループ防止）
+    LAST_RELOAD_TS="${LAST_RELOAD_TS:-0}"
+    echo "[$(date)] [AUTO-RELOAD] watching mtime: $SCRIPT_MTIME_AT_START (LAST_RELOAD_TS=${LAST_RELOAD_TS})" >&2
 fi
 
 # ─── timeout command compatibility wrapper (macOS support) ───
@@ -97,6 +117,17 @@ ESCALATE_PHASE1=${ESCALATE_PHASE1:-120}
 ESCALATE_PHASE2=${ESCALATE_PHASE2:-240}
 ESCALATE_COOLDOWN=${ESCALATE_COOLDOWN:-300}
 
+# ─── Karo idle watchdog ───
+# busy→idle遷移後にgit statusを確認し、未コミット変更があれば"uncommitted"nudgeを送信。
+KARO_PREV_BUSY=${KARO_PREV_BUSY:-0}  # 0=idle, 1=busy (前回サイクルの状態)
+LAST_UNCOMMITTED_NUDGE_TS=${LAST_UNCOMMITTED_NUDGE_TS:-0}
+UNCOMMITTED_NUDGE_COOLDOWN=${UNCOMMITTED_NUDGE_COOLDOWN:-600}
+
+# ─── Shogun auto-start ───
+# Claude未起動 + unread>0 + detached 時にclaudeを自動起動する。
+LAST_AUTO_START_TS=${LAST_AUTO_START_TS:-0}
+AUTO_START_COOLDOWN=${AUTO_START_COOLDOWN:-60}
+
 # ─── Nudge throttle ───
 # Avoid spamming the same "inboxN" into the pane every timeout tick.
 LAST_NUDGE_TS=${LAST_NUDGE_TS:-0}
@@ -109,6 +140,9 @@ NUDGE_COOLDOWN_SEC_CODEX=${NUDGE_COOLDOWN_SEC_CODEX:-300}
 # Tracks whether we've sent /new or /clear for the current task_assigned batch.
 # Resets to 0 when all messages are read (FIRST_UNREAD_SEEN → 0).
 NEW_CONTEXT_SENT=${NEW_CONTEXT_SENT:-0}
+# Tracks whether we sent a startup prompt (Codex) that includes full recovery.
+# When set, skip follow-up nudge for this cycle (agent already knows what to do).
+STARTUP_PROMPT_SENT=${STARTUP_PROMPT_SENT:-0}
 
 # ─── Phase feature flags (cmd_107 Phase 1/2/3) ───
 # ASW_PHASE:
@@ -270,6 +304,24 @@ try:
             print("SKIP_DUPLICATE")
             raise SystemExit(0)
 
+    # Task YAML status guard: skip auto-recovery if task is cancelled or idle.
+    # This prevents restarting a task that Karo intentionally cancelled via clear_command.
+    task_yaml_path = os.path.join(
+        os.path.dirname(os.path.dirname(inbox)), "tasks", f"{agent_id}.yaml"
+    )
+    if os.path.exists(task_yaml_path):
+        try:
+            with open(task_yaml_path, "r", encoding="utf-8") as tf:
+                task_data = yaml.safe_load(tf) or {}
+            task_status = str(task_data.get("status") or "").strip().strip("'\"")
+            if task_status in ("cancelled", "idle"):
+                print(f"SKIP_CANCELLED:{task_status}")
+                raise SystemExit(0)
+        except SystemExit:
+            raise
+        except Exception:
+            pass  # If task YAML is unreadable, proceed with auto-recovery as safety net
+
     now = datetime.datetime.now(datetime.timezone.utc).astimezone()
     msg = {
         "content": (
@@ -406,6 +458,11 @@ send_cli_command() {
             # Codex: /clear不存在→/newで新規会話開始, /model非対応→スキップ
             # /clearはCodexでは未定義コマンドでCLI終了してしまうため、/newに変換
             if [[ "$cmd" == "/clear" ]]; then
+                # Guard: skip duplicate /new if already sent for this batch
+                if [ "${NEW_CONTEXT_SENT:-0}" -eq 1 ]; then
+                    echo "[$(date)] [SKIP] Codex /new already sent for $AGENT_ID — skipping duplicate clear_command" >&2
+                    return 0
+                fi
                 echo "[$(date)] [SEND-KEYS] Codex /clear→/new: starting new conversation for $AGENT_ID" >&2
                 # Dismiss suggestion UI first (typing "x" clears autocomplete prompt)
                 timeout 5 tmux send-keys -t "$PANE_TARGET" "x" 2>/dev/null || true
@@ -416,6 +473,9 @@ send_cli_command() {
                 sleep 0.3
                 timeout 5 tmux send-keys -t "$PANE_TARGET" Enter 2>/dev/null || true
                 sleep 3
+                # Send startup prompt immediately (don't defer to context-reset cycle)
+                send_codex_startup_prompt
+                NEW_CONTEXT_SENT=1
                 return 0
             fi
             if [[ "$cmd" == /model* ]]; then
@@ -456,10 +516,50 @@ send_cli_command() {
 
     # /clear needs extra wait time before follow-up
     if [[ "$actual_cmd" == "/clear" ]]; then
+        LAST_CLEAR_TS=$(date +%s)
         sleep 3
     else
         sleep 1
     fi
+}
+
+# ─── Send Codex startup prompt after /new ───
+# Waits for agent to become idle, then sends a startup prompt that includes
+# full recovery steps (identify, read task YAML, read inbox, start work).
+# Called from both send_cli_command (clear_command) and send_context_reset.
+send_codex_startup_prompt() {
+    # Poll until agent becomes idle (prompt ready) instead of fixed sleep.
+    # Max 15s (3 attempts × 5s). If still busy after 15s, proceed anyway.
+    local attempt
+    for attempt in 1 2 3; do
+        sleep 5
+        if ! agent_is_busy; then
+            echo "[$(date)] [STARTUP] $AGENT_ID idle after ${attempt}×5s — sending startup prompt" >&2
+            break
+        fi
+        echo "[$(date)] [STARTUP] $AGENT_ID still busy after ${attempt}×5s — retrying" >&2
+    done
+    if agent_is_busy; then
+        echo "[$(date)] [STARTUP] $AGENT_ID still busy after 15s — proceeding with startup prompt anyway" >&2
+    fi
+
+    local startup_prompt=""
+    if type get_startup_prompt &>/dev/null; then
+        startup_prompt=$(get_startup_prompt "$AGENT_ID" 2>/dev/null || true)
+    fi
+    if [[ -z "$startup_prompt" ]]; then
+        startup_prompt="Session Start — do ALL of this in one turn, do NOT stop early: 1) tmux display-message to identify yourself. 2) Read queue/tasks/${AGENT_ID}.yaml. 3) Read queue/inbox/${AGENT_ID}.yaml, mark read:true. 4) Read context_files. 5) Execute the assigned task to completion — edit files, run commands, write reports. Keep working until done."
+    fi
+    echo "[$(date)] [STARTUP] Sending startup prompt to $AGENT_ID (codex): ${startup_prompt:0:80}..." >&2
+    # Dismiss suggestion UI, then send startup prompt
+    timeout 5 tmux send-keys -t "$PANE_TARGET" "x" 2>/dev/null || true
+    sleep 0.3
+    timeout 5 tmux send-keys -t "$PANE_TARGET" C-u 2>/dev/null || true
+    sleep 0.3
+    timeout 5 tmux send-keys -t "$PANE_TARGET" "$startup_prompt" 2>/dev/null || true
+    sleep 0.3
+    timeout 5 tmux send-keys -t "$PANE_TARGET" Enter 2>/dev/null || true
+    STARTUP_PROMPT_SENT=1
 }
 
 # ─── Send context reset before new task ───
@@ -471,9 +571,12 @@ send_context_reset() {
     local effective_cli
     effective_cli=$(get_effective_cli_type)
 
-    # Safety: never inject CLI commands into the shogun pane.
-    if [ "$AGENT_ID" = "shogun" ]; then
-        echo "[$(date)] [SKIP] shogun: suppressing context reset" >&2
+    # Safety: never auto-reset context for command-layer agents.
+    # Only ashigaru should receive automatic context resets (clear stale task context).
+    # Shogun (human-controlled), Karo (coordinator state), Gunshi (strategic state)
+    # all maintain complex running context that should not be wiped automatically.
+    if [ "$AGENT_ID" = "shogun" ] || [ "$AGENT_ID" = "karo" ] || [ "$AGENT_ID" = "gunshi" ]; then
+        echo "[$(date)] [SKIP] $AGENT_ID: suppressing context reset (command-layer agent)" >&2
         return 0
     fi
 
@@ -488,18 +591,33 @@ send_context_reset() {
 
     echo "[$(date)] [CONTEXT-RESET] Sending $reset_cmd before task_assigned for $AGENT_ID ($effective_cli)" >&2
 
-    # Dismiss Codex suggestion UI before sending reset command
+    # Codex: send /new + startup prompt as a single atomic operation.
+    # When called from clear_command path, NEW_CONTEXT_SENT=1 prevents reaching here.
+    # When called for standalone task_assigned, this is the only /new send.
     if [[ "$effective_cli" == "codex" ]]; then
+        # Dismiss suggestion UI + send /new
         timeout 5 tmux send-keys -t "$PANE_TARGET" "x" 2>/dev/null || true
         sleep 0.3
         timeout 5 tmux send-keys -t "$PANE_TARGET" C-u 2>/dev/null || true
         sleep 0.3
+        timeout 5 tmux send-keys -t "$PANE_TARGET" "/new" 2>/dev/null || true
+        sleep 0.3
+        timeout 5 tmux send-keys -t "$PANE_TARGET" Enter 2>/dev/null || true
+        sleep 3
+        # Wait for idle + send startup prompt via shared helper
+        send_codex_startup_prompt
+        return 0
     fi
 
+    # Non-Codex CLIs: send /clear and wait for idle
     # Send the command (text and Enter separated for TUI compatibility)
     timeout 5 tmux send-keys -t "$PANE_TARGET" "$reset_cmd" 2>/dev/null || true
     sleep 0.3
     timeout 5 tmux send-keys -t "$PANE_TARGET" Enter 2>/dev/null || true
+    # Mark /clear timestamp so agent_is_busy() treats it as busy during processing
+    if [[ "$reset_cmd" == "/clear" ]]; then
+        LAST_CLEAR_TS=$(date +%s)
+    fi
 
     # Poll until agent becomes idle (prompt ready) instead of fixed sleep.
     # Max 15s (3 attempts × 5s). If still busy after 15s, proceed anyway.
@@ -508,11 +626,13 @@ send_context_reset() {
         sleep 5
         if ! agent_is_busy; then
             echo "[$(date)] [CONTEXT-RESET] $AGENT_ID idle after ${attempt}×5s — ready for nudge" >&2
-            return 0
+            break
         fi
         echo "[$(date)] [CONTEXT-RESET] $AGENT_ID still busy after ${attempt}×5s — retrying" >&2
     done
-    echo "[$(date)] [CONTEXT-RESET] $AGENT_ID still busy after 15s — proceeding with nudge anyway" >&2
+    if agent_is_busy; then
+        echo "[$(date)] [CONTEXT-RESET] $AGENT_ID still busy after 15s — proceeding anyway" >&2
+    fi
 }
 
 # ─── Agent self-watch detection ───
@@ -545,31 +665,24 @@ agent_has_self_watch() {
 # Check if the agent's CLI is currently processing (Working/thinking/etc).
 # Sending nudge during Working causes text to queue but Enter to be lost.
 # Returns 0 (true) if agent is busy, 1 if idle.
+# Implementation: delegates to lib/agent_status.sh (shared library).
 agent_is_busy() {
-    local pane_tail
-    # Only check the bottom 5 lines of the pane. Old busy markers ("esc to interrupt",
-    # "Working") linger in scroll-back and cause false-busy if we scan too many lines.
-    pane_tail=$(timeout 2 tmux capture-pane -t "$PANE_TARGET" -p 2>/dev/null | tail -5)
-
-    # ── Idle check (takes priority) ──
-    if echo "$pane_tail" | grep -qE '(\? for shortcuts|context left)'; then
-        return 1  # idle — Codex idle prompt
-    fi
-    if echo "$pane_tail" | grep -qE '^(❯|›)\s*$'; then
-        return 1  # idle — Claude Code or Codex bare prompt
+    # /clear cooldown: treat agent as busy for 30s after /clear was sent.
+    # Claude Code's /clear takes 10-30s (CLAUDE.md reload + context init).
+    # Without this, nudges sent during /clear processing queue up at the prompt
+    # and cause race conditions (inbox1 arrives before /clear completes).
+    local now_busy
+    now_busy=$(date +%s)
+    if [ "${LAST_CLEAR_TS:-0}" -gt 0 ] && [ "$((now_busy - LAST_CLEAR_TS))" -lt 30 ]; then
+        return 0  # busy — /clear still processing
     fi
 
-    # ── Busy markers (bottom 5 lines only) ──
-    if echo "$pane_tail" | grep -qiF 'esc to interrupt'; then
-        return 0  # busy
+    if type agent_is_busy_check &>/dev/null; then
+        agent_is_busy_check "$PANE_TARGET"
+    else
+        # Fallback: if shared library not loaded, assume idle
+        return 1
     fi
-    if echo "$pane_tail" | grep -qiF 'background terminal running'; then
-        return 0  # busy
-    fi
-    if echo "$pane_tail" | grep -qiE '(Working|Thinking|Planning|Sending|task is in progress|Compacting conversation|thought for|思考中|考え中|計画中|送信中|処理中|実行中)'; then
-        return 0  # busy
-    fi
-    return 1  # idle
 }
 
 # ─── Pane focus detection (human safety) ───
@@ -602,6 +715,9 @@ send_wakeup() {
     local unread_count="$1"
     local nudge="inbox${unread_count}"
 
+    # Shogun auto-start: Claude未起動 + detached + unread>0 → claudeを自動起動
+    check_shogun_autostart "$unread_count"
+
     if [ "${FINAL_ESCALATION_ONLY:-0}" = "1" ]; then
         echo "[$(date)] [SKIP] FINAL_ESCALATION_ONLY=1, suppressing normal nudge for $AGENT_ID" >&2
         return 0
@@ -630,13 +746,14 @@ send_wakeup() {
         return 0
     fi
 
-    # Shogun: if the pane is focused AND a human is attached, never inject keys
-    # (it can clobber the Lord's input). Show a tmux message instead.
-    # If session is detached, no human is watching — safe to send-keys normally.
+    # Shogun: if the pane is focused AND a human is attached, show a tmux display-message
+    # for visual notification. Also fall through to send-keys so Claude can process the nudge.
+    # Busy case is already handled above (L713) — this block is only reached when idle.
+    # If session is detached, no human is watching — fall through to send-keys normally.
     if [ "$AGENT_ID" = "shogun" ] && pane_is_active && session_has_client; then
         echo "[$(date)] [DISPLAY] shogun pane is active + attached — showing nudge: inbox${unread_count}" >&2
         timeout 2 tmux display-message -t "$PANE_TARGET" -d 5000 "inbox${unread_count}" 2>/dev/null || true
-        return 0
+        # Fall through to send-keys — Claude needs the nudge to process inbox (no return)
     fi
 
     # 優先度3: tmux send-keys（テキストとEnterを分離 — Codex TUI対策）
@@ -734,6 +851,128 @@ send_wakeup_with_escape() {
     return 0  # Never return 1 — set -euo pipefail would kill the watcher daemon
 }
 
+# check_script_reload — inbox_watcher自動再起動チェック
+# スクリプトのmtimeが起動時から変化した場合、ログを出力して0を返す（exec再起動すべし）。
+# 10秒以内の再起動はスキップしmtimeを更新して1を返す（無限ループ防止）。
+# mtime未変更の場合は1を返す。
+check_script_reload() {
+    local current_mtime
+    current_mtime=$(stat -c %Y "${SCRIPT_PATH:-/dev/null}" 2>/dev/null \
+        || stat -f %m "${SCRIPT_PATH:-/dev/null}" 2>/dev/null \
+        || echo "0")
+
+    # mtime未変更 → 再起動不要
+    if [ "$current_mtime" = "${SCRIPT_MTIME_AT_START:-0}" ]; then
+        return 1
+    fi
+
+    # 無限ループ防止: 10秒以内の再起動はスキップしてmtimeを更新
+    local now
+    now=$(date +%s)
+    if [ "${LAST_RELOAD_TS:-0}" -gt 0 ] && [ "$((now - LAST_RELOAD_TS))" -lt 10 ]; then
+        echo "[$(date)] [AUTO-RELOAD] recent restart (${LAST_RELOAD_TS}), updating mtime and skipping" >&2
+        SCRIPT_MTIME_AT_START="$current_mtime"
+        return 1
+    fi
+
+    echo "[$(date)] [AUTO-RELOAD] Script changed (mtime: ${SCRIPT_MTIME_AT_START:-0} → $current_mtime), restarting..." >&2
+    return 0  # 再起動すべし
+}
+
+# check_karo_uncommitted — karo idle watchdog
+# busy→idle遷移後にgit statusを確認し、未コミット変更があれば"uncommitted"nudgeを送信。
+# 適用範囲: AGENT_ID=karo のみ
+check_karo_uncommitted() {
+    [ "$AGENT_ID" = "karo" ] || return 0
+
+    local now
+    now=$(date +%s)
+
+    # 現在のbusy状態を取得
+    local current_busy=0
+    if agent_is_busy; then
+        current_busy=1
+    fi
+
+    # busy→idle遷移のみ処理（同じidle状態での連発防止）
+    if [ "${KARO_PREV_BUSY:-0}" -eq 1 ] && [ "$current_busy" -eq 0 ]; then
+        echo "[$(date)] [KARO-WATCHDOG] busy→idle transition detected" >&2
+
+        # クールダウンチェック（120秒以内の再送を防止）
+        if [ "$((now - ${LAST_UNCOMMITTED_NUDGE_TS:-0}))" -lt "${UNCOMMITTED_NUDGE_COOLDOWN:-120}" ]; then
+            echo "[$(date)] [KARO-WATCHDOG] cooldown active, skip" >&2
+            KARO_PREV_BUSY=$current_busy
+            return 0
+        fi
+
+        # git statusチェック（未コミット変更の有無）
+        local git_status
+        git_status=$(git -C "${SCRIPT_DIR:-.}" status --porcelain 2>/dev/null || echo "")
+        if [ -n "$git_status" ]; then
+            echo "[$(date)] [KARO-WATCHDOG] uncommitted changes detected — sending nudge" >&2
+            timeout 5 tmux send-keys -t "$PANE_TARGET" "uncommitted" 2>/dev/null || true
+            sleep 0.3
+            timeout 5 tmux send-keys -t "$PANE_TARGET" Enter 2>/dev/null || true
+            LAST_UNCOMMITTED_NUDGE_TS=$now
+        else
+            echo "[$(date)] [KARO-WATCHDOG] git status clean, no nudge needed" >&2
+        fi
+    fi
+
+    KARO_PREV_BUSY=$current_busy
+}
+
+# check_shogun_autostart — shogun Claude未起動時の自動起動
+# Claude Codeが終了している状態でntfy到達 → bashプロンプトに消滅するのを防ぐ。
+# 適用範囲: AGENT_ID=shogun のみ
+check_shogun_autostart() {
+    [ "$AGENT_ID" = "shogun" ] || return 0
+
+    local unread_count="${1:-0}"
+    [ "$unread_count" -gt 0 ] || return 0
+
+    # active+attached の場合は自動起動しない（殿が意図的にClaude終了してシェル操作中の可能性）
+    if pane_is_active && session_has_client; then
+        echo "[$(date)] [SHOGUN-AUTOSTART] pane active + client attached — skip auto-start" >&2
+        return 0
+    fi
+
+    # CLI起動チェック
+    if is_cli_running "$PANE_TARGET"; then
+        return 0  # 既に起動中 — 通常のnudge配信へ
+    fi
+
+    local now
+    now=$(date +%s)
+
+    # クールダウンチェック（60秒以内の再起動を防止）
+    if [ "$((now - ${LAST_AUTO_START_TS:-0}))" -lt "${AUTO_START_COOLDOWN:-60}" ]; then
+        echo "[$(date)] [SHOGUN-AUTOSTART] cooldown active, skip" >&2
+        return 0
+    fi
+
+    echo "[$(date)] [SHOGUN-AUTOSTART] claude not running, unread=$unread_count — starting claude" >&2
+    LAST_AUTO_START_TS=$now
+
+    # Claude起動
+    timeout 5 tmux send-keys -t "$PANE_TARGET" "claude" 2>/dev/null || true
+    sleep 0.3
+    timeout 5 tmux send-keys -t "$PANE_TARGET" Enter 2>/dev/null || true
+
+    # 起動待機（最大30秒、5秒間隔でidle確認）
+    local waited=0
+    while [ "$waited" -lt 30 ]; do
+        sleep 5
+        waited=$((waited + 5))
+        if ! agent_is_busy; then
+            echo "[$(date)] [SHOGUN-AUTOSTART] claude started and idle after ${waited}s" >&2
+            return 0
+        fi
+    done
+
+    echo "[$(date)] [SHOGUN-AUTOSTART] WARNING: claude start timeout (30s)" >&2
+}
+
 # ─── Process cycle ───
 process_unread() {
     local trigger="${1:-event}"
@@ -798,10 +1037,17 @@ for s in data.get('specials', []):
 
     # /clear は Codex で /new へ変換される。再起動直後の取りこぼし防止として
     # 追加 task_assigned を自動投入し、次サイクルで確実に wake-up 可能にする。
+    # 案B+待機: Karo がタスク YAML を cancelled に更新するまでの猶予を確保してから
+    # status チェックを行い、cancelled/idle の場合はスキップする。
     if [ "$clear_seen" -eq 1 ]; then
+        # Wait for Karo to update task YAML status (cancellation race condition mitigation).
+        # send_cli_command already slept 3s for /clear; add 5s more = ~8s total before check.
+        sleep 5
         local recovery_id
         recovery_id=$(enqueue_recovery_task_assigned)
-        if [ -n "$recovery_id" ] && [ "$recovery_id" != "SKIP_DUPLICATE" ] && [ "$recovery_id" != "ERROR" ]; then
+        if [[ "$recovery_id" == SKIP_CANCELLED:* ]]; then
+            echo "[$(date)] [AUTO-RECOVERY] skipped for $AGENT_ID — task is ${recovery_id#SKIP_CANCELLED:} (not restarting)" >&2
+        elif [ -n "$recovery_id" ] && [ "$recovery_id" != "SKIP_DUPLICATE" ] && [ "$recovery_id" != "ERROR" ]; then
             echo "[$(date)] [AUTO-RECOVERY] queued task_assigned for $AGENT_ID ($recovery_id)" >&2
         fi
         info=$(get_unread_info)
@@ -848,6 +1094,15 @@ for s in data.get('specials', []):
             NEW_CONTEXT_SENT=1
         fi
 
+        # If startup prompt was just sent (Codex), skip follow-up nudge this cycle.
+        # The prompt itself contains full recovery instructions (identify + read YAML + work).
+        if [ "$STARTUP_PROMPT_SENT" -eq 1 ]; then
+            STARTUP_PROMPT_SENT=0
+            echo "[$(date)] [SKIP] Startup prompt just sent to $AGENT_ID — skipping nudge this cycle" >&2
+            FIRST_UNREAD_SEEN=$now
+            return 0
+        fi
+
         # Track when we first saw unread messages
         if [ "$FIRST_UNREAD_SEEN" -eq 0 ]; then
             FIRST_UNREAD_SEEN=$now
@@ -887,6 +1142,11 @@ for s in data.get('specials', []):
                     echo "[$(date)] ESCALATION Phase 3: $AGENT_ID unresponsive for ${age}s, but cli=codex — skipping /clear." >&2
                     FIRST_UNREAD_SEEN=$now  # Reset timer (no destructive action)
                     send_wakeup "$normal_count"
+                elif [ "$AGENT_ID" = "shogun" ] || [ "$AGENT_ID" = "karo" ] || [ "$AGENT_ID" = "gunshi" ]; then
+                    # Command-layer agents (karo/gunshi/shogun): suppress /clear even in Phase 3
+                    echo "[$(date)] [SKIP] ESCALATION Phase 3: $AGENT_ID suppressed (command-layer agent, ${age}s). Using Escape+nudge." >&2
+                    FIRST_UNREAD_SEEN=$now  # Reset timer
+                    send_wakeup_with_escape "$normal_count"
                 else
                     echo "[$(date)] ESCALATION Phase 3: Agent $AGENT_ID unresponsive for ${age}s. Sending /clear." >&2
                     send_cli_command "/clear"
@@ -987,6 +1247,25 @@ while true; do
     else
         process_unread "event"
     fi
+
+    # Karo idle watchdog: busy→idle遷移検出 → 未コミット変更チェック
+    check_karo_uncommitted
+
+    # Auto-reload: スクリプト変更検知 → exec再起動
+    if check_script_reload; then
+        export LAST_RELOAD_TS
+        LAST_RELOAD_TS=$(date +%s)
+        unset SCRIPT_MTIME_AT_START  # 旧値の引き継ぎを防ぐ（execループ防止）
+        exec bash "$SCRIPT_PATH" "$AGENT_ID" "$PANE_TARGET" "$CLI_TYPE"
+    fi
 done
 
 fi  # end testing guard
+
+# Source shared agent status library outside the testing guard so that
+# agent_is_busy_check() is available in test mode too.
+# In normal mode it was already sourced above; double-sourcing is harmless.
+_agent_status_lib="${SCRIPT_DIR}/lib/agent_status.sh"
+if [ -f "$_agent_status_lib" ] && ! type agent_is_busy_check &>/dev/null; then
+    source "$_agent_status_lib"
+fi

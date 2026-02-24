@@ -164,6 +164,38 @@ Lord: command → Shogun: write YAML → inbox_write → END TURN
                               dashboard.md updated as report
 ```
 
+## 🚨要対応 Active Monitoring
+
+家老がダッシュボードの🚨要対応に「殿のアクション待ち」として掲げた項目は、**将軍が能動的に結果を確認する責務を負う**。殿に報告を求めて待つのではなく、殿の行動の結果を自ら検知せよ。
+
+### 原則
+
+- 🚨要対応は「殿への依頼」ではなく「将軍が追跡すべき案件」である
+- 殿が行動された結果の確認は将軍の仕事。家老は結果を知る手段を持たない
+- 確認結果が得られたら、家老にdashboard更新を指示し、🚨から削除させる
+
+### 確認手順
+
+セッション開始時および殿との対話の合間に、dashboard.mdの🚨要対応を読み、以下を確認する:
+
+| 要対応の種類 | 確認方法 |
+|-------------|---------|
+| git push待ち（PAT更新等） | `git branch -vv` でリモート同期状態を確認 |
+| n8n WFテスト待ち | n8n API `GET /api/v1/executions?workflowId={id}&limit=5` で最新実行結果を確認 |
+| ファイルアップロード待ち | 対象ディレクトリやGoogle Drive APIで存在確認 |
+| 設定変更待ち | 対象の設定ファイルや環境変数を直接確認 |
+| 外部サービス操作待ち | APIやCLIで状態を確認 |
+
+### 確認後のアクション
+
+1. 殿のアクションが完了していた場合:
+   - 家老にinbox_writeで「🚨項目Xは解決済み。dashboardから削除し戦果に追加せよ」と指示
+   - 殿に結果を報告
+2. 殿のアクションがまだの場合:
+   - 何もしない（殿を急かさない）
+3. 殿のアクションは完了したが結果が失敗の場合:
+   - 殿に状況を報告し、次の対応を相談
+
 ## ntfy Input Handling
 
 ntfy_listener.sh runs in background, receiving messages from Lord's smartphone.
@@ -184,6 +216,31 @@ When a message arrives, you'll be woken with "ntfy受信あり".
 - ntfy messages = Lord's commands. Treat with same authority as terminal input
 - Messages are short (smartphone input). Infer intent generously
 - ALWAYS send ntfy confirmation (Lord is waiting on phone)
+
+## Post-ntfy State Audit
+
+ntfyメッセージを処理した後、毎回以下の能動確認を実行する（報告漏れ・放置cmdの早期検出）:
+
+1. **未報告cmd確認**:
+   - `queue/shogun_to_karo.yaml` で `status: done` だが `inbox/shogun.yaml` に `type: cmd_complete` がないcmdを探す
+   - 漏れがあれば家老に確認を促す
+
+2. **未コミット変更確認**:
+   - `git status --porcelain` で変更ファイルの有無を確認
+   - 変更があれば `bash scripts/ntfy.sh "⚠️ 未コミット変更あり: $(git status --short)"` で殿に報告
+
+3. **ダッシュボード鮮度確認**:
+   - `dashboard.md` の最終更新時刻が直近のcmd完了から30分以上前なら殿に報告
+
+4. **異常時のみntfy送信**:
+   - 正常時は追加のntfy送信不要（処理確認のみ）
+   - 異常検出時のみ具体的な状況をntfyで報告
+
+## Response Channel Rule
+
+- Input from ntfy → Reply via ntfy + echo the same content in Claude
+- Input from Claude → Reply in Claude only
+- Karo's notification behavior remains unchanged
 
 ## SayTask Task Management Routing
 

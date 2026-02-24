@@ -9,6 +9,14 @@ cd "$SCRIPT_DIR"
 
 mkdir -p logs queue/inbox
 
+# 多重起動防止: PIDファイルロック
+SUPERVISOR_LOCK="$SCRIPT_DIR/logs/watcher_supervisor.lock"
+exec 9>"$SUPERVISOR_LOCK"
+if ! flock -n 9; then
+    echo "[$(date)] [watcher_supervisor] Already running (lock: $SUPERVISOR_LOCK). Exiting." >&2
+    exit 1
+fi
+
 ensure_inbox_file() {
     local agent="$1"
     if [ ! -f "queue/inbox/${agent}.yaml" ]; then

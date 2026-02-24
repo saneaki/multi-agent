@@ -40,8 +40,28 @@
 #   T-SHOGUN-002: session_has_client — returns 1 when no client
 #   T-SHOGUN-003: send_wakeup — shogun + active + attached → display-message only
 #   T-SHOGUN-004: send_wakeup — shogun + active + detached → send-keys fallthrough
+#   T-BUSY-005: agent_is_busy — returns busy during /clear cooldown (LAST_CLEAR_TS)
+#   T-BUSY-006: agent_is_busy — returns idle after /clear cooldown expires
+#   T-BUSY-007: agent_is_busy — /clear cooldown overrides idle pane
+#   T-BUSY-008: agent_is_busy — idle prompt at bottom overrides old busy markers (false-busy fix)
+#   T-BUSY-009: agent_is_busy — 'background terminal running' detected as busy
+#   T-BUSY-010: agent_is_busy — 'Compacting conversation' detected as busy
+#   T-BUSY-011: agent_is_busy — 'esc to interrupt' alone detected as busy
+#   T-CRESET-001: send_context_reset — suppresses /clear for karo
+#   T-CRESET-002: send_context_reset — suppresses /clear for gunshi
+#   T-CRESET-003: send_context_reset — sends /clear for ashigaru
 #   T-COPILOT-001: send_cli_command — copilot /clear → Ctrl-C + restart
 #   T-COPILOT-002: send_cli_command — copilot /model → skip
+#   T-KARO-WATCHDOG-001: check_karo_uncommitted — karo idle + uncommitted → nudge sent
+#   T-KARO-WATCHDOG-002: check_karo_uncommitted — karo idle + clean git → no nudge
+#   T-KARO-WATCHDOG-003: check_karo_uncommitted — karo idle + uncommitted + cooldown → no nudge
+#   T-SHOGUN-AUTOSTART-001: check_shogun_autostart — CLI not running + unread>0 + detached → auto-start
+#   T-SHOGUN-AUTOSTART-002: check_shogun_autostart — CLI running + unread>0 → no auto-start
+#   T-SHOGUN-AUTOSTART-003: check_shogun_autostart — CLI not running + unread=0 → no auto-start
+#   T-SHOGUN-AUTOSTART-004: check_shogun_autostart — CLI not running + active+attached → no auto-start
+#   T-AUTORELOAD-001: check_script_reload — mtime changed → returns 0 (reload needed)
+#   T-AUTORELOAD-002: check_script_reload — mtime unchanged → returns 1 (no reload)
+#   T-AUTORELOAD-003: check_script_reload — mtime changed + recent restart → skip (loop prevention)
 
 # --- セットアップ ---
 
@@ -78,6 +98,24 @@ MOCK
     export MOCK_PANE_CLI=""
     export MOCK_PANE_ACTIVE=""
     export MOCK_LIST_CLIENTS=""
+    export MOCK_GIT_STATUS=""       # git status --porcelain output ("" = clean)
+    export MOCK_PANE_PID="99999"    # tmux list-panes #{pane_pid} output
+    export MOCK_CLI_RUNNING=0       # pgrep -P $pid -f claude: 0=found, 1=not found
+    export MOCK_STAT_MTIME=""       # stat output for auto-reload tests ("" = use real stat)
+
+    # Create mock git
+    export MOCK_GIT="$TEST_TMPDIR/mock_git"
+    cat > "$MOCK_GIT" << 'MOCK'
+#!/bin/bash
+# Pass through all args; only intercept "status --porcelain"
+if echo "$*" | grep -q "status.*porcelain"; then
+    echo "${MOCK_GIT_STATUS:-}"
+    exit 0
+fi
+# Fallback to real git for other commands
+git "$@"
+MOCK
+    chmod +x "$MOCK_GIT"
 
     # Test harness: sets up mocks, then sources the REAL inbox_watcher.sh
     # __INBOX_WATCHER_TESTING__=1 skips arg parsing, inotifywait check, and main loop.
@@ -111,6 +149,10 @@ tmux() {
         [ -n "\${MOCK_LIST_CLIENTS:-}" ] && echo "\$MOCK_LIST_CLIENTS"
         return 0
     fi
+    if echo "\$*" | grep -q "list-panes"; then
+        echo "\${MOCK_PANE_PID:-99999}"
+        return 0
+    fi
     if echo "\$*" | grep -q "display-message"; then
         if echo "\$*" | grep -q "pane_active"; then
             echo "\${MOCK_PANE_ACTIVE:-0}"
@@ -121,10 +163,24 @@ tmux() {
     fi
     return 0
 }
+git() { "$MOCK_GIT" "\$@"; }
+stat() {
+    if [ -n "\${MOCK_STAT_MTIME:-}" ]; then
+        echo "\$MOCK_STAT_MTIME"
+        return 0
+    fi
+    command stat "\$@"
+}
 timeout() { shift; "\$@"; }
-pgrep() { "$MOCK_PGREP" "\$@"; }
+pgrep() {
+    # is_cli_running uses pgrep -P $pid -f claude
+    if echo "\$*" | grep -q "\-P"; then
+        return \${MOCK_CLI_RUNNING:-1}
+    fi
+    "$MOCK_PGREP" "\$@"
+}
 sleep() { :; }
-export -f tmux timeout pgrep sleep
+export -f tmux git stat timeout pgrep sleep
 
 # Source the REAL inbox_watcher.sh (testing guard skips startup & main loop)
 export __INBOX_WATCHER_TESTING__=1
@@ -179,11 +235,12 @@ MOCK
     grep -q "send-keys -t test:0.0 Enter" "$MOCK_LOG"
 }
 
-# --- T-SW-004: send-keys failure → return 1 ---
+# --- T-SW-004: send-keys failure → return 0 (daemon-safe) + WARNING log ---
+# send_wakeup always returns 0 to avoid killing the watcher under set -euo pipefail.
 
-@test "T-SW-004: send_wakeup returns 1 when send-keys fails" {
+@test "T-SW-004: send_wakeup returns 0 when send-keys fails (daemon-safe)" {
     run bash -c "MOCK_SENDKEYS_RC=1; source '$TEST_HARNESS' && send_wakeup 2"
-    [ "$status" -eq 1 ]
+    [ "$status" -eq 0 ]
 
     echo "$output" | grep -qi "WARNING\|failed"
 }
@@ -533,7 +590,8 @@ MOCK
 
 @test "T-CODEX-006: inbox_watcher.sh contains agent_is_busy and Codex/Copilot handlers" {
     grep -q "agent_is_busy()" "$WATCHER_SCRIPT"
-    grep -q 'Working|Thinking|Planning|Sending' "$WATCHER_SCRIPT"
+    # Busy detection patterns live in lib/agent_status.sh (shared library)
+    grep -q 'Working|Thinking|Planning|Sending' "$PROJECT_ROOT/lib/agent_status.sh"
 
     # Codex /clear → /new conversion exists
     grep -q '/new' "$WATCHER_SCRIPT"
@@ -653,8 +711,8 @@ PY
 
     # codex clear path uses /new
     grep -q "send-keys.*/new" "$MOCK_LOG"
-    # auto-injected unread should trigger inbox1 nudge
-    grep -q "send-keys.*inbox1" "$MOCK_LOG"
+    # After /new, startup prompt is sent (replaces inbox1 nudge for wake-up)
+    grep -q "send-keys.*Session Start" "$MOCK_LOG"
 }
 
 # --- T-CODEX-012: auto-recovery dedupe ---
@@ -693,6 +751,67 @@ assert r1 == "SKIP_DUPLICATE"
 assert r2 == "SKIP_DUPLICATE"
 print("OK")
 PY
+    '
+    [ "$status" -eq 0 ]
+    echo "$output" | grep -q "OK"
+}
+
+# --- T-CODEX-013: auto-recovery skipped when task is cancelled ---
+
+@test "T-CODEX-013: enqueue_recovery_task_assigned skips if task YAML status is cancelled" {
+    run bash -c '
+        source "'"$TEST_HARNESS"'"
+        # Initialize inbox (required by enqueue_recovery_task_assigned)
+        echo "messages: []" > "$INBOX"
+        # Place task YAML with status: cancelled
+        mkdir -p "$(dirname "$INBOX")/../tasks"
+        cat > "$(dirname "$INBOX")/../tasks/test_agent.yaml" << "YAML"
+worker_id: test_agent
+task_id: subtask_test_cancelled
+status: cancelled
+YAML
+        r=$(enqueue_recovery_task_assigned)
+        # Should return SKIP_CANCELLED:cancelled
+        if [ "$r" = "SKIP_CANCELLED:cancelled" ]; then echo "OK"; else echo "FAIL:$r"; fi
+    '
+    [ "$status" -eq 0 ]
+    echo "$output" | grep -q "OK"
+}
+
+# --- T-CODEX-014: auto-recovery skipped when task is idle ---
+
+@test "T-CODEX-014: enqueue_recovery_task_assigned skips if task YAML status is idle" {
+    run bash -c '
+        source "'"$TEST_HARNESS"'"
+        echo "messages: []" > "$INBOX"
+        mkdir -p "$(dirname "$INBOX")/../tasks"
+        cat > "$(dirname "$INBOX")/../tasks/test_agent.yaml" << "YAML"
+worker_id: test_agent
+task_id: subtask_test_idle
+status: idle
+YAML
+        r=$(enqueue_recovery_task_assigned)
+        if [ "$r" = "SKIP_CANCELLED:idle" ]; then echo "OK"; else echo "FAIL:$r"; fi
+    '
+    [ "$status" -eq 0 ]
+    echo "$output" | grep -q "OK"
+}
+
+# --- T-CODEX-015: auto-recovery proceeds when task is assigned ---
+
+@test "T-CODEX-015: enqueue_recovery_task_assigned proceeds when task YAML status is assigned" {
+    run bash -c '
+        source "'"$TEST_HARNESS"'"
+        echo "messages: []" > "$INBOX"
+        mkdir -p "$(dirname "$INBOX")/../tasks"
+        cat > "$(dirname "$INBOX")/../tasks/test_agent.yaml" << "YAML"
+worker_id: test_agent
+task_id: subtask_test_assigned
+status: assigned
+YAML
+        r=$(enqueue_recovery_task_assigned)
+        # Should return a message ID (not SKIP_*)
+        if [[ "$r" != SKIP_* ]] && [[ "$r" != "ERROR" ]] && [[ -n "$r" ]]; then echo "OK"; else echo "FAIL:$r"; fi
     '
     [ "$status" -eq 0 ]
     echo "$output" | grep -q "OK"
@@ -752,9 +871,9 @@ PY
     [ "$status" -ne 0 ]
 }
 
-# --- T-SHOGUN-003: shogun + active pane + client attached → display-message only ---
+# --- T-SHOGUN-003: shogun + active pane + client attached → display-message AND send-keys ---
 
-@test "T-SHOGUN-003: send_wakeup shogun + active + attached uses display-message only" {
+@test "T-SHOGUN-003: send_wakeup shogun + active + attached uses display-message AND send-keys" {
     run bash -c '
         MOCK_PANE_ACTIVE="1"
         MOCK_LIST_CLIENTS="/dev/pts/1: mock_session [200x50 xterm-256color]"
@@ -764,11 +883,12 @@ PY
     '
     [ "$status" -eq 0 ]
 
-    # display-message was used for nudge
+    # display-message was used for visual notification
     echo "$output" | grep -q "DISPLAY"
 
-    # send-keys with inbox should NOT have occurred
-    ! grep -q "send-keys.*inbox" "$MOCK_LOG"
+    # send-keys with inbox ALSO occurred (Claude needs nudge to process inbox)
+    grep -q "send-keys.*inbox2" "$MOCK_LOG"
+    grep -q "send-keys.*Enter" "$MOCK_LOG"
 }
 
 # --- T-SHOGUN-004: shogun + active pane + no client → send-keys fallthrough ---
@@ -788,4 +908,388 @@ PY
 
     # Should have used send-keys
     grep -q "send-keys.*inbox2" "$MOCK_LOG"
+}
+
+# --- T-BUSY-005: agent_is_busy during /clear cooldown ---
+
+@test "T-BUSY-005: agent_is_busy returns 0 (busy) during /clear cooldown period" {
+    run bash -c '
+        MOCK_CAPTURE_PANE="› prompt
+  ? for shortcuts                100% context left"
+        source "'"$TEST_HARNESS"'"
+        now=$(date +%s)
+        LAST_CLEAR_TS=$((now - 10))  # /clear sent 10 seconds ago (within 30s cooldown)
+        agent_is_busy
+    '
+    [ "$status" -eq 0 ]
+}
+
+# --- T-BUSY-006: agent_is_busy idle after /clear cooldown expires ---
+
+@test "T-BUSY-006: agent_is_busy returns 1 (idle) after /clear cooldown expires" {
+    run bash -c '
+        MOCK_CAPTURE_PANE="› prompt
+  ? for shortcuts                100% context left"
+        source "'"$TEST_HARNESS"'"
+        now=$(date +%s)
+        LAST_CLEAR_TS=$((now - 40))  # /clear sent 40 seconds ago (past 30s cooldown)
+        agent_is_busy
+    '
+    [ "$status" -eq 1 ]
+}
+
+# --- T-BUSY-007: /clear cooldown overrides idle pane ---
+
+@test "T-BUSY-007: agent_is_busy /clear cooldown overrides idle pane state" {
+    run bash -c '
+        MOCK_CAPTURE_PANE="› Summarize recent commits
+  ? for shortcuts                100% context left"
+        source "'"$TEST_HARNESS"'"
+        now=$(date +%s)
+        LAST_CLEAR_TS=$((now - 5))  # /clear sent 5 seconds ago
+        # Pane looks idle, but cooldown should make it busy
+        if agent_is_busy; then
+            echo "BUSY_DURING_COOLDOWN"
+        else
+            echo "WRONGLY_IDLE"
+        fi
+    '
+    [ "$status" -eq 0 ]
+    echo "$output" | grep -q "BUSY_DURING_COOLDOWN"
+}
+
+# --- T-BUSY-008: idle prompt at bottom overrides old busy markers (false-busy fix) ---
+# Bug: 59ec12f / 69c1ecb — old "Working" or "esc to interrupt" lingered in scroll-back
+# above the idle prompt, causing false-busy. Fix: only check bottom 5 lines, idle first.
+
+@test "T-BUSY-008: agent_is_busy returns idle when idle prompt is below old busy markers" {
+    run bash -c '
+        MOCK_CAPTURE_PANE="$(printf "◦ Working on task (12s • esc to interrupt)\nsome output line\nmore output\n\n❯ ")"
+        source "'"$TEST_HARNESS"'"
+        LAST_CLEAR_TS=0
+        if agent_is_busy; then
+            echo "WRONGLY_BUSY"
+        else
+            echo "CORRECTLY_IDLE"
+        fi
+    '
+    [ "$status" -eq 0 ]
+    echo "$output" | grep -q "CORRECTLY_IDLE"
+}
+
+# --- T-BUSY-009: 'background terminal running' detected as busy ---
+# Bug: 91ebf61 — Codex shows this when a tool is running in background.
+
+@test "T-BUSY-009: agent_is_busy detects 'background terminal running' as busy" {
+    run bash -c '
+        MOCK_CAPTURE_PANE="$(printf "Some output\nbackground terminal running\n")"
+        source "'"$TEST_HARNESS"'"
+        LAST_CLEAR_TS=0
+        agent_is_busy
+    '
+    [ "$status" -eq 0 ]
+}
+
+# --- T-BUSY-010: 'Compacting conversation' detected as busy ---
+
+@test "T-BUSY-010: agent_is_busy detects 'Compacting conversation' as busy" {
+    run bash -c '
+        MOCK_CAPTURE_PANE="$(printf "Compacting conversation...\n")"
+        source "'"$TEST_HARNESS"'"
+        LAST_CLEAR_TS=0
+        agent_is_busy
+    '
+    [ "$status" -eq 0 ]
+}
+
+# --- T-BUSY-011: 'esc to interrupt' detected as busy ---
+
+@test "T-BUSY-011: agent_is_busy detects 'esc to interrupt' as busy" {
+    run bash -c '
+        MOCK_CAPTURE_PANE="$(printf "◦ Thinking (5s • esc to interrupt)\n")"
+        source "'"$TEST_HARNESS"'"
+        LAST_CLEAR_TS=0
+        agent_is_busy
+    '
+    [ "$status" -eq 0 ]
+}
+
+# --- T-CRESET-001: send_context_reset suppresses /clear for karo ---
+
+@test "T-CRESET-001: send_context_reset suppresses /clear for karo" {
+    run bash -c '
+        source "'"$TEST_HARNESS"'"
+        AGENT_ID="karo"
+        send_context_reset
+    '
+    [ "$status" -eq 0 ]
+
+    # No send-keys should have occurred
+    ! grep -q "send-keys" "$MOCK_LOG"
+
+    # SKIP message in stderr
+    echo "$output" | grep -q "SKIP.*karo"
+}
+
+# --- T-CRESET-002: send_context_reset suppresses /clear for gunshi ---
+
+@test "T-CRESET-002: send_context_reset suppresses /clear for gunshi" {
+    run bash -c '
+        source "'"$TEST_HARNESS"'"
+        AGENT_ID="gunshi"
+        send_context_reset
+    '
+    [ "$status" -eq 0 ]
+
+    # No send-keys should have occurred
+    ! grep -q "send-keys" "$MOCK_LOG"
+
+    # SKIP message in stderr
+    echo "$output" | grep -q "SKIP.*gunshi"
+}
+
+# --- T-CRESET-003: send_context_reset sends /clear for ashigaru ---
+
+@test "T-CRESET-003: send_context_reset sends /clear for ashigaru" {
+    run bash -c '
+        source "'"$TEST_HARNESS"'"
+        AGENT_ID="ashigaru3"
+        CLI_TYPE="claude"
+        send_context_reset
+    '
+    [ "$status" -eq 0 ]
+
+    # /clear should have been sent via send-keys
+    grep -q "send-keys.*/clear" "$MOCK_LOG"
+}
+
+# --- T-KARO-WATCHDOG-001: karo idle + uncommitted → nudge sent ---
+
+@test "T-KARO-WATCHDOG-001: check_karo_uncommitted karo idle + uncommitted changes → nudge sent" {
+    export MOCK_GIT_STATUS=" M scripts/inbox_watcher.sh"
+    run bash -c '
+        MOCK_CAPTURE_PANE="› Summarize recent commits
+  ? for shortcuts                100% context left"
+        source "'"$TEST_HARNESS"'"
+        AGENT_ID="karo"
+        KARO_PREV_BUSY=1   # was busy
+        LAST_UNCOMMITTED_NUDGE_TS=0  # no recent nudge
+        check_karo_uncommitted
+    '
+    [ "$status" -eq 0 ]
+
+    # "uncommitted" nudge should have been sent
+    grep -q "send-keys.*uncommitted" "$MOCK_LOG"
+    grep -q "send-keys.*Enter" "$MOCK_LOG"
+
+    # WATCHDOG log message should appear
+    echo "$output" | grep -q "KARO-WATCHDOG"
+}
+
+# --- T-KARO-WATCHDOG-002: karo idle + clean git → no nudge ---
+
+@test "T-KARO-WATCHDOG-002: check_karo_uncommitted karo idle + clean git → no nudge" {
+    export MOCK_GIT_STATUS=""  # clean
+    run bash -c '
+        MOCK_CAPTURE_PANE="› Summarize recent commits
+  ? for shortcuts                100% context left"
+        source "'"$TEST_HARNESS"'"
+        AGENT_ID="karo"
+        KARO_PREV_BUSY=1
+        LAST_UNCOMMITTED_NUDGE_TS=0
+        check_karo_uncommitted
+    '
+    [ "$status" -eq 0 ]
+
+    # No nudge should have been sent
+    ! grep -q "send-keys.*uncommitted" "$MOCK_LOG"
+
+    # Clean message in log
+    echo "$output" | grep -q "clean"
+}
+
+# --- T-KARO-WATCHDOG-003: karo idle + uncommitted + cooldown → no nudge ---
+
+@test "T-KARO-WATCHDOG-003: check_karo_uncommitted karo idle + uncommitted + cooldown未経過 → no nudge" {
+    export MOCK_GIT_STATUS=" M scripts/inbox_watcher.sh"
+    run bash -c '
+        MOCK_CAPTURE_PANE="› Summarize recent commits
+  ? for shortcuts                100% context left"
+        source "'"$TEST_HARNESS"'"
+        AGENT_ID="karo"
+        KARO_PREV_BUSY=1
+        # Set recent nudge (10 seconds ago — well within 120s cooldown)
+        LAST_UNCOMMITTED_NUDGE_TS=$(($(date +%s) - 10))
+        check_karo_uncommitted
+    '
+    [ "$status" -eq 0 ]
+
+    # No nudge due to cooldown
+    ! grep -q "send-keys.*uncommitted" "$MOCK_LOG"
+
+    # Cooldown message in log
+    echo "$output" | grep -q "cooldown"
+}
+
+# --- T-SHOGUN-AUTOSTART-001: CLI not running + unread>0 + detached → auto-start ---
+
+@test "T-SHOGUN-AUTOSTART-001: check_shogun_autostart CLI not running + unread>0 + detached → auto-start" {
+    run bash -c '
+        MOCK_PANE_ACTIVE="0"   # pane not active
+        MOCK_LIST_CLIENTS=""   # no client (detached)
+        MOCK_CLI_RUNNING=1     # pgrep returns 1 = CLI not running
+        source "'"$TEST_HARNESS"'"
+        AGENT_ID="shogun"
+        LAST_AUTO_START_TS=0
+        check_shogun_autostart 2
+    '
+    [ "$status" -eq 0 ]
+
+    # "claude" start command should have been sent
+    grep -q "send-keys.*claude" "$MOCK_LOG"
+
+    # AUTOSTART log message should appear
+    echo "$output" | grep -q "SHOGUN-AUTOSTART"
+}
+
+# --- T-SHOGUN-AUTOSTART-002: CLI running + unread>0 → no auto-start ---
+
+@test "T-SHOGUN-AUTOSTART-002: check_shogun_autostart CLI running + unread>0 → no auto-start (normal flow)" {
+    run bash -c '
+        MOCK_PANE_ACTIVE="0"
+        MOCK_LIST_CLIENTS=""
+        MOCK_CLI_RUNNING=0     # pgrep returns 0 = CLI is running
+        source "'"$TEST_HARNESS"'"
+        AGENT_ID="shogun"
+        LAST_AUTO_START_TS=0
+        check_shogun_autostart 2
+    '
+    [ "$status" -eq 0 ]
+
+    # No "claude" start command (already running)
+    ! grep -q "send-keys.*claude" "$MOCK_LOG"
+}
+
+# --- T-SHOGUN-AUTOSTART-003: CLI not running + unread=0 → no auto-start ---
+
+@test "T-SHOGUN-AUTOSTART-003: check_shogun_autostart CLI not running + unread=0 → no auto-start" {
+    run bash -c '
+        MOCK_PANE_ACTIVE="0"
+        MOCK_LIST_CLIENTS=""
+        MOCK_CLI_RUNNING=1     # not running
+        source "'"$TEST_HARNESS"'"
+        AGENT_ID="shogun"
+        LAST_AUTO_START_TS=0
+        check_shogun_autostart 0  # unread=0
+    '
+    [ "$status" -eq 0 ]
+
+    # No auto-start when no unread messages
+    ! grep -q "send-keys.*claude" "$MOCK_LOG"
+}
+
+# --- T-SHOGUN-AUTOSTART-004: CLI not running + active+attached → no auto-start ---
+
+@test "T-SHOGUN-AUTOSTART-004: check_shogun_autostart CLI not running + active+attached → no auto-start" {
+    run bash -c '
+        MOCK_PANE_ACTIVE="1"   # pane is active (Lord is present)
+        MOCK_LIST_CLIENTS="/dev/pts/1: mock_session [200x50 xterm-256color]"  # client attached
+        MOCK_CLI_RUNNING=1     # not running
+        source "'"$TEST_HARNESS"'"
+        AGENT_ID="shogun"
+        LAST_AUTO_START_TS=0
+        check_shogun_autostart 2
+    '
+    [ "$status" -eq 0 ]
+
+    # No auto-start when Lord may be intentionally using shell
+    ! grep -q "send-keys.*claude" "$MOCK_LOG"
+
+    echo "$output" | grep -q "skip auto-start"
+}
+
+# --- T-AUTORELOAD-001: mtime changed → returns 0 (reload needed) ---
+
+@test "T-AUTORELOAD-001: check_script_reload mtime changed → returns 0 (reload needed)" {
+    export MOCK_STAT_MTIME="9999999999"  # different from AT_START value
+    run bash -c '
+        source "'"$TEST_HARNESS"'"
+        SCRIPT_PATH="/tmp/fake_script.sh"
+        SCRIPT_MTIME_AT_START="1111111111"  # old mtime
+        LAST_RELOAD_TS=0
+        if check_script_reload; then
+            echo "RELOAD_NEEDED"
+        else
+            echo "NO_RELOAD"
+        fi
+    '
+    [ "$status" -eq 0 ]
+
+    echo "$output" | grep -q "RELOAD_NEEDED"
+    echo "$output" | grep -q "AUTO-RELOAD.*restarting"
+}
+
+# --- T-AUTORELOAD-002: mtime unchanged → returns 1 (no reload) ---
+
+@test "T-AUTORELOAD-002: check_script_reload mtime unchanged → returns 1 (no reload)" {
+    export MOCK_STAT_MTIME="1111111111"  # same as AT_START value
+    run bash -c '
+        source "'"$TEST_HARNESS"'"
+        SCRIPT_PATH="/tmp/fake_script.sh"
+        SCRIPT_MTIME_AT_START="1111111111"  # same mtime
+        LAST_RELOAD_TS=0
+        if check_script_reload; then
+            echo "RELOAD_NEEDED"
+        else
+            echo "NO_RELOAD"
+        fi
+    '
+    [ "$status" -eq 0 ]
+
+    echo "$output" | grep -q "NO_RELOAD"
+    ! echo "$output" | grep -q "AUTO-RELOAD"
+}
+
+# --- T-AUTORELOAD-003: mtime changed + recent restart → skip (loop prevention) ---
+
+@test "T-AUTORELOAD-003: check_script_reload mtime changed + recent restart → skip (loop prevention)" {
+    export MOCK_STAT_MTIME="9999999999"  # different from AT_START
+    run bash -c '
+        source "'"$TEST_HARNESS"'"
+        SCRIPT_PATH="/tmp/fake_script.sh"
+        SCRIPT_MTIME_AT_START="1111111111"
+        # Set recent restart (3 seconds ago — within 10s cooldown)
+        LAST_RELOAD_TS=$(($(date +%s) - 3))
+        if check_script_reload; then
+            echo "RELOAD_NEEDED"
+        else
+            echo "SKIPPED"
+        fi
+    '
+    [ "$status" -eq 0 ]
+
+    echo "$output" | grep -q "SKIPPED"
+    echo "$output" | grep -q "skipping"
+    ! echo "$output" | grep -q "RELOAD_NEEDED"
+}
+
+# --- T-AUTORELOAD-004: exec前にSCRIPT_MTIME_AT_STARTがunsetされる ---
+
+@test "T-AUTORELOAD-004: inbox_watcher.sh unsets SCRIPT_MTIME_AT_START before exec (loop prevention)" {
+    # inbox_watcher.shのexec直前にunset SCRIPT_MTIME_AT_STARTが記述されていることを確認
+    # （新プロセスが旧mtimeを引き継いで即時リロードするループを防ぐ）
+    grep -q 'unset SCRIPT_MTIME_AT_START' "$WATCHER_SCRIPT"
+
+    # exec bashの直前にunsetが存在することを確認（前後数行を取得して検証）
+    local context
+    context=$(grep -n 'unset SCRIPT_MTIME_AT_START\|exec bash.*SCRIPT_PATH' "$WATCHER_SCRIPT")
+
+    # unsetのline numberがexecのline numberより小さいこと（直前にある）
+    local unset_line exec_line
+    unset_line=$(echo "$context" | grep 'unset SCRIPT_MTIME_AT_START' | head -1 | cut -d: -f1)
+    exec_line=$(echo "$context" | grep 'exec bash.*SCRIPT_PATH' | head -1 | cut -d: -f1)
+
+    [ -n "$unset_line" ]
+    [ -n "$exec_line" ]
+    [ "$unset_line" -lt "$exec_line" ]
 }

@@ -1,0 +1,77 @@
+task_id: subtask_203c
+cmd_id: cmd_203
+agent: ashigaru3
+status: failed
+completed_at: "2026-02-21T14:57:00+09:00"
+
+summary: |
+  bats全件テストを実行した結果、test_shogun_hook.batsのsetup_file失敗により
+  15テスト（1 FAIL + 14 未実行）が発生。全件PASSには至らず。
+
+test_command: "npx bats tests/unit/ 2>&1"
+
+test_results:
+  total_expected: 279
+  total_executed: 265
+  pass: 264
+  fail: 1
+  skip: 0
+  not_executed: 14
+
+failure_detail:
+  test_name: "setup_file failed"
+  test_file: "tests/unit/test_shogun_hook.bats"
+  test_number: 265
+  error_message: |
+    (from function `setup_file' in test file tests/unit/test_shogun_hook.bats, line 27)
+      `[ -f "$HOOK_SCRIPT" ] || return 1' failed
+    bats warning: Executed 265 instead of expected 279 tests
+
+root_cause: |
+  scripts/shogun_report_hook.sh が存在しない。
+  git log --all -- scripts/shogun_report_hook.sh でも履歴なし。
+  このスクリプトはリポジトリに一度もコミットされたことがない（未作成）。
+  test_shogun_hook.batsはこのスクリプトを前提として書かれているが、
+  スクリプト本体が存在しないためsetup_fileが失敗し、
+  T-SH-001からT-SH-015の15テストが実行されなかった。
+
+pre_existing_or_regression: |
+  cmd_203の変更（セキュリティ改善）によって引き起こされたものではない。
+  shogun_report_hook.shはcmd_203以前から存在しない状態であった。
+  既存の未解決問題（テストは存在するが実装対象スクリプトが未作成）。
+
+pass_list_summary:
+  test_build_system.bats: "ok 1-32 (32 PASS)"
+  test_cli_adapter.bats: "ok 33-90 (58 PASS)"
+  test_dashboard_timestamp.bats: "ok 91-94 (4 PASS)"
+  test_dynamic_model_routing.bats: "ok 95-152 (58 PASS)"
+  test_ntfy_ack.bats: "ok 153-170 (18 PASS)"
+  test_ntfy_auth.bats: "ok 171-180 (10 PASS)"
+  test_send_wakeup.bats: "ok 181-264 (84 PASS)"
+  test_shogun_hook.bats: "not ok 265 (setup_file FAIL → 15テスト未実行)"
+
+failed_tests:
+  - test_file: test_shogun_hook.bats
+    affected_tests:
+      - T-SH-001
+      - T-SH-002
+      - T-SH-003
+      - T-SH-004
+      - T-SH-005
+      - T-SH-006
+      - T-SH-007
+      - T-SH-008
+      - T-SH-009
+      - T-SH-010
+      - T-SH-011
+      - T-SH-012
+      - T-SH-013
+      - T-SH-014
+      - T-SH-015
+    reason: "setup_file失敗のため全15テスト未実行（scripts/shogun_report_hook.sh 未存在）"
+
+recommendation: |
+  scripts/shogun_report_hook.sh を新規作成するか、
+  あるいはtest_shogun_hook.batsのsetup_fileにスキップ処理を追加する必要がある。
+  cmd_203のセキュリティ改善タスクの一部として、このスクリプト作成が含まれている
+  可能性があるため、家老・軍師に確認が必要。
