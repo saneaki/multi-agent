@@ -92,6 +92,30 @@ description: |
   └─ [false: 予定] ──→ タスク本文ブロック取得（上記と合流）
 
   ============================================================
+  ============================================================
+  ■ Step 2.5: Notion API バージョン移行（追加指示 2026-02-24）
+  ============================================================
+  WF1の全NotionノードのNotion-Versionヘッダーを 2022-06-28 → 2025-09-03 に変更せよ。
+
+  対象ノード（8件）:
+    1. NotionにIssue URL書き戻し
+    2. タスク本文ブロック取得
+    3. 案件ページブロック取得
+    4. 対応履歴トグル作成
+    5. 対応履歴に追記
+    6. 案件同期ステータス更新
+    7. タスクステータスを「Issue作成」に変更
+    8. 案件ページ取得
+
+  変更方法: WF1のJSON内で以下を全置換（headerParameters.parameters 内）
+    変更前: { "name": "Notion-Version", "value": "2022-06-28" }
+    変更後: { "name": "Notion-Version", "value": "2025-09-03" }
+
+  ※ これらは全てページ/ブロック操作（GET/PATCH/POST）であり、
+    data_source_idは不要。ヘッダー変更のみで対応可能。
+  ※ 参考: https://developers.notion.com/docs/upgrade-guide-2025-09-03
+  ※ Step 2のWF1 JSON取得後、分岐追加と同時にこの変更も適用してStep 3のPUTで一括適用する。
+
   ■ Step 3: WF1 PUT更新
   ============================================================
   PUT /api/v1/workflows/TDsEGyC8XHFAQEZb
@@ -171,6 +195,6 @@ description: |
     - PASS/FAIL
 
 report_to: gunshi
-status: assigned
+status: done
 priority: high
 timestamp: "2026-02-24T23:43:00+09:00"

@@ -5,7 +5,7 @@
 # Structured rules. Machine-readable. Edit only when changing rules.
 
 role: ashigaru
-version: "2.3"  # v2.3: revert over-EN body text to Japanese
+version: "2.4"  # v2.4: re-EN Self-Watch + n8n protocol per user request
 
 forbidden_actions:
   - id: F001
@@ -144,10 +144,10 @@ Check `config/settings.yaml` → `language`:
 
 ## Agent Self-Watch Phase Rules (cmd_107)
 
-- Phase 1: startup時に `process_unread_once` で未読回収し、イベント駆動 + timeout fallbackで監視する。
-- Phase 2: 通常nudgeは `disable_normal_nudge` で抑制し、self-watchを主経路とする。
-- Phase 3: `FINAL_ESCALATION_ONLY` で `send-keys` を最終復旧用途に限定する。
-- 常時ルール: `summary-first`（unread_count fast-path）と `no_idle_full_read` を守り、無駄な全文読取を避ける。
+- Phase 1: At startup, collect unread messages with `process_unread_once`, then monitor via event-driven + timeout fallback.
+- Phase 2: Suppress normal nudges with `disable_normal_nudge`; self-watch becomes the primary delivery path.
+- Phase 3: `FINAL_ESCALATION_ONLY` restricts `send-keys` to last-resort recovery only.
+- Always-on rules: Follow `summary-first` (unread_count fast-path) and `no_idle_full_read` to avoid unnecessary full-file reads.
 
 ## Self-Identification (CRITICAL)
 
@@ -283,28 +283,28 @@ Act without waiting for Karo's instruction:
 - Context below 30% → write progress to report YAML, tell Karo "context running low"
 - Task larger than expected → include split proposal in report
 
-## n8n WF修正プロトコル（必須）
+## n8n Workflow Fix Protocol (Mandatory)
 
-n8n WF修正タスクを受けた足軽は、以下のテストループを必ず実行すること:
+When assigned an n8n workflow fix task, Ashigaru MUST execute the following test loop:
 
-1. 修正前のWF JSONバックアップ（/tmp/wf_{id}_backup.json）
-2. 修正適用（PUT /api/v1/workflows/{id}）
-3. テスト用WF作成（Manual Trigger + 修正対象ノード群）
-   - POST /api/v1/workflows で作成
-   - テストデータは固定ファイルID or サンプルデータを使用
-4. テストループ:
-   a. POST /rest/workflows/{test_id}/run で手動実行
-      (Cookie認証が必要ならn8n UIから手動実行)
-   b. GET /api/v1/executions/{exec_id}?includeData=true で結果取得
-   c. 全ノードのstatus確認
-   d. エラーあり → 修正して4aに戻る（最大3回）
-   e. 全ノードsuccess → 次へ
-5. 本番WF更新 + deactivate/activate
-6. テスト用WF削除（DELETE /api/v1/workflows/{test_id}）
-7. 報告にexecution IDとstatus=successを必ず含める
+1. Back up the pre-fix WF JSON (/tmp/wf_{id}_backup.json)
+2. Apply the fix (PUT /api/v1/workflows/{id})
+3. Create a test workflow (Manual Trigger + target node group)
+   - POST /api/v1/workflows to create
+   - Use fixed file IDs or sample data for test input
+4. Test loop:
+   a. POST /rest/workflows/{test_id}/run to execute manually
+      (If cookie auth is required, run from the n8n UI)
+   b. GET /api/v1/executions/{exec_id}?includeData=true to fetch results
+   c. Verify status of all nodes
+   d. If errors exist → fix and return to 4a (max 3 retries)
+   e. If all nodes succeed → proceed
+5. Update production WF + deactivate/activate
+6. Delete test workflow (DELETE /api/v1/workflows/{test_id})
+7. Report MUST include execution ID and status=success
 
-テストループ内でのリトライ上限は3回。3回失敗したら報告して判断を仰ぐこと。
-「手動実行テスト未実施」での完了報告は禁止。
+Retry limit within the test loop is 3. If all 3 fail, report and request guidance.
+Completion reports WITHOUT manual execution tests are FORBIDDEN.
 
 ## Shout Mode (echo_message)
 

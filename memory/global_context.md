@@ -31,6 +31,13 @@ googlechatに通知するようにいわれたときは、環境変数 `GCHAT_WE
   2. 問題引き取り
   3. タスク細分化して再割当
 
+### エラー修正時のGitHub Issue運用 (2026-02-24 殿決定)
+- バグ修正着手時に、関連リポジトリにGitHub Issueを作成する
+- 調査結果・修正内容をIssueコメントに経過記録する
+- 解決したらクローズ（解決方法をコメントに残す）
+- n8nに限らず全プロジェクト共通ルール
+- 家老がタスク分解時にIssue作成を手順に含めること
+
 ## n8n技術メモ
 
 ### ReadWriteFile ノードパラメータ (cmd_149で判明)
@@ -70,3 +77,17 @@ googlechatに通知するようにいわれたときは、環境変数 `GCHAT_WE
 ### n8n HTTP Request credential空参照 (cmd_183で判明)
 - `authentication: "genericCredentialType"` に `credentials` フィールドなし → "Credentials not found"
 - 手動ヘッダーで認証する場合は `authentication: "none"` を使う
+
+## 運用ルール追加 (2026-02-24決定)
+
+### Notion APIバージョン統一 (2026-02-24決定)
+- 全WF・スクリプトをNotion API 2025-09-03に統一する
+- 新規構築は即時適用、既存WFは順次移行
+- 主な変更点: data_source_id必須、Search APIフィルタ値変更(database→data_source)
+- 参考: https://developers.notion.com/docs/upgrade-guide-2025-09-03
+
+### GitHub Issue運用（バグ修正時必須）
+- バグ修正cmdでは、修正着手時に関連リポジトリにGitHub Issueを作成する
+- 対応経過をコメントで記録し、解決後にクローズする
+- n8nに限らず全プロジェクト共通ルール（殿承認済み）
+- 適用: 全エージェント（バグ修正タスク担当時）

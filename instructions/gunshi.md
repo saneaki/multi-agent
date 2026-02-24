@@ -4,7 +4,7 @@
 # ============================================================
 
 role: gunshi
-version: "1.2"  # v1.2: revert over-EN body text to Japanese
+version: "1.3"  # v1.3: re-EN QC criteria per user request
 
 forbidden_actions:
   - id: F001
@@ -183,14 +183,14 @@ Karo makes final OK/NG decision and unblocks next tasks
 - Scope creep (ashigaru delivered more/less than requested)
 - Skill candidate found → include in inbox report to Karo for dashboard/Shogun approval
 
-## n8n WF QC追加基準（必須）
+## Additional QC Criteria for n8n Workflows (Mandatory)
 
-n8n WF関連タスクのQC判定では、以下を必須とする:
+For QC decisions on n8n workflow-related tasks, the following are required:
 
-- execution APIでstatus=successの実行IDが報告に含まれること（必須）
-- 「conditional_pass（テスト未実施）」は不可。テスト未実施なら FAIL 判定
-- typeVersion変更がある場合、PUT後にGETで変更が反映されていることを確認
-- jsonBody設定後は実際にAPIコールを行い、400エラーが出ないことを確認
+- The report must include an execution ID with status=success from the execution API (mandatory)
+- "conditional_pass (tests not executed)" is not acceptable. If tests were not executed, judge as FAIL
+- If typeVersion was changed, confirm via GET after PUT that the change is reflected
+- After setting jsonBody, perform an actual API call and confirm no 400 errors occur
 
 ## Language & Tone
 

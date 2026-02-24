@@ -1,47 +1,93 @@
-task_id: subtask_223a
-cmd_id: cmd_223
+task_id: subtask_231a
 agent: ashigaru3
-status: pass
-completed_at: "2026-02-24T22:30:00+09:00"
+report_to: gunshi
+timestamp: "2026-02-25T00:11:30+09:00"
+status: PASS
 
 summary: |
-  test_shogun_hook.batsを削除し、bats全件テストを実行。
-  削除後は276テスト中271 PASS、5 FAIL（既存）、0 SKIPで退行なし。
-  git commit 0fd514e完了。git pushは別タスク(subtask_222c)で実施予定。
+  cmd_231 subtask_231a 完了。Claude Code活動ログ Notion DB + SessionEnd Hook 構築完了。
 
-deleted_file:
-  path: "tests/unit/test_shogun_hook.bats"
-  lines: 476
-  reason: "scripts/shogun_report_hook.sh 未実装のため殿の判断により削除"
-  content_summary: |
-    T-SH-001からT-SH-015の15テストケース。
-    extract_cmd_id、extract_dashboard_section、construct_report_prompt、
-    get_unread_info、handle_cmd_complete、process_unreadをテストする内容。
-    setup_fileで scripts/shogun_report_hook.sh の存在確認を行っており、
-    スクリプト未存在のため全件 setup_file FAIL 状態であった。
+results:
 
-test_command: "bats /home/ubuntu/shogun/tests/unit/ /home/ubuntu/shogun/tests/test_inbox_write.bats"
+  step0_github_issue:
+    status: SKIP
+    reason: "saneaki/shogunリポジトリ不存在。saneaki/multi-agentはIssues機能無効。Issue作成不可のためスキップ。"
 
-test_results:
-  total: 276
-  pass: 271
-  fail: 5
-  skip: 0
+  step1_notion_db:
+    status: PASS
+    db_name: "Claude Code活動ログ"
+    db_id: "a0eda711221f40c28e5839688312e09c"
+    db_url: "https://www.notion.so/a0eda711221f40c28e5839688312e09c"
+    parent_page: "タスク管理 (1a4e8d62-e4aa-8050-b588-c898cb21d392)"
+    properties:
+      - "セッション概要 (title)"
+      - "日付 (date)"
+      - "完了cmd数 (number)"
+      - "プロジェクト (multi_select)"
+      - "ストリーク (number)"
+      - "詳細 (rich_text)"
+    env_added: "NOTION_ACTIVITY_LOG_DB_ID=a0eda711221f40c28e5839688312e09c → /home/ubuntu/.n8n-mcp/n8n/.env"
 
-failure_detail:
-  pre_existing: true
-  affected_file: "tests/unit/test_dynamic_model_routing.bats"
-  failed_tests:
-    - "TC-FAM-001: 完全一致の足軽が存在 → ashigaru1 を返す（Spark）"
-    - "TC-FAM-002: Sonnet足軽が存在 → ashigaru4 を返す"
-    - "TC-FAM-003: Opus足軽が存在 → ashigaru6 を返す"
-    - "TC-FAM-007: 複数の同モデル足軽 → 番号最小を返す（ashigaru1）"
-    - "TC-FAM-008: capability_tiersなし設定でも動作する（後方互換）"
-  cause: "Sparkモデル対応の実装と設定の不整合（cmd_223以前から存在する既存FAIL）"
-  regression: false
+  step2_script:
+    status: PASS
+    path: "/home/ubuntu/shogun/scripts/notion_session_log.sh"
+    permissions: "chmod +x 済み"
+    features:
+      - "dashboard.mdからストリーク・完了cmd数・戦果テーブル抽出"
+      - "Notion活動ログDBへレコード作成（冪等性: 同日付既存ならスキップ）"
+      - "日記タスク検索（{TODAY}日記 で名前検索）"
+      - "日記ページへ「Claude Code活動 🤖」heading_2 + paragraph + bullet_list追記"
+      - "日記冪等性: 「Claude Code活動」heading_2が既存ならスキップ"
 
-git_commit: "0fd514e"
-commit_message: "chore: test_shogun_hook.bats削除（本体スクリプト未実装のため殿の判断により削除）"
-note: "git pushはsubtask_222cで実施。今回は含まず。"
+  step3_stop_hook:
+    status: PASS
+    settings_json: "/home/ubuntu/.claude/settings.json"
+    hook_entry: |
+      bash /home/ubuntu/shogun/scripts/notion_session_log.sh >> /tmp/notion_session_log.log 2>&1 || true
+    existing_hooks_preserved: true
+    stop_hooks_count: 2
+
+  step4_test1:
+    status: PASS
+    description: "スクリプト手動実行 → Notion DBレコード作成成功"
+    created_record_id: "311e8d62-e4aa-8196-8e0f-e974c5a3e126"
+    extracted_data:
+      streak: 14
+      completed_cmd: 11
+      session_summary: "11cmd完了、general中心"
+    diary_result: "2026-02-25日記が見つからずスキップ（まだ作成されていないため正常）"
+
+  step4_test2:
+    status: PASS
+    description: "冪等性テスト（2回目実行）→ 重複スキップ確認"
+    output: "2026-02-25 の活動ログは既に記録済み。DB追記スキップ。"
+
+  step4_log:
+    status: PASS
+    log_path: "/tmp/notion_session_log.log"
+
+  step5_git_push:
+    status: PASS
+    shogun_repo:
+      commit: "c26307f"
+      message: "feat: Claude Code活動ログ Notion記録スクリプト追加 (cmd_231)"
+      files:
+        - "scripts/notion_session_log.sh (新規)"
+        - ".gitignore (notion_session_log.sh許可追加)"
+    claude_repo:
+      commit: "962debc"
+      message: "feat: SessionEnd hook notion_session_log.sh 登録 (cmd_231)"
+      files:
+        - "settings.json (Stop hook追加)"
+
+  step6_github_issue:
+    status: SKIP
+    reason: "Step0と同様。Issues機能無効のため対応不可。"
+
+notes: |
+  - Notionトークン: .envのNOTION_INTEGRATION_TOKENが有効（NOTION_BEARER_TOKENと同値）
+  - プロジェクト抽出: JST翌日時点でdashboard.mdの戦果が前日分の場合プロジェクト列が空になる場合あり
+  - 日記タスク形式: {YYYY-MM-DD}日記 でタイトル検索（名前プロパティ）
+  - 日記が存在しない日はDBレコードのみ作成、日記追記スキップ（正常動作）
 
 pass_fail_judgment: PASS
