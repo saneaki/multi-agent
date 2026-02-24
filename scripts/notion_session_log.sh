@@ -151,6 +151,11 @@ PROJECTS=$(echo "${PARSE_RESULT}" | python3 -c "import json,sys; d=json.load(sys
 echo "[INFO] ストリーク=${STREAK}, 完了cmd=${COMPLETED}, プロジェクト=${PROJECTS}"
 echo "[INFO] セッション概要: ${SESSION_SUMMARY}"
 
+# PARSE_RESULTをtempファイルに書き出し（heredoc内json.loadsの\nエスケープ問題を回避）
+PARSE_RESULT_FILE=$(mktemp /tmp/notion_parse_result.XXXXXX.json)
+printf '%s' "${PARSE_RESULT}" > "${PARSE_RESULT_FILE}"
+trap 'rm -f "${PARSE_RESULT_FILE}"' EXIT
+
 # ============================================================
 # 冪等性チェック (Notion DB検索)
 # ============================================================
@@ -175,18 +180,76 @@ print(len(data.get('results', [])))
 ACTIVITY_LOG_URL=""
 
 if [[ "${EXISTING_COUNT}" -gt 0 ]]; then
-  echo "[INFO] ${TODAY} の活動ログは既に記録済み。DB追記スキップ。"
-  # 既存レコードのURLを取得（日記リンク用）
-  ACTIVITY_LOG_URL=$(echo "${EXISTING}" | python3 -c "
+  # 既存レコードをPATCHで上書き更新（修正: スキップ→UPDATE）
+  EXISTING_PAGE_ID=$(echo "${EXISTING}" | python3 -c "
 import json, sys
 data = json.load(sys.stdin)
 results = data.get('results', [])
-if results:
-    page_id = results[0].get('id', '').replace('-', '')
-    print(f'https://www.notion.so/{page_id}')
-else:
-    print('')
+print(results[0].get('id', '') if results else '')
 " 2>/dev/null || echo "")
+
+  ACTIVITY_LOG_URL=$(echo "${EXISTING_PAGE_ID}" | python3 -c "
+import sys
+pid = sys.stdin.read().strip().replace('-', '')
+print(f'https://www.notion.so/{pid}' if pid else '')
+")
+
+  echo "[INFO] ${TODAY} の活動ログを更新中 (ID: ${EXISTING_PAGE_ID})..."
+
+  UPDATE_PAYLOAD=$(python3 - <<PYEOF
+import json
+with open("${PARSE_RESULT_FILE}") as _f:
+    data = json.load(_f)
+session_summary = data["session_summary"]
+detail = data["detail"]
+yoyaku = data["yoyaku"]
+multi_select = data["multi_select"]
+today = "${TODAY}"
+completed = int("${COMPLETED}" or 0)
+streak = int("${STREAK}" or 0)
+
+payload = {
+    "properties": {
+        "セッション概要": {
+            "title": [{"type": "text", "text": {"content": session_summary[:200]}}]
+        },
+        "日付": {"date": {"start": today}},
+        "完了cmd数": {"number": completed},
+        "ストリーク": {"number": streak},
+        "プロジェクト": {"multi_select": multi_select},
+        "詳細": {
+            "rich_text": [{"type": "text", "text": {"content": detail[:2000]}}]
+        },
+        "要約": {
+            "rich_text": [{"type": "text", "text": {"content": yoyaku[:500]}}]
+        }
+    }
+}
+print(json.dumps(payload, ensure_ascii=False))
+PYEOF
+)
+
+  UPDATE_RESP=$(curl -s -X PATCH \
+    "${NOTION_API}/pages/${EXISTING_PAGE_ID}" \
+    -H "Authorization: Bearer ${NOTION_TOKEN}" \
+    -H "Content-Type: application/json" \
+    -H "Notion-Version: ${NOTION_VERSION}" \
+    -d "${UPDATE_PAYLOAD}")
+
+  UPDATE_STATUS=$(echo "${UPDATE_RESP}" | python3 -c "
+import json, sys
+data = json.load(sys.stdin)
+if data.get('object') == 'page':
+    print('success')
+else:
+    print('error: ' + str(data.get('message', 'unknown')))
+" 2>/dev/null || echo "error: parse failed")
+
+  if [[ "${UPDATE_STATUS}" == "success" ]]; then
+    echo "[SUCCESS] ${TODAY} の活動ログを更新しました。"
+  else
+    echo "[ERROR] 活動ログ更新失敗: ${UPDATE_STATUS}" >&2
+  fi
 else
   echo "[INFO] Notion DBにレコード作成中..."
 
@@ -194,10 +257,8 @@ else
 import json
 
 db_id = "${ACTIVITY_LOG_DB_ID}"
-summary = ${PARSE_RESULT} if False else None
-import sys
-
-data = json.loads('''${PARSE_RESULT}''')
+with open("${PARSE_RESULT_FILE}") as _f:
+    data = json.load(_f)
 session_summary = data["session_summary"]
 detail = data["detail"]
 yoyaku = data["yoyaku"]
