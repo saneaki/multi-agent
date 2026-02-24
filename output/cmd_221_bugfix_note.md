@@ -40,3 +40,19 @@ Telegram Bot送信ノードのjsonBodyに`"parse_mode": "HTML"`を追加。
 
 ## 実行日時
 2026-02-24 JST
+
+---
+
+## 追加バグ3: 緊急メール通知の送信先誤り（GitHub Issue #7）
+
+### 根本原因
+Gmail v5.0/v6.0の「Telegram即時通知」ノードで `$env.TELEGRAM_CHAT_ID`（個人用: 8201375732）を使用していたため、緊急通知が個人DMに送信されていた。
+
+### 修正内容
+`$env.TELEGRAM_CHAT_ID` → `$env.TELEGRAM_CHAT_ID_GROUP`（-5233973051, グループ用）に変更。
+
+### 修正対象WF
+- Gmail自動化ワークフロー v5.0 (6HfrbcXoujQSfSQC, active) ✅
+- Gmail自動化ワークフロー v6.0 (x2HSCjYW3wCQlp6a, inactive) ✅
+
+- GitHub Issue #7: コメント追加 + クローズ ✅
