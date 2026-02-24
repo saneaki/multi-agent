@@ -97,6 +97,7 @@
 !scripts/agent_status.sh
 !scripts/ratelimit_check.sh
 !scripts/update_dashboard_timestamp.sh
+!scripts/notion_session_log.sh
 
 
 # SayTask (sample template only, not actual data)
