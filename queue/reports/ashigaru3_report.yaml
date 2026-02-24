@@ -1,69 +1,46 @@
-task_id: subtask_233a
+task_id: subtask_233b
 agent: ashigaru3
 report_to: gunshi
-timestamp: "2026-02-25T07:15:14+09:00"
+timestamp: "2026-02-25T07:29:03+09:00"
 status: PASS
 
 summary: |
-  cmd_233 subtask_233a 完了。notion_session_log.sh 品質改善6点を全て実装。
-  日記「2026-02-25日記」への追記成功（音声での振り返り直後にトグルH2）。
-
-pre_test:
-  deleted_blocks:
-    - "311e8d62-e4aa-8144-a9ed-f316450aa6f2 (H2 Claude Code活動 非toggle)"
-    - "311e8d62-e4aa-81cb-a4a6-eba400207176 (paragraph)"
-  result: "削除完了。クリーンな状態でテスト実施。"
+  cmd_233b subtask_233b 完了。冪等性ロジックをスキップ→UPDATE方式に変更。
+  json.loadsの\nエスケープバグも同時修正。
 
 fixes:
-  fix1_date_matching:
-    status: DONE
-    detail: "TODAY(YYYY-MM-DD)とM/D形式を照合し本日分セクションのみ抽出"
-    verified: "TODAY=2026-02-25 → shogun-system×1のみ（前日の2/24データは除外）"
+  fix_idempotency_logic:
+    before: "既存レコード発見 → スキップ（何もしない）"
+    after: "既存レコード発見 → PATCH /v1/pages/{id} で全プロパティ上書き更新"
+    existing_page_id_used: "311e8d62-e4aa-81c3-b370-f9c9b042b3ef"
+    updated_properties:
+      - "セッション概要(title)"
+      - "日付(date)"
+      - "完了cmd数(number)"
+      - "プロジェクト(multi_select)"
+      - "ストリーク(number)"
+      - "詳細(rich_text)"
+      - "要約(rich_text)"
 
-  fix2_summary_detail:
-    status: DONE
-    summary_example: "1cmd完了(shogun-system×1)"
-    detail_format: "各cmd1行: {時刻} {戦場}: {任務先頭80文字}"
+  fix_json_escape_bug:
+    issue: "json.loads('''${PARSE_RESULT}''') でPythonが\\nをエスケープ処理→制御文字エラー"
+    fix: "PARSE_RESULTをtempファイルに書き出し、Python側でjson.load(file)で読み込む"
+    affected_sections: ["UPDATE_PAYLOAD", "CREATE_PAYLOAD"]
 
-  fix3_yoyaku_property:
-    status: DONE
-    property: "「要約」(rich_text) → POST /v1/pages payloadに追加"
-    content: "プロジェクト別主要成果2-3行"
-
-  fix4_toggle:
-    status: DONE
-    structure: "heading_2 with is_toggleable=true + children(paragraph+bullets)"
-    children:
-      - "paragraph: 完了Ncmd / ストリーク🔥M日目"
-      - "paragraph: 📊活動ログ詳細(リンク)"
-      - "bulleted_list_item × N件(各cmd)"
-
-  fix5_insert_position:
-    status: DONE
-    after_block_id: "311e8d62-e4aa-81bf-a823-c89331a5a4ab（音声での振り返り）"
-    method: '"after": "{block_id}" をPATCH bodyに追加'
-
-  fix6_page_link:
-    status: DONE
-    url: "https://www.notion.so/311e8d62e4aa81c3b370f9c9b042b3ef"
-    inserted: "トグル内paragraph: 📊活動ログ詳細"
-
-test1_manual:
+test1_update:
   status: PASS
-  output:
-    - "[SUCCESS] 日記へのClaude Code活動トグルセクション追記完了"
-    - "diary_page: 311e8d62-e4aa-8196-a90a-db9feacc2a35"
-    - "activity_log_url: https://www.notion.so/311e8d62e4aa81c3b370f9c9b042b3ef"
+  output: "[SUCCESS] 2026-02-25 の活動ログを更新しました。"
+  updated_record: "311e8d62-e4aa-81c3-b370-f9c9b042b3ef"
+  data_confirmed: "セッション概要: 2cmd完了(shogun-system×2)"
 
-test2_idempotency:
+test2_repeat_update:
   status: PASS
-  output:
-    - "2026-02-25 の活動ログは既に記録済み。DB追記スキップ。"
-    - "日記に「Claude Code活動」セクションが既に存在。追記スキップ。"
+  output: "[SUCCESS] 2026-02-25 の活動ログを更新しました。"
+  note: "2回目実行もエラーなくUPDATE成功"
 
 git_push:
   status: PASS
-  commit: "887181d"
-  message: "feat: notion_session_log.sh 日記反映品質改善(トグル/挿入位置/要約/リンク) (cmd_233)"
+  commit: "9e3c826"
+  message: "fix: notion_session_log.sh 冪等性ロジックをスキップ→UPDATE方式に変更 (cmd_233b)"
 
 pass_fail_judgment: PASS
