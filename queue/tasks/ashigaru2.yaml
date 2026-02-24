@@ -1,0 +1,176 @@
+task_id: subtask_230a
+parent_cmd: cmd_230
+cmd_id: cmd_230
+assigned_to: ashigaru2
+bloom_level: L3
+title: "案件同期WF統合 — WF1にWF2を吸収、ステータス予定/Issue分岐追加"
+description: |
+  案件同期WF2本をWF1に統合し、ステータス「予定」「Issue」の分岐を実装せよ。
+
+  ■ n8n API
+  URL: http://localhost:5678
+  KEY: /home/ubuntu/.n8n-mcp/n8n/.env の N8N_API_KEY
+
+  ■ 対象WF
+  WF1: 案件同期+GitHub Issue v2.0 (TDsEGyC8XHFAQEZb, 20ノード, active)
+  WF2: 案件タスク完了→対応履歴同期 v2.0 (XjYci5rlyNx2ckcD, 15ノード, active)
+
+  ============================================================
+  ■ Step 0: GitHub Issue作成（GitHub Issue運用ルール）
+  ============================================================
+  saneaki/n8n リポジトリに GitHub Issue を作成せよ。
+  タイトル: "案件同期WF統合: ステータス予定/Issue分岐追加 (cmd_230)"
+  本文:
+    - 目的: WF2をWF1に吸収し、ステータス「予定」「Issue」で処理を分岐
+    - WF1: TDsEGyC8XHFAQEZb (20ノード)、WF2: XjYci5rlyNx2ckcD (15ノード)
+    - 対応内容: ステータス判定拡張 + Issue分岐ノード追加 + WF2非アクティブ化
+  Issue URLを記録しておくこと（完了後にクローズする）。
+
+  ============================================================
+  ■ Step 1: WF1 JSON取得・確認
+  ============================================================
+  GET /api/v1/workflows/TDsEGyC8XHFAQEZb でWF1 JSON取得。
+  以下の接続が現状と一致することを確認:
+    - ステータス判定 [0] → 案件ページ取得
+    - NotionにIssue URL書き戻し [0] → タスク本文ブロック取得
+    - 案件同期ステータス更新 [0] → タスクステータスを「Issue作成」に変更
+
+  ============================================================
+  ■ Step 2: WF1 修正（3変更 + 1追加）
+  ============================================================
+
+  【変更1】ステータス判定ノードの conditions 修正
+  現在（単一条件 and）:
+    conditions: [{ leftValue: "={{ $json.status }}", rightValue: "Issue", operator: equals }]
+    combinator: "and"
+  変更後（2条件 or）:
+    combinator: "or"
+    conditions: [
+      { id: "cond-status-issue", leftValue: "={{ $json.status }}", rightValue: "Issue", operator: { type: "string", operation: "equals" } },
+      { id: "cond-status-yotei", leftValue: "={{ $json.status }}", rightValue: "予定", operator: { type: "string", operation: "equals" } }
+    ]
+
+  【変更2】ステータス判定の接続先変更
+  変更前: ステータス判定 [main][0] → 案件ページ取得
+  変更後: ステータス判定 [main][0] → Issue分岐（新規ノード）
+
+  【追加】Issue分岐ノードを新規追加
+  type: n8n-nodes-base.if
+  name: "Issue分岐"
+  parameters:
+    conditions:
+      combinator: "and"
+      conditions:
+        - id: "cond-issue-only"
+          leftValue: "={{ $json.status }}"
+          rightValue: "Issue"
+          operator: { type: "string", operation: "equals" }
+  connections:
+    - main[0] → 案件ページ取得   （Issue: GitHub Issue作成フローへ）
+    - main[1] → タスク本文ブロック取得   （予定: 対応履歴同期のみ）
+  position: ステータス判定と案件ページ取得の間に配置
+    ※ 座標はステータス判定の x+200, y+0 程度に設定
+  typeVersion: 2
+
+  【変更3】接続の修正
+  削除: 案件同期ステータス更新 [main][0] → タスクステータスを「Issue作成」に変更
+  追加: NotionにIssue URL書き戻し [main][0] → タスクステータスを「Issue作成」に変更
+  （NotionにIssue URL書き戻しは既に タスク本文ブロック取得へ繋がっているが、
+   追加でタスクステータスを「Issue作成」に変更 へも繋ぐ。n8n は1ノード→複数出力可）
+
+  ■ 結果として期待されるフロー
+
+  共通: Webhook受信→Webhook応答→タスクデータ抽出→ステータス判定（Issue or 予定）
+  ↓ true
+  Issue分岐
+  ┌─ [true: Issue] ──→ 案件ページ取得→Code:GitHubIssueペイロード構築→GitHub Issue作成
+  │                     →NotionにIssue URL書き戻し→[タスクステータスを「Issue作成」に変更]
+  │                                             ↓
+  │                     タスク本文ブロック取得→ブロック変換→案件ページブロック取得
+  │                     →対応履歴トグル検索→対応履歴トグル有無分岐→…→パス統合
+  │                     →追記ペイロード構築→対応履歴に追記→案件同期ステータス更新 (終端)
+  └─ [false: 予定] ──→ タスク本文ブロック取得（上記と合流）
+
+  ============================================================
+  ■ Step 3: WF1 PUT更新
+  ============================================================
+  PUT /api/v1/workflows/TDsEGyC8XHFAQEZb
+  ※ activeフィールドはPUTに含めない（必須）
+  ※ 許可フィールド: name, nodes, connections, settings のみ
+
+  ============================================================
+  ■ Step 4: WF2 非アクティブ化
+  ============================================================
+  WF2 (XjYci5rlyNx2ckcD) を非アクティブ化:
+    POST /rest/workflows/XjYci5rlyNx2ckcD/deactivate
+    ※ 内部APIを使用（Cookie認証 or n8n-auth）
+    または PATCH /api/v1/workflows/XjYci5rlyNx2ckcD でactive:falseを設定
+  WF2は削除しない（ロールバック用に残す）。
+
+  ============================================================
+  ■ Step 5: テスト実行
+  ============================================================
+
+  テストデータ準備: 実際のNotionタスクデータを使用するか、
+  Webhook手動呼び出しでテスト。
+
+  テスト1 — 「予定」ステータス:
+    POST http://localhost:5678/webhook/notion-issue-sync
+    body: { "taskPageId": "<有効なNotionページID>", "casePageId": "<有効なID>",
+            "status": "予定", "taskContent": "テスト予定タスク" }
+    確認: GET /api/v1/executions?workflowId=TDsEGyC8XHFAQEZb&limit=3
+    期待: 対応履歴に追記 → success, GitHub Issue作成 → skipped(実行されない)
+          タスクステータスを「Issue作成」に変更 → skipped(実行されない)
+
+  テスト2 — 「Issue」ステータス:
+    POST http://localhost:5678/webhook/notion-issue-sync
+    body: { "taskPageId": "<有効なNotionページID>", "casePageId": "<有効なID>",
+            "status": "Issue", "taskContent": "テストIssueタスク" }
+    確認: 同上
+    期待: 対応履歴に追記 → success, GitHub Issue作成 → success,
+          NotionにIssue URL書き戻し → success, タスクステータスを「Issue作成」に変更 → success
+
+  ※ 実際のNotionページIDが必要な場合:
+    GET /api/v1/executions?workflowId=TDsEGyC8XHFAQEZb&limit=5 で過去execから取得可能
+
+  ============================================================
+  ■ Step 6: Notion Automation確認
+  ============================================================
+  WF2のWebhookパス /notion-task-sync がNotion Automation側で設定されているか確認。
+  もし設定されている場合 → 🚨要対応に記載（Notion Automationの設定変更が必要）。
+  確認方法: WF2の過去exec (GET /api/v1/executions?workflowId=XjYci5rlyNx2ckcD&limit=3)
+  で実際に/notion-task-syncが呼ばれていた実績があるか確認。
+
+  ============================================================
+  ■ Step 7: GitHub Issue更新 + git push
+  ============================================================
+  1. GitHub Issue (Step 0で作成) に進捗コメント追加:
+     - 実装内容の要約
+     - テスト結果 (exec ID)
+     - WF2非アクティブ確認
+  2. テスト成功後にGitHub Issueをクローズ
+  3. git add + commit + push:
+     ※ WFはn8n上で更新されるためgitへのWF JSONプッシュは不要。
+     ※ ただし、このタスクYAML自体は git push 対象。
+     ※ `git -C /home/ubuntu/shogun add queue/tasks/ashigaru2.yaml`
+        `git -C /home/ubuntu/shogun commit -m "feat: cmd_230 subtask_230a 案件同期WF統合"`
+        `git -C /home/ubuntu/shogun push`
+
+  ============================================================
+  ■ Step 8: 報告
+  ============================================================
+  gunshiに報告 (queue/reports/ashigaru2_report.yaml):
+    - 追加ノード: Issue分岐 (node id, position)
+    - 変更内容: ステータス判定 conditions修正, 接続3変更
+    - WF2 非アクティブ化: 確認
+    - テスト1 (予定): exec ID, 期待通りのノード実行状況
+    - テスト2 (Issue): exec ID, 期待通りのノード実行状況
+    - Notion Automation /notion-task-sync: 使用実績あり/なし（🚨要否）
+    - GitHub Issue URL + クローズ確認
+    - git push: commit hash
+    - PASS/FAIL
+
+report_to: gunshi
+status: assigned
+priority: high
+timestamp: "2026-02-24T23:43:00+09:00"
