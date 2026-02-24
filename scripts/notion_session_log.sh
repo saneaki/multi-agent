@@ -13,11 +13,13 @@ source /home/ubuntu/.n8n-mcp/n8n/.env
 
 NOTION_TOKEN="${NOTION_INTEGRATION_TOKEN}"
 ACTIVITY_LOG_DB_ID="${NOTION_ACTIVITY_LOG_DB_ID}"
+ACTIVITY_LOG_DS_ID="${NOTION_ACTIVITY_LOG_DS_ID}"
 DIARY_DB_ID="1a4e8d62-e4aa-81f1-8ede-c239ea53299b"
+DIARY_DS_ID="${NOTION_DIARY_DS_ID}"
 DASHBOARD="/home/ubuntu/shogun/dashboard.md"
 TODAY=$(TZ=Asia/Tokyo date +%Y-%m-%d)
 NOTION_API="https://api.notion.com/v1"
-NOTION_VERSION="2022-06-28"
+NOTION_VERSION="2025-09-03"
 
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] notion_session_log.sh 開始 (TODAY=${TODAY})"
 
@@ -116,7 +118,7 @@ echo "[INFO] セッション概要: ${SESSION_SUMMARY}"
 # ============================================================
 
 EXISTING=$(curl -s -X POST \
-  "${NOTION_API}/databases/${ACTIVITY_LOG_DB_ID}/query" \
+  "${NOTION_API}/data_sources/${ACTIVITY_LOG_DS_ID}/query" \
   -H "Authorization: Bearer ${NOTION_TOKEN}" \
   -H "Content-Type: application/json" \
   -H "Notion-Version: ${NOTION_VERSION}" \
@@ -224,13 +226,13 @@ fi
 echo "[INFO] 日記タスク検索: ${TODAY}日記"
 
 DIARY_QUERY=$(curl -s -X POST \
-  "${NOTION_API}/databases/${DIARY_DB_ID}/query" \
+  "${NOTION_API}/data_sources/${DIARY_DS_ID}/query" \
   -H "Authorization: Bearer ${NOTION_TOKEN}" \
   -H "Content-Type: application/json" \
   -H "Notion-Version: ${NOTION_VERSION}" \
   -d "{
     \"filter\": {
-      \"property\": \"名前\",
+      \"property\": \"タスク名\",
       \"title\": { \"contains\": \"${TODAY}\" }
     }
   }")
