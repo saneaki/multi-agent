@@ -112,6 +112,8 @@
 !output/
 !output/*.md
 !output/*.drawio
+!output/**/*.md
+!output/**/*.drawio
 
 # Docs
 !docs/
