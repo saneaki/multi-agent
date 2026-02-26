@@ -20,8 +20,7 @@ TODAY=$(TZ=Asia/Tokyo date +%Y-%m-%d)
 NOTION_API="https://api.notion.com/v1"
 NOTION_VERSION="2025-09-03"
 
-# 「音声での振り返り」H2ブロックID（固定: 殿の事前調査済み）
-VOICE_REVIEW_BLOCK_ID="311e8d62-e4aa-81bf-a823-c89331a5a4ab"
+VOICE_REVIEW_BLOCK_ID=""  # 動的検索で設定（機能C）
 
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] notion_session_log.sh 開始 (TODAY=${TODAY})"
 
@@ -154,7 +153,8 @@ echo "[INFO] セッション概要: ${SESSION_SUMMARY}"
 # PARSE_RESULTをtempファイルに書き出し（heredoc内json.loadsの\nエスケープ問題を回避）
 PARSE_RESULT_FILE=$(mktemp /tmp/notion_parse_result.XXXXXX.json)
 printf '%s' "${PARSE_RESULT}" > "${PARSE_RESULT_FILE}"
-trap 'rm -f "${PARSE_RESULT_FILE}"' EXIT
+UPLOADED_FILES_TMPFILE=""
+trap 'rm -f "${PARSE_RESULT_FILE}" "${UPLOADED_FILES_TMPFILE}"' EXIT
 
 # ============================================================
 # 冪等性チェック (Notion DB検索)
@@ -324,6 +324,231 @@ fi
 echo "[INFO] 活動ログURL: ${ACTIVITY_LOG_URL}"
 
 # ============================================================
+# 機能A: output/ → Drive アップロード
+# ============================================================
+
+UPLOAD_STATE_FILE="/home/ubuntu/shogun/.upload_state.json"
+UPLOADED_FILES_TMPFILE=$(mktemp /tmp/notion_uploaded_files.XXXXXX.json)
+echo "[]" > "${UPLOADED_FILES_TMPFILE}"
+
+upload_output_files() {
+  local webhook_url="${N8N_DRIVE_UPLOAD_WEBHOOK_URL:-}"
+  local folder_id="${GOOGLE_DRIVE_OUTPUT_FOLDER_ID:-}"
+  local webhook_txt="/home/ubuntu/shogun/scripts/drive_upload_webhook_url.txt"
+
+  if [[ -z "${webhook_url}" ]] && [[ -f "${webhook_txt}" ]]; then
+    webhook_url=$(cat "${webhook_txt}" 2>/dev/null || echo "")
+  fi
+
+  if [[ -z "${webhook_url}" ]]; then
+    echo "[WARN] Drive Webhook URL未設定。Drive アップロードをスキップ。"
+    return 0
+  fi
+
+  echo "[INFO] output/ → Drive アップロード開始 (webhook: ${webhook_url})"
+
+  python3 - "${UPLOAD_STATE_FILE}" "${webhook_url}" "${folder_id}" \
+    "/home/ubuntu/shogun/output" "${TODAY}" "${UPLOADED_FILES_TMPFILE}" <<'PYEOF'
+import sys, json, base64, urllib.request, urllib.error, os, glob
+
+state_file = sys.argv[1]
+webhook_url = sys.argv[2]
+folder_id = sys.argv[3]
+output_dir = sys.argv[4]
+today = sys.argv[5]
+uploaded_file = sys.argv[6]
+
+state = {}
+if os.path.exists(state_file):
+    try:
+        with open(state_file) as f:
+            state = json.load(f)
+    except Exception:
+        state = {}
+
+files = []
+for pattern in ['**/*.md', '**/*.drawio']:
+    files.extend(glob.glob(os.path.join(output_dir, pattern), recursive=True))
+files = sorted(set(files))
+
+uploaded = []
+skip_count = 0
+error_count = 0
+upload_count = 0
+
+for filepath in files:
+    filename = os.path.basename(filepath)
+    if filename in state:
+        skip_count += 1
+        continue
+    try:
+        with open(filepath, 'rb') as f:
+            content_b64 = base64.b64encode(f.read()).decode('ascii')
+    except Exception as e:
+        print(f"[ERROR] ファイル読込失敗: {filename}: {e}", flush=True)
+        error_count += 1
+        continue
+
+    mime_type = "application/xml" if filename.endswith('.drawio') else "text/plain"
+    payload = {
+        "filename": filename,
+        "content_base64": content_b64,
+        "mime_type": mime_type,
+        "folder_id": folder_id
+    }
+    try:
+        req = urllib.request.Request(
+            webhook_url,
+            data=json.dumps(payload).encode('utf-8'),
+            headers={'Content-Type': 'application/json'},
+            method='POST'
+        )
+        with urllib.request.urlopen(req, timeout=60) as resp:
+            result = json.loads(resp.read().decode('utf-8'))
+        file_id = result.get('file_id', result.get('id', ''))
+        web_view_link = result.get('web_view_link', result.get('webViewLink', ''))
+    except Exception as e:
+        print(f"[ERROR] アップロード失敗: {filename}: {e}", flush=True)
+        error_count += 1
+        continue
+
+    if file_id:
+        state[filename] = {"date": today, "file_id": file_id, "web_view_link": web_view_link}
+        uploaded.append({
+            "filename": filename,
+            "filepath": filepath,
+            "file_id": file_id,
+            "web_view_link": web_view_link
+        })
+        upload_count += 1
+        print(f"[INFO] アップロード完了: {filename}", flush=True)
+    else:
+        print(f"[ERROR] アップロード失敗（file_id取得不可）: {filename}", flush=True)
+        error_count += 1
+
+if upload_count > 0:
+    with open(state_file, 'w') as f:
+        json.dump(state, f, ensure_ascii=False, indent=2)
+
+with open(uploaded_file, 'w') as f:
+    json.dump(uploaded, f, ensure_ascii=False)
+
+print(f"[INFO] アップロード: {upload_count}件完了, {skip_count}件スキップ, {error_count}件エラー", flush=True)
+PYEOF
+}
+
+# ============================================================
+# 機能B: Notion 成果物DB記録
+# ============================================================
+
+record_artifacts_to_notion() {
+  local artifacts_db_id="${NOTION_ARTIFACTS_DB_ID:-}"
+  if [[ -z "${artifacts_db_id}" ]]; then
+    echo "[WARN] NOTION_ARTIFACTS_DB_ID未設定。成果物DB記録をスキップ。"
+    return 0
+  fi
+
+  local uploaded_count
+  uploaded_count=$(python3 -c "import json; d=json.load(open('${UPLOADED_FILES_TMPFILE}')); print(len(d))" 2>/dev/null || echo "0")
+  if [[ "${uploaded_count}" -eq 0 ]]; then
+    echo "[INFO] アップロード済みファイルなし。成果物DB記録スキップ。"
+    return 0
+  fi
+
+  echo "[INFO] Notion 成果物DB記録開始 (${uploaded_count}件)..."
+
+  python3 - "${UPLOADED_FILES_TMPFILE}" "${NOTION_TOKEN}" "${NOTION_API}" \
+    "${NOTION_VERSION}" "${artifacts_db_id}" "${TODAY}" <<'PYEOF'
+import sys, json, re, urllib.request, urllib.error
+
+uploaded_file = sys.argv[1]
+token = sys.argv[2]
+api_base = sys.argv[3]
+api_version = sys.argv[4]
+db_id = sys.argv[5]
+today = sys.argv[6]
+
+with open(uploaded_file) as f:
+    uploaded = json.load(f)
+
+def notion_request(method, url, data=None):
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json",
+        "Notion-Version": api_version
+    }
+    body = json.dumps(data).encode('utf-8') if data else None
+    req = urllib.request.Request(url, data=body, headers=headers, method=method)
+    try:
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            return json.loads(resp.read().decode('utf-8'))
+    except urllib.error.HTTPError as e:
+        return json.loads(e.read().decode('utf-8'))
+    except Exception as e:
+        return {"error": str(e)}
+
+created = 0
+skipped = 0
+errors = 0
+
+for item in uploaded:
+    filename = item["filename"]
+    web_view_link = item.get("web_view_link", "")
+
+    query_resp = notion_request("POST", f"{api_base}/databases/{db_id}/query", {
+        "filter": {"property": "ファイル名", "title": {"equals": filename}}
+    })
+    if query_resp.get("results"):
+        print(f"[INFO] スキップ（既存）: {filename}")
+        skipped += 1
+        continue
+
+    cmd_match = re.search(r'cmd_\d+', filename)
+    cmd_num = cmd_match.group(0) if cmd_match else ""
+
+    filepath = item.get("filepath", "")
+    parts = filepath.split("/")
+    project = ""
+    try:
+        output_idx = next(i for i, p in enumerate(parts) if p == "output")
+        if output_idx + 1 < len(parts) - 1:
+            project = parts[output_idx + 1]
+    except StopIteration:
+        pass
+
+    file_type = "md" if filename.endswith(".md") else ("drawio" if filename.endswith(".drawio") else "other")
+
+    properties = {
+        "ファイル名": {"title": [{"text": {"content": filename}}]},
+        "cmd番号": {"rich_text": [{"text": {"content": cmd_num}}]},
+        "日付": {"date": {"start": today}},
+        "ファイル種別": {"select": {"name": file_type}}
+    }
+    if project:
+        properties["プロジェクト"] = {"select": {"name": project}}
+    if web_view_link:
+        properties["Driveリンク"] = {"url": web_view_link}
+
+    create_resp = notion_request("POST", f"{api_base}/pages", {
+        "parent": {"database_id": db_id},
+        "properties": properties
+    })
+
+    if create_resp.get("object") == "page":
+        print(f"[INFO] 成果物DBレコード作成: {filename}")
+        created += 1
+    else:
+        print(f"[ERROR] レコード作成失敗: {filename}: {create_resp.get('message', create_resp)}", file=sys.stderr)
+        errors += 1
+
+print(f"[INFO] 成果物DB記録: {created}件作成, {skipped}件スキップ, {errors}件エラー")
+PYEOF
+}
+
+upload_output_files
+record_artifacts_to_notion
+
+# ============================================================
 # 日記タスク検索
 # ============================================================
 
@@ -362,6 +587,28 @@ BLOCKS=$(curl -s -X GET \
   "${NOTION_API}/blocks/${DIARY_PAGE_ID}/children" \
   -H "Authorization: Bearer ${NOTION_TOKEN}" \
   -H "Notion-Version: ${NOTION_VERSION}")
+
+# 機能C: VOICE_REVIEW_BLOCK_ID 動的検索
+VOICE_REVIEW_BLOCK_ID=$(echo "${BLOCKS}" | python3 -c "
+import json, sys
+data = json.load(sys.stdin)
+results = data.get('results', [])
+for block in results:
+    block_type = block.get('type', '')
+    if block_type in ('heading_2', 'heading_1', 'heading_3'):
+        texts = block.get(block_type, {}).get('rich_text', [])
+        text = ''.join(t.get('plain_text', '') for t in texts)
+        if '音声での振り返り' in text:
+            print(block.get('id', ''))
+            sys.exit(0)
+print('')
+" 2>/dev/null || echo "")
+
+if [[ -n "${VOICE_REVIEW_BLOCK_ID}" ]]; then
+  echo "[INFO] 「音声での振り返り」ブロックID取得: ${VOICE_REVIEW_BLOCK_ID}"
+else
+  echo "[INFO] 「音声での振り返り」ブロックが見つからない。ページ末尾に追記。"
+fi
 
 HAS_CC_SECTION=$(echo "${BLOCKS}" | python3 -c "
 import json, sys
@@ -448,10 +695,10 @@ toggle_block = {
 }
 
 # 挿入位置: 「音声での振り返り」H2の直後（修正5）
-payload = {
-    "children": [toggle_block],
-    "after": voice_review_block_id
-}
+# VOICE_REVIEW_BLOCK_IDが空の場合はafterを省略してページ末尾に追記
+payload = {"children": [toggle_block]}
+if voice_review_block_id:
+    payload["after"] = voice_review_block_id
 
 print(json.dumps(payload, ensure_ascii=False))
 PYEOF
