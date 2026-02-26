@@ -458,7 +458,7 @@ record_artifacts_to_notion() {
   echo "[INFO] Notion 成果物DB記録開始 (${uploaded_count}件)..."
 
   python3 - "${UPLOADED_FILES_TMPFILE}" "${NOTION_TOKEN}" "${NOTION_API}" \
-    "${NOTION_VERSION}" "${artifacts_db_id}" "${TODAY}" <<'PYEOF'
+    "2022-06-28" "${artifacts_db_id}" "${TODAY}" <<'PYEOF'
 import sys, json, re, urllib.request, urllib.error
 
 uploaded_file = sys.argv[1]
