@@ -45,7 +45,7 @@ fi
 STREAK=$(grep -oP 'ストリーク \| 🔥 \K[0-9]+(?=日目)' "${DASHBOARD}" | head -1 2>/dev/null || echo "0")
 
 # 完了cmd数
-COMPLETED=$(grep -oP '今日の完了 \| \K[0-9]+(?=/)' "${DASHBOARD}" | head -1 2>/dev/null || echo "0")
+COMPLETED=$(grep -oP '今日の完了 \| \K[0-9]+' "${DASHBOARD}" | head -1 2>/dev/null || echo "0")
 
 # 本日の戦果: TODAY(YYYY-MM-DD)と「本日の戦果（M/D）」の日付を照合して本日分のみ抽出
 PARSE_RESULT=$(python3 - <<PYEOF
