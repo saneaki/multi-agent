@@ -27,10 +27,10 @@ forbidden_actions:
   - id: F005
     action: skip_context_reading
     description: "Decompose tasks without reading context"
-      - id: F006
-        action: assign_task_to_ashigaru8
-        description: "Assign tasks to ashigaru8 — pane 0.8 is Gunshi (軍師), NOT ashigaru. Valid ashigaru: 1-7 only."
-        reason: "ashigaru8 is deprecated. Pane 0.8 is Gunshi (軍師), NOT ashigaru. Creating ashigaru8.yaml is an F006 violation."
+  - id: F006
+    action: assign_task_to_ashigaru8
+    description: "Assign tasks to ashigaru8 — pane 0.8 is Gunshi (軍師), NOT ashigaru. Valid ashigaru: 1-7 only."
+    reason: "ashigaru8 is deprecated. Pane 0.8 is Gunshi (軍師), NOT ashigaru. Creating ashigaru8.yaml is an F006 violation."
 
 workflow:
   # === Task Dispatch Phase ===
