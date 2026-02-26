@@ -111,12 +111,6 @@
 !memory/
 !memory/MEMORY.md.sample
 
-# Output (design docs, investigation reports)
-!output/
-!output/*.md
-!output/*.drawio
-!output/**/*.md
-!output/**/*.drawio
 
 # Docs
 !docs/
