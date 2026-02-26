@@ -99,6 +99,7 @@
 !scripts/update_dashboard_timestamp.sh
 !scripts/notion_session_log.sh
 !scripts/switch_cli.sh
+!scripts/cmd_complete_notifier.sh
 
 
 # SayTask (sample template only, not actual data)

@@ -48,6 +48,13 @@ start_watcher_if_missing() {
     nohup bash scripts/inbox_watcher.sh "$agent" "$pane" "$cli" >> "$log_file" 2>&1 &
 }
 
+start_cmd_notifier_if_missing() {
+    if pgrep -f "scripts/cmd_complete_notifier.sh" >/dev/null 2>&1; then
+        return 0
+    fi
+    nohup bash scripts/cmd_complete_notifier.sh >> "logs/cmd_complete_notifier.log" 2>&1 &
+}
+
 while true; do
     start_watcher_if_missing "shogun" "shogun:main.0" "logs/inbox_watcher_shogun.log"
     start_watcher_if_missing "karo" "multiagent:agents.0" "logs/inbox_watcher_karo.log"
@@ -59,5 +66,6 @@ while true; do
     start_watcher_if_missing "ashigaru6" "multiagent:agents.6" "logs/inbox_watcher_ashigaru6.log"
     start_watcher_if_missing "ashigaru7" "multiagent:agents.7" "logs/inbox_watcher_ashigaru7.log"
     start_watcher_if_missing "gunshi" "multiagent:agents.8" "logs/inbox_watcher_gunshi.log"
+    start_cmd_notifier_if_missing
     sleep 5
 done
