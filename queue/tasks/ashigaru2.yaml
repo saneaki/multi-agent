@@ -1,65 +1,120 @@
-task_id: subtask_235a
-cmd_id: cmd_235
+task_id: subtask_238b
+parent_cmd: cmd_238
 assigned_to: ashigaru2
 assigned_by: karo
-timestamp: "2026-02-25T07:20:00+09:00"
-status: completed
-priority: high
-project: hananoen-gmail
-
-title: "Gmail自動化WF v5→v6 & Gmailダイジェスト通知WF v1→v2 アップグレード計画書作成"
-
-context: |
-  Gmail自動化WF v5.0→v6.0 および Gmailダイジェスト通知WF v1.0→v2.0 の
-  アップグレード計画書を作成せよ。実装はまだ行わない。計画のみ。
-
-  ■ 現状（将軍が調査済み）
-  【Gmail自動化WF】
-  - v5.0 (active): 6HfrbcXoujQSfSQC / 34ノード
-  - v6.0 (inactive): x2HSCjYW3wCQlp6a / 37ノード（既存コピー、API未移行）
-  - v6.0追加ノード: LINE通知, ログイン通知スキップ, ログイン通知除外
-  - Notion API移行対象（3ノード）:
-    1. Notion DB保存: 2022-06-28 → 2025-09-03
-    2. Notion DB更新: 2022-06-28 → 2025-09-03
-    3. Notion案件詳細取得: 2022-06-28 → 2025-09-03 + /databases/ → /data_sources/
-  - Notion人物DB検索: 既に2025-09-03移行済み
-
-  【Gmailダイジェスト通知WF】
-  - v1.0 (active): XgI1VYV2oDZyGKhf / 8ノード
-  - v2.0 (inactive): Qitb61IRPn4XZkgA / 9ノード（既存コピー、API未移行）
-  - v2.0追加ノード: LINE通知
-  - Notion API移行対象（2ノード）:
-    1. Notion DB検索: 2022-06-28 → 2025-09-03 + /databases/ → /data_sources/
-    2. Notion通知済み更新: 2022-06-28 → 2025-09-03
-
-steps:
-  - "n8n API で v6.0(x2HSCjYW3wCQlp6a)のWF JSONを取得し、全ノードを確認"
-  - "n8n API で v2.0(Qitb61IRPn4XZkgA)のWF JSONを取得し、全ノードを確認"
-  - "Notion API移行対象ノードのbefore/after変更内容を整理"
-  - "data_source_id を Notion APIで調査（Gmail DB, 案件DB等）"
-  - "LINE通知ノードの設定内容を分析（URL, ペイロード, 認証方式）"
-  - "ログイン通知除外ロジックの実装内容を分析"
-  - "移行手順書（実施順序・テスト項目・ロールバック手順）を作成"
-  - "output/cmd_235/upgrade_plan.md に保存"
-  - "報告書作成 → gunshi"
-
-acceptance_criteria:
-  - "v6.0/v2.0それぞれの全変更点リスト（ノード単位の差分）が作成されている"
-  - "Notion API 2025-09-03移行対象ノードと具体的な変更内容が明記されている"
-  - "data_source_id の特定（.env追加が必要な場合はその値）が調査済み"
-  - "LINE通知ノードの設定内容（URL, ペイロード, 認証方式）が確認済み"
-  - "ログイン通知除外ロジックの実装内容が確認済み"
-  - "移行手順書（実行順序、テスト項目、ロールバック手順）が作成されている"
-  - "計画書がoutput/cmd_235/に保存されている"
-
-env:
-  n8n_api: "http://localhost:5678"
-  n8n_key_file: "/home/ubuntu/.n8n-mcp/n8n/.env"
-  wf_v6_id: "x2HSCjYW3wCQlp6a"
-  wf_v5_id: "6HfrbcXoujQSfSQC"
-  wf_digest_v2_id: "Qitb61IRPn4XZkgA"
-  wf_digest_v1_id: "XgI1VYV2oDZyGKhf"
-  output_dir: "output/cmd_235"
-
+bloom_level: L3
 report_to: gunshi
+title: "shogun.md/ashigaru.md/gunshi.md upstream再構築 + マージ判断レポート"
+priority: high
+status: assigned
+timestamp: "2026-02-26T08:50:00+09:00"
+
+description: |
+  instructions/ の3ファイル(shogun.md, ashigaru.md, gunshi.md)をupstream/main版ベースに再構築し、
+  マージ判断レポートを作成せよ。
+
+  ■ 共通方針
+  - `git show upstream/main:instructions/{file}.md` でupstream版を取得
+  - upstream版をそのままベースにし、フォーク独自セクションを末尾「# Fork Extensions」に追記
+  - upstreamの既存セクション内容は一切変更しない
+
+  ■ STEP 1: shogun.md 再構築
+
+    (1a) upstream版取得:
+         git show upstream/main:instructions/shogun.md > /tmp/shogun_new.md
+
+    (1b) Fork Extensions抽出:
+         フォーク版: /home/ubuntu/shogun/instructions/shogun.md
+
+         セクション1: "## 🚨要対応 Active Monitoring" (fork L169付近)
+           grep -n "要対応 Active Monitoring" /home/ubuntu/shogun/instructions/shogun.md
+           → 見つかった行番号から "^## ntfy Input Handling" の手前まで抽出
+           ※ "## ntfy Input Handling" はupstreamにあるので除外
+
+         セクション2: "## Post-ntfy State Audit" (fork L222付近)
+           grep -n "^## Post-ntfy State Audit" /home/ubuntu/shogun/instructions/shogun.md
+           → 見つかった行番号から次の "^## " 見出しの手前まで抽出
+
+    (1c) 結合:
+         cat /tmp/shogun_new.md > /tmp/shogun_final.md
+         printf "\n# Fork Extensions\n\n> フォーク独自の実運用知見。\n\n" >> /tmp/shogun_final.md
+         # セクション1とセクション2を追記
+         cp /tmp/shogun_final.md /home/ubuntu/shogun/instructions/shogun.md
+
+  ■ STEP 2: ashigaru.md 再構築
+
+    (2a) upstream版取得:
+         git show upstream/main:instructions/ashigaru.md > /tmp/ashigaru_new.md
+
+    (2b) Fork Extensions抽出:
+         フォーク版: /home/ubuntu/shogun/instructions/ashigaru.md
+
+         セクション1: "## n8n Workflow Fix Protocol (Mandatory)" (fork L286付近)
+           grep -n "n8n Workflow Fix Protocol" /home/ubuntu/shogun/instructions/ashigaru.md
+           → 見つかった行番号から "^## Shout Mode" の手前まで抽出
+           ※ "## Shout Mode (echo_message)" はupstreamにあるので除外
+
+    (2c) 結合:
+         cat /tmp/ashigaru_new.md > /tmp/ashigaru_final.md
+         printf "\n# Fork Extensions\n\n> フォーク独自の実運用知見。\n\n" >> /tmp/ashigaru_final.md
+         # セクション1を追記
+         cp /tmp/ashigaru_final.md /home/ubuntu/shogun/instructions/ashigaru.md
+
+  ■ STEP 3: gunshi.md 再構築
+
+    (3a) upstream版取得:
+         git show upstream/main:instructions/gunshi.md > /tmp/gunshi_new.md
+
+    (3b) Fork Extensions抽出:
+         フォーク版: /home/ubuntu/shogun/instructions/gunshi.md
+
+         セクション1: Category 2 Bloom Analysis Tasks (fork L259付近)
+           grep -n "Category 2: Bloom Analysis Tasks" /home/ubuntu/shogun/instructions/gunshi.md
+           → 見つかった行番号から "^### Category 3:" の手前まで抽出
+
+         セクション2: Additional QC Criteria for n8n Workflows (fork L208付近)
+           grep -n "Additional QC Criteria for n8n Workflows" /home/ubuntu/shogun/instructions/gunshi.md
+           → 見つかった行番号から "^## Language & Tone" の手前まで抽出
+
+         セクション3: Pattern 4 Bloom Analysis (fork L501付近)
+           grep -n "Pattern 4: Bloom Analysis" /home/ubuntu/shogun/instructions/gunshi.md
+           → 見つかった行番号から "^### Pattern 5:" の手前まで抽出
+
+         注意: upstream F006は「QCフロー外更新禁止」のままにする（upstreamに寄せる）。
+               フォーク版のF006とは別物。
+
+    (3c) 結合:
+         cat /tmp/gunshi_new.md > /tmp/gunshi_final.md
+         printf "\n# Fork Extensions\n\n> フォーク独自の実運用知見。\n\n" >> /tmp/gunshi_final.md
+         # セクション1(Category 2)、セクション2(n8n QC)、セクション3(Pattern 4)を追記
+         cp /tmp/gunshi_final.md /home/ubuntu/shogun/instructions/gunshi.md
+
+  ■ STEP 4: マージ判断レポート作成
+    output/cmd_238_instructions_merge_report.md を作成せよ（フォルダ作成不要）。
+
+    記載内容:
+    1. 概要: cmd_238 instructions 4ファイル upstream/main再構築
+    2. 各ファイルの変更概要 (4ファイル分):
+       - ベース: upstream/main版 行数
+       - 削除した内容（フォーク独自かつupstreamに寄せるために削除）
+       - Fork Extensionsに集約した内容（セクション名のリスト）
+    3. 受入基準充足確認 (cmd_238の acceptance_criteria 10項目を検証)
+
+  ■ STEP 5: git add + commit + push
+    cd /home/ubuntu/shogun
+    git add instructions/shogun.md instructions/ashigaru.md instructions/gunshi.md \
+            output/cmd_238_instructions_merge_report.md
+    # subtask_238aのkaro.md commitがあれば一緒にpushされる
+    git commit -m "refactor: cmd_238 shogun/ashigaru/gunshi.md upstream再構築 + マージ報告書"
+    git push origin original
+
+  ■ 完了確認チェックリスト
+  - [ ] shogun.md: "# Fork Extensions" + "🚨要対応 Active Monitoring" + "Post-ntfy State Audit"
+  - [ ] ashigaru.md: "# Fork Extensions" + "n8n Workflow Fix Protocol"
+  - [ ] gunshi.md: "# Fork Extensions" + "Category 2: Bloom Analysis" + "n8n QC" + "Pattern 4"
+  - [ ] 各ファイルにupstream既存セクションが存在する
+  - [ ] output/cmd_238_instructions_merge_report.md が作成されている
+  - [ ] git commit + push が完了している
+
+target_path: "instructions/shogun.md, instructions/ashigaru.md, instructions/gunshi.md, output/cmd_238_instructions_merge_report.md"
 report_path: "queue/reports/ashigaru2_report.yaml"

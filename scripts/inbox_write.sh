@@ -112,52 +112,56 @@ try:
 except Exception as e:
     print(f'ERROR: {e}', file=sys.stderr)
     sys.exit(1)
-" || exit 1
+"
+        STATUS=$?
+        _release_lock
 
-    ) 200>"$LOCKFILE"; then
-        # Success
+        if [ $STATUS -eq 0 ]; then
+            # ntfy auto-notification (cmd_complete/cmd_milestone → shogun only)
+            if [[ "$TARGET" == "shogun" ]] && [[ "$TYPE" == "cmd_complete" || "$TYPE" == "cmd_milestone" ]]; then
+                # Check if ntfy_topic is configured
+                NTFY_TOPIC=$(grep 'ntfy_topic:' "$SCRIPT_DIR/config/settings.yaml" 2>/dev/null | awk '{print $2}' | tr -d '"')
+                if [ -n "$NTFY_TOPIC" ]; then
+                    # Extract cmd_id for title
+                    cmd_id=$(echo "$CONTENT" | grep -oP 'cmd_\d+' | head -1)
 
-        # ntfy auto-notification (cmd_complete/cmd_milestone → shogun only)
-        if [[ "$TARGET" == "shogun" ]] && [[ "$TYPE" == "cmd_complete" || "$TYPE" == "cmd_milestone" ]]; then
-            # Check if ntfy_topic is configured
-            NTFY_TOPIC=$(grep 'ntfy_topic:' "$SCRIPT_DIR/config/settings.yaml" 2>/dev/null | awk '{print $2}' | tr -d '"')
-            if [ -n "$NTFY_TOPIC" ]; then
-                # Extract cmd_id for title
-                cmd_id=$(echo "$CONTENT" | grep -oP 'cmd_\d+' | head -1)
+                    # Generate title based on TYPE
+                    case "$TYPE" in
+                        cmd_complete)
+                            NTFY_TITLE="✅ ${cmd_id}完了"
+                            ;;
+                        cmd_milestone)
+                            NTFY_TITLE="📌 ${cmd_id}中間報告"
+                            ;;
+                        report_received)
+                            NTFY_TITLE="📋 報告受信"
+                            ;;
+                        *)
+                            NTFY_TITLE="📬 ${TYPE}"
+                            ;;
+                    esac
 
-                # Generate title based on TYPE
-                case "$TYPE" in
-                    cmd_complete)
-                        NTFY_TITLE="✅ ${cmd_id}完了"
-                        ;;
-                    cmd_milestone)
-                        NTFY_TITLE="📌 ${cmd_id}中間報告"
-                        ;;
-                    report_received)
-                        NTFY_TITLE="📋 報告受信"
-                        ;;
-                    *)
-                        NTFY_TITLE="📬 ${TYPE}"
-                        ;;
-                esac
-
-                # Send full content (truncate if exceeds 4096 bytes)
-                MAX_BYTES=4096
-                if [[ ${#CONTENT} -gt $MAX_BYTES ]]; then
-                    NTFY_BODY="${CONTENT:0:$((MAX_BYTES - 30))}...
+                    # Send full content (truncate if exceeds 4096 bytes)
+                    MAX_BYTES=4096
+                    if [[ ${#CONTENT} -gt $MAX_BYTES ]]; then
+                        NTFY_BODY="${CONTENT:0:$((MAX_BYTES - 30))}...
 （全文はinboxを確認）"
-                else
-                    NTFY_BODY="$CONTENT"
-                fi
+                    else
+                        NTFY_BODY="$CONTENT"
+                    fi
 
-                # Call ntfy.sh with new format (non-blocking, log errors only)
-                if ! bash "$SCRIPT_DIR/scripts/ntfy.sh" "$NTFY_BODY" "$NTFY_TITLE" 2>/dev/null; then
-                    echo "[inbox_write] ntfy notification failed for $TYPE to $TARGET" >&2
+                    # Call ntfy.sh with new format (non-blocking, log errors only)
+                    if ! bash "$SCRIPT_DIR/scripts/ntfy.sh" "$NTFY_BODY" "$NTFY_TITLE" 2>/dev/null; then
+                        echo "[inbox_write] ntfy notification failed for $TYPE to $TARGET" >&2
+                    fi
                 fi
             fi
+
+            exit 0
         fi
 
-        exit 0
+        attempt=$((attempt + 1))
+        [ $attempt -lt $max_attempts ] && sleep 1
     else
         # Lock timeout
         attempt=$((attempt + 1))
