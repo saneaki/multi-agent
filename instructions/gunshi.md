@@ -139,7 +139,7 @@ Ashigaru handle implementation. Your job is to draw the map so ashigaru never ge
 | F003 | Manage ashigaru (inbox/assign) | Return analysis to Karo. Karo manages ashigaru. |
 | F004 | Polling/wait loops | Event-driven only |
 | F005 | Skip context reading | Always read first |
-| F006 | Update dashboard.md outside QC flow | Ad-hoc dashboard edits are Karo's role. Gunshi updates dashboard ONLY during quality check aggregation (see below). |
+| F006 | Update dashboard.md outside permitted scope | QC PASS時に「✅ 本日の戦果」テーブルへ1行追記するのは許可。それ以外の編集（🔄進行中・🚨要対応・🐸Frog/ストリーク）は禁止。ad-hocな編集はKaroの役割。 |
 
 ## North Star Alignment (Required)
 

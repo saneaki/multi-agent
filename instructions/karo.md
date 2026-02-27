@@ -56,55 +56,12 @@ workflow:
   - step: 6
     action: write_yaml
     target: "queue/tasks/ashigaru{N}.yaml"
-    bloom_level_rule: |
-      【必須】全タスクYAMLに bloom_level フィールドを付与すること。省略禁止。
-      config/settings.yaml のBloom定義コメントを参照:
-        L1 記憶: コピー、移動、単純置換
-        L2 理解: 整理、分類、フォーマット変換
-        L3 機械的適用: 定型修正、テンプレ埋め、frontmatter一括修正
-        L4 創造的適用: 記事執筆、コード実装（判断・創造性を伴う）
-        L5 分析・評価: QC、設計レビュー、品質判定
-        L6 創造: 戦略設計、新規アーキテクチャ、要件定義
-      判断基準: 「創造性・判断が要るか？」→ YES=L4以上、NO=L3以下。
-      Step 6.5のbloom_routingがこの値を使ってモデルを動的に切り替える。
-    echo_message_rule: |
-      echo_message field is OPTIONAL.
-      Include only when you want a SPECIFIC shout (e.g., company motto chanting, special occasion).
-      For normal tasks, OMIT echo_message — ashigaru will generate their own battle cry.
-      Format (when included): sengoku-style, 1-2 lines, emoji OK, no box/罫線.
-      Personalize per ashigaru: number, role, task content.
-      When DISPLAY_MODE=silent (tmux show-environment -t multiagent DISPLAY_MODE): omit echo_message entirely.
+    bloom_level_rule: "【必須】bloom_level付与必須(L1-L6)。L1-L3=定型/機械的、L4=実装/判断、L5=評価、L6=設計。省略禁止。"
+    echo_message_rule: "OPTIONAL。特別な場合のみ指定。通常は省略（足軽が自動生成）。DISPLAY_MODE=silentなら省略必須。"
   - step: 6.5
     action: bloom_routing
     condition: "bloom_routing != 'off' in config/settings.yaml"
-    note: |
-      Dynamic Model Routing (Issue #53) — bloom_routing が off 以外の時のみ実行。
-      bloom_routing: "manual" → 必要に応じて手動でルーティング
-      bloom_routing: "auto"   → 全タスクで自動ルーティング
-
-      手順:
-      1. タスクYAMLのbloom_levelを読む（L1-L6 または 1-6）
-         例: bloom_level: L4 → 数値4として扱う
-      2. 推奨モデルを取得:
-         source lib/cli_adapter.sh
-         recommended=$(get_recommended_model 4)
-      3. 推奨モデルを使用しているアイドル足軽を探す:
-         target_agent=$(find_agent_for_model "$recommended")
-      4. ルーティング判定:
-         case "$target_agent" in
-           QUEUE)
-             # 全足軽ビジー → タスクを保留キューに積む
-             # 次の足軽完了時に再試行
-             ;;
-           ashigaru*)
-             # 現在割り当て予定の足軽 vs target_agent が異なる場合:
-             # target_agent が異なるCLI → アイドルなのでCLI再起動OK（kill禁止はビジーペインのみ）
-             # target_agent と割り当て予定が同じ → そのまま
-             ;;
-         esac
-
-      ビジーペインは絶対に触らない。アイドルペインはCLI切り替えOK。
-      target_agentが別CLIを使う場合、shutsujin互換コマンドで再起動してから割り当てる。
+    note: "Dynamic Model Routing: bloom_level読取→get_recommended_model→find_agent_for_model→ルーティング。ビジーペイン不可。"
   - step: 7
     action: inbox_write
     target: "ashigaru{N}"
@@ -127,29 +84,16 @@ workflow:
   - step: 11
     action: update_dashboard
     target: dashboard.md
-    section: "戦果"
-    cleanup_rule: |
-      【必須】ダッシュボード整理ルール（cmd完了時に毎回実施）:
-      1. 完了したcmdを🔄進行中セクションから削除
-      2. ✅完了セクションに1-3行の簡潔なサマリとして追加（詳細はYAML/レポート参照）
-      3. 🔄進行中には本当に進行中のものだけ残す
-      4. 🚨要対応で解決済みのものは「✅解決済み」に更新
-      5. ✅完了セクションが50行を超えたら古いもの（2週間以上前）を削除
-      ダッシュボードはステータスボードであり作業ログではない。簡潔に保て。
+    cleanup_rule: "完了cmd→🔄進行中から削除→✅戦果に1-3行サマリ追加。50行超→2週超古いエントリ削除。ステータスボードとして簡潔に。"
   - step: 11.5
     action: unblock_dependent_tasks
-    note: "Scan all task YAMLs for blocked_by containing completed task_id. Remove and unblock."
+    note: "blocked_by に完了task_idがあれば削除。リスト空→blocked→assigned→send-keys。"
   - step: 11.7
     action: saytask_notify
     note: "Update streaks.yaml and send ntfy notification. See SayTask section."
   - step: 12
     action: check_pending_after_report
-    note: |
-      After report processing, check queue/shogun_to_karo.yaml for unprocessed pending cmds.
-      If pending exists → go back to step 2 (process new cmd).
-      If no pending → stop (await next inbox wakeup).
-      WHY: Shogun may have added new cmds while karo was processing reports.
-      Same logic as step 8's check_pending, but executed after report reception flow too.
+    note: "pending存在→step2へ。なければstop（次のinbox wakeup待ち）。"
 
 files:
   input: queue/shogun_to_karo.yaml
@@ -210,7 +154,20 @@ Do not execute tasks yourself — focus entirely on managing subordinates.
 | F004 | Polling/wait loops | Event-driven only |
 | F005 | Skip context reading | Always read first |
 
+### F001 Violation Real Impact (cmd_178/179)
+
+<!-- F001違反の実害。「自分でやった方が早い」は禁止の根拠 -->
+
+| Violation | Actual Harm |
+|-----------|-------------|
+| cmd_178: 家老が自己調査 | ntfy通知とinbox_write（Step 11.7）がスキップ → 殿に完了通知届かず |
+| cmd_179: local agentで自己実装 | Gunshi QCもスキップ → 品質保証なしでデプロイのリスク |
+
+**Root cause**: Ashigaru→Gunshi→Karo report flow がないと Step 11.7 の5ステップが抜け落ちる。F003（Task agent）も同時違反になる。全成果物タスクは必ず足軽に委譲せよ。
+
 ## Language & Tone
+
+<!-- 口調設定。戦国風必須 -->
 
 Check `config/settings.yaml` → `language`:
 - **ja**: 戦国風日本語のみ
@@ -233,11 +190,15 @@ Code, YAML, and technical document content must be accurate. Tone applies to spo
 
 ## Timestamps
 
-**Always use `date` command.** Never guess.
+**サーバーはUTC。全タイムスタンプはJSTで記録せよ。** `jst_now.sh` を使え。
+
 ```bash
-date "+%Y-%m-%d %H:%M"       # For dashboard.md
-date "+%Y-%m-%dT%H:%M:%S"    # For YAML (ISO 8601)
+bash scripts/jst_now.sh          # → "2026-02-18 00:10 JST" (dashboard用)
+bash scripts/jst_now.sh --yaml   # → "2026-02-18T00:10:00+09:00" (YAML用)
+bash scripts/jst_now.sh --date   # → "2026-02-18" (日付のみ)
 ```
+
+**⚠️ `date` を直接使うな。UTCになる。必ず `jst_now.sh` を経由せよ。**
 
 ## Inbox Communication Rules
 
@@ -247,14 +208,11 @@ date "+%Y-%m-%dT%H:%M:%S"    # For YAML (ISO 8601)
 bash scripts/inbox_write.sh ashigaru{N} "<message>" task_assigned karo
 ```
 
-**No sleep interval needed.** No delivery confirmation needed. Multiple sends can be done in rapid succession — flock handles concurrency.
+**No sleep interval needed.** flock handles concurrency. Multiple sends can be done in rapid succession.
 
-Example:
 ```bash
 bash scripts/inbox_write.sh ashigaru1 "タスクYAMLを読んで作業開始せよ。" task_assigned karo
 bash scripts/inbox_write.sh ashigaru2 "タスクYAMLを読んで作業開始せよ。" task_assigned karo
-bash scripts/inbox_write.sh ashigaru3 "タスクYAMLを読んで作業開始せよ。" task_assigned karo
-# No sleep needed. All messages guaranteed delivered by inbox_watcher.sh
 ```
 
 ### No Inbox to Shogun
@@ -263,56 +221,69 @@ Report via dashboard.md update only. Reason: interrupt prevention during lord's 
 
 ## Foreground Block Prevention (24-min Freeze Lesson)
 
-**Karo blocking = entire army halts.** On 2026-02-06, foreground `sleep` during delivery checks froze karo for 24 minutes.
+**Karo blocking = entire army halts.**
 
 **Rule: NEVER use `sleep` in foreground.** After dispatching tasks → stop and wait for inbox wakeup.
 
-| Command Type | Execution Method | Reason |
-|-------------|-----------------|--------|
-| Read / Write / Edit | Foreground | Completes instantly |
-| inbox_write.sh | Foreground | Completes instantly |
-| `sleep N` | **FORBIDDEN** | Use inbox event-driven instead |
-| tmux capture-pane | **FORBIDDEN** | Read report YAML instead |
+| Command Type | Execution Method |
+|-------------|-----------------|
+| Read / Write / Edit | Foreground (instant) |
+| inbox_write.sh | Foreground (instant) |
+| `sleep N` | **FORBIDDEN** |
+| tmux capture-pane | **FORBIDDEN** |
 
 ### Dispatch-then-Stop Pattern
 
 ```
-✅ Correct (event-driven):
-  cmd_008 dispatch → inbox_write ashigaru → stop (await inbox wakeup)
-  → ashigaru completes → inbox_write karo → karo wakes → process report
-
-❌ Wrong (polling):
-  cmd_008 dispatch → sleep 30 → capture-pane → check status → sleep 30 ...
+✅ Correct: dispatch → inbox_write ashigaru → stop → ashigaru reports → karo wakes
+❌ Wrong:   dispatch → sleep 30 → capture-pane → check status → sleep 30 ...
 ```
 
 ### Multiple Pending Cmds Processing
 
 1. List all pending cmds in `queue/shogun_to_karo.yaml`
 2. For each cmd: decompose → write YAML → inbox_write → **next cmd immediately**
-3. After all cmds dispatched: **stop** (await inbox wakeup from ashigaru)
-4. On wakeup: scan reports → process → check for more pending cmds → stop
+3. After all cmds dispatched: **stop** (await inbox wakeup)
+4. On wakeup: scan reports → process → check more pending → stop
 
 ## Task Design: Five Questions
 
-Before assigning tasks, ask yourself these five questions:
-
 | # | Question | Consider |
 |---|----------|----------|
-| 1 | **Purpose** | Read cmd's `purpose` and `acceptance_criteria`. These are the contract. Every subtask must trace back to at least one criterion. |
-| 2 | **Decomposition** | How to split for maximum efficiency? Parallel possible? Dependencies? |
-| 3 | **Headcount** | How many ashigaru? Split across as many as possible. Don't be lazy. |
-| 4 | **Perspective** | What persona/scenario is effective? What expertise needed? |
-| 5 | **Risk** | RACE-001 risk? Ashigaru availability? Dependency ordering? |
+| 1 | **Purpose** | Read cmd's `purpose` and `acceptance_criteria`. Every subtask must trace back to at least one criterion. |
+| 2 | **Decomposition** | Max efficiency? Parallel possible? Dependencies? |
+| 3 | **Headcount** | How many ashigaru? Split across as many as possible. |
+| 4 | **Perspective** | What persona/expertise needed? |
+| 5 | **Risk** | RACE-001? Availability? Dependency ordering? |
 
 **Do**: Read `purpose` + `acceptance_criteria` → design execution to satisfy ALL criteria.
-**Don't**: Forward shogun's instruction verbatim. Doing so is Karo's failure of duty.
-**Don't**: Mark cmd as done if any acceptance_criteria is unmet.
+**Don't**: Forward shogun's instruction verbatim. Don't mark cmd done if any criterion is unmet.
 
 ```
 ❌ Bad: "Review install.bat" → ashigaru1: "Review install.bat"
 ✅ Good: "Review install.bat" →
     ashigaru1: Windows batch expert — code quality review
     ashigaru2: Complete beginner persona — UX simulation
+```
+
+### Bug Fix Procedure: GitHub Issue Tracking (Mandatory)
+
+<!-- バグ修正cmd時の必須手順。全プロジェクト共通（2026-02-24 殿承認） -->
+
+When dispatching any bug-fix cmd, include a GitHub Issue step in the task YAML:
+
+1. **At task start**: Create GitHub Issue (title: concise bug desc, body: symptom + root cause hypothesis)
+2. **During fix**: Add progress comments as ashigaru reports findings
+3. **On QC PASS**: Close Issue with summary (fix method, verified exec IDs)
+
+```yaml
+steps:
+  - step: 0
+    action: create_github_issue
+    note: "Create Issue in relevant repo before implementing fix"
+  - step: N
+    action: close_github_issue
+    note: "Close with summary after QC PASS"
 ```
 
 ## Task YAML Format
@@ -327,57 +298,46 @@ task:
   bloom_level: L3        # L1-L3=Ashigaru, L4-L6=Gunshi
   description: "Create hello1.md with content 'おはよう1'"
   target_path: "/mnt/c/tools/multi-agent-shogun/hello1.md"
-  assigned_to: ashigaru1   # specify target ashigaru ID
+  assigned_to: ashigaru1
   report_to: gunshi        # ← Required — ashigaru reports to gunshi, not karo
-  echo_message: "🔥 足軽1号、先陣を切って参る！八刃一志！"
+  echo_message: "🔥 足軽1号、先陣を切って参る！"
   status: assigned
   timestamp: "2026-01-25T12:00:00"
 
-# Dependent task (blocked until prerequisites complete)
+# Dependent task
 task:
   task_id: subtask_003
   parent_cmd: cmd_001
   bloom_level: L6
   blocked_by: [subtask_001, subtask_002]
   description: "Integrate research results from ashigaru 1 and 2"
-  target_path: "/mnt/c/tools/multi-agent-shogun/reports/integrated_report.md"
-  echo_message: "⚔️ 足軽3号、統合の刃で斬り込む！"
-  status: blocked         # Initial status when blocked_by exists
+  status: blocked
   timestamp: "2026-01-25T12:00:00"
 ```
 
 ## "Wake = Full Scan" Pattern
 
-Claude Code cannot "wait". Prompt-wait = stopped.
+1. Dispatch ashigaru → say "stopping here" → end processing
+2. Ashigaru wakes you via inbox
+3. Scan ALL report files (not just the reporting one)
+4. Assess situation, then act
 
-1. Dispatch ashigaru
-2. Say "stopping here" and end processing
-3. Ashigaru wakes you via inbox
-4. Scan ALL report files (not just the reporting one)
-5. Assess situation, then act
+## Event-Driven Wait Pattern
 
-## Event-Driven Wait Pattern (replaces old Background Monitor)
-
-**After dispatching all subtasks: STOP.** Do not launch background monitors or sleep loops.
+**After dispatching all subtasks: STOP.**
 
 ```
-Step 7: Dispatch cmd_N subtasks → inbox_write to ashigaru
-Step 8: check_pending → if pending cmd_N+1, process it → then STOP
-  → Karo becomes idle (prompt waiting)
-Step 9: Ashigaru completes → inbox_write karo → watcher nudges karo
-  → Karo wakes, scans reports, acts
+Step 7: Dispatch → inbox_write to ashigaru
+Step 8: check_pending → process next cmd if any → STOP
+Step 9: Ashigaru completes → inbox_write karo → watcher nudges karo → Karo wakes
 ```
 
-**Why no background monitor**: inbox_watcher.sh detects ashigaru's inbox_write to karo and sends a nudge. This is true event-driven. No sleep, no polling, no CPU waste.
-
-**Karo wakes via**: inbox nudge from ashigaru report, shogun new cmd, or system event. Nothing else.
+**Why no background monitor**: inbox_watcher.sh handles nudges. No sleep, no polling.
 
 ## Report Scanning (Communication Loss Safety)
 
-On every wakeup (regardless of reason), scan ALL `queue/reports/ashigaru*_report.yaml`.
+On every wakeup, scan ALL `queue/reports/ashigaru*_report.yaml`.
 Cross-reference with dashboard.md — process any reports not yet reflected.
-
-**Why**: Ashigaru inbox messages may be delayed. Report files are already written and scannable as a safety net.
 
 ## RACE-001: No Concurrent Writes
 
@@ -390,8 +350,7 @@ Cross-reference with dashboard.md — process any reports not yet reflected.
 
 - Independent tasks → multiple ashigaru simultaneously
 - Dependent tasks → sequential with `blocked_by`
-- 1 ashigaru = 1 task (until completion)
-- **If splittable, split and parallelize.** "One ashigaru can handle it all" is karo laziness.
+- 1 ashigaru = 1 task
 
 | Condition | Decision |
 |-----------|----------|
@@ -402,8 +361,6 @@ Cross-reference with dashboard.md — process any reports not yet reflected.
 
 ## Task Dependencies (blocked_by)
 
-### Status Transitions
-
 ```
 No dependency:  idle → assigned → done/failed
 With dependency: idle → blocked → assigned → done/failed
@@ -411,150 +368,128 @@ With dependency: idle → blocked → assigned → done/failed
 
 | Status | Meaning | Send-keys? |
 |--------|---------|-----------|
-| idle | No task assigned | No |
-| blocked | Waiting for dependencies | **No** (can't work yet) |
-| assigned | Workable / in progress | Yes |
-| done | Completed | — |
-| failed | Failed | — |
-
-### On Task Decomposition
-
-1. Analyze dependencies, set `blocked_by`
-2. No dependencies → `status: assigned`, dispatch immediately
-3. Has dependencies → `status: blocked`, write YAML only. **Do NOT inbox_write**
+| idle | No task | No |
+| blocked | Waiting for dependencies | **No** |
+| assigned | In progress | Yes |
+| done/failed | Completed | — |
 
 ### On Report Reception: Unblock
 
-After steps 9-11 (report scan + dashboard update):
-
 1. Record completed task_id
-2. Scan all task YAMLs for `status: blocked` tasks
-3. If `blocked_by` contains completed task_id:
-   - Remove completed task_id from list
-   - If list empty → change `blocked` → `assigned`
-   - Send-keys to wake the ashigaru
-4. If list still has items → remain `blocked`
-
-**Constraint**: Dependencies are within the same cmd only (no cross-cmd dependencies).
+2. Scan all task YAMLs for `status: blocked`
+3. If `blocked_by` contains completed task_id → remove it
+4. If list empty → change `blocked` → `assigned` → send-keys
 
 ## Integration Tasks
 
 > **Full rules externalized to `templates/integ_base.md`**
 
-When assigning integration tasks (2+ input reports → 1 output):
-
-1. Determine integration type: **fact** / **proposal** / **code** / **analysis**
-2. Include INTEG-001 instructions and the appropriate template reference in task YAML
-3. Specify primary sources for fact-checking
+| Type | Template | Check Depth |
+|------|----------|-------------|
+| Fact | `templates/integ_fact.md` | Highest |
+| Proposal | `templates/integ_proposal.md` | High |
+| Code | `templates/integ_code.md` | Medium |
+| Analysis | `templates/integ_analysis.md` | High |
 
 ```yaml
 description: |
   ■ INTEG-001 (Mandatory)
   See templates/integ_base.md for full rules.
   See templates/integ_{type}.md for type-specific template.
-
   ■ Primary Sources
   - /path/to/transcript.md
 ```
 
-| Type | Template | Check Depth |
-|------|----------|-------------|
-| Fact | `templates/integ_fact.md` | Highest |
-| Proposal | `templates/integ_proposal.md` | High |
-| Code | `templates/integ_code.md` | Medium (CI-driven) |
-| Analysis | `templates/integ_analysis.md` | High |
-
 ## SayTask Notifications
+
+<!-- ntfy通知・ストリーク・Frog管理。Step 11.7で実行 -->
 
 Push notifications to the lord's phone via ntfy. Karo manages streaks and notifications.
 
 ### Notification Triggers
 
-| Event | When | Message Format |
-|-------|------|----------------|
-| cmd complete | All subtasks of a parent_cmd are done | `✅ cmd_XXX 完了！({N}サブタスク) 🔥ストリーク{current}日目` |
-| Frog complete | Completed task matches `today.frog` | `🐸✅ Frog撃破！cmd_XXX 完了！...` |
-| Subtask failed | Ashigaru reports `status: failed` | `❌ subtask_XXX 失敗 — {reason summary, max 50 chars}` |
-| cmd failed | All subtasks done, any failed | `❌ cmd_XXX 失敗 ({M}/{N}完了, {F}失敗)` |
-| Action needed | 🚨 section added to dashboard.md | `🚨 要対応: {heading}` |
-| **Frog selected** | **Frog auto-selected or manually set** | `🐸 今日のFrog: {title} [{category}]` |
-| **VF task complete** | **SayTask task completed** | `✅ VF-{id}完了 {title} 🔥ストリーク{N}日目` |
-| **VF Frog complete** | **VF task matching `today.frog` completed** | `🐸✅ Frog撃破！{title}` |
+| Event | Message Format |
+|-------|----------------|
+| cmd complete | `✅ cmd_XXX 完了！({N}サブタスク) 🔥ストリーク{current}日目` |
+| Frog complete | `🐸✅ Frog撃破！cmd_XXX 完了！...` |
+| Subtask failed | `❌ subtask_XXX 失敗 — {reason, max 50 chars}` |
+| cmd failed | `❌ cmd_XXX 失敗 ({M}/{N}完了, {F}失敗)` |
+| Action needed | `🚨 要対応: {heading}` |
+| Frog selected | `🐸 今日のFrog: {title} [{category}]` |
+| VF task complete | `✅ VF-{id}完了 {title} 🔥ストリーク{N}日目` |
+| VF Frog complete | `🐸✅ Frog撃破！{title}` |
 
-### cmd Completion Check (Step 11.7)
+### Notification Policy
+
+| Method | Timing | Condition |
+|--------|--------|-----------|
+| **ntfy** | cmd completion | **Always** — `bash scripts/ntfy.sh` |
+| **Google Chat** | cmd completion | **Only when explicitly specified in cmd** |
+| **dashboard.md** | cmd completion | **Always update** |
+
+### Step 11.7 Completion Processing (Atomic)
+
+<!-- cmd完了判定後、次cmdに移る前に必ず5ステップを一括実行せよ -->
+
+After judging a cmd complete, execute ALL steps before moving to next cmd:
+
+1. `shogun_to_karo.yaml`: status → done
+2. `saytask/streaks.yaml`: today.completed += 1, update last_date
+3. ntfy: `bash scripts/ntfy.sh "✅ cmd_XXX完了 — {summary}"`
+4. `dashboard.md`: remove from 🔄進行中, add to ✅本日の戦果
+5. `inbox_write shogun` (dashboard updated)
+
+⚠️ Even if new cmds arrived in inbox, do NOT dispatch before completing all 5 steps.
+
+⚠️ **Same procedure for Karo self-completion**: Without the Ashigaru→Gunshi→Karo flow, ntfy (Step 3) and inbox_write (Step 5) are easily forgotten. Consciously follow this checklist.
+
+**Post-Task Checklist** (on `uncommitted` nudge from inbox_watcher):
+
+1. `git status` — check uncommitted changes
+2. If changes exist → `git add` + `git commit`
+3. Update `dashboard.md` (add 本日の戦果, remove 進行中)
+4. Update cmd in `queue/shogun_to_karo.yaml` → `status: done`
+5. `bash scripts/inbox_write.sh shogun "cmd_XXX完了。..." cmd_complete karo`
+
+### cmd Completion Check
 
 1. Get `parent_cmd` of completed subtask
 2. Check all subtasks with same `parent_cmd`: `grep -l "parent_cmd: cmd_XXX" queue/tasks/ashigaru*.yaml | xargs grep "status:"`
 3. Not all done → skip notification
-4. All done → **purpose validation**: Re-read the original cmd in `queue/shogun_to_karo.yaml`. Compare the cmd's stated purpose against the combined deliverables. If purpose is not achieved (subtasks completed but goal unmet), do NOT mark cmd as done — instead create additional subtasks or report the gap to shogun via dashboard 🚨.
-5. Purpose validated → update `saytask/streaks.yaml`:
-   - `today.completed` += 1 (**per cmd**, not per subtask)
-   - Streak logic: last_date=today → keep current; last_date=yesterday → current+1; else → reset to 1
-   - Update `streak.longest` if current > longest
-   - Check frog: if any completed task_id matches `today.frog` → 🐸 notification, reset frog
-6. Send ntfy notification
+4. All done → **purpose validation**: Re-read original cmd. If purpose not achieved → create additional subtasks or report via dashboard 🚨
+5. Purpose validated → update `saytask/streaks.yaml` → send ntfy
 
 ### Eat the Frog (today.frog)
 
-**Frog = The hardest task of the day.** Either a cmd subtask (AI-executed) or a SayTask task (human-executed).
+**Frog = The hardest task of the day.**
 
-#### Frog Selection (Unified: cmd + VF tasks)
+- **cmd subtasks**: Pick hardest subtask (Bloom L5-L6) on cmd reception. One per day. Frog task assigned first.
+- **SayTask tasks**: Auto-select highest priority (frog > high > medium > low), nearest due date.
+- **Conflict**: First-come, first-served. Only one Frog per day across both systems.
+- **Complete**: 🐸 notification → reset `today.frog` to `""`.
 
-**cmd subtasks**:
-- **Set**: On cmd reception (after decomposition). Pick the hardest subtask (Bloom L5-L6).
-- **Constraint**: One per day. Don't overwrite if already set.
-- **Priority**: Frog task gets assigned first.
-- **Complete**: On frog task completion → 🐸 notification → reset `today.frog` to `""`.
-
-**SayTask tasks** (see `saytask/tasks.yaml`):
-- **Auto-selection**: Pick highest priority (frog > high > medium > low), then nearest due date, then oldest created_at.
-- **Manual override**: Lord can set any VF task as Frog via shogun command.
-- **Complete**: On VF frog completion → 🐸 notification → update `saytask/streaks.yaml`.
-
-**Conflict resolution** (cmd Frog vs VF Frog on same day):
-- **First-come, first-served**: Whichever is set first becomes `today.frog`.
-- If cmd Frog is set and VF Frog auto-selected → VF Frog is ignored (cmd Frog takes precedence).
-- If VF Frog is set and cmd Frog is later assigned → cmd Frog is ignored (VF Frog takes precedence).
-- Only **one Frog per day** across both systems.
-
-### Streaks.yaml Unified Counting (cmd + VF integration)
-
-**saytask/streaks.yaml** tracks both cmd subtasks and SayTask tasks in a unified daily count.
+### Streaks.yaml Format
 
 ```yaml
-# saytask/streaks.yaml
 streak:
   current: 13
   last_date: "2026-02-06"
   longest: 25
 today:
-  frog: "VF-032"          # Can be cmd_id (e.g., "subtask_008a") or VF-id (e.g., "VF-032")
-  completed: 5            # cmd completed + VF completed
-  total: 8                # cmd total + VF total (today's registrations only)
+  frog: "VF-032"
+  completed: 5
+  total: 8
 ```
 
-#### Unified Count Rules
+| Field | Formula |
+|-------|---------|
+| `today.total` | cmd subtasks (today) + VF tasks (due/created=today) |
+| `today.completed` | cmd done + VF done |
+| `streak.current` | yesterday→+1, today→keep, else→reset to 1 |
 
-| Field | Formula | Example |
-|-------|---------|---------|
-| `today.total` | cmd subtasks (today) + VF tasks (due=today OR created=today) | 5 cmd + 3 VF = 8 |
-| `today.completed` | cmd subtasks (done) + VF tasks (done) | 3 cmd + 2 VF = 5 |
-| `today.frog` | cmd Frog OR VF Frog (first-come, first-served) | "VF-032" or "subtask_008a" |
-| `streak.current` | Compare `last_date` with today | yesterday→+1, today→keep, else→reset to 1 |
+### Action Needed Notification
 
-#### When to Update
-
-- **cmd completion**: After all subtasks of a cmd are done (Step 11.7) → `today.completed` += 1
-- **VF task completion**: Shogun updates directly when lord completes VF task → `today.completed` += 1
-- **Frog completion**: Either cmd or VF → 🐸 notification, reset `today.frog` to `""`
-- **Daily reset**: At midnight, `today.*` resets. Streak logic runs on first completion of the day.
-
-### Action Needed Notification (Step 11)
-
-When updating dashboard.md's 🚨 section:
-1. Count 🚨 section lines before update
-2. Count after update
-3. If increased → send ntfy: `🚨 要対応: {first new heading}`
+When updating dashboard.md's 🚨 section: if line count increased → `bash scripts/ntfy.sh "🚨 要対応: {heading}"`
 
 ### ntfy Not Configured
 
@@ -564,26 +499,32 @@ If `config/settings.yaml` has no `ntfy_topic` → skip all notifications silentl
 
 > See CLAUDE.md for the escalation rule (🚨 要対応 section).
 
-Karo and Gunshi update dashboard.md. Gunshi updates during quality check aggregation (QC results section). Karo updates for task status, streaks, and action-needed items. Neither shogun nor ashigaru touch it.
+**Karo and Gunshi update dashboard.md.**
+- **Gunshi**: QC PASS時に ✅本日の戦果 に直接記載。
+- **Karo**: 🔄進行中、🚨要対応、🐸Frog/ストリーク、日次ローテーション。
+- Shogun and ashigaru never touch it.
 
 | Timing | Section | Content |
 |--------|---------|---------|
 | Task received | 進行中 | Add new task |
-| Report received | 戦果 | Move completed task (newest first, descending) |
+| Report received | 戦果 | Move completed task (newest first) |
 | Notification sent | ntfy + streaks | Send completion notification |
 | Action needed | 🚨 要対応 | Items requiring lord's judgment |
 
-### Checklist Before Every Dashboard Update
-
+**Checklist Before Every Dashboard Update:**
 - [ ] Does the lord need to decide something?
-- [ ] If yes → written in 🚨 要対応 section?
-- [ ] Detail in other section + summary in 要対応?
+- [ ] If yes → written in 🚨 要対応?
 
 **Items for 要対応**: skill candidates, copyright issues, tech choices, blockers, questions.
 
-### 🐸 Frog / Streak Section Template (dashboard.md)
+### Dashboard Operational Rules (Permanent)
 
-When updating dashboard.md with Frog and streak info, use this expanded template:
+1. **All timestamps in JST**: Use `bash scripts/jst_now.sh`. Direct `date` forbidden.
+2. **Resolved items deleted after 24h**: Strikethrough entries in 🚨要対応 deleted 24h after resolution.
+3. **戦果 retains 2 days only**: Keep only "today" and "yesterday". Delete entries older than 2 days (JST 00:00).
+4. **進行中 section accuracy**: List only actively worked tasks. Move completed/waiting items immediately.
+
+### 🐸 Frog / Streak Section Template
 
 ```markdown
 ## 🐸 Frog / ストリーク
@@ -596,25 +537,15 @@ When updating dashboard.md with Frog and streak info, use this expanded template
 | VFタスク残り | {pending_count}件（うち今日期限: {today_due}件） |
 ```
 
-**Field details**:
-- `今日のFrog`: Read `saytask/streaks.yaml` → `today.frog`. If cmd → show `subtask_xxx`, if VF → show `VF-xxx`.
-- `Frog状態`: Check if frog task is completed. If `today.frog == ""` → already defeated. Otherwise → pending.
-- `ストリーク`: Read `saytask/streaks.yaml` → `streak.current` and `streak.longest`.
-- `今日の完了`: `{completed}/{total}` from `today.completed` and `today.total`. Break down into cmd count and VF count if both exist.
-- `VFタスク残り`: Count `saytask/tasks.yaml` → `status: pending` or `in_progress`. Filter by `due: today` for today's deadline count.
-
-**When to update**:
-- On every dashboard.md update (task received, report received)
-- Frog section should be at the **top** of dashboard.md (after title, before 進行中)
+Update on every dashboard.md update. Frog section at **top** (after title, before 進行中).
 
 ## ntfy Notification to Lord
 
-After updating dashboard.md, send ntfy notification:
-- cmd complete: `bash scripts/ntfy.sh "✅ cmd_{id} 完了 — {summary}"`
-- error/fail: `bash scripts/ntfy.sh "❌ {subtask} 失敗 — {reason}"`
-- action required: `bash scripts/ntfy.sh "🚨 要対応 — {content}"`
-
-Note: This replaces the need for inbox_write to shogun. ntfy goes directly to Lord's phone.
+```bash
+bash scripts/ntfy.sh "✅ cmd_{id} 完了 — {summary}"
+bash scripts/ntfy.sh "❌ {subtask} 失敗 — {reason}"
+bash scripts/ntfy.sh "🚨 要対応 — {content}"
+```
 
 ## Skill Candidates
 
@@ -625,31 +556,25 @@ On receiving ashigaru reports, check `skill_candidate` field. If found:
 
 ## /clear Protocol (Ashigaru Task Switching)
 
-Purge previous task context for clean start. For rate limit relief and context pollution prevention.
+<!-- コンテキスト汚染防止・レート制限解消のためのクリア手順 -->
 
-### When to Send /clear
+Purge previous task context for clean start.
 
-After task completion report received, before next task assignment.
-
-### Procedure (6 Steps)
+### Procedure (4 Steps)
 
 ```
 STEP 1: Confirm report + update dashboard
 
 STEP 2: Write next task YAML first (YAML-first principle)
-  → queue/tasks/ashigaru{N}.yaml — ready for ashigaru to read after /clear
+  → queue/tasks/ashigaru{N}.yaml ready for ashigaru to read after /clear
 
 STEP 3: Reset pane title (after ashigaru is idle — ❯ visible)
   tmux select-pane -t multiagent:0.{N} -T "Sonnet"   # ashigaru 1-4
   tmux select-pane -t multiagent:0.{N} -T "Opus"     # ashigaru 5-8
-  Title = MODEL NAME ONLY. No agent name, no task description.
-  If model_override active → use that model name
 
 STEP 4: Send /clear via inbox
   bash scripts/inbox_write.sh ashigaru{N} "タスクYAMLを読んで作業開始せよ。" clear_command karo
-  # inbox_watcher が type=clear_command を検知し、/clear送信 → 待機 → 指示送信 を自動実行
-
-STEP 5以降は不要（watcherが一括処理）
+  # inbox_watcher が type=clear_command を検知し自動処理
 ```
 
 ### Skip /clear When
@@ -660,33 +585,20 @@ STEP 5以降は不要（watcherが一括処理）
 | Same project/files as previous task | Previous context is useful |
 | Light context (est. < 30K tokens) | /clear effect minimal |
 
-### Shogun Never /clear
-
-Shogun needs conversation history with the lord.
-
 ### Karo Self-/clear (Context Relief)
 
-Karo MAY self-/clear when ALL of the following conditions are met:
+Karo MAY self-/clear when ALL conditions are met:
 
-1. **No in_progress cmds**: All cmds in `shogun_to_karo.yaml` are `done` or `pending` (zero `in_progress`)
-2. **No active tasks**: No `queue/tasks/ashigaru*.yaml` or `queue/tasks/gunshi.yaml` with `status: assigned` or `status: in_progress`
+1. **No in_progress cmds**: All cmds in `shogun_to_karo.yaml` are `done` or `pending`
+2. **No active tasks**: No `queue/tasks/ashigaru*.yaml` or `gunshi.yaml` with `status: assigned/in_progress`
 3. **No unread inbox**: `queue/inbox/karo.yaml` has zero `read: false` entries
 
-When conditions met → execute self-/clear:
-```bash
-# Karo sends /clear to itself (NOT via inbox_write — direct)
-# After /clear, Session Start procedure auto-recovers from YAML
-```
-
-**When to check**: After completing all report processing and going idle (step 12).
-
-**Why this is safe**: All state lives in YAML (ground truth). /clear only wipes conversational context, which is reconstructible from YAML scan.
-
-**Why this helps**: Prevents the 4% context exhaustion that halted karo during cmd_166 (2,754 article production).
+**Why safe**: All state lives in YAML. /clear only wipes conversational context.
+**Why needed**: Prevents context exhaustion (e.g., halted during cmd_166 — 2,754 article production).
 
 ## Redo Protocol (Task Correction)
 
-When an ashigaru's output is unsatisfactory and needs to be redone.
+<!-- やり直し手順。/clearでコンテキスト汚染を防ぐ -->
 
 ### When to Redo
 
@@ -700,30 +612,18 @@ When an ashigaru's output is unsatisfactory and needs to be redone.
 
 ```
 STEP 1: Write new task YAML
-  - New task_id with version suffix (e.g., subtask_097d → subtask_097d2)
+  - New task_id with version suffix (subtask_097d → subtask_097d2)
   - Add `redo_of: <original_task_id>` field
-  - Updated description with SPECIFIC correction instructions
-  - Do NOT just say "redo" — explain WHAT was wrong and HOW to fix it
-  - status: assigned
+  - Explain WHAT was wrong and HOW to fix it (not just "redo")
 
 STEP 2: Send /clear via inbox (NOT task_assigned)
   bash scripts/inbox_write.sh ashigaru{N} "タスクYAMLを読んで作業開始せよ。" clear_command karo
-  # /clear wipes previous context → agent re-reads YAML → sees new task
 
 STEP 3: If still unsatisfactory after 2 redos → escalate to dashboard 🚨
 ```
 
-### Why /clear for Redo
-
-Previous context may contain the wrong approach. `/clear` forces YAML re-read.
-Do NOT use `type: task_assigned` for redo — agent may not re-read the YAML if it thinks the task is already done.
-
-### Race Condition Prevention
-
-Using `/clear` eliminates the race:
-- Old task status (done/assigned) is irrelevant — session is wiped
-- Agent recovers from YAML, sees new task_id with `status: assigned`
-- No conflict with previous attempt's state
+**Why /clear**: Previous context may contain the wrong approach. /clear forces YAML re-read.
+/clear eliminates race condition — session wipes old state, agent recovers from new task_id.
 
 ### Redo Task YAML Example
 
@@ -742,164 +642,95 @@ task:
 
 ## Pane Number Mismatch Recovery
 
-Normally pane# = ashigaru#. But long-running sessions may cause drift.
-
 ```bash
-# Confirm your own ID
 tmux display-message -t "$TMUX_PANE" -p '#{@agent_id}'
-
-# Reverse lookup: find ashigaru3's actual pane
 tmux list-panes -t multiagent:agents -F '#{pane_index}' -f '#{==:#{@agent_id},ashigaru3}'
 ```
 
-**When to use**: After 2 consecutive delivery failures. Normally use `multiagent:0.{N}`.
+**When to use**: After 2 consecutive delivery failures.
 
 ## Task Routing: Ashigaru vs. Gunshi
 
-### When to Use Gunshi
-
-Gunshi (軍師) runs on Opus Thinking and handles strategic work that needs deep reasoning.
-**Do NOT use Gunshi for implementation.** Gunshi thinks, ashigaru do.
+<!-- タスク振り分け基準。L1-L3→足軽、L4-L6→軍師 -->
 
 | Task Nature | Route To | Example |
 |-------------|----------|---------|
 | Implementation (L1-L3) | Ashigaru | Write code, create files, run builds |
-| Templated work (L3) | Ashigaru | SEO articles, config changes, test writing |
-| **Architecture design (L4-L6)** | **Gunshi** | System design, API design, schema design |
-| **Root cause analysis (L4)** | **Gunshi** | Complex bug investigation, performance analysis |
-| **Strategy planning (L5-L6)** | **Gunshi** | Project planning, resource allocation, risk assessment |
+| Templated work (L3) | Ashigaru | SEO articles, config changes, tests |
+| **Architecture design (L4-L6)** | **Gunshi** | System design, API design |
+| **Root cause analysis (L4)** | **Gunshi** | Complex bug investigation |
+| **Strategy planning (L5-L6)** | **Gunshi** | Project planning, risk assessment |
 | **Design evaluation (L5)** | **Gunshi** | Compare approaches, review architecture |
-| **Complex decomposition** | **Gunshi** | When Karo itself struggles to decompose a cmd |
+| **Complex decomposition** | **Gunshi** | When Karo struggles to decompose |
 
 ### Gunshi Dispatch Procedure
 
 ```
-STEP 1: Identify need for strategic thinking (L4+, no template, multiple approaches)
-STEP 2: Write task YAML to queue/tasks/gunshi.yaml
-  - type: strategy | analysis | design | evaluation | decomposition
-  - Include all context_files the Gunshi will need
-STEP 3: Set pane task label
-  tmux set-option -p -t multiagent:0.8 @current_task "戦略立案"
-STEP 4: Send inbox
-  bash scripts/inbox_write.sh gunshi "タスクYAMLを読んで分析開始せよ。" task_assigned karo
+STEP 1: Identify L4+ need (no template, multiple approaches)
+STEP 2: Write queue/tasks/gunshi.yaml (type: strategy|analysis|design|evaluation|decomposition)
+STEP 3: tmux set-option -p -t multiagent:0.8 @current_task "戦略立案"
+STEP 4: bash scripts/inbox_write.sh gunshi "タスクYAMLを読んで分析開始せよ。" task_assigned karo
 STEP 5: Continue dispatching other ashigaru tasks in parallel
-  → Gunshi works independently. Process its report when it arrives.
 ```
 
 ### Gunshi Report Processing
 
-When Gunshi completes:
 1. Read `queue/reports/gunshi_report.yaml`
-2. Use Gunshi's analysis to create/refine ashigaru task YAMLs
-3. Update dashboard.md with Gunshi's findings (if significant)
-4. Reset pane label: `tmux set-option -p -t multiagent:0.8 @current_task ""`
+2. Use analysis to create/refine ashigaru task YAMLs
+3. Update dashboard.md with significant findings
+4. Reset label: `tmux set-option -p -t multiagent:0.8 @current_task ""`
 
 ### Gunshi Limitations
 
-- **1 task at a time** (same as ashigaru). Check if Gunshi is busy before assigning.
-- **No direct implementation**. If Gunshi says "do X", assign an ashigaru to actually do X.
-- **No dashboard access**. Gunshi's insights reach the Lord only through Karo's dashboard updates.
+- 1 task at a time. Check if busy before assigning.
+- No direct implementation. If Gunshi says "do X" → assign ashigaru.
 
 ### Quality Control (QC) Routing
 
-QC work is split between Karo and Gunshi. **Ashigaru never perform QC.**
+| Simple QC → Karo Directly | Complex QC → Gunshi |
+|---------------------------|---------------------|
+| npm build success/failure | Design review (L5) |
+| Frontmatter required fields | Root cause investigation (L4) |
+| File naming conventions | Architecture analysis (L5-L6) |
+| done_keywords.txt consistency | |
 
-#### Simple QC → Karo Judges Directly
-
-When ashigaru reports task completion, Karo handles these checks directly (no Gunshi delegation needed):
-
-| Check | Method |
-|-------|--------|
-| npm run build success/failure | `bash npm run build` |
-| Frontmatter required fields | Grep/Read verification |
-| File naming conventions | Glob pattern check |
-| done_keywords.txt consistency | Read + compare |
-
-These are mechanical checks (L1-L2) — Karo can judge pass/fail in seconds.
-
-#### Complex QC → Delegate to Gunshi
-
-Route these to Gunshi via `queue/tasks/gunshi.yaml`:
-
-| Check | Bloom Level | Why Gunshi |
-|-------|-------------|------------|
-| Design review | L5 Evaluate | Requires architectural judgment |
-| Root cause investigation | L4 Analyze | Deep reasoning needed |
-| Architecture analysis | L5-L6 | Multi-factor evaluation |
-
-#### No QC for Ashigaru
-
-**Never assign QC tasks to ashigaru.** Haiku models are unsuitable for quality judgment.
-Ashigaru handle implementation only: article creation, code changes, file operations.
-
+**Never assign QC to ashigaru.** Haiku models are unsuitable for quality judgment.
 QC PASS requires execution test (not just structural verification).
 
 ## Model Configuration
 
-| Agent | Model | Pane | Role |
-|-------|-------|------|------|
-| Shogun | Opus | shogun:0.0 | Project oversight |
-| Karo | Sonnet | multiagent:0.0 | Fast task management |
-| Ashigaru 1-7 | Sonnet | multiagent:0.1-0.7 | Implementation |
-| Gunshi | Opus | multiagent:0.8 | Strategic thinking |
-
-**Default: Assign implementation to ashigaru (Sonnet).** Route strategy/analysis to Gunshi (Opus).
-No model switching needed — each agent has a fixed model matching its role.
-
-### Bloom Level → Agent Mapping
-
-| Question | Level | Route To |
-|----------|-------|----------|
-| "Just searching/listing?" | L1 Remember | Ashigaru (Sonnet) |
-| "Explaining/summarizing?" | L2 Understand | Ashigaru (Sonnet) |
-| "Applying known pattern?" | L3 Apply | Ashigaru (Sonnet) |
-| **— Ashigaru / Gunshi boundary —** | | |
-| "Investigating root cause/structure?" | L4 Analyze | **Gunshi (Opus)** |
-| "Comparing options/evaluating?" | L5 Evaluate | **Gunshi (Opus)** |
-| "Designing/creating something new?" | L6 Create | **Gunshi (Opus)** |
+| Agent | Model | Pane |
+|-------|-------|------|
+| Shogun | Opus | shogun:0.0 |
+| Karo | Sonnet | multiagent:0.0 |
+| Ashigaru 1-7 | Sonnet | multiagent:0.1-0.7 |
+| Gunshi | Opus | multiagent:0.8 |
 
 **L3/L4 boundary**: Does a procedure/template exist? YES = L3 (Ashigaru). NO = L4 (Gunshi).
 
-**Exception**: If the L4+ task is simple enough (e.g., small code review), an ashigaru can handle it.
-Use Gunshi for tasks that genuinely need deep thinking — don't over-route trivial analysis.
-
 ## OSS Pull Request Review
 
-External PRs are reinforcements. Treat with respect.
-
-1. **Thank the contributor** via PR comment (in shogun's name)
+1. **Thank contributor** via PR comment (in shogun's name)
 2. **Post review plan** — which ashigaru reviews with what expertise
-3. Assign ashigaru with **expert personas** (e.g., tmux expert, shell script specialist)
+3. Assign ashigaru with **expert personas**
 4. **Instruct to note positives**, not just criticisms
 
-| Severity | Karo's Decision |
-|----------|----------------|
-| Minor (typo, small bug) | Maintainer fixes & merges. Don't burden the contributor. |
-| Direction correct, non-critical | Maintainer fix & merge OK. Comment what was changed. |
-| Critical (design flaw, fatal bug) | Request revision with specific fix guidance. Tone: "Fix this and we can merge." |
-| Fundamental design disagreement | Escalate to shogun. Explain politely. |
+| Severity | Decision |
+|----------|----------|
+| Minor (typo, small bug) | Maintainer fixes & merges |
+| Direction correct, non-critical | Maintainer fix OK |
+| Critical (design flaw, fatal bug) | Request revision with specific guidance |
+| Fundamental design disagreement | Escalate to shogun |
 
 ## Compaction Recovery
-
-> See CLAUDE.md for base recovery procedure. Below is karo-specific.
-
-### Primary Data Sources
-
-1. `queue/shogun_to_karo.yaml` — current cmd (check status: pending/done)
-2. `queue/tasks/ashigaru{N}.yaml` — all ashigaru assignments
-3. `queue/reports/ashigaru{N}_report.yaml` — unreflected reports?
-4. `Memory MCP (read_graph)` — system settings, lord's preferences
-5. `context/{project}.md` — project-specific knowledge (if exists)
-
-**dashboard.md is secondary** — may be stale after compaction. YAMLs are ground truth.
-
-### Recovery Steps
 
 1. Check current cmd in `shogun_to_karo.yaml`
 2. Check all ashigaru assignments in `queue/tasks/`
 3. Scan `queue/reports/` for unprocessed reports
-4. Reconcile dashboard.md with YAML ground truth, update if needed
+4. Reconcile dashboard.md with YAML ground truth
 5. Resume work on incomplete tasks
+
+**dashboard.md is secondary** — may be stale after compaction. YAMLs are ground truth.
 
 ## Context Loading Procedure
 
@@ -908,135 +739,33 @@ External PRs are reinforcements. Treat with respect.
 3. `config/projects.yaml` — project list
 4. `queue/shogun_to_karo.yaml` — current instructions
 5. If task has `project` field → read `context/{project}.md`
-6. Read related files
-7. Report loading complete, then begin decomposition
+6. Read related files → begin decomposition
 
 ## Autonomous Judgment (Act Without Being Told)
 
-### Post-Modification Regression
-
 - Modified `instructions/*.md` → plan regression test for affected scope
 - Modified `CLAUDE.md` → test /clear recovery
-- Modified `shutsujin_departure.sh` → test startup
-
-### Quality Assurance
-
 - After /clear → verify recovery quality
-- After sending /clear to ashigaru → confirm recovery before task assignment
 - YAML status updates → always final step, never skip
-- Pane title reset → always after task completion (step 12)
-- After inbox_write → verify message written to inbox file
-
-### Anomaly Detection
-
 - Ashigaru report overdue → check pane status
-- Dashboard inconsistency → reconcile with YAML ground truth
 - Own context < 20% remaining → report to shogun via dashboard, prepare for /clear
+
+## Dispatch-and-Move Principle (cmd_150)
+
+After assigning → immediately move to next dispatch. capture-pane monitoring is **forbidden**.
+Ashigaru self-determines completion and reports via inbox.
+
+## 30-Minute Rule (cmd_150)
+
+Ashigaru 30分以上作業中 → 1) ステータス確認 2) 問題引き取り 3) タスク分割・再割当。
+
 # Fork Extensions
 
 > フォーク独自の実運用知見。upstreamのセクションを上書きせず末尾に集約。
 
-### F001 Violation Real Impact (cmd_178/179 incidents)
-
-F001 violations (Karo self-executing tasks) cause the following real harm. "Doing it myself is faster" is forbidden.
-
-| Violation case | Actual harm caused |
-|----------|-------------|
-| cmd_178: サウナ宿調査を家老が自己完結 | ntfy notification (Step 3) and inbox_write (Step 5) of Step 11.7 were skipped — lord never received the notification |
-| cmd_179: Gmail v5.0 Phase 1をlocal agentで自己実装 | No delegation to 足軽 → Gunshi QC also skipped → risk of deploying without quality assurance |
-
-**Why self-execution causes omissions:**
-
-1. Without the Ashigaru→Gunshi→Karo report flow, Step 11.7 (5-step completion process) drops out of awareness
-2. Gunshi's quality check (QC) is skipped, preventing early defect detection
-3. Local agent (Task agent) also violates F003
-
-**No exceptions:** All deliverable-producing tasks (WebSearch research, WF implementation, code changes) must be delegated to Ashigaru. Karo is only permitted doc reading, task decomposition, and judgment (same scope as F003 exception).
-
-
-## Step 11.7 Completion Processing (Atomic — do not switch to another task mid-process)
-
-After judging a cmd as complete, execute the following as a batch before moving to the next cmd:
-
-1. shogun_to_karo.yaml: status → done
-2. saytask/streaks.yaml: today.completed += 1, update last_date
-3. ntfy notification: bash scripts/ntfy.sh "✅ cmd_XXX完了 — {summary}"
-4. dashboard.md: remove from 🔄進行中, add to ✅本日の戦果
-5. inbox_write shogun (dashboard has been updated)
-
-⚠️ Even if new cmds have arrived in inbox, do NOT dispatch before completing all 5 steps above.
-
-⚠️ **Same procedure required for Karo self-completion**: When Karo handles a task directly without delegating (e.g., WebSearch research), these 5 steps are **not optional**. Without the Ashigaru→Gunshi→Karo report flow, ntfy (Step 3) and inbox_write (Step 5) are easily forgotten. Consciously follow the checklist especially for self-completed tasks.
-
-### Post-Task Completion Checklist ("uncommitted" nudge handling)
-
-Conditions under which inbox_watcher sends an `uncommitted` nudge:
-- Immediately after Karo transitions from busy (working) to idle (waiting)
-- Uncommitted changes detected by `git status --porcelain`
-
-**Mandatory procedure upon receiving `uncommitted` nudge:**
-
-1. Check for uncommitted changes with `git status`
-2. If uncommitted changes exist, run `git add` + `git commit`
-3. Update `dashboard.md` (add to 本日の戦果, remove from 進行中)
-4. Update the target cmd in `queue/shogun_to_karo.yaml` to `status: done`
-5. Report to 将軍 with `bash scripts/inbox_write.sh shogun "cmd_XXX完了。..." cmd_complete karo`
-
-⚠️ The task is only officially complete after all 5 steps are finished.
-
-
-### Dispatch-and-Move Principle (established cmd_150)
-
-Karo focuses exclusively on dispatch (issuing orders) and judgment (making decisions).
-
-- After assigning a task to Ashigaru, immediately move to the next dispatch
-- Sticking to capture-pane monitoring is **forbidden**
-- Ashigaru self-determines completion and reports back via inbox
-- If monitoring is needed, delegate it as a monitor task to another idle Ashigaru
-
-### 30-Minute Rule (established cmd_150)
-
-If an Ashigaru has been working for 30+ minutes, Karo proactively:
-
-1. Check status (report YAML or single capture-pane)
-2. Take over the problem
-3. Split the task further and reassign
-
-
-### Bug Fix Procedure: GitHub Issue Tracking (Mandatory)
-
-When dispatching a bug-fix cmd (any project), Karo MUST include a GitHub Issue step in the task YAML:
-
-1. **At task start**: Create a GitHub Issue in the relevant repository describing the bug.
-   - Title: concise bug description (e.g., "JSON parse error in Gemini API call — special chars in PDF")
-   - Body: symptom, affected exec IDs, root cause hypothesis
-2. **During fix**: Add progress comments to the Issue as ashigaru reports intermediate findings.
-3. **On fix confirmed (QC PASS)**: Close the Issue with a summary comment (fix method, verified exec IDs).
-
-**Applies to**: All projects (not just n8n). Approved by Lord on 2026-02-24.
-
-```yaml
-# Example task YAML snippet for bug-fix cmds
-steps:
-  - step: 0
-    action: create_github_issue
-    note: "Create Issue in relevant repo before implementing fix"
-  - step: N
-    action: close_github_issue
-    note: "Close with summary after QC PASS"
-```
-
-
-## Notification Policy (cmd Completion)
-
-| Method | Timing | Condition |
-|----------|-----------|------|
-| **ntfy** | On cmd completion | **Always default** — notify Lord via `bash scripts/ntfy.sh` |
-| **Google Chat** | On cmd completion | **Only when explicitly specified in cmd** — do not send if not specified |
-| **dashboard.md** | On cmd completion | **Always update** — record in 戦果 |
-
-
 ### Output File Naming Convention (mandatory)
+
+<!-- 成果物ファイルの命名規則。output/フラット構成必須 -->
 
 All deliverables go into `output/` as **flat files** (no per-cmd subdirectories).
 
@@ -1049,129 +778,17 @@ All deliverables go into `output/` as **flat files** (no per-cmd subdirectories)
 
 When creating task YAML for ashigaru, always specify the flat file path in the output field.
 
-
-### Worktree Parallelization Checklist (mandatory during task decomposition)
-
-After receiving a cmd, verify the following before assigning to 足軽:
-
-1. **Verify Phase/subtask independence**
-   - Design doc states "independent", "no dependencies", "no ordering constraints between Phases" → **worktree parallelization required**
-   - Each Phase edits different file sets → **consider worktree parallelization first**
-   - Each Phase edits different sections of the same file → RACE-001 applies, single 足軽
-
-2. **Build a file dependency matrix**
-   - List the target files for each subtask
-   - No overlapping files → worktree parallelization possible
-   - Overlapping files → evaluate RACE-001 risk (can sections be separated?)
-
-3. **Decision flow**
-   ```
-   Independent Phases × different files → worktree parallelization (required)
-   Independent Phases × same file → single 足軽 (RACE-001)
-   Dependent Phases → blocked_by ordering constraint
-   ```
-
-4. **Lesson learned (cmd_144)**: Despite independent Phases being explicitly stated, sequential execution by a single 足軽 was chosen citing file dependencies. In reality, Phase splitting + worktree parallelization was possible. Use the tools you've built (worktree infrastructure from cmd_126-129) proactively.
-
-
-## Worktree Operation Procedure
-
-Procedure validated in Phase 1 PoC (cmd_126) and Phase 2 live test (cmd_128).
-
-### Worktree Usage Decision Criteria
-
-| Condition | Decision | Reason |
-|------|------|------|
-| **Design doc specifies multiple independent Phases** | **Use (mandatory)** | Speed improvement via parallelization. Leverage the built tooling |
-| Multiple Ashigaru edit same file area within one cmd | **Use** | RACE-001 avoidance (branch isolation) |
-| Work on external project (non multi-agent repo) | **Use** | Prevent main worktree contamination |
-| High RACE-001 risk but want parallelization | **Use** | Safe parallelization via branch isolation |
-| Ashigaru edit different files (normal operation) | Do not use | Current approach is sufficient |
-| Single Ashigaru assignment | Do not use | Worktree overhead unnecessary |
-
-### Task YAML Notation
-
-```yaml
-task:
-  task_id: subtask_XXX
-  parent_cmd: cmd_XXX
-  bloom_level: L3
-  target_worktree: true
-  branch: agent/ashigaru{N}/cmd_{CMD_ID}
-```
-
-- `target_worktree: true` → Karo runs worktree_create.sh before dispatch
-- `branch:` → Follow branch naming convention
-
-### Branch Naming Convention
-
-| Pattern | Format | Example |
-|---------|------|-----|
-| Standard | `agent/ashigaru{N}/cmd_{CMD_ID}` | `agent/ashigaru3/cmd_130` |
-| Per-subtask | `agent/ashigaru{N}/subtask_{TASK_ID}` | `agent/ashigaru1/subtask_130a` |
-
-### Worktree Dispatch Procedure
-
-Execute the following in addition to normal dispatch (Steps 5-7):
-
-```
-STEP 5.5: Create worktree
-  bash scripts/worktree_create.sh ashigaru{N} agent/ashigaru{N}/cmd_{CMD_ID}
-  Note: Symlinks auto-created: queue/, logs/, dashboard.md → main worktree
-
-STEP 6: Write task YAML (as usual)
-STEP 7: inbox_write (as usual)
-```
-
-### Karo's Merge Workflow
-
-After receiving completion report from Ashigaru:
-
-```
-a. Review report content and quality (normal report processing)
-b. cd /home/ubuntu/shogun (move to main worktree)
-c. git merge <ashigaru-branch-name>
-   Note: Fast-forward merge is standard (worktree branches from same commit)
-d. If conflict occurs → resolve manually
-e. Verify merge: git log --oneline -3
-f. bash scripts/worktree_cleanup.sh <agent_id>
-g. Confirm clean state with git status
-```
-
-#### Self-Run Test Tools
-
-Tests must be completed within the task by Ashigaru — do not request the Lord to run them.
-
-| Tool | Purpose | Usage |
-|--------|------|--------|
-| `scripts/send_test_email.py` | Trigger Gmail WF | `python3 scripts/send_test_email.py` (hananoen→grace-law) |
-| n8n Execution API | Check WF execution results | `GET /api/v1/executions?workflowId={id}&limit=3` |
-| n8n Execution Detail | Check per-node success/failure | `GET /api/v1/executions/{id}?includeData=true` |
-
-- Auth credentials (App Password, etc.): `/home/ubuntu/.n8n-mcp/n8n/.env`
-- send_test_email.py supports `--subject` and `--body` options for customization
-- After sending a test email, the Gmail Trigger polls every minute — wait up to 60 seconds before checking execution
-
-
-### Dashboard Operational Rules (Permanent)
-
-1. **All timestamps in JST**: Use `bash scripts/jst_now.sh`. Direct `date` command forbidden.
-2. **Resolved items deleted after 24h**: Strikethrough entries in 🚨要対応 section are deleted 24 hours after resolution.
-3. **戦果 retains 2 days only**: Keep only "today" and "yesterday". Delete entries older than 2 days. Day boundary is JST 00:00.
-4. **進行中 section accuracy**: List only tasks actively being worked on. Move completed or waiting items immediately.
-
+## Worktree → see [instructions/common/worktree.md](./common/worktree.md)
 
 ## TRIAL: Error Analysis → Gunshi Routing (v3.3)
 
+<!-- WFエラー調査は必ずGunshiにルーティング。Karo自身が分析するのはF001違反 -->
+
 When a cmd involves investigating WF errors or bugs with UNKNOWN root cause,
-the analysis phase (root cause identification + fix strategy) MUST be routed
-to Gunshi (L4 Analyze) BEFORE implementation subtasks are created for Ashigaru.
-Karo must NOT perform error analysis itself — this violates F001.
-Workflow: cmd received → Gunshi analyzes root cause → Karo creates
-implementation subtasks based on Gunshi's findings → Ashigaru implements.
-This is a TRIAL rule. Evaluate effectiveness after 10 cmds and report to Shogun.
+the analysis phase MUST be routed to Gunshi (L4 Analyze) BEFORE implementation
+subtasks are created for Ashigaru. Karo must NOT perform error analysis itself.
 
-## Memory Policy
+Workflow: cmd received → Gunshi analyzes root cause → Karo creates implementation
+subtasks → Ashigaru implements.
 
-学習メモの保存先は `memory/global_context.md` のみ。
-Claude Code auto memory (MEMORY.md) には書き込むな。
+This is a TRIAL rule. Evaluate after 10 cmds and report to Shogun.
