@@ -86,14 +86,16 @@ googlechatに通知するようにいわれたときは、環境変数 `GCHAT_WE
 - 主な変更点: data_source_id必須、Search APIフィルタ値変更(database→data_source)
 - 参考: https://developers.notion.com/docs/upgrade-guide-2025-09-03
 
-### 【重要例外】インラインDB（is_inline=True）は 2022-06-28 必須 (2026-02-27確認)
-- 成果物DB(fd6ab508-...)は `is_inline=True` のインラインDB
+### 【重要例外】インラインDB（is_inline=True）は 2022-06-28 必須 (2026-02-27確認、2026-02-28追記)
+- 成果物DB(fd6ab508-...)および**活動ログDB(a0eda711-...)**は `is_inline=True` のインラインDB
 - Notion API **2025-09-03** では is_inline DB を **multi-source 扱い**:
   - GET /databases/{id} → properties: []（空）
   - POST /databases/{id}/query → **400 invalid_request_url**
-- **必ず 2022-06-28 を使用すること**（notion_session_log.sh L461 参照）
-- 代替案: data_sources EP (ds_id: d718bbe4-312d-4e4d-8111-70bd571ac4a2) + 2025-09-03 への移行も可
-- 根拠: cmd_242 軍師QC (subtask_242a_qc) で実地確認
+  - PATCH /databases/{id}（プロパティ追加）→ properties変更不可
+- **必ず 2022-06-28 を使用すること**（notion_session_log.sh 機能B、Phase1 PATCH APIも同様）
+- 活動ログDBはdata_sources API(2025-09-03)でクエリ可能だが、プロパティ操作は2022-06-28必須
+- 代替案: data_sources EP + 2025-09-03 への移行も可
+- 根拠: cmd_242(subtask_242a_qc) + cmd_248(subtask_248a) 実地確認
 
 ### 軍師自律QCプロトコル (2026-02-28施行)
 - 足軽がreport_receivedを軍師inboxに送信 → 軍師が**家老のタスクYAML割当なしで**自動QC開始
