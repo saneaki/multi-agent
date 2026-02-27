@@ -799,3 +799,13 @@ Workflow: cmd received → Gunshi analyzes root cause → Karo creates implement
 subtasks → Ashigaru implements.
 
 This is a TRIAL rule. Evaluate after 10 cmds and report to Shogun.
+
+## Cmd Status ACK & Archive (v3.8)
+
+**ACK fast**: cmd受取時に即 `status: pending → in_progress` に更新すること。
+足軽への subtask 割当前に実行。殿の「誰も動いていない」混乱を防ぐ。
+
+**Archive on completion**: cmd が `done` / `cancelled` / `paused` になったら
+エントリ丸ごと `queue/shogun_to_karo_archive.yaml` へ移動し、active fileから削除。
+詳細: [instructions/common/task_flow.md](./common/task_flow.md) → Archive Rule セクション、
+および [instructions/roles/karo_role.md](./roles/karo_role.md) → Cmd Status (Ack Fast) セクション。

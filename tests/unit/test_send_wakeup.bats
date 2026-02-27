@@ -133,6 +133,7 @@ CLI_TYPE="claude"
 INBOX="$TEST_INBOX_DIR/test_agent.yaml"
 LOCKFILE="\${INBOX}.lock"
 SCRIPT_DIR="$PROJECT_ROOT"
+export IDLE_FLAG_DIR="$TEST_TMPDIR"
 
 # Mock external commands (defined before sourcing so they override real commands)
 tmux() {
@@ -190,6 +191,10 @@ export __INBOX_WATCHER_TESTING__=1
 source "$WATCHER_SCRIPT"
 HARNESS
     chmod +x "$TEST_HARNESS"
+
+    # Default: create idle flag so agent_is_busy() returns idle (1) for claude CLI
+    # Tests requiring busy state must rm this file before their run bash -c block
+    touch "$TEST_TMPDIR/shogun_idle_test_agent"
 }
 
 teardown() {
@@ -441,10 +446,11 @@ MOCK
 
 # --- T-BUSY-001: agent_is_busy detects "Working" ---
 
-@test "T-BUSY-001: agent_is_busy returns 0 when pane shows Working" {
+@test "T-BUSY-001: agent_is_busy returns 0 (busy) when no idle flag — claude CLI" {
+    rm -f "$TEST_TMPDIR/shogun_idle_test_agent"
     run bash -c '
-        MOCK_CAPTURE_PANE="◦ Working on task (12s • esc to interrupt)"
         source "'"$TEST_HARNESS"'"
+        LAST_CLEAR_TS=0
         agent_is_busy
     '
     [ "$status" -eq 0 ]
@@ -465,8 +471,8 @@ MOCK
 # --- T-BUSY-003: send_wakeup skips when agent is busy ---
 
 @test "T-BUSY-003: send_wakeup skips nudge when agent is busy" {
+    rm -f "$TEST_TMPDIR/shogun_idle_test_agent"
     run bash -c '
-        MOCK_CAPTURE_PANE="◦ Thinking about approach (5s • esc to interrupt)"
         source "'"$TEST_HARNESS"'"
         send_wakeup 3
     '
@@ -480,8 +486,8 @@ MOCK
 # --- T-BUSY-004: send_wakeup_with_escape skips when agent is busy ---
 
 @test "T-BUSY-004: send_wakeup_with_escape skips when agent is busy" {
+    rm -f "$TEST_TMPDIR/shogun_idle_test_agent"
     run bash -c '
-        MOCK_CAPTURE_PANE="◦ Sending request (2s • esc to interrupt)"
         source "'"$TEST_HARNESS"'"
         send_wakeup_with_escape 2
     '
@@ -552,8 +558,8 @@ MOCK
 # --- T-CODEX-004: C-u NOT sent when agent is busy ---
 
 @test "T-CODEX-004: C-u cleanup NOT sent when agent is busy" {
+    rm -f "$TEST_TMPDIR/shogun_idle_test_agent"
     run bash -c '
-        MOCK_CAPTURE_PANE="◦ Working on request (10s • esc to interrupt)"
         source "'"$TEST_HARNESS"'"
         FIRST_UNREAD_SEEN=12345
         normal_count=0
@@ -984,6 +990,7 @@ YAML
         MOCK_CAPTURE_PANE="$(printf "Some output\nbackground terminal running\n")"
         source "'"$TEST_HARNESS"'"
         LAST_CLEAR_TS=0
+        CLI_TYPE="codex"  # pane-based detection (non-claude fallback)
         agent_is_busy
     '
     [ "$status" -eq 0 ]
@@ -996,6 +1003,7 @@ YAML
         MOCK_CAPTURE_PANE="$(printf "Compacting conversation...\n")"
         source "'"$TEST_HARNESS"'"
         LAST_CLEAR_TS=0
+        CLI_TYPE="codex"  # pane-based detection (non-claude fallback)
         agent_is_busy
     '
     [ "$status" -eq 0 ]
@@ -1008,6 +1016,7 @@ YAML
         MOCK_CAPTURE_PANE="$(printf "◦ Thinking (5s • esc to interrupt)\n")"
         source "'"$TEST_HARNESS"'"
         LAST_CLEAR_TS=0
+        CLI_TYPE="codex"  # pane-based detection (non-claude fallback)
         agent_is_busy
     '
     [ "$status" -eq 0 ]
@@ -1151,6 +1160,7 @@ YAML
   ? for shortcuts                100% context left"
         source "'"$TEST_HARNESS"'"
         AGENT_ID="karo"
+        touch "${IDLE_FLAG_DIR}/shogun_idle_karo"  # simulate idle state for karo
         KARO_PREV_BUSY=1   # was busy
         LAST_UNCOMMITTED_NUDGE_TS=0  # no recent nudge
         check_karo_uncommitted
@@ -1174,6 +1184,7 @@ YAML
   ? for shortcuts                100% context left"
         source "'"$TEST_HARNESS"'"
         AGENT_ID="karo"
+        touch "${IDLE_FLAG_DIR}/shogun_idle_karo"  # simulate idle state for karo
         KARO_PREV_BUSY=1
         LAST_UNCOMMITTED_NUDGE_TS=0
         check_karo_uncommitted
@@ -1196,6 +1207,7 @@ YAML
   ? for shortcuts                100% context left"
         source "'"$TEST_HARNESS"'"
         AGENT_ID="karo"
+        touch "${IDLE_FLAG_DIR}/shogun_idle_karo"  # simulate idle state for karo
         KARO_PREV_BUSY=1
         # Set recent nudge (10 seconds ago — well within 120s cooldown)
         LAST_UNCOMMITTED_NUDGE_TS=$(($(date +%s) - 10))
