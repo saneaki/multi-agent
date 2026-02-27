@@ -166,7 +166,7 @@ while [[ $# -gt 0 ]]; do
             echo "オプション:"
             echo "  -c, --clean         キューとダッシュボードをリセットして起動（クリーンスタート）"
             echo "                      未指定時は前回の状態を維持して起動"
-            echo "  -k, --kessen        決戦の陣（全足軽をOpusで起動）"
+            echo "  -k, --kessen        決戦の陣（全員Opusで起動、家老含む）"
             echo "                      未指定時は平時の陣（足軽1-7=Sonnet, 軍師=Opus）"
             echo "  -s, --setup-only    tmuxセッションのセットアップのみ（Claude起動なし）"
             echo "  -t, --terminal      Windows Terminal で新しいタブを開く"
@@ -190,13 +190,13 @@ while [[ $# -gt 0 ]]; do
             echo ""
             echo "モデル構成:"
             echo "  将軍:      Opus（デフォルト。--shogun-no-thinkingで無効化）"
-            echo "  家老:      Sonnet（高速タスク管理）"
+            echo "  家老:      Sonnet/Opus（決戦時はOpus）"
             echo "  軍師:      Opus（戦略立案・設計判断）"
             echo "  足軽1-7:   Sonnet（実働部隊）"
             echo ""
             echo "陣形:"
             echo "  平時の陣（デフォルト）: 足軽1-7=Sonnet, 軍師=Opus"
-            echo "  決戦の陣（--kessen）:   全足軽=Opus, 軍師=Opus"
+            echo "  決戦の陣（--kessen）:   全員=Opus（家老・足軽・軍師）"
             echo ""
             echo "表示モード:"
             echo "  shout（デフォルト）:  タスク完了時に戦国風echo表示"
@@ -607,7 +607,11 @@ done
 if [ "$CLI_ADAPTER_LOADED" = true ]; then
     for i in "${!AGENT_IDS[@]}"; do
         _agent="${AGENT_IDS[$i]}"
-        MODEL_NAMES[$i]=$(get_model_display_name "$_agent")
+        if [ "$KESSEN_MODE" = true ] && [[ "$_agent" != "gunshi" ]]; then
+            MODEL_NAMES[$i]="Opus"
+        else
+            MODEL_NAMES[$i]=$(get_model_display_name "$_agent")
+        fi
     done
 fi
 
@@ -690,6 +694,9 @@ with open(f,'w') as fh: yaml.safe_dump(d, fh, default_flow_style=False, allow_un
     if [ "$CLI_ADAPTER_LOADED" = true ]; then
         _karo_cli_type=$(get_cli_type "karo")
         _karo_cmd=$(build_cli_command "karo")
+    fi
+    if [ "$KESSEN_MODE" = true ]; then
+        _karo_cmd="claude --model opus --dangerously-skip-permissions"
     fi
     # Codex等の初期プロンプト付加（サジェストUI停止問題対策）
     _startup_prompt=$(get_startup_prompt "karo" 2>/dev/null)
