@@ -192,7 +192,7 @@ The inbox_write guarantees persistence. inbox_watcher handles delivery.
 worker_id: ashigaru1
 task_id: subtask_001
 parent_cmd: cmd_035
-timestamp: "2026-01-25T10:15:00"  # from date command
+timestamp: "2026-01-25T10:15:00+09:00"  # from jst_now.sh --yaml
 status: done  # done | failed | blocked
 result:
   summary: "WBS 2.3節 完了でござる"

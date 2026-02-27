@@ -303,7 +303,7 @@ task:
   report_to: gunshi        # ← Required — ashigaru reports to gunshi, not karo
   echo_message: "🔥 足軽1号、先陣を切って参る！"
   status: assigned
-  timestamp: "2026-01-25T12:00:00"
+  timestamp: "2026-01-25T12:00:00+09:00"  # from jst_now.sh --yaml
 
 # Dependent task
 task:
@@ -313,7 +313,7 @@ task:
   blocked_by: [subtask_001, subtask_002]
   description: "Integrate research results from ashigaru 1 and 2"
   status: blocked
-  timestamp: "2026-01-25T12:00:00"
+  timestamp: "2026-01-25T12:00:00+09:00"  # from jst_now.sh --yaml
 ```
 
 ## "Wake = Full Scan" Pattern
@@ -638,7 +638,7 @@ task:
     【やり直し】前回の問題: echoが緑色太字でなかった。
     修正: echo -e "\033[1;32m..." で緑色太字出力。echoを最終tool callに。
   status: assigned
-  timestamp: "2026-02-09T07:46:00"
+  timestamp: "2026-02-09T07:46:00+09:00"  # from jst_now.sh --yaml
 ```
 
 ## Pane Number Mismatch Recovery
