@@ -1,120 +1,88 @@
-task_id: subtask_238b
-parent_cmd: cmd_238
+task_id: subtask_253a
 assigned_to: ashigaru2
-assigned_by: karo
+cmd_ref: cmd_253
+project: shogun-system
+priority: medium
+status: assigned
+created_at: "2026-02-28T08:33:55+09:00"
 bloom_level: L3
 report_to: gunshi
-title: "shogun.md/ashigaru.md/gunshi.md upstream再構築 + マージ判断レポート"
-priority: high
-status: assigned
-timestamp: "2026-02-26T08:50:00+09:00"
 
-description: |
-  instructions/ の3ファイル(shogun.md, ashigaru.md, gunshi.md)をupstream/main版ベースに再構築し、
-  マージ判断レポートを作成せよ。
+title: "instructions 3ファイル修正: skill_candidate必須化/suggestions追加/おたけびルール確認"
 
-  ■ 共通方針
-  - `git show upstream/main:instructions/{file}.md` でupstream版を取得
-  - upstream版をそのままベースにし、フォーク独自セクションを末尾「# Fork Extensions」に追記
-  - upstreamの既存セクション内容は一切変更しない
+north_star: "エージェントの上向きフィードバック（echo）を構造的に保証し、運用知見の蓄積とリスク早期検知を強化する"
 
-  ■ STEP 1: shogun.md 再構築
+context: |
+  cmd_253の実装タスク。v3.8マージ（cmd_251: b4d6893）完了済みのため着手可能。
+  3ファイルへの最小限の差分適用。既存の報告フロー・QCフローは壊さないこと。
 
-    (1a) upstream版取得:
-         git show upstream/main:instructions/shogun.md > /tmp/shogun_new.md
+  【現状確認済み】
+  - ashigaru.md: skill_candidate欄はfound: bool形式で既に定義済み(L202)。Shout Modeセクション(L287)あり。
+  - gunshi.md: suggestions欄なし。Shout Modeは「Same rules as ashigaru」参照で既にあり。
+  - karo.md: L553でskill_candidateチェック記述あり。suggestionsの確認は未記載。
 
-    (1b) Fork Extensions抽出:
-         フォーク版: /home/ubuntu/shogun/instructions/shogun.md
+steps:
+  - "=== A. ashigaru.md: skill_candidate必須強化 ==="
+  - "1. instructions/ashigaru.md を読む"
+  - "2. Report Format セクション(L195付近)のskill_candidateを以下の通り更新:"
+  - "   - MANDATORY コメントを強調。found: false の場合の記載例を追加"
+  - "   - 現在の形式(found: bool)を維持しつつ、「found: falseでも必ず記載せよ」を明記"
+  - "   - 記載例に must記述を追記: '# MANDATORY: even if not found, write found: false'"
+  - "3. おたけびルール確認: Shout Mode(L287)に以下が含まれているか確認"
+  - "   - 「タスク完了時は戦国風おたけびを出力せよ」が明記されているか"
+  - "   - 含まれていなければ1行追加: '**完了時おたけび必須**: タスク完了後、必ず戦国風おたけびを出力せよ（例: 任務完了でござる！突撃成功！）'"
+  - "   - 含まれていれば変更不要"
 
-         セクション1: "## 🚨要対応 Active Monitoring" (fork L169付近)
-           grep -n "要対応 Active Monitoring" /home/ubuntu/shogun/instructions/shogun.md
-           → 見つかった行番号から "^## ntfy Input Handling" の手前まで抽出
-           ※ "## ntfy Input Handling" はupstreamにあるので除外
+  - "=== B. gunshi.md: suggestions欄追加 ==="
+  - "4. instructions/gunshi.md を読む"
+  - "5. Quality Check Criteria セクション(L215付近)の直後か、Autonomous QC Procedure の後に:"
+  - "   suggestions欄をQC出力に追加する形式を定義:"
+  - "   ```yaml"
+  - "   suggestions:"
+  - "     - '(改善提案・スキル候補・リスク指摘・設計上の懸念を1件以上。QC PASSでも必ず記載)'"
+  - "   ```"
+  - "   具体的には gunshi_report.yaml の出力フォーマット定義に suggestions: を必須欄として追記"
+  - "6. gunshi.mdの Report Format または QC出力フォーマットがどこにあるか確認し、suggestions欄を追加"
+  - "   PASS時: 改善提案・スキル候補・今後の注意点(1件以上必須)"
+  - "   FAIL時: 根本原因の構造的改善提案を含める"
 
-         セクション2: "## Post-ntfy State Audit" (fork L222付近)
-           grep -n "^## Post-ntfy State Audit" /home/ubuntu/shogun/instructions/shogun.md
-           → 見つかった行番号から次の "^## " 見出しの手前まで抽出
+  - "=== C. karo.md: cmd完了チェックリスト更新 ==="
+  - "7. instructions/karo.md の Step 11.7 完了処理(L432付近)のチェックリストを確認"
+  - "8. cmd完了チェック時にskill_candidate/suggestionsの確認を追加:"
+  - "   - skill_candidate: ashigaru報告のfound: trueが1件でもあれば 要対応 or dashboard更新"
+  - "   - suggestions: gunshi QC報告のsuggestions欄内容を確認しdashboardに反映(必要なら)"
+  - "   ※ karo.md L553の「Skill Candidates」セクションは既にある。そこに 'gunshiのsuggestions確認' の旨を1-2行追記する程度でよい"
 
-    (1c) 結合:
-         cat /tmp/shogun_new.md > /tmp/shogun_final.md
-         printf "\n# Fork Extensions\n\n> フォーク独自の実運用知見。\n\n" >> /tmp/shogun_final.md
-         # セクション1とセクション2を追記
-         cp /tmp/shogun_final.md /home/ubuntu/shogun/instructions/shogun.md
+  - "=== git commit & push ==="
+  - "9. git add instructions/ashigaru.md instructions/gunshi.md instructions/karo.md"
+  - "   git commit -m 'feat: cmd_253 skill_candidate必須化/suggestions追加/おたけびルール確認'"
+  - "   git push origin original"
 
-  ■ STEP 2: ashigaru.md 再構築
+  - "=== 完了報告 ==="
+  - "10. queue/reports/ashigaru2_report.yaml を書く（report_to: gunshi）"
+  - "11. bash scripts/inbox_write.sh gunshi '足軽2号、subtask_253a 完了でござる。品質確認を仰ぎたし。' report_received ashigaru2"
 
-    (2a) upstream版取得:
-         git show upstream/main:instructions/ashigaru.md > /tmp/ashigaru_new.md
+quality_rules:
+  - "ashigaru.md の skill_candidate欄に MANDATORY/必須の強調が含まれている（found: false でも必ず記載）"
+  - "gunshi.md のQC出力定義に suggestions 欄が追加されている（1件以上必須の旨が明記）"
+  - "karo.md に gunshi suggestions 確認の記述が含まれている"
+  - "おたけびルールが ashigaru.md/gunshi.md どちらにも明記されている（既存確認 or 追記）"
+  - "git push 済み"
 
-    (2b) Fork Extensions抽出:
-         フォーク版: /home/ubuntu/shogun/instructions/ashigaru.md
+important_notes:
+  - "既存の報告フロー・QCフローは壊さないこと"
+  - "最小限の差分で適用（大規模リファクタ不要）"
+  - "ashigaru.md の skill_candidate フォーマットは found: bool 形式を維持（文字列形式に変えない）"
+  - "gunshi.md の既存 Shout Mode セクション（'Same rules as ashigaru'）は変更不要"
 
-         セクション1: "## n8n Workflow Fix Protocol (Mandatory)" (fork L286付近)
-           grep -n "n8n Workflow Fix Protocol" /home/ubuntu/shogun/instructions/ashigaru.md
-           → 見つかった行番号から "^## Shout Mode" の手前まで抽出
-           ※ "## Shout Mode (echo_message)" はupstreamにあるので除外
-
-    (2c) 結合:
-         cat /tmp/ashigaru_new.md > /tmp/ashigaru_final.md
-         printf "\n# Fork Extensions\n\n> フォーク独自の実運用知見。\n\n" >> /tmp/ashigaru_final.md
-         # セクション1を追記
-         cp /tmp/ashigaru_final.md /home/ubuntu/shogun/instructions/ashigaru.md
-
-  ■ STEP 3: gunshi.md 再構築
-
-    (3a) upstream版取得:
-         git show upstream/main:instructions/gunshi.md > /tmp/gunshi_new.md
-
-    (3b) Fork Extensions抽出:
-         フォーク版: /home/ubuntu/shogun/instructions/gunshi.md
-
-         セクション1: Category 2 Bloom Analysis Tasks (fork L259付近)
-           grep -n "Category 2: Bloom Analysis Tasks" /home/ubuntu/shogun/instructions/gunshi.md
-           → 見つかった行番号から "^### Category 3:" の手前まで抽出
-
-         セクション2: Additional QC Criteria for n8n Workflows (fork L208付近)
-           grep -n "Additional QC Criteria for n8n Workflows" /home/ubuntu/shogun/instructions/gunshi.md
-           → 見つかった行番号から "^## Language & Tone" の手前まで抽出
-
-         セクション3: Pattern 4 Bloom Analysis (fork L501付近)
-           grep -n "Pattern 4: Bloom Analysis" /home/ubuntu/shogun/instructions/gunshi.md
-           → 見つかった行番号から "^### Pattern 5:" の手前まで抽出
-
-         注意: upstream F006は「QCフロー外更新禁止」のままにする（upstreamに寄せる）。
-               フォーク版のF006とは別物。
-
-    (3c) 結合:
-         cat /tmp/gunshi_new.md > /tmp/gunshi_final.md
-         printf "\n# Fork Extensions\n\n> フォーク独自の実運用知見。\n\n" >> /tmp/gunshi_final.md
-         # セクション1(Category 2)、セクション2(n8n QC)、セクション3(Pattern 4)を追記
-         cp /tmp/gunshi_final.md /home/ubuntu/shogun/instructions/gunshi.md
-
-  ■ STEP 4: マージ判断レポート作成
-    output/cmd_238_instructions_merge_report.md を作成せよ（フォルダ作成不要）。
-
-    記載内容:
-    1. 概要: cmd_238 instructions 4ファイル upstream/main再構築
-    2. 各ファイルの変更概要 (4ファイル分):
-       - ベース: upstream/main版 行数
-       - 削除した内容（フォーク独自かつupstreamに寄せるために削除）
-       - Fork Extensionsに集約した内容（セクション名のリスト）
-    3. 受入基準充足確認 (cmd_238の acceptance_criteria 10項目を検証)
-
-  ■ STEP 5: git add + commit + push
-    cd /home/ubuntu/shogun
-    git add instructions/shogun.md instructions/ashigaru.md instructions/gunshi.md \
-            output/cmd_238_instructions_merge_report.md
-    # subtask_238aのkaro.md commitがあれば一緒にpushされる
-    git commit -m "refactor: cmd_238 shogun/ashigaru/gunshi.md upstream再構築 + マージ報告書"
-    git push origin original
-
-  ■ 完了確認チェックリスト
-  - [ ] shogun.md: "# Fork Extensions" + "🚨要対応 Active Monitoring" + "Post-ntfy State Audit"
-  - [ ] ashigaru.md: "# Fork Extensions" + "n8n Workflow Fix Protocol"
-  - [ ] gunshi.md: "# Fork Extensions" + "Category 2: Bloom Analysis" + "n8n QC" + "Pattern 4"
-  - [ ] 各ファイルにupstream既存セクションが存在する
-  - [ ] output/cmd_238_instructions_merge_report.md が作成されている
-  - [ ] git commit + push が完了している
-
-target_path: "instructions/shogun.md, instructions/ashigaru.md, instructions/gunshi.md, output/cmd_238_instructions_merge_report.md"
-report_path: "queue/reports/ashigaru2_report.yaml"
+report_template:
+  task_id: subtask_253a
+  report_to: gunshi
+  ashigaru_md_updated: "true/false"
+  gunshi_md_updated: "true/false"
+  karo_md_updated: "true/false"
+  otakebi_rule_confirmed: "true/false"
+  git_commit: "{hash}"
+  blockers: "なし"
+  skill_candidate:
+    found: false
