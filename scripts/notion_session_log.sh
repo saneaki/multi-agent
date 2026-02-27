@@ -73,10 +73,27 @@ sections = re.findall(
 
 rows = []
 if sections:
-    # 日付が一致するセクションのみ使用（修正1）
-    for date_label, section_body in sections:
-        if today_md and date_label != today_md:
-            continue  # 前日以前のセクションをスキップ
+    # まずTODAYと完全一致するセクションを探す
+    matched_sections = [(d, b) for d, b in sections if today_md and d == today_md]
+
+    # 一致なし → 1日以内のフォールバック（dashboard更新遅延対応）
+    if not matched_sections and today_md and sections:
+        try:
+            today_dt = datetime.strptime(today_str, "%Y-%m-%d")
+            for date_label, section_body in sections:
+                parts = date_label.split("/")
+                if len(parts) == 2:
+                    # 当年で日付オブジェクト生成
+                    sec_dt = today_dt.replace(month=int(parts[0]), day=int(parts[1]))
+                    diff = abs((today_dt - sec_dt).days)
+                    if diff <= 1:
+                        print(f"[WARN] TODAY({today_md})の戦果セクションなし。フォールバック: {date_label}セクション使用", file=sys.stderr)
+                        matched_sections.append((date_label, section_body))
+                        break  # 最初に見つかった1日以内のセクションを使用
+        except Exception:
+            pass
+
+    for date_label, section_body in matched_sections:
         for line in section_body.split("\n"):
             line = line.strip()
             if (line.startswith("|") and
@@ -570,6 +587,27 @@ if results:
 else:
     print('')
 " 2>/dev/null || echo "")
+
+# フォールバック: 1日前の日付でも検索（日記ページ作成日ずれ対応）
+if [[ -z "${DIARY_PAGE_ID}" ]]; then
+  YESTERDAY=$(TZ=Asia/Tokyo date -d "${TODAY} -1 day" +%Y-%m-%d)
+  echo "[WARN] ${TODAY}の日記が見つからず。フォールバック: ${YESTERDAY}日記を検索"
+  DIARY_QUERY_FB=$(curl -s -X POST \
+    "${NOTION_API}/data_sources/${DIARY_DS_ID}/query" \
+    -H "Authorization: Bearer ${NOTION_TOKEN}" \
+    -H "Content-Type: application/json" \
+    -H "Notion-Version: ${NOTION_VERSION}" \
+    -d "{\"filter\": {\"property\": \"タスク名\", \"title\": {\"contains\": \"${YESTERDAY}\"}}}")
+  DIARY_PAGE_ID=$(echo "${DIARY_QUERY_FB}" | python3 -c "
+import json, sys
+data = json.load(sys.stdin)
+results = data.get('results', [])
+if results:
+    print(results[0].get('id', ''))
+else:
+    print('')
+" 2>/dev/null || echo "")
+fi
 
 if [[ -z "${DIARY_PAGE_ID}" ]]; then
   echo "[INFO] ${TODAY}の日記タスクが見つかりません。日記追記スキップ。"
