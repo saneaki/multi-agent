@@ -195,6 +195,7 @@ print(len(data.get('results', [])))
 # ============================================================
 
 ACTIVITY_LOG_URL=""
+ACTIVITY_LOG_PAGE_ID=""
 
 if [[ "${EXISTING_COUNT}" -gt 0 ]]; then
   # 既存レコードをPATCHで上書き更新（修正: スキップ→UPDATE）
@@ -210,6 +211,7 @@ import sys
 pid = sys.stdin.read().strip().replace('-', '')
 print(f'https://www.notion.so/{pid}' if pid else '')
 ")
+  ACTIVITY_LOG_PAGE_ID="${EXISTING_PAGE_ID}"
 
   echo "[INFO] ${TODAY} の活動ログを更新中 (ID: ${EXISTING_PAGE_ID})..."
 
@@ -327,6 +329,7 @@ else:
     echo "[ERROR] Notion DBレコード作成失敗: ${CREATED_ID}" >&2
   elif [[ -n "${CREATED_ID}" ]]; then
     echo "[SUCCESS] Notion DBレコード作成完了: ${CREATED_ID}"
+    ACTIVITY_LOG_PAGE_ID="${CREATED_ID}"
     ACTIVITY_LOG_URL=$(echo "${CREATE_RESP}" | python3 -c "
 import json, sys
 data = json.load(sys.stdin)
@@ -475,7 +478,7 @@ record_artifacts_to_notion() {
   echo "[INFO] Notion 成果物DB記録開始 (${uploaded_count}件)..."
 
   python3 - "${UPLOADED_FILES_TMPFILE}" "${NOTION_TOKEN}" "${NOTION_API}" \
-    "2022-06-28" "${artifacts_db_id}" "${TODAY}" <<'PYEOF'
+    "2022-06-28" "${artifacts_db_id}" "${TODAY}" "${ACTIVITY_LOG_PAGE_ID}" <<'PYEOF'
 import sys, json, re, urllib.request, urllib.error
 
 uploaded_file = sys.argv[1]
@@ -484,6 +487,7 @@ api_base = sys.argv[3]
 api_version = sys.argv[4]
 db_id = sys.argv[5]
 today = sys.argv[6]
+activity_log_page_id = sys.argv[7] if len(sys.argv) > 7 else ""
 
 with open(uploaded_file) as f:
     uploaded = json.load(f)
@@ -516,7 +520,19 @@ for item in uploaded:
         "filter": {"property": "ファイル名", "title": {"equals": filename}}
     })
     if query_resp.get("results"):
-        print(f"[INFO] スキップ（既存）: {filename}")
+        existing_page = query_resp["results"][0]
+        existing_page_id = existing_page.get("id", "")
+        existing_relation = existing_page.get("properties", {}).get("活動ログ", {}).get("relation", [])
+        if activity_log_page_id and not existing_relation:
+            patch_resp = notion_request("PATCH", f"{api_base}/pages/{existing_page_id}", {
+                "properties": {"活動ログ": {"relation": [{"id": activity_log_page_id}]}}
+            })
+            if patch_resp.get("object") == "page":
+                print(f"[INFO] 既存レコードにリレーション追加: {filename}")
+            else:
+                print(f"[WARN] 既存レコードリレーション追加失敗: {filename}: {patch_resp.get('message', patch_resp)}", file=sys.stderr)
+        else:
+            print(f"[INFO] スキップ（既存・リレーション設定済み）: {filename}")
         skipped += 1
         continue
 
@@ -545,6 +561,8 @@ for item in uploaded:
         properties["プロジェクト"] = {"select": {"name": project}}
     if web_view_link:
         properties["Driveリンク"] = {"url": web_view_link}
+    if activity_log_page_id:
+        properties["活動ログ"] = {"relation": [{"id": activity_log_page_id}]}
 
     create_resp = notion_request("POST", f"{api_base}/pages", {
         "parent": {"database_id": db_id},
