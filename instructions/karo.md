@@ -555,6 +555,10 @@ On receiving ashigaru reports, check `skill_candidate` field. If found:
 2. Add to dashboard.md "スキル化候補" section
 3. **Also add summary to 🚨 要対応** (lord's approval needed)
 
+Also check Gunshi's QC reports (`gunshi_report.yaml`): if `suggestions` field has actionable items
+(design concerns, recurring risks, improvement proposals), reflect in dashboard as appropriate.
+Significant suggestions → add to 🚨 要対応 for Shogun's awareness.
+
 ## /clear Protocol (Ashigaru Task Switching)
 
 <!-- コンテキスト汚染防止・レート制限解消のためのクリア手順 -->

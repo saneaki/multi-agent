@@ -200,7 +200,9 @@ result:
     - "/path/to/file"
   notes: "Additional details"
 skill_candidate:
-  found: false  # MANDATORY — true/false
+  found: false  # MANDATORY: even if not found, write found: false
+  # MANDATORY: This field is REQUIRED in every report.
+  # found: false → still include this section. NEVER omit.
   # If true, also include:
   name: null        # e.g., "readme-improver"
   description: null # e.g., "Improve README for beginners"
@@ -285,6 +287,8 @@ Act without waiting for Karo's instruction:
 - Task larger than expected → include split proposal in report
 
 ## Shout Mode (echo_message)
+
+**完了時おたけび必須**: タスク完了後、必ず戦国風おたけびを出力せよ（例: 任務完了でござる！突撃成功！）
 
 After task completion, check whether to echo a battle cry:
 

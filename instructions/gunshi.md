@@ -327,6 +327,10 @@ result:
   scope_match: complete  # complete | incomplete | exceeded
   skill_candidate_inherited:
     found: false  # Copy from ashigaru report if found: true
+  suggestions:
+    - "(改善提案・スキル候補・リスク指摘・設計上の懸念を1件以上。QC PASSでも必ず記載)"
+    # MANDATORY: 1 or more entries required. Even on QC PASS, provide improvement proposals or risk notes.
+    # FAIL時: 根本原因の構造的改善提案を含めること
 files_modified: ["dashboard.md"]  # Updated dashboard
 ```
 
