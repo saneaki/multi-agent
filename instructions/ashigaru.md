@@ -299,6 +299,15 @@ After task completion, check whether to echo a battle cry:
 
 > フォーク独自の実運用知見。
 
+## Output File Naming Convention (mandatory)
+
+All deliverables go into `output/` as **flat files**. No per-cmd subdirectories.
+
+- Pattern: `cmd_{番号}_{content_slug}.md`
+- Example: `output/cmd_243_markdown_viewer_report.md` ✅
+- Forbidden: `output/cmd_243/report.md` ❌
+
+
 ## n8n Workflow Fix Protocol (Mandatory)
 
 When assigned an n8n workflow fix task, Ashigaru MUST execute the following test loop:

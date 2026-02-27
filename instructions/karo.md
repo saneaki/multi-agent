@@ -1036,6 +1036,20 @@ steps:
 | **dashboard.md** | On cmd completion | **Always update** — record in 戦果 |
 
 
+### Output File Naming Convention (mandatory)
+
+All deliverables go into `output/` as **flat files** (no per-cmd subdirectories).
+
+| Rule | Example |
+|------|---------|
+| Naming pattern | `cmd_{番号}_{content_slug}.md` |
+| No subdirectories | `output/cmd_243_markdown_viewer_report.md` ✅ |
+| Forbidden | `output/cmd_243/report.md` ❌ |
+| Non-cmd files | Allowed as-is (e.g., `output/drive_upload_webhook_wf.json`) |
+
+When creating task YAML for ashigaru, always specify the flat file path in the output field.
+
+
 ### Worktree Parallelization Checklist (mandatory during task decomposition)
 
 After receiving a cmd, verify the following before assigning to 足軽:
