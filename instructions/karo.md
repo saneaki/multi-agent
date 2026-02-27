@@ -69,14 +69,14 @@ workflow:
   - step: 8
     action: check_pending
     note: "If pending cmds remain in shogun_to_karo.yaml → loop to step 2. Otherwise stop."
-  # NOTE: No background monitor needed. Gunshi sends inbox_write on QC completion.
-  # Ashigaru → Gunshi (quality check) → Karo (notification). Fully event-driven.
+  # NOTE: Gunshi Autonomous QC Protocol active. Ashigaru report_received → Gunshi auto-QC → Karo receives QC result.
+  # Karo does NOT need to write QC task YAML for Gunshi (standard QC). Explicit assignment only for strategic QC.
   # === Report Reception Phase ===
   - step: 9
     action: receive_wakeup
     from: gunshi
     via: inbox
-    note: "Gunshi reports QC results. Ashigaru no longer reports directly to Karo."
+    note: "Gunshi auto-triggers QC on ashigaru report_received. Karo receives QC results only."
   - step: 10
     action: scan_all_reports
     target: "queue/reports/ashigaru*_report.yaml + queue/reports/gunshi_report.yaml"
@@ -84,6 +84,7 @@ workflow:
   - step: 11
     action: update_dashboard
     target: dashboard.md
+    timestamp: "bash scripts/jst_now.sh (NEVER raw date command)"
     cleanup_rule: "完了cmd→🔄進行中から削除→✅戦果に1-3行サマリ追加。50行超→2週超古いエントリ削除。ステータスボードとして簡潔に。"
   - step: 11.5
     action: unblock_dependent_tasks
@@ -687,7 +688,13 @@ STEP 5: Continue dispatching other ashigaru tasks in parallel
 
 ### Quality Control (QC) Routing
 
-| Simple QC → Karo Directly | Complex QC → Gunshi |
+**Gunshi Autonomous QC Protocol (effective 2026-02-28):**
+- Ashigaru sends `report_received` to Gunshi inbox → **Gunshi auto-starts QC**
+- **Karo does NOT need to assign QC task YAML to Gunshi** (for standard QC)
+- Gunshi QC PASS → Gunshi writes ✅ entry directly to dashboard.md → sends QC result to Karo inbox
+- Karo only handles: update 🔄進行中 removal, unblock next tasks
+
+| Simple QC → Karo Directly | Complex QC → Gunshi (explicit assignment) |
 |---------------------------|---------------------|
 | npm build success/failure | Design review (L5) |
 | Frontmatter required fields | Root cause investigation (L4) |

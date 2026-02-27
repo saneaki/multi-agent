@@ -1,46 +1,40 @@
-task_id: subtask_233b
+task_id: subtask_245a
 agent: ashigaru3
 report_to: gunshi
-timestamp: "2026-02-25T07:29:03+09:00"
+timestamp: "2026-02-28T00:00:00+09:00"
 status: PASS
 
 summary: |
-  cmd_233b subtask_233b 完了。冪等性ロジックをスキップ→UPDATE方式に変更。
-  json.loadsの\nエスケープバグも同時修正。
+  cmd_245 subtask_245a 完了。notion_session_log.sh 日付照合フォールバック追加。
+  TODAY(YYYY-MM-DD)とdashboard見出し(M/D)の不一致時、1日以内のセクションを代替使用するよう修正。
+  日記タスク検索も同様に、前日日付でフォールバック検索を追加。
 
 fixes:
-  fix_idempotency_logic:
-    before: "既存レコード発見 → スキップ（何もしない）"
-    after: "既存レコード発見 → PATCH /v1/pages/{id} で全プロパティ上書き更新"
-    existing_page_id_used: "311e8d62-e4aa-81c3-b370-f9c9b042b3ef"
-    updated_properties:
-      - "セッション概要(title)"
-      - "日付(date)"
-      - "完了cmd数(number)"
-      - "プロジェクト(multi_select)"
-      - "ストリーク(number)"
-      - "詳細(rich_text)"
-      - "要約(rich_text)"
+  fix1_senka_fallback:
+    location: "L74-L103（本日の戦果パース・Python heredoc内）"
+    before: "日付完全一致のみ採用。不一致は全スキップ → 0行取得"
+    after: |
+      1. 完全一致セクションを優先採用
+      2. 一致なし → 1日以内のセクションをフォールバック採用
+      3. フォールバック使用時は [WARN] をstderrに出力
+      4. 2日以上古いセクションはスキップ維持
 
-  fix_json_escape_bug:
-    issue: "json.loads('''${PARSE_RESULT}''') でPythonが\\nをエスケープ処理→制御文字エラー"
-    fix: "PARSE_RESULTをtempファイルに書き出し、Python側でjson.load(file)で読み込む"
-    affected_sections: ["UPDATE_PAYLOAD", "CREATE_PAYLOAD"]
+  fix2_diary_fallback:
+    location: "L591-L619（日記タスク検索・フォールバック追加）"
+    before: "TODAY日記のみ検索。見つからなければ即スキップ"
+    after: |
+      1. TODAYで検索
+      2. 見つからなければ YESTERDAY (date -d -1 day) でフォールバック検索
+      3. どちらも見つからなければスキップ
+      4. [WARN] ログで警告出力
 
-test1_update:
-  status: PASS
-  output: "[SUCCESS] 2026-02-25 の活動ログを更新しました。"
-  updated_record: "311e8d62-e4aa-81c3-b370-f9c9b042b3ef"
-  data_confirmed: "セッション概要: 2cmd完了(shogun-system×2)"
+quality_check:
+  - "TODAY=2026-02-28でdashboardに2/27セクションのみ → フォールバックで2/27取得: OK"
+  - "TODAY=2026-02-27でdashboardに2/27セクション → 完全一致優先: OK"
+  - "dashboardに2/25等古いセクションのみ → フォールバック対象外(スキップ): OK"
+  - "冪等性（UPDATE方式）変更なし: OK"
 
-test2_repeat_update:
-  status: PASS
-  output: "[SUCCESS] 2026-02-25 の活動ログを更新しました。"
-  note: "2回目実行もエラーなくUPDATE成功"
-
-git_push:
-  status: PASS
-  commit: "9e3c826"
-  message: "fix: notion_session_log.sh 冪等性ロジックをスキップ→UPDATE方式に変更 (cmd_233b)"
-
+git_commit: "5dc576f"
+git_push: PASS
+blockers: なし
 pass_fail_judgment: PASS

@@ -200,10 +200,10 @@ Race condition is eliminated: `/clear` wipes old context. Agent re-reads YAML wi
 
 | Direction | Method | Reason |
 |-----------|--------|--------|
-| Ashigaru → Gunshi | Report YAML + inbox_write | Quality check |
-| Gunshi → Karo | Report YAML + inbox_write | Quality check result + strategic reports (Karo reflects to dashboard) |
+| Ashigaru → Gunshi | Report YAML + inbox_write | Quality check (Gunshi auto-starts QC. No task YAML from Karo needed) |
+| Gunshi → Karo | Report YAML + inbox_write | QC result + strategic reports. On QC PASS, Gunshi also writes dashboard ✅ entry |
 | Karo → Shogun/Lord | dashboard.md update only | **inbox to shogun FORBIDDEN** — prevents interrupting Lord's input |
-| Karo → Gunshi | YAML + inbox_write | Strategic task or quality check delegation |
+| Karo → Gunshi | YAML + inbox_write | Strategic tasks only. Standard QC auto-triggered, no assignment needed |
 | Top → Down | YAML + inbox_write | Standard wake-up |
 
 ## File Operation Rule

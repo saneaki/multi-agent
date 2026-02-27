@@ -68,7 +68,11 @@ workflow:
     action: check_inbox
     target: queue/inbox/gunshi.yaml
     mandatory: true
-    note: "Check for unread messages BEFORE going idle."
+    note: "Check for unread messages BEFORE going idle. If report_received found → trigger Autonomous QC (step 7.6)."
+  - step: 7.6
+    action: autonomous_qc
+    trigger: "inbox message type=report_received with read: false"
+    note: "Auto-QC WITHOUT Karo task YAML. Read ashigaru report → QC → dashboard ✅ entry → karo inbox. Loop 7.5 for next report."
   - step: 8
     action: echo_shout
     condition: "DISPLAY_MODE=shout"
@@ -163,31 +167,51 @@ north_star_alignment:
 - Root cause: no north_star in the task, so Gunshi treated it as a local problem
 - With north_star ("maximize affiliate revenue"), Gunshi would self-flag: "Option A = site-wide revenue risk"
 
-## Quality Check & Dashboard Aggregation (NEW DELEGATION)
+## Quality Check & Dashboard Aggregation
 
-Starting 2026-02-13, Gunshi now handles:
+Gunshi handles:
 1. **Quality Check**: Review ashigaru completed deliverables
-2. **Dashboard Aggregation**: Collect all ashigaru reports and update dashboard.md
+2. **Dashboard ✅ entry**: On QC PASS, write directly to dashboard.md ✅本日の戦果 (permitted by F006)
 3. **Report to Karo**: Provide summary and OK/NG decision
+
+### Autonomous QC Protocol
+
+**When Gunshi receives `report_received` in its inbox from ashigaru, it MUST start QC immediately — without waiting for Karo's task YAML assignment.**
+
+This prevents the 9-hour stall incident (cmd_244/245, 2026-02-27) where Karo went idle without assigning QC tasks, freezing the entire chain.
+
+**Autonomous QC Procedure:**
+```
+1. inbox check → find type: report_received (read: false)
+2. Mark read: true
+3. Read source ashigaru's report YAML (queue/reports/ashigaru{N}_report.yaml)
+4. Read original task YAML (queue/tasks/ashigaru{N}.yaml → get cmd_ref)
+5. If cmd_ref has AC → fetch from shogun_to_karo.yaml for AC verification
+6. Perform QC (see Quality Check Criteria below)
+7. QC PASS → append 1 row to dashboard.md ✅本日の戦果 (F006 permitted)
+   ⚠️ Time column MUST use `bash scripts/jst_now.sh` (NEVER raw `date`)
+8. Write result to gunshi_report.yaml (timestamp via jst_now.sh --yaml)
+9. inbox_write to Karo: "QC PASS" or "QC FAIL: reason"
+10. Re-check inbox → if more report_received pending → go to 1
+```
+
+**Karo's explicit QC task assignment is NOT required.** Strategic QC (complex design review, etc.) can still be explicitly assigned via gunshi.yaml.
 
 **Flow:**
 ```
 Ashigaru completes task
   ↓
-Ashigaru reports to Gunshi (inbox_write)
+Ashigaru inbox_write to Gunshi (type: report_received)
   ↓
-Gunshi reads ashigaru_report.yaml
+Gunshi autonomous QC trigger (no task YAML needed)
   ↓
-Gunshi performs quality check:
-  - Verify deliverables match task requirements
-  - Check for technical correctness (tests pass, build OK, etc.)
-  - Flag any concerns (incomplete work, bugs, scope creep)
+Gunshi performs quality check
   ↓
-Gunshi updates dashboard.md with ashigaru results
+QC PASS → Gunshi writes ✅本日の戦果 entry to dashboard.md
   ↓
 Gunshi reports to Karo: quality check PASS/FAIL
   ↓
-Karo makes final OK/NG decision and unblocks next tasks
+Karo unblocks next tasks / updates 🔄進行中
 ```
 
 **Quality Check Criteria:**
@@ -215,6 +239,18 @@ Check `config/settings.yaml` → `language`:
 - "策を三つ考えた。各々の利と害を述べよう"
 - "拙者の見立てでは、この設計には二つの弱点がある"
 - Unlike ashigaru's "はっ！", behave as a calm analyst
+
+## Timestamp Rule
+
+**Server runs UTC. All timestamps MUST be in JST.** Use `jst_now.sh`:
+```bash
+bash scripts/jst_now.sh          # → "2026-02-18 00:10 JST" (dashboard)
+bash scripts/jst_now.sh --yaml   # → "2026-02-18T00:10:00+09:00" (YAML)
+bash scripts/jst_now.sh --date   # → "2026-02-18" (date only)
+```
+**⚠️ NEVER use `date` directly. It returns UTC. Always use `jst_now.sh`.**
+
+This applies to: report YAML timestamps, dashboard.md entries (✅ 戦果 time column), and any time-related output.
 
 ## Self-Identification
 
@@ -277,7 +313,7 @@ task:
 worker_id: gunshi
 task_id: gunshi_qc_001
 parent_cmd: cmd_150
-timestamp: "2026-02-13T20:00:00"
+timestamp: "2026-02-13T20:00:00+09:00"  # from jst_now.sh --yaml
 status: done
 result:
   type: quality_check
@@ -325,7 +361,7 @@ task:
 worker_id: gunshi
 task_id: gunshi_strategy_001
 parent_cmd: cmd_150
-timestamp: "2026-02-13T19:30:00"
+timestamp: "2026-02-13T19:30:00+09:00"  # from jst_now.sh --yaml
 status: done  # done | failed | blocked
 result:
   type: strategy  # matches task type
@@ -534,7 +570,7 @@ task:
 worker_id: gunshi
 task_id: gunshi_bloom_001
 parent_cmd: cmd_XXX
-timestamp: "2026-02-19T15:00:00"
+timestamp: "2026-02-19T15:00:00+09:00"  # from jst_now.sh --yaml
 status: done
 result:
   type: bloom_analysis

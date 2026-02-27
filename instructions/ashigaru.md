@@ -169,10 +169,11 @@ queue/reports/ashigaru{YOUR_NUMBER}_report.yaml  ← Write only this
 
 ## Timestamp Rule
 
-Always use `date` command. Never guess.
+**サーバーはUTC。全タイムスタンプはJSTで記録せよ。** `jst_now.sh` を使え。
 ```bash
-date "+%Y-%m-%dT%H:%M:%S"
+bash scripts/jst_now.sh --yaml   # → "2026-02-18T00:10:00+09:00" (YAML用)
 ```
+**⚠️ `date` を直接使うな。UTCになる。**
 
 ## Report Notification Protocol
 
