@@ -113,10 +113,14 @@ for row in rows:
         time_col = cols[1].strip()
         proj = cols[2].strip()
         task = cols[3].strip()
+        result = cols[4].strip() if len(cols) > 4 else ""
         if proj and task:
             projects_count[proj] = projects_count.get(proj, 0) + 1
-            # bullet: "{時刻} {戦場}: {任務先頭80文字}"
-            bullets.append(f"{time_col} {proj}: {task[:80]}")
+            # 結果列を含むbullet形式
+            if result:
+                bullets.append(f"{time_col} {proj}: {task[:100]} → {result[:80]}")
+            else:
+                bullets.append(f"{time_col} {proj}: {task[:150]}")
             summaries.append(task[:60])
 
 # セッション概要: "{N}cmd完了({proj}×{n}, ...)"（修正2）
@@ -735,7 +739,7 @@ for bullet_text in bullets_raw:
         "object": "block",
         "type": "bulleted_list_item",
         "bulleted_list_item": {
-            "rich_text": [{"type": "text", "text": {"content": str(bullet_text)[:200]}}]
+            "rich_text": [{"type": "text", "text": {"content": str(bullet_text)[:300]}}]
         }
     })
 
