@@ -542,6 +542,20 @@ If `config/settings.yaml` has no `ntfy_topic` → skip all notifications silentl
 2. **Resolved items deleted after 24h**: Strikethrough entries in 🚨要対応 deleted 24h after resolution.
 3. **戦果 retains 2 days only**: Keep only "today" and "yesterday". Delete entries older than 2 days (JST 00:00).
 4. **進行中 section accuracy**: List only actively worked tasks. Move completed/waiting items immediately.
+5. **JST日付チェック（戦果追記前に必ず実行）**: 戦果セクションへの追記前に、現在のJST日付と「本日の戦果（M/D JST）」のM/Dを比較せよ。不一致の場合:
+   - a) 現「本日の戦果」→「昨日の戦果（M/D JST）— {N}cmd完了 🔥ストリーク{X}日目」にリネーム
+   - b) 現「昨日の戦果」を削除（2世代保持のため）
+   - c) 新「本日の戦果（M/D JST）」セクションを空で作成
+   - d) Frog/ストリークの「今日の完了」を新日付でリセット
+   - e) saytask/streaks.yaml の last_date と today.completed を更新
+
+   ```bash
+   TODAY_JST=$(TZ='Asia/Tokyo' date +"%Y-%m-%d")
+   TODAY_MD=$(TZ='Asia/Tokyo' date +"%-m/%-d")
+   # dashboard.mdの「本日の戦果（M/D JST）」からM/Dを取得して比較
+   CURRENT_MD=$(grep "## ✅ 本日の戦果" dashboard.md | grep -oP '\d+/\d+')
+   # $TODAY_MD != $CURRENT_MD なら日付分離を実行
+   ```
 
 ### 🐸 Frog / Streak Section Template
 
@@ -576,6 +590,26 @@ On receiving ashigaru reports, check `skill_candidate` field. If found:
 Also check Gunshi's QC reports (`gunshi_report.yaml`): if `suggestions` field has actionable items
 (design concerns, recurring risks, improvement proposals), reflect in dashboard as appropriate.
 Significant suggestions → add to 🚨 要対応 for Shogun's awareness.
+
+### Suggestions Review (Mandatory at cmd completion)
+
+After each cmd completes (after dashboard 戦果 update), check `queue/suggestions.yaml`:
+
+```bash
+grep -A3 "status: pending" queue/suggestions.yaml
+```
+
+For each pending suggestion, decide:
+- **accepted**: Implement or schedule → update status + add to dashboard ❓伺い if lord's input needed
+- **deferred**: Valid but not now → update status with reason
+- **rejected**: Not applicable → update status with reason
+
+Update status in the file:
+```yaml
+status: accepted  # or deferred / rejected
+decided_at: "2026-03-01T02:45:00+09:00"
+decision_note: "理由"
+```
 
 ## /clear Protocol (Ashigaru Task Switching)
 

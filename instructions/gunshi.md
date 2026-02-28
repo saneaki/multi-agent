@@ -191,7 +191,24 @@ This prevents the 9-hour stall incident (cmd_244/245, 2026-02-27) where Karo wen
 7. QC PASS → append 1 row to dashboard.md ✅本日の戦果 (F006 permitted)
    ⚠️ Time column MUST use `bash scripts/jst_now.sh` (NEVER raw `date`)
 8. Write result to gunshi_report.yaml (timestamp via jst_now.sh --yaml)
-9. inbox_write to Karo: "QC PASS" or "QC FAIL: reason"
+8.5. **Suggestions永続化（必須）**: suggestionsがある場合、queue/suggestions.yamlにappendせよ。
+   - gunshi_report.yamlは次のQCで上書きされるため、suggestionsが消失する。
+   - 永続化先: queue/suggestions.yaml（appendのみ。上書き禁止）
+   - フォーマット:
+     ```yaml
+       - id: sug_{cmd_ref}_{3桁連番}
+         from: gunshi
+         cmd_ref: {cmd_ref}
+         task_ref: {task_id}
+         created_at: "{jst_now --yaml}"
+         status: pending
+         priority: high/medium/low
+         content: |
+           {提案内容}
+         action_needed: "{家老への具体的なアクション}"
+     ```
+   - suggestionsをkaro inboxメッセージにも要約を含めること（省略禁止）
+9. inbox_write to Karo: "QC PASS" or "QC FAIL: reason" — **suggestionsの要約を含めること**
 10. Re-check inbox → if more report_received pending → go to 1
 ```
 
