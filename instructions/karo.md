@@ -580,6 +580,17 @@ bash scripts/ntfy.sh "❌ {subtask} 失敗 — {reason}"
 bash scripts/ntfy.sh "🚨 要対応 — {content}"
 ```
 
+**⚠️ L004: ntfy timestamp is UTC — always convert to JST before processing.**
+`ntfy_inbox.yaml` timestamps are UTC (+00:00). Dashboard is JST-based.
+Ignoring this mismatch causes date confusion across midnight (e.g., JST 03:10 on 3/1 appears as 2/28 18:10 UTC).
+When processing ntfy messages, always add +9h and verify against dashboard dates.
+
+```bash
+# Convert ntfy UTC timestamp to JST for verification
+date -d "2026-02-28T18:10:00+00:00" +"%Y-%m-%d %H:%M JST" --date="TZ=\"Asia/Tokyo\""
+# Or: TZ='Asia/Tokyo' date -d "2026-02-28T18:10:00+00:00"
+```
+
 ## Skill Candidates
 
 On receiving ashigaru reports, check `skill_candidate` field. If found:
