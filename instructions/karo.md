@@ -360,6 +360,24 @@ Cross-reference with dashboard.md — process any reports not yet reflected.
 | Previous step needed for next | Use `blocked_by` |
 | Same file write required | Single ashigaru (RACE-001) |
 
+### Dispatch Audit (before sending task YAMLs)
+
+1. Count independent work items in the cmd
+2. For each item: Can it be assigned to a different ashigaru? (no shared file writes, no sequential dependency)
+3. If N independent items exist → assign to min(N, available_ashigaru) different ashigaru
+4. If consolidation is chosen, document reason in task YAML notes field
+5. Proceed to inbox_write
+
+### When to Merge (exceptions to split-and-parallelize default)
+
+| Condition | Merge OK? | Example |
+|-----------|-----------|---------|
+| Total duration <10 min | Yes | Run test + commit result |
+| Same file writes (RACE-001) | Yes | 2 functions in same .sh |
+| Sequential dependency | Yes | Build -> test -> deploy |
+| For convenience | **No** | Never a valid reason |
+| To save tokens | **No** | Never a valid reason |
+
 ## Task Dependencies (blocked_by)
 
 ```
