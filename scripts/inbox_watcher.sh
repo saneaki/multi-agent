@@ -48,6 +48,13 @@ if [ "${__INBOX_WATCHER_TESTING__:-}" != "1" ]; then
 
     echo "[$(date)] inbox_watcher started — agent: $AGENT_ID, pane: $PANE_TARGET, cli: $CLI_TYPE" >&2
 
+    # Fix: CLI starts at welcome screen = idle. Create idle flag so watcher
+    # doesn't false-busy deadlock waiting for a stop_hook that never fires.
+    if [[ "$CLI_TYPE" == "claude" ]]; then
+        touch "${IDLE_FLAG_DIR:-/tmp}/shogun_idle_${AGENT_ID}"
+        echo "[$(date)] Created initial idle flag for $AGENT_ID (CLI starts idle)" >&2
+    fi
+
     # Source cli_adapter for get_startup_prompt() (Codex needs startup prompt after /new)
     _cli_adapter="${SCRIPT_DIR}/lib/cli_adapter.sh"
     if [ -f "$_cli_adapter" ]; then
@@ -83,12 +90,6 @@ if [ "${__INBOX_WATCHER_TESTING__:-}" != "1" ]; then
     fi
     echo "[$(date)] File watch backend: $WATCH_BACKEND" >&2
 
-    # ─── Auto-reload: スクリプト変更検知の初期mtime記録 ───
-    SCRIPT_PATH="${BASH_SOURCE[0]}"
-    SCRIPT_MTIME_AT_START=$(stat -c %Y "$SCRIPT_PATH" 2>/dev/null || stat -f %m "$SCRIPT_PATH" 2>/dev/null || echo "0")
-    # LAST_RELOAD_TS: 前回exec再起動時刻。環境変数で引き継ぎ（無限ループ防止）
-    LAST_RELOAD_TS="${LAST_RELOAD_TS:-0}"
-    echo "[$(date)] [AUTO-RELOAD] watching mtime: $SCRIPT_MTIME_AT_START (LAST_RELOAD_TS=${LAST_RELOAD_TS})" >&2
 fi
 
 # ─── timeout command compatibility wrapper (macOS support) ───
@@ -120,16 +121,6 @@ ESCALATE_PHASE1=${ESCALATE_PHASE1:-120}
 ESCALATE_PHASE2=${ESCALATE_PHASE2:-240}
 ESCALATE_COOLDOWN=${ESCALATE_COOLDOWN:-300}
 
-# ─── Karo idle watchdog ───
-# busy→idle遷移後にgit statusを確認し、未コミット変更があれば"uncommitted"nudgeを送信。
-KARO_PREV_BUSY=${KARO_PREV_BUSY:-0}  # 0=idle, 1=busy (前回サイクルの状態)
-LAST_UNCOMMITTED_NUDGE_TS=${LAST_UNCOMMITTED_NUDGE_TS:-0}
-UNCOMMITTED_NUDGE_COOLDOWN=${UNCOMMITTED_NUDGE_COOLDOWN:-600}
-
-# ─── Shogun auto-start ───
-# Claude未起動 + unread>0 + detached 時にclaudeを自動起動する。
-LAST_AUTO_START_TS=${LAST_AUTO_START_TS:-0}
-AUTO_START_COOLDOWN=${AUTO_START_COOLDOWN:-60}
 
 # ─── Nudge throttle ───
 # Avoid spamming the same "inboxN" into the pane every timeout tick.
@@ -586,7 +577,7 @@ send_codex_startup_prompt() {
     sleep 0.3
     timeout 5 tmux send-keys -t "$PANE_TARGET" C-u 2>/dev/null || true
     sleep 0.3
-    timeout 5 tmux send-keys -t "$PANE_TARGET" "$startup_prompt" 2>/dev/null || true
+    timeout 5 tmux send-keys -l -t "$PANE_TARGET" "$startup_prompt" 2>/dev/null || true
     sleep 0.3
     timeout 5 tmux send-keys -t "$PANE_TARGET" Enter 2>/dev/null || true
     STARTUP_PROMPT_SENT=1
@@ -749,9 +740,6 @@ send_wakeup() {
     local unread_count="$1"
     local nudge="inbox${unread_count}"
 
-    # Shogun auto-start: Claude未起動 + detached + unread>0 → claudeを自動起動
-    check_shogun_autostart "$unread_count"
-
     if [ "${FINAL_ESCALATION_ONLY:-0}" = "1" ]; then
         echo "[$(date)] [SKIP] FINAL_ESCALATION_ONLY=1, suppressing normal nudge for $AGENT_ID" >&2
         return 0
@@ -880,128 +868,6 @@ send_wakeup_with_escape() {
     return 0  # Never return 1 — set -euo pipefail would kill the watcher daemon
 }
 
-# check_script_reload — inbox_watcher自動再起動チェック
-# スクリプトのmtimeが起動時から変化した場合、ログを出力して0を返す（exec再起動すべし）。
-# 10秒以内の再起動はスキップしmtimeを更新して1を返す（無限ループ防止）。
-# mtime未変更の場合は1を返す。
-check_script_reload() {
-    local current_mtime
-    current_mtime=$(stat -c %Y "${SCRIPT_PATH:-/dev/null}" 2>/dev/null \
-        || stat -f %m "${SCRIPT_PATH:-/dev/null}" 2>/dev/null \
-        || echo "0")
-
-    # mtime未変更 → 再起動不要
-    if [ "$current_mtime" = "${SCRIPT_MTIME_AT_START:-0}" ]; then
-        return 1
-    fi
-
-    # 無限ループ防止: 10秒以内の再起動はスキップしてmtimeを更新
-    local now
-    now=$(date +%s)
-    if [ "${LAST_RELOAD_TS:-0}" -gt 0 ] && [ "$((now - LAST_RELOAD_TS))" -lt 10 ]; then
-        echo "[$(date)] [AUTO-RELOAD] recent restart (${LAST_RELOAD_TS}), updating mtime and skipping" >&2
-        SCRIPT_MTIME_AT_START="$current_mtime"
-        return 1
-    fi
-
-    echo "[$(date)] [AUTO-RELOAD] Script changed (mtime: ${SCRIPT_MTIME_AT_START:-0} → $current_mtime), restarting..." >&2
-    return 0  # 再起動すべし
-}
-
-# check_karo_uncommitted — karo idle watchdog
-# busy→idle遷移後にgit statusを確認し、未コミット変更があれば"uncommitted"nudgeを送信。
-# 適用範囲: AGENT_ID=karo のみ
-check_karo_uncommitted() {
-    [ "$AGENT_ID" = "karo" ] || return 0
-
-    local now
-    now=$(date +%s)
-
-    # 現在のbusy状態を取得
-    local current_busy=0
-    if agent_is_busy; then
-        current_busy=1
-    fi
-
-    # busy→idle遷移のみ処理（同じidle状態での連発防止）
-    if [ "${KARO_PREV_BUSY:-0}" -eq 1 ] && [ "$current_busy" -eq 0 ]; then
-        echo "[$(date)] [KARO-WATCHDOG] busy→idle transition detected" >&2
-
-        # クールダウンチェック（120秒以内の再送を防止）
-        if [ "$((now - ${LAST_UNCOMMITTED_NUDGE_TS:-0}))" -lt "${UNCOMMITTED_NUDGE_COOLDOWN:-120}" ]; then
-            echo "[$(date)] [KARO-WATCHDOG] cooldown active, skip" >&2
-            KARO_PREV_BUSY=$current_busy
-            return 0
-        fi
-
-        # git statusチェック（未コミット変更の有無）
-        local git_status
-        git_status=$(git -C "${SCRIPT_DIR:-.}" status --porcelain 2>/dev/null || echo "")
-        if [ -n "$git_status" ]; then
-            echo "[$(date)] [KARO-WATCHDOG] uncommitted changes detected — sending nudge" >&2
-            timeout 5 tmux send-keys -t "$PANE_TARGET" "uncommitted" 2>/dev/null || true
-            sleep 0.3
-            timeout 5 tmux send-keys -t "$PANE_TARGET" Enter 2>/dev/null || true
-            LAST_UNCOMMITTED_NUDGE_TS=$now
-        else
-            echo "[$(date)] [KARO-WATCHDOG] git status clean, no nudge needed" >&2
-        fi
-    fi
-
-    KARO_PREV_BUSY=$current_busy
-}
-
-# check_shogun_autostart — shogun Claude未起動時の自動起動
-# Claude Codeが終了している状態でntfy到達 → bashプロンプトに消滅するのを防ぐ。
-# 適用範囲: AGENT_ID=shogun のみ
-check_shogun_autostart() {
-    [ "$AGENT_ID" = "shogun" ] || return 0
-
-    local unread_count="${1:-0}"
-    [ "$unread_count" -gt 0 ] || return 0
-
-    # active+attached の場合は自動起動しない（殿が意図的にClaude終了してシェル操作中の可能性）
-    if pane_is_active && session_has_client; then
-        echo "[$(date)] [SHOGUN-AUTOSTART] pane active + client attached — skip auto-start" >&2
-        return 0
-    fi
-
-    # CLI起動チェック
-    if is_cli_running "$PANE_TARGET"; then
-        return 0  # 既に起動中 — 通常のnudge配信へ
-    fi
-
-    local now
-    now=$(date +%s)
-
-    # クールダウンチェック（60秒以内の再起動を防止）
-    if [ "$((now - ${LAST_AUTO_START_TS:-0}))" -lt "${AUTO_START_COOLDOWN:-60}" ]; then
-        echo "[$(date)] [SHOGUN-AUTOSTART] cooldown active, skip" >&2
-        return 0
-    fi
-
-    echo "[$(date)] [SHOGUN-AUTOSTART] claude not running, unread=$unread_count — starting claude" >&2
-    LAST_AUTO_START_TS=$now
-
-    # Claude起動
-    timeout 5 tmux send-keys -t "$PANE_TARGET" "claude" 2>/dev/null || true
-    sleep 0.3
-    timeout 5 tmux send-keys -t "$PANE_TARGET" Enter 2>/dev/null || true
-
-    # 起動待機（最大30秒、5秒間隔でidle確認）
-    local waited=0
-    while [ "$waited" -lt 30 ]; do
-        sleep 5
-        waited=$((waited + 5))
-        if ! agent_is_busy; then
-            echo "[$(date)] [SHOGUN-AUTOSTART] claude started and idle after ${waited}s" >&2
-            return 0
-        fi
-    done
-
-    echo "[$(date)] [SHOGUN-AUTOSTART] WARNING: claude start timeout (30s)" >&2
-}
-
 # ─── Process cycle ───
 process_unread() {
     local trigger="${1:-event}"
@@ -1098,20 +964,36 @@ for s in data.get('specials', []):
         # can terminate the current thought. Also pause the escalation timer while busy so we
         # don't immediately jump to Phase 2/3 once it becomes idle.
         # Exception: shogun — ntfy must be delivered immediately.
+        # Safety net: if busy detection persists for >5 min, assume false-busy (stale flag)
+        # and force-create idle flag to allow nudge delivery.
         if agent_is_busy && [[ "$AGENT_ID" != "shogun" ]]; then
             local busy_cli
             busy_cli=$(get_effective_cli_type)
-            if [[ "$busy_cli" == "claude" ]]; then
-                # Claude Code: Stop hook will catch unread messages when the agent's
-                # turn ends. No nudge needed at all — just log and skip completely.
-                # Don't reset FIRST_UNREAD_SEEN so idle-nudge works if hook misses.
-                echo "[$(date)] $normal_count unread for $AGENT_ID but agent is busy (claude) — Stop hook will deliver" >&2
+            # Stale busy safety net: if agent has been "busy" for >5 minutes with
+            # unread messages, force-create idle flag. This recovers from false-busy
+            # deadlock where stop_hook failed to create the flag.
+            local stale_busy_limit=300  # 5 minutes
+            if [ "${FIRST_UNREAD_SEEN:-0}" -gt 0 ] && [ "$((now - FIRST_UNREAD_SEEN))" -ge "$stale_busy_limit" ]; then
+                echo "[$(date)] WARNING: $AGENT_ID busy for $((now - FIRST_UNREAD_SEEN))s with $normal_count unread — forcing idle flag (stale busy recovery)" >&2
+                touch "${IDLE_FLAG_DIR:-/tmp}/shogun_idle_${AGENT_ID}"
+                # Fall through to normal nudge/escalation below
             else
-                # Codex/Copilot/Kimi: No Stop hook. Pause escalation timer while busy.
-                FIRST_UNREAD_SEEN=$now
-                echo "[$(date)] $normal_count unread for $AGENT_ID but agent is busy ($busy_cli) — pausing escalation timer" >&2
+                if [[ "$busy_cli" == "claude" ]]; then
+                    # Claude Code: Stop hook will catch unread messages when the agent's
+                    # turn ends. No nudge needed at all — just log and skip completely.
+                    # Set FIRST_UNREAD_SEEN so the stale-busy safety net (above) can
+                    # activate if the stop hook never fires.
+                    if [ "${FIRST_UNREAD_SEEN:-0}" -eq 0 ]; then
+                        FIRST_UNREAD_SEEN=$now
+                    fi
+                    echo "[$(date)] $normal_count unread for $AGENT_ID but agent is busy (claude) — Stop hook will deliver" >&2
+                else
+                    # Codex/Copilot/Kimi: No Stop hook. Pause escalation timer while busy.
+                    FIRST_UNREAD_SEEN=$now
+                    echo "[$(date)] $normal_count unread for $AGENT_ID but agent is busy ($busy_cli) — pausing escalation timer" >&2
+                fi
+                return 0
             fi
-            return 0
         fi
 
         # ─── Context reset before new task ───
@@ -1278,16 +1160,6 @@ while true; do
         process_unread "event"
     fi
 
-    # Karo idle watchdog: busy→idle遷移検出 → 未コミット変更チェック
-    check_karo_uncommitted
-
-    # Auto-reload: スクリプト変更検知 → exec再起動
-    if check_script_reload; then
-        export LAST_RELOAD_TS
-        LAST_RELOAD_TS=$(date +%s)
-        unset SCRIPT_MTIME_AT_START  # 旧値の引き継ぎを防ぐ（execループ防止）
-        exec bash "$SCRIPT_PATH" "$AGENT_ID" "$PANE_TARGET" "$CLI_TYPE"
-    fi
 done
 
 fi  # end testing guard

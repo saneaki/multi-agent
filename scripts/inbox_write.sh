@@ -5,10 +5,7 @@
 
 set -e
 
-# SHOGUN_ROOT: worktree環境対応
-# worktree内からの実行時もメインworktreeのqueueにアクセスするため、SHOGUN_ROOT環境変数を優先使用
-# 未設定時は現行ロジック（BASH_SOURCE[0]ベース）にフォールバック（後方互換性維持）
-SCRIPT_DIR="${SHOGUN_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TARGET="$1"
 CONTENT="$2"
 TYPE="${3:-wake_up}"
