@@ -1,87 +1,144 @@
-task_id: subtask_253a
+task_id: subtask_255b
 assigned_to: ashigaru2
-cmd_ref: cmd_253
+cmd_ref: cmd_255
 project: shogun-system
-priority: medium
+priority: high
 status: assigned
-created_at: "2026-02-28T08:33:55+09:00"
 bloom_level: L3
 report_to: gunshi
+created_at: "2026-02-28T09:09:28+09:00"
 
-title: "instructions 3ファイル修正: skill_candidate必須化/suggestions追加/おたけびルール確認"
+title: "Fix C: watcher_supervisor.sh 定期点呼(roll call)機能追加（Issue #3）"
 
-north_star: "エージェントの上向きフィードバック（echo）を構造的に保証し、運用知見の蓄積とリスク早期検知を強化する"
+north_star: "ウェルカム画面停止バグを根本解決し、5分間隔の自動点呼でエージェントを自律復旧させる"
 
 context: |
-  cmd_253の実装タスク。v3.8マージ（cmd_251: b4d6893）完了済みのため着手可能。
-  3ファイルへの最小限の差分適用。既存の報告フロー・QCフローは壊さないこと。
+  GitHub Issue #3 対策の第2フェーズ：
+  Fix Aでは起動時のロール名送信を追加したが、Fix Cでは常駐監視として
+  5分間隔でウェルカム画面を検出→自動復旧する仕組みを構築する。
 
-  【現状確認済み】
-  - ashigaru.md: skill_candidate欄はfound: bool形式で既に定義済み(L202)。Shout Modeセクション(L287)あり。
-  - gunshi.md: suggestions欄なし。Shout Modeは「Same rules as ashigaru」参照で既にあり。
-  - karo.md: L553でskill_candidateチェック記述あり。suggestionsの確認は未記載。
+  【対象ファイル】scripts/watcher_supervisor.sh（現在71行）
+  【ペインマッピング】（既存の定数は使わず直接ハードコード）:
+    karo    → multiagent:agents.0
+    ashigaru1 → multiagent:agents.1
+    ashigaru2 → multiagent:agents.2
+    ashigaru3 → multiagent:agents.3
+    ashigaru4 → multiagent:agents.4
+    ashigaru5 → multiagent:agents.5
+    ashigaru6 → multiagent:agents.6
+    ashigaru7 → multiagent:agents.7
+    gunshi  → multiagent:agents.8
+    ※ 将軍(shogun:main)は点呼対象外
+
+  【重要: watcher_supervisor.sh の既存構造を把握してから実装せよ】
 
 steps:
-  - "=== A. ashigaru.md: skill_candidate必須強化 ==="
-  - "1. instructions/ashigaru.md を読む"
-  - "2. Report Format セクション(L195付近)のskill_candidateを以下の通り更新:"
-  - "   - MANDATORY コメントを強調。found: false の場合の記載例を追加"
-  - "   - 現在の形式(found: bool)を維持しつつ、「found: falseでも必ず記載せよ」を明記"
-  - "   - 記載例に must記述を追記: '# MANDATORY: even if not found, write found: false'"
-  - "3. おたけびルール確認: Shout Mode(L287)に以下が含まれているか確認"
-  - "   - 「タスク完了時は戦国風おたけびを出力せよ」が明記されているか"
-  - "   - 含まれていなければ1行追加: '**完了時おたけび必須**: タスク完了後、必ず戦国風おたけびを出力せよ（例: 任務完了でござる！突撃成功！）'"
-  - "   - 含まれていれば変更不要"
+  - "1. scripts/watcher_supervisor.sh を read する（既存構造の把握必須）"
 
-  - "=== B. gunshi.md: suggestions欄追加 ==="
-  - "4. instructions/gunshi.md を読む"
-  - "5. Quality Check Criteria セクション(L215付近)の直後か、Autonomous QC Procedure の後に:"
-  - "   suggestions欄をQC出力に追加する形式を定義:"
-  - "   ```yaml"
-  - "   suggestions:"
-  - "     - '(改善提案・スキル候補・リスク指摘・設計上の懸念を1件以上。QC PASSでも必ず記載)'"
-  - "   ```"
-  - "   具体的には gunshi_report.yaml の出力フォーマット定義に suggestions: を必須欄として追記"
-  - "6. gunshi.mdの Report Format または QC出力フォーマットがどこにあるか確認し、suggestions欄を追加"
-  - "   PASS時: 改善提案・スキル候補・今後の注意点(1件以上必須)"
-  - "   FAIL時: 根本原因の構造的改善提案を含める"
+  - "2. roll_call_check() 関数を実装する（新規関数）:"
+  - |
+    ```bash
+    # ウェルカム画面パターン: 'Try "' または 'bypass permissions'
+    is_welcome_screen() {
+        local pane="$1"
+        tmux capture-pane -t "$pane" -p 2>/dev/null | grep -qE 'Try "|bypass permissions'
+    }
 
-  - "=== C. karo.md: cmd完了チェックリスト更新 ==="
-  - "7. instructions/karo.md の Step 11.7 完了処理(L432付近)のチェックリストを確認"
-  - "8. cmd完了チェック時にskill_candidate/suggestionsの確認を追加:"
-  - "   - skill_candidate: ashigaru報告のfound: trueが1件でもあれば 要対応 or dashboard更新"
-  - "   - suggestions: gunshi QC報告のsuggestions欄内容を確認しdashboardに反映(必要なら)"
-  - "   ※ karo.md L553の「Skill Candidates」セクションは既にある。そこに 'gunshiのsuggestions確認' の旨を1-2行追記する程度でよい"
+    roll_call_check() {
+        local timestamp
+        timestamp=$(date '+%Y-%m-%d %H:%M:%S')
 
-  - "=== git commit & push ==="
-  - "9. git add instructions/ashigaru.md instructions/gunshi.md instructions/karo.md"
-  - "   git commit -m 'feat: cmd_253 skill_candidate必須化/suggestions追加/おたけびルール確認'"
+        # エージェント:ペインのマッピング
+        declare -A AGENT_PANES
+        AGENT_PANES=(
+            [karo]="multiagent:agents.0"
+            [ashigaru1]="multiagent:agents.1"
+            [ashigaru2]="multiagent:agents.2"
+            [ashigaru3]="multiagent:agents.3"
+            [ashigaru4]="multiagent:agents.4"
+            [ashigaru5]="multiagent:agents.5"
+            [ashigaru6]="multiagent:agents.6"
+            [ashigaru7]="multiagent:agents.7"
+            [gunshi]="multiagent:agents.8"
+        )
+
+        for agent in karo ashigaru1 ashigaru2 ashigaru3 ashigaru4 ashigaru5 ashigaru6 ashigaru7 gunshi; do
+            local pane="${AGENT_PANES[$agent]}"
+
+            # ペインが存在しない場合はスキップ
+            if ! pane_exists "$pane"; then
+                continue
+            fi
+
+            if is_welcome_screen "$pane"; then
+                echo "[ROLL-CALL] [$timestamp] ${agent}: DEAD → sending role name..."
+                tmux send-keys -t "$pane" "$agent"
+                sleep 0.3
+                tmux send-keys -t "$pane" Enter
+
+                # 30秒後に確認
+                sleep 30
+                if ! is_welcome_screen "$pane"; then
+                    echo "[ROLL-CALL] [$timestamp] ${agent}: REVIVED"
+                else
+                    echo "[ROLL-CALL] [$timestamp] ${agent}: DEAD (unreachable after retry)"
+                fi
+            else
+                echo "[ROLL-CALL] [$timestamp] ${agent}: ALIVE"
+            fi
+        done
+    }
+    ```
+
+  - "3. while loop に ROLL_CALL_INTERVAL制御を追加する:"
+  - "   while true; do の直後に ROLL_CALL_LAST=0 の初期化（ループ外で定義してもよい）"
+  - "   ループ内（start_cmd_notifier_if_missing の後）に以下を追加:"
+  - |
+    ```bash
+    # 定期点呼: 5分間隔（300秒）
+    _now=$(date +%s)
+    if (( _now - ROLL_CALL_LAST >= 300 )); then
+        roll_call_check 2>&1 | tee -a "$SCRIPT_DIR/logs/roll_call.log" || true
+        ROLL_CALL_LAST=$_now
+    fi
+    ```
+
+  - "4. ROLL_CALL_LAST=0 をwhile loopの前（ループ外）で初期化する"
+  - "   ※ 既存の while true; do の直前に追加"
+
+  - "5. bash -n scripts/watcher_supervisor.sh でシンタックスチェック（エラーなし必須）"
+
+  - "6. git add scripts/watcher_supervisor.sh"
+  - "   git commit -m 'feat: cmd_255 watcher_supervisor.sh 定期点呼(roll call)機能追加（Issue #3 Fix C）'"
   - "   git push origin original"
 
-  - "=== 完了報告 ==="
-  - "10. queue/reports/ashigaru2_report.yaml を書く（report_to: gunshi）"
-  - "11. bash scripts/inbox_write.sh gunshi '足軽2号、subtask_253a 完了でござる。品質確認を仰ぎたし。' report_received ashigaru2"
+  - "7. 完了報告: queue/reports/ashigaru2_report.yaml に書く（report_to: gunshi）"
+  - "8. bash scripts/inbox_write.sh gunshi '足軽2号、subtask_255b 完了でござる！品質確認を仰ぎたし！' report_received ashigaru2"
 
 quality_rules:
-  - "ashigaru.md の skill_candidate欄に MANDATORY/必須の強調が含まれている（found: false でも必ず記載）"
-  - "gunshi.md のQC出力定義に suggestions 欄が追加されている（1件以上必須の旨が明記）"
-  - "karo.md に gunshi suggestions 確認の記述が含まれている"
-  - "おたけびルールが ashigaru.md/gunshi.md どちらにも明記されている（既存確認 or 追記）"
+  - "scripts/watcher_supervisor.sh に roll_call_check() 関数が実装されている"
+  - "is_welcome_screen() 関数が実装され、'Try \"' または 'bypass permissions' パターンを検出する"
+  - "5分間隔（300秒）でroll_call_check()が呼ばれる仕組みが while loop に追加されている"
+  - "ログ出力が logs/roll_call.log に記録される"
+  - "将軍ペイン(shogun:main)は点呼対象外"
+  - "bash -n scripts/watcher_supervisor.sh が PASS"
   - "git push 済み"
 
 important_notes:
-  - "既存の報告フロー・QCフローは壊さないこと"
-  - "最小限の差分で適用（大規模リファクタ不要）"
-  - "ashigaru.md の skill_candidate フォーマットは found: bool 形式を維持（文字列形式に変えない）"
-  - "gunshi.md の既存 Shout Mode セクション（'Same rules as ashigaru'）は変更不要"
+  - "Read ツールで scripts/watcher_supervisor.sh を必ず先に読んでから Edit すること"
+  - "pane_exists() 関数は既にwatcher_supervisor.shに定義されている（再実装不要）"
+  - "declare -A（連想配列）はbash 4+必須。サーバーがbash 4以上であることを確認するか、別の実装を使うこと"
+  - "inbox_watcher.shのエスカレーション(send-keys)との二重送信リスク: ウェルカム画面検出時のみ送信するため、通常は重複しない。ただし両者が同時に動作する可能性があれば注意"
+  - "agent_is_busy()等の関数が存在する場合は活用可能（既存コードを先に確認）"
+  - "ログファイル logs/roll_call.log への書き込みは && の後ろではなく | tee -a でリダイレクト"
 
 report_template:
-  task_id: subtask_253a
+  task_id: subtask_255b
   report_to: gunshi
-  ashigaru_md_updated: "true/false"
-  gunshi_md_updated: "true/false"
-  karo_md_updated: "true/false"
-  otakebi_rule_confirmed: "true/false"
+  roll_call_function_added: "true/false"
+  interval_control_added: "true/false"
+  log_output_works: "true/false"
+  bash_n_pass: "true/false"
   git_commit: "{hash}"
   blockers: "なし"
   skill_candidate:

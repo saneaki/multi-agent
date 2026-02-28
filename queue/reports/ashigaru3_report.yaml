@@ -1,40 +1,33 @@
-task_id: subtask_245a
+task_id: subtask_254a
 agent: ashigaru3
 report_to: gunshi
-timestamp: "2026-02-28T00:00:00+09:00"
+timestamp: "2026-02-28T08:55:00+09:00"
 status: PASS
 
 summary: |
-  cmd_245 subtask_245a 完了。notion_session_log.sh 日付照合フォールバック追加。
-  TODAY(YYYY-MM-DD)とdashboard見出し(M/D)の不一致時、1日以内のセクションを代替使用するよう修正。
-  日記タスク検索も同様に、前日日付でフォールバック検索を追加。
+  cmd_254 subtask_254a 完了。instructions/karo.md に Dispatch Audit + When to Merge 基準を英語で追加。
+  Parallelizationセクションのテーブル直後に18行挿入。既存セクション破壊なし。
 
-fixes:
-  fix1_senka_fallback:
-    location: "L74-L103（本日の戦果パース・Python heredoc内）"
-    before: "日付完全一致のみ採用。不一致は全スキップ → 0行取得"
-    after: |
-      1. 完全一致セクションを優先採用
-      2. 一致なし → 1日以内のセクションをフォールバック採用
-      3. フォールバック使用時は [WARN] をstderrに出力
-      4. 2日以上古いセクションはスキップ維持
-
-  fix2_diary_fallback:
-    location: "L591-L619（日記タスク検索・フォールバック追加）"
-    before: "TODAY日記のみ検索。見つからなければ即スキップ"
-    after: |
-      1. TODAYで検索
-      2. 見つからなければ YESTERDAY (date -d -1 day) でフォールバック検索
-      3. どちらも見つからなければスキップ
-      4. [WARN] ログで警告出力
-
-quality_check:
-  - "TODAY=2026-02-28でdashboardに2/27セクションのみ → フォールバックで2/27取得: OK"
-  - "TODAY=2026-02-27でdashboardに2/27セクション → 完全一致優先: OK"
-  - "dashboardに2/25等古いセクションのみ → フォールバック対象外(スキップ): OK"
-  - "冪等性（UPDATE方式）変更なし: OK"
-
-git_commit: "5dc576f"
+dispatch_audit_added: "true"
+when_to_merge_added: "true"
+git_commit: "1b1a578"
 git_push: PASS
 blockers: なし
-pass_fail_judgment: PASS
+
+changes:
+  file: "instructions/karo.md"
+  lines_added: 18
+  location: "Parallelizationセクションのテーブル直後（Task Dependencies直前）"
+  content_added:
+    - "### Dispatch Audit (before sending task YAMLs) — 5ステップ"
+    - "### When to Merge (exceptions to split-and-parallelize default) — 5条件テーブル"
+  language: "英語（既存ファイル表記規則に準拠）"
+
+quality_check:
+  - "Dispatch Auditセクション英語で追加（5ステップ）: OK"
+  - "When to Mergeテーブル英語で追加（5条件）: OK"
+  - "既存セクション破壊なし（最小差分18行追加のみ）: OK"
+  - "git push origin original 完了: OK"
+
+skill_candidate:
+  found: false
