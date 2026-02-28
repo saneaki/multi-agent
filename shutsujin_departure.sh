@@ -870,6 +870,50 @@ NINJA_EOF
     done
 
     # ═══════════════════════════════════════════════════════════════════
+    # STEP 6.5.5: 各エージェントに初期プロンプト（ロール名）を自動送信
+    # Issue #3 修正: claude CLI はget_startup_prompt()が空文字を返すため手動送信
+    # ═══════════════════════════════════════════════════════════════════
+    log_info "🚀 各エージェントにロール名を送信中..."
+
+    _send_role_name() {
+        local pane="$1"
+        local role_name="$2"
+        local max_wait=45  # 最大45秒待機
+        local found=false
+
+        for _w in $(seq 1 "$max_wait"); do
+            if tmux capture-pane -t "$pane" -p 2>/dev/null | grep -q 'bypass permissions\|Try "'; then
+                found=true
+                break
+            fi
+            sleep 1
+        done
+
+        if [ "$found" = true ]; then
+            sleep 2  # Claude Code初期化完了待ち
+            tmux send-keys -t "$pane" "$role_name"
+            sleep 0.3
+            tmux send-keys -t "$pane" Enter
+            log_info "  └─ ${role_name}: ロール名送信完了"
+        else
+            log_warning "  └─ ${role_name}: ウェルカム画面未確認（${max_wait}秒タイムアウト）—スキップ"
+        fi
+    }
+
+    # 家老
+    _send_role_name "multiagent:agents.${PANE_BASE}" "karo"
+    # 足軽
+    for i in $(seq 1 "$_ASHIGARU_COUNT"); do
+        p=$((PANE_BASE + i))
+        _send_role_name "multiagent:agents.${p}" "ashigaru${i}"
+    done
+    # 軍師
+    _gunshi_pane=$((PANE_BASE + _ASHIGARU_COUNT + 1))
+    _send_role_name "multiagent:agents.${_gunshi_pane}" "gunshi"
+
+    log_success "  └─ ロール名送信完了（将軍はスキップ—人間操作）"
+
+    # ═══════════════════════════════════════════════════════════════════
     # STEP 6.6: inbox_watcher起動（全エージェント）
     # ═══════════════════════════════════════════════════════════════════
     log_info "📬 メールボックス監視を起動中..."
