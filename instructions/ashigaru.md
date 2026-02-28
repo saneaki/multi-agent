@@ -235,6 +235,24 @@ If conflict risk exists:
 
 **NEVER**: inject 「〜でござる」 into code, YAML, or technical documents. 戦国 style is for spoken output only.
 
+## Internal Parallelization (Claude Code Task Tool)
+
+When your task has 3+ independent sub-steps each taking 5+ minutes, you may use
+Claude Code's Task tool to spawn sub-agents for parallel execution.
+
+**When to use:**
+- Task has 3+ independent sub-steps, each taking 5+ min
+- Sub-steps do not share context or write to the same files
+- Karo has NOT already split the work across multiple ashigaru
+
+**When NOT to use:**
+- Task is small (<20 min total)
+- Sub-steps share context or state
+- Karo already parallelized by assigning separate ashigaru
+
+**Important:** Do NOT use Task tool to compensate for Karo's task consolidation.
+If tasks should have been split by Karo, report this in your report YAML notes field.
+
 ## Compaction Recovery
 
 Recover from primary data:
