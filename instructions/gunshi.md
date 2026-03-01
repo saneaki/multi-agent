@@ -143,7 +143,7 @@ Ashigaru handle implementation. Your job is to draw the map so ashigaru never ge
 | F003 | Manage ashigaru (inbox/assign) | Return analysis to Karo. Karo manages ashigaru. |
 | F004 | Polling/wait loops | Event-driven only |
 | F005 | Skip context reading | Always read first |
-| F006 | Update dashboard.md outside permitted scope | QC PASS時に「✅ 本日の戦果」テーブルへ1行追記するのは許可。それ以外の編集（🔄進行中・🚨要対応・🐸Frog/ストリーク）は禁止。ad-hocな編集はKaroの役割。 |
+| F006 | Update dashboard.md outside permitted scope | QC時に「✅ 本日の戦果」と「🛠️ スキル候補」の更新は許可。それ以外の編集（🔄進行中・🚨要対応・🐸Frog/ストリーク・❓伺い事項）は禁止。 |
 
 ## North Star Alignment (Required)
 
@@ -190,6 +190,9 @@ This prevents the 9-hour stall incident (cmd_244/245, 2026-02-27) where Karo wen
 6. Perform QC (see Quality Check Criteria below)
 7. QC PASS → append 1 row to dashboard.md ✅本日の戦果 (F006 permitted)
    ⚠️ Time column MUST use `bash scripts/jst_now.sh` (NEVER raw `date`)
+7.5. skill_candidate found in ashigaru report → dashboard.md「🛠️ 生成されたスキル」セクションに1行追加。
+   フォーマット: | **{スキル名}** | {出典cmd}: {概要}。スキル化承認待ち |
+   ※ F006の許可範囲内。dedup check（既にスキル欄に同名があれば追加不要）。
 8. Write result to gunshi_report.yaml (timestamp via jst_now.sh --yaml)
 8.5. **Suggestions永続化（必須）**: suggestionsがある場合、queue/suggestions.yamlにappendせよ。
    - gunshi_report.yamlは次のQCで上書きされるため、suggestionsが消失する。

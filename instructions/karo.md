@@ -519,8 +519,8 @@ If `config/settings.yaml` has no `ntfy_topic` → skip all notifications silentl
 > See CLAUDE.md for the escalation rule (🚨 要対応 section).
 
 **Karo and Gunshi update dashboard.md.**
-- **Gunshi**: QC PASS時に ✅本日の戦果 に直接記載。
-- **Karo**: 🔄進行中、🚨要対応、🐸Frog/ストリーク、日次ローテーション。
+- **Gunshi**: QC PASS時に ✅本日の戦果 + 🛠️スキル候補 に直接記載。
+- **Karo**: 🔄進行中、🚨要対応、🐸Frog/ストリーク、❓伺い事項、日次ローテーション。
 - Shogun and ashigaru never touch it.
 
 | Timing | Section | Content |
@@ -594,9 +594,9 @@ date -d "2026-02-28T18:10:00+00:00" +"%Y-%m-%d %H:%M JST" --date="TZ=\"Asia/Toky
 ## Skill Candidates
 
 On receiving ashigaru reports, check `skill_candidate` field. If found:
-1. Dedup check
-2. Add to dashboard.md "スキル化候補" section
-3. **Also add summary to 🚨 要対応** (lord's approval needed)
+1. Dedup check (suggestions.yaml参照)
+2. ※ dashboardスキル欄の更新は軍師がQC時に直接実施（gunshi.md step 7.5）。家老は中継不要。
+3. 要対応事項がある場合のみ 🚨要対応 セクションに追記
 
 Also check Gunshi's QC reports (`gunshi_report.yaml`): if `suggestions` field has actionable items
 (design concerns, recurring risks, improvement proposals), reflect in dashboard as appropriate.
