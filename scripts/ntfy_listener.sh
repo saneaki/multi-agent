@@ -13,6 +13,14 @@ INBOX="$SCRIPT_DIR/queue/ntfy_inbox.yaml"
 LOCKFILE="${INBOX}.lock"
 CORRUPT_DIR="$SCRIPT_DIR/logs/ntfy_inbox_corrupt"
 
+# ホスト名ガード: VPS(srv1121380)のみでリスナーを稼働させる
+# WSL2等の他ホストでは二重応答を防ぐため起動しない
+NTFY_ALLOWED_HOST="srv1121380"
+if [ "$(hostname)" != "$NTFY_ALLOWED_HOST" ]; then
+    echo "[ntfy_listener] This host ($(hostname)) is not the designated listener ($NTFY_ALLOWED_HOST). Exiting." >&2
+    exit 0
+fi
+
 # ntfy_auth.sh読み込み
 # shellcheck source=../lib/ntfy_auth.sh
 source "$SCRIPT_DIR/lib/ntfy_auth.sh"

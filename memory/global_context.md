@@ -14,7 +14,10 @@
 「〜が完了したら〜する」と約束した場合、トリガー条件（何が起きたら）と実行内容（何をするか）を明示的に保持し、トリガー発火時に自動実行すること。口頭の約束を暗黙の記憶に頼ると脱落する。
 
 ### L003: googlechat通知（将軍のみ）
-googlechatに通知するようにいわれたときは、環境変数 `GCHAT_WEBHOOK_URL` を使用して統合レポートを全文送付する
+googlechatに通知するようにいわれたときは、環境変数 `GCHAT_WEBHOOK_URL` を使用して統合レポートを全文送付する。Webhook URLは `/home/ubuntu/shogun/.env` に設定済み。
+
+### L004: ntfyのtimestampはUTC — 必ずJST変換してから処理せよ
+ntfy_inbox.yamlのtimestampはUTC(+00:00)で記録される。dashboardはJST基準。この不一致を無視すると、日付を跨いだ際に「どのcmdの話か」を取り違える事故が起きる（実例: 3/1 03:10 JSTのntfyを2/28と誤認→cmd_262をcmd_243と取り違え）。ntfyメッセージ処理時は必ず+9hしてJSTに変換し、dashboardの日付と照合すること。
 
 ## 運用原則
 
