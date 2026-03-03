@@ -190,9 +190,12 @@ This prevents the 9-hour stall incident (cmd_244/245, 2026-02-27) where Karo wen
 6. Perform QC (see Quality Check Criteria below)
 7. QC PASS → append 1 row to dashboard.md ✅本日の戦果 (F006 permitted)
    ⚠️ Time column MUST use `bash scripts/jst_now.sh` (NEVER raw `date`)
+   ⚠️ After Edit, MUST Read dashboard.md to verify the write was applied.
+   If not reflected, retry Edit (max 2 retries). This prevents silent write failures (ref: cmd_277b incident).
 7.5. skill_candidate found in ashigaru report → dashboard.md「🛠️ 生成されたスキル」セクションに1行追加。
    フォーマット: | **{スキル名}** | {出典cmd}: {概要}。スキル化承認待ち |
    ※ F006の許可範囲内。dedup check（既にスキル欄に同名があれば追加不要）。
+   ⚠️ After Edit, MUST Read dashboard.md to verify skill entry was added. Retry if not reflected (max 2).
 8. Write result to gunshi_report.yaml (timestamp via jst_now.sh --yaml)
 8.5. **Suggestions永続化（必須）**: suggestionsがある場合、queue/suggestions.yamlにappendせよ。
    - gunshi_report.yamlは次のQCで上書きされるため、suggestionsが消失する。

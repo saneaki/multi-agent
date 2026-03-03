@@ -5,6 +5,9 @@
 
 set -euo pipefail
 
+# PostToolUse hook compatibility: stdinのツール結果JSONを消費する
+cat > /dev/null 2>&1 || true
+
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 # dashboard.mdのパス決定

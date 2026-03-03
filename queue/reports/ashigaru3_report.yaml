@@ -1,33 +1,40 @@
-task_id: subtask_254a
-agent: ashigaru3
+worker_id: ashigaru3
+task_id: subtask_280a
+parent_cmd: cmd_280
+timestamp: "2026-03-03T20:36:00+09:00"
+status: done
 report_to: gunshi
-timestamp: "2026-02-28T08:55:00+09:00"
-status: PASS
 
-summary: |
-  cmd_254 subtask_254a 完了。instructions/karo.md に Dispatch Audit + When to Merge 基準を英語で追加。
-  Parallelizationセクションのテーブル直後に18行挿入。既存セクション破壊なし。
+result:
+  summary: "PKSHA Technology包括調査レポート完了。会社概要・製品8種・料金・評判・ネガティブ情報・競合比較・業績を網羅。"
+  output_file: "output/cmd_280_pksha_report.md"
+  files_modified:
+    - "output/cmd_280_pksha_report.md"
+  notes: |
+    WebSearch 15回以上、WebFetch 2回実施。ITreview/BOXIL等のレビューサイトから原文引用。
+    ネガティブ情報は重点調査し、UIの古さ・料金の高さ・生成AI対応の遅れ・M&Aリスク等を正直に記載。
+    PKSHA FAQのみ料金公開（初期130万円〜/月額10万円〜）、他製品は要問合せ。
 
-dispatch_audit_added: "true"
-when_to_merge_added: "true"
-git_commit: "1b1a578"
-git_push: PASS
-blockers: なし
+sections_completed:
+  company_overview: true
+  products: true
+  pricing: true
+  reviews: true
+  negative_info: true
+  competitor_comparison: true
+  financials: true
 
-changes:
-  file: "instructions/karo.md"
-  lines_added: 18
-  location: "Parallelizationセクションのテーブル直後（Task Dependencies直前）"
-  content_added:
-    - "### Dispatch Audit (before sending task YAMLs) — 5ステップ"
-    - "### When to Merge (exceptions to split-and-parallelize default) — 5条件テーブル"
-  language: "英語（既存ファイル表記規則に準拠）"
+web_searches_count: "17"
+blockers: "なし"
 
 quality_check:
-  - "Dispatch Auditセクション英語で追加（5ステップ）: OK"
-  - "When to Mergeテーブル英語で追加（5条件）: OK"
-  - "既存セクション破壊なし（最小差分18行追加のみ）: OK"
-  - "git push origin original 完了: OK"
+  - "全8製品（FAQ, ChatAgent, VoiceAgent, Speech Insight, AI Helpdesk, Knowledge Maker, Knowledge Stream, AI Agents）の概要記載: OK"
+  - "料金体系（判明分）記載、非公開は要問合せと明記: OK"
+  - "レビューサイト（ITreview, BOXIL）からの評判まとめ: OK"
+  - "ネガティブ情報（UI古さ、料金高い、生成AI遅れ、M&Aリスク等）隠さず記載: OK"
+  - "競合比較表3種（FAQ/チャットボット/ボイスボット）: OK"
+  - "業績推移2019-2026予、M&A動向、株価情報: OK"
+  - "レビュー原文引用（改変なし）: OK"
 
 skill_candidate:
   found: false
