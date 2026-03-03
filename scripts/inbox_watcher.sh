@@ -476,6 +476,14 @@ send_cli_command() {
         return 0
     fi
 
+    # Busy guard: never send /clear when agent is actively processing.
+    # clear_command inbox processor also checks busy, but this is a defense-in-depth guard.
+    # Sending /clear during Working destroys in-progress context and causes data loss.
+    if [[ "$cmd" == "/clear" ]] && agent_is_busy; then
+        echo "[$(date)] [SKIP] Agent is busy — /clear deferred to next cycle (agent=$AGENT_ID)" >&2
+        return 0
+    fi
+
     # CLI別コマンド変換
     local actual_cmd="$cmd"
     case "$effective_cli" in
@@ -895,6 +903,8 @@ process_unread() {
         fi
         FIRST_UNREAD_SEEN=0
         NEW_CONTEXT_SENT=0
+        # Ensure idle flag exists (fast-path recovery)
+        touch "${IDLE_FLAG_DIR:-/tmp}/shogun_idle_${AGENT_ID}" 2>/dev/null || true
         if ! agent_is_busy; then
             # Shogun: only clear input when pane is not active (Lord is away)
             if [ "$AGENT_ID" = "shogun" ] && pane_is_active; then
@@ -927,15 +937,25 @@ for s in data.get('specials', []):
 " 2>/dev/null)
 
     local clear_seen=0
+    local clear_sent=0  # tracks if /clear was actually sent (not just seen)
     if [ -n "$specials" ]; then
         local msg_type msg_content cmd
         while IFS=$'\t' read -r msg_type msg_content; do
             [ -n "$msg_type" ] || continue
             if [ "$msg_type" = "clear_command" ]; then
                 clear_seen=1
+                # Busy guard: skip /clear if agent is currently processing.
+                # Sending /clear during active work destroys in-progress context.
+                if agent_is_busy && [[ "$AGENT_ID" != "shogun" ]]; then
+                    echo "[$(date)] [SKIP] Agent $AGENT_ID is busy — /clear (clear_command) deferred to next cycle" >&2
+                    continue
+                fi
             fi
             cmd=$(normalize_special_command "$msg_type" "$msg_content")
-            [ -n "$cmd" ] && send_cli_command "$cmd"
+            if [ -n "$cmd" ]; then
+                send_cli_command "$cmd"
+                [ "$msg_type" = "clear_command" ] && clear_sent=1
+            fi
         done <<< "$specials"
     fi
 
@@ -943,7 +963,8 @@ for s in data.get('specials', []):
     # 追加 task_assigned を自動投入し、次サイクルで確実に wake-up 可能にする。
     # 案B+待機: Karo がタスク YAML を cancelled に更新するまでの猶予を確保してから
     # status チェックを行い、cancelled/idle の場合はスキップする。
-    if [ "$clear_seen" -eq 1 ]; then
+    # clear_sent（実際に送信）のみauto-recoveryを起動。busy時スキップは対象外。
+    if [ "$clear_sent" -eq 1 ]; then
         # Wait for Karo to update task YAML status (cancellation race condition mitigation).
         # send_cli_command already slept 3s for /clear; add 5s more = ~8s total before check.
         sleep 5
@@ -1073,7 +1094,7 @@ for s in data.get('specials', []):
                     send_cli_command "/clear"
                     LAST_CLEAR_TS=$now
                     FIRST_UNREAD_SEEN=0  # Reset — will re-detect on next cycle
-                    NEW_CONTEXT_SENT=0
+                    NEW_CONTEXT_SENT=1  # Prevent immediate CONTEXT-RESET on next cycle
                 fi
             else
                 # Cooldown active — fall back to Escape+nudge
@@ -1088,6 +1109,9 @@ for s in data.get('specials', []):
         fi
         FIRST_UNREAD_SEEN=0
         NEW_CONTEXT_SENT=0
+        # Ensure idle flag exists when all messages are read.
+        # Recovers from stop_hook_inbox.sh flag loss during block cycles.
+        touch "${IDLE_FLAG_DIR:-/tmp}/shogun_idle_${AGENT_ID}" 2>/dev/null || true
         # Clear stale nudge text from input field (Codex CLI prefills last input on idle).
         # Only send C-u when agent is idle — during Working it would be disruptive.
         if ! agent_is_busy; then
