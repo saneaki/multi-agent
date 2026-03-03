@@ -3,6 +3,14 @@
 [yohey-w/multi-agent-shogun](https://github.com/yohey-w/multi-agent-shogun) の `9e23e2c` からfork。
 以降の変更履歴を記す。
 
+## 2026-03-03
+
+- **EnterPlanMode 使用禁止**: Agent Teams のチームリーダーが EnterPlanMode/ExitPlanMode を使うとチームコンテキスト（spawn 済みメンバー情報）が失われ、全エージェントが終了する問題が判明。作戦書ファイル方式（`.shogun/plans/`）に統一
+  - `instructions/shogun_core.md`: EnterPlanMode/ExitPlanMode の参照を除去、使用禁止を明記
+  - `instructions/shogun_ref.md`: plan mode 詳細セクションを除去
+- **tmux ペイン移動フック修正**: `move-pane` を `run-shell` 内ではなく直接 tmux コマンドとして実行するよう変更。`run-shell` 内の `tmux move-pane` はペインコンテキストを持たないため動作しない問題を修正
+  - `shutsujin_departure.sh`: フック構造を「`move-pane` (直接) → `run-shell -b` (カウンター更新・レイアウト・フック解除)」に分離
+
 ## 2026-03-02
 
 - **将軍コンテキスト節約**: コンパクション復帰コストを~20K→~6Kトークンに削減し、有効なコンテキスト空間を最大化
@@ -19,11 +27,11 @@
     - `instructions/shogun_core.md`: SGATE-1 をチェックポイント方式に変更。同一指示内の複数 SendMessage 毎の更新は不要に
     - `instructions/shogun_ref.md`: 新旧ルールの差分と 5 セクション版 shogun_context.md テンプレートを記載
     - `shutsujin_departure.sh`: shogun_context.md 初期テンプレートを 7→5 セクションに簡素化（「直近のアクション」削除、「殿の指示」と「作戦書」を統合）
-  - **作戦立案プロトコル改善**: 軽微/非軽微のトリアージ表を追加。EnterPlanMode はチームコンテキストを破壊するため使用禁止を明記
+  - **作戦立案プロトコル改善**: 軽微/非軽微のトリアージ表を追加
     - `instructions/shogun_core.md`: 作戦書ファイル方式（`.shogun/plans/`）のフローを整理
     - `instructions/shogun_ref.md`: 軽微/非軽微の判断基準テーブルを追加
   - **サブエージェントのペイン分離**: Task tool サブエージェントが multiagent セッションに移動する問題を解消
-    - `shutsujin_departure.sh`: tmux after-split-window フックを名前ベース判定に改修。新ペインのコマンドに team_name が含まれればチームメイトとして multiagent に移動、含まれなければサブエージェントとして shogun に残る
+    - `shutsujin_departure.sh`: tmux after-split-window フックをカウンターベースに改修。チームメイト数 (karo+metsuke+ashigaru) 回だけ発火し自動無効化、以降のサブエージェントは shogun ペインに残る
 
 ## 2026-02-26
 
