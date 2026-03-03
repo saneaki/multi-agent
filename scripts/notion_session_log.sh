@@ -670,7 +670,7 @@ else
   echo "[INFO] 「音声での振り返り」ブロックが見つからない。ページ末尾に追記。"
 fi
 
-HAS_CC_SECTION=$(echo "${BLOCKS}" | python3 -c "
+CC_BLOCK_ID=$(echo "${BLOCKS}" | python3 -c "
 import json, sys
 data = json.load(sys.stdin)
 results = data.get('results', [])
@@ -680,22 +680,40 @@ for block in results:
         texts = block.get(block_type, {}).get('rich_text', [])
         text = ''.join(t.get('plain_text', '') for t in texts)
         if 'Claude Code活動' in text:
-            print('true')
+            print(block.get('id', ''))
             sys.exit(0)
-print('false')
-" 2>/dev/null || echo "false")
+print('')
+" 2>/dev/null || echo "")
 
 # ============================================================
 # 日記タスクへの追記（修正4: トグル形式、修正5: 挿入位置、修正6: リンク）
 # ============================================================
 
-if [[ "${HAS_CC_SECTION}" == "true" ]]; then
-  echo "[INFO] 日記に「Claude Code活動」セクションが既に存在。追記スキップ。"
-else
-  echo "[INFO] 日記に「Claude Code活動」セクション追記中..."
+if [[ -n "${CC_BLOCK_ID}" ]]; then
+  echo "[INFO] 既存「Claude Code活動」セクション削除中 (block_id: ${CC_BLOCK_ID})..."
+  DELETE_RESP=$(curl -s -X DELETE \
+    "${NOTION_API}/blocks/${CC_BLOCK_ID}" \
+    -H "Authorization: Bearer ${NOTION_TOKEN}" \
+    -H "Notion-Version: ${NOTION_VERSION}")
+  DELETE_STATUS=$(echo "${DELETE_RESP}" | python3 -c "
+import json, sys
+data = json.load(sys.stdin)
+if data.get('object') == 'block':
+    print('success')
+else:
+    print('error: ' + str(data.get('message', 'unknown')))
+" 2>/dev/null || echo "error: parse failed")
+  if [[ "${DELETE_STATUS}" == "success" ]]; then
+    echo "[INFO] 既存セクション削除完了"
+  else
+    echo "[WARN] 既存セクション削除失敗: ${DELETE_STATUS}" >&2
+  fi
+fi
 
-  # トグルH2 + 子ブロック構築（修正4）
-  APPEND_PAYLOAD=$(python3 - <<PYEOF
+echo "[INFO] 日記に「Claude Code活動」セクション追記中..."
+
+# トグルH2 + 子ブロック構築（修正4）
+APPEND_PAYLOAD=$(python3 - <<PYEOF
 import json
 
 completed = "${COMPLETED}"
@@ -764,28 +782,27 @@ print(json.dumps(payload, ensure_ascii=False))
 PYEOF
 )
 
-  APPEND_RESP=$(curl -s -X PATCH \
-    "${NOTION_API}/blocks/${DIARY_PAGE_ID}/children" \
-    -H "Authorization: Bearer ${NOTION_TOKEN}" \
-    -H "Content-Type: application/json" \
-    -H "Notion-Version: ${NOTION_VERSION}" \
-    -d "${APPEND_PAYLOAD}")
+APPEND_RESP=$(curl -s -X PATCH \
+  "${NOTION_API}/blocks/${DIARY_PAGE_ID}/children" \
+  -H "Authorization: Bearer ${NOTION_TOKEN}" \
+  -H "Content-Type: application/json" \
+  -H "Notion-Version: ${NOTION_VERSION}" \
+  -d "${APPEND_PAYLOAD}")
 
-  APPEND_STATUS=$(echo "${APPEND_RESP}" | python3 -c "
+APPEND_STATUS=$(echo "${APPEND_RESP}" | python3 -c "
 import json, sys
 data = json.load(sys.stdin)
 if data.get('object') == 'list':
-    print('success')
+  print('success')
 else:
-    print('error: ' + str(data.get('message', 'unknown')))
+  print('error: ' + str(data.get('message', 'unknown')))
 " 2>/dev/null || echo "error: parse failed")
 
-  if [[ "${APPEND_STATUS}" == "success" ]]; then
-    echo "[SUCCESS] 日記へのClaude Code活動トグルセクション追記完了"
-  else
-    echo "[ERROR] 日記追記失敗: ${APPEND_STATUS}" >&2
-    echo "[DEBUG] レスポンス: ${APPEND_RESP}" >&2
-  fi
+if [[ "${APPEND_STATUS}" == "success" ]]; then
+  echo "[SUCCESS] 日記へのClaude Code活動トグルセクション追記完了"
+else
+  echo "[ERROR] 日記追記失敗: ${APPEND_STATUS}" >&2
+  echo "[DEBUG] レスポンス: ${APPEND_RESP}" >&2
 fi
 
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] notion_session_log.sh 完了"
