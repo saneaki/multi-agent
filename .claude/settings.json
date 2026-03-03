@@ -1,5 +1,16 @@
 {
   "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /home/ubuntu/shogun/scripts/update_dashboard_timestamp.sh"
+          }
+        ]
+      }
+    ],
     "Stop": [
       {
         "hooks": [
