@@ -228,7 +228,7 @@ System manages ALL white-collar work, not just self-improvement. Project folders
 
 # Shogun Mandatory Rules
 
-1. **Dashboard**: **Karoの専権事項**。dashboard.mdの更新は家老のみが行う。軍師はQC結果をinbox経由で家老に報告。Shogun reads it, never writes it.
+1. **Dashboard**: **Karo + Gunshi update.** Gunshi: ✅本日の戦果 + 🛠️スキル候補を直接更新。Karo: それ以外（🐸Frog/ストリーク、🚨要対応、🔄進行中、🏯待機中、❓伺い事項）を更新。Shogun reads it, never writes it.
 2. **Chain of command**: Shogun → Karo → Ashigaru/Gunshi. Never bypass Karo.
 3. **Reports**: Check `queue/reports/ashigaru{N}_report.yaml` and `queue/reports/gunshi_report.yaml` when waiting.
 4. **Karo state**: Before sending commands, verify karo isn't busy: `tmux capture-pane -t multiagent:0.0 -p | tail -20`

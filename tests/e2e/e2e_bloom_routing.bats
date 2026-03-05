@@ -29,6 +29,16 @@ setup() {
     source "${PROJECT_ROOT}/lib/cli_adapter.sh"
     # shellcheck disable=SC1090
     source "${PROJECT_ROOT}/lib/agent_status.sh" 2>/dev/null || true
+
+    # capability_tiers未設定の場合はスキップ（Mixed CLI環境が必要）
+    if ! python3 -c "
+import yaml, sys
+cfg = yaml.safe_load(open('${CLI_ADAPTER_SETTINGS}')) or {}
+tiers = cfg.get('capability_tiers')
+sys.exit(0 if tiers and isinstance(tiers, dict) else 1)
+" 2>/dev/null; then
+        skip "capability_tiersが未設定。Mixed CLI環境（Spark/Sonnet/Opus）が必要。"
+    fi
 }
 
 teardown() {
