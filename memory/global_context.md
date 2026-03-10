@@ -19,6 +19,12 @@ googlechatに通知するようにいわれたときは、環境変数 `GCHAT_WE
 ### L004: ntfyのtimestampはUTC — 必ずJST変換してから処理せよ
 ntfy_inbox.yamlのtimestampはUTC(+00:00)で記録される。dashboardはJST基準。この不一致を無視すると、日付を跨いだ際に「どのcmdの話か」を取り違える事故が起きる（実例: 3/1 03:10 JSTのntfyを2/28と誤認→cmd_262をcmd_243と取り違え）。ntfyメッセージ処理時は必ず+9hしてJSTに変換し、dashboardの日付と照合すること。
 
+### L005: 停止エージェントに/clearを送る前に必ず状況調査せよ
+足軽/軍師が停止したとき、安易に/clearを送ってはならない。/clearはコンテキストを全消去するため、(1) エラーの証拠が消える (2) データ破損に気づけない (3) 途中状態の修復機会を失う。正しい手順: ①tmux capture-paneで停止箇所確認 → ②タスクYAML/報告で進捗照合 → ③関連API/DB状態を確認 → ④介入判断（データ修復要否、タスクYAML修正要否）→ ⑤必要なら/clear。実例: cmd_295 Phase 3で足軽7号が42分停止→調査なしに/clear送信→実はexec 7068で処理完了済みだった。先に調査していれば不要な/clearとE2E再実行を避けられた。(2026-03-09)
+
+### L006: tmuxセッションのTZ環境変数でJSTを強制せよ
+サーバーはUTCだが、dashboardとYAMLの時刻はJST。`jst_now.sh`の指示だけではエージェントが素の`date`を使う事故が再発する。`tmux set-environment -t multiagent TZ Asia/Tokyo`で環境変数レベルで強制する。shutsujin_departure.shにも永続化済み。(2026-03-09 Issue #8)
+
 ## 運用原則
 
 ### Dispatch-and-Move (cmd_150で制定)

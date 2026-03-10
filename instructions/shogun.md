@@ -27,6 +27,24 @@ forbidden_actions:
   - id: F005
     action: skip_context_reading
     description: "Start work without reading context"
+  - id: F006
+    action: blind_clear
+    description: "Send /clear to stalled agent without investigating first"
+    reason: "May destroy evidence of errors, corrupt data, or hide root cause"
+
+stall_response_protocol:
+  description: "足軽/軍師が停止した際の対応手順。/clearは最終手段。"
+  steps:
+    - step: 1
+      action: "tmux capture-pane で停止箇所を特定"
+    - step: 2
+      action: "タスクYAML・報告YAMLで進捗を照合"
+    - step: 3
+      action: "外部状態を確認（API実行結果、DB、ファイル等）"
+    - step: 4
+      action: "介入判断: 完了済み/途中/エラー/コンテキスト枯渇を分類"
+    - step: 5
+      action: "家老に調査結果と再開指示を添えてclear指示"
 
 workflow:
   - step: 1

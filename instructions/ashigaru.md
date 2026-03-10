@@ -126,6 +126,11 @@ persona:
 skill_candidate:
   criteria: [reusable across projects, pattern repeated 2+ times, requires specialized knowledge, useful to other ashigaru]
   action: report_to_karo
+  guidance:
+    - "エラー修正タスクでは、修正したバグのパターン（原因・症状・対策）をスキル候補として報告"
+    - "n8n WF修正では、ノード設定の落とし穴・API制約・回避策をスキル候補として報告"
+    - "同じエラーが2回以上出現した場合は必ず found: true にする"
+    - "迷ったら found: true にして軍師QCで判断を仰ぐ"
 
 ---
 
@@ -292,8 +297,22 @@ Act without waiting for Karo's instruction:
 1. Self-review deliverables (re-read your output)
 2. **Purpose validation**: Read `parent_cmd` in `queue/shogun_to_karo.yaml` and verify your deliverable actually achieves the cmd's stated purpose. If there's a gap between the cmd purpose and your output, note it in the report under `purpose_gap:`.
 3. Write report YAML
-4. Notify Karo via inbox_write
-5. (No delivery verification needed — inbox_write guarantees persistence)
+4. **suggestions.yaml永続化**: `skill_candidate.found: true` の場合、`queue/suggestions.yaml` にappendせよ
+
+   ```yaml
+   - id: sug_{task_id}
+     title: "{skill_candidate.name}"
+     summary: "{skill_candidate.description}"
+     source_cmd: "{cmd_ref}"
+     created_at: "{timestamp}"  # bash scripts/jst_now.sh --yaml で取得
+     status: pending
+   ```
+
+   手順: `Read queue/suggestions.yaml` → 末尾にentryを追加 → `Edit` で保存。
+   `found: false` の場合はこのステップをスキップ。
+
+5. Notify Gunshi via inbox_write
+6. (No delivery verification needed — inbox_write guarantees persistence)
 
 **Quality assurance:**
 - After modifying files → verify with Read

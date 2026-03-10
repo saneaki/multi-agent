@@ -712,15 +712,22 @@ fi
 
 echo "[INFO] 日記に「Claude Code活動」セクション追記中..."
 
-# トグルH2 + 子ブロック構築（修正4）
-APPEND_PAYLOAD=$(python3 - <<PYEOF
-import json
+# トグルH2 + 子ブロック構築（修正4, 修正7: heredoc single-quote + env vars でサロゲート回避）
+APPEND_PAYLOAD=$(COMPLETED="${COMPLETED}" STREAK="${STREAK}" \
+  ACTIVITY_LOG_URL="${ACTIVITY_LOG_URL}" \
+  VOICE_REVIEW_BLOCK_ID="${VOICE_REVIEW_BLOCK_ID}" \
+  python3 - "${PARSE_RESULT_FILE}" <<'PYEOF'
+import json, sys, os
 
-completed = "${COMPLETED}"
-streak = "${STREAK}"
-bullets_raw = ${BULLETS_JSON}
-activity_log_url = "${ACTIVITY_LOG_URL}"
-voice_review_block_id = "${VOICE_REVIEW_BLOCK_ID}"
+parse_result_file = sys.argv[1]
+with open(parse_result_file) as _f:
+    _data = json.load(_f)
+bullets_raw = _data.get("bullets", [])
+
+completed = os.environ.get("COMPLETED", "0")
+streak = os.environ.get("STREAK", "0")
+activity_log_url = os.environ.get("ACTIVITY_LOG_URL", "")
+voice_review_block_id = os.environ.get("VOICE_REVIEW_BLOCK_ID", "")
 
 # 子ブロック: paragraph(完了/ストリーク) + paragraph(リンク) + bullet_list
 children = [

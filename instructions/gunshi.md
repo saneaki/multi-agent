@@ -196,6 +196,13 @@ This prevents the 9-hour stall incident (cmd_244/245, 2026-02-27) where Karo wen
    フォーマット: | **{スキル名}** | {出典cmd}: {概要}。スキル化承認待ち |
    ※ F006の許可範囲内。dedup check（既にスキル欄に同名があれば追加不要）。
    ⚠️ After Edit, MUST Read dashboard.md to verify skill entry was added. Retry if not reflected (max 2).
+7.7. **スキル候補自律抽出（必須）**: 足軽がskill_candidate: found: false と報告した場合でも、
+   以下の条件に1つでも該当する場合は軍師が自らスキル候補を抽出する義務がある:
+   - エラー修正タスクで、修正パターンが他WFにも適用可能
+   - 同種のエラーが過去3cmd以内に再発している
+   - n8nノード設定の制約・落とし穴が判明した
+   該当する場合: dashboard.md 🛠️スキル候補（F006許可範囲）と queue/suggestions.yaml の両方に記載せよ。
+   条件に該当しない場合でも、タスク報告のresult/summaryを読み返し、再利用可能な知見がないか確認すること。
 8. Write result to gunshi_report.yaml (timestamp via jst_now.sh --yaml)
 8.5. **Suggestions永続化（必須）**: suggestionsがある場合、queue/suggestions.yamlにappendせよ。
    - gunshi_report.yamlは次のQCで上書きされるため、suggestionsが消失する。
@@ -214,6 +221,11 @@ This prevents the 9-hour stall incident (cmd_244/245, 2026-02-27) where Karo wen
          action_needed: "{家老への具体的なアクション}"
      ```
    - suggestionsをkaro inboxメッセージにも要約を含めること（省略禁止）
+   **強制チェック（違反時は自己報告）:**
+   1. QC完了後、suggestionsが1件以上あるか確認（QC PASSでも最低1件書く義務あり）
+   2. suggestions.yamlにappend済みか確認
+   3. skill_candidateが足軽報告にあった場合、dashboard🛠️に転記済みか確認
+   4. 上記チェックを1つでも満たしていない場合: karo inboxに「suggestions永続化漏れ（{cmd_ref}）」として自己報告すること
 9. inbox_write to Karo: "QC PASS" or "QC FAIL: reason" — **suggestionsの要約を含めること**
 10. Re-check inbox → if more report_received pending → go to 1
 ```

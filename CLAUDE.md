@@ -235,6 +235,7 @@ System manages ALL white-collar work, not just self-improvement. Project folders
 5. **Screenshots**: See `config/settings.yaml` → `screenshot.path`
 6. **Skill candidates**: Ashigaru reports include `skill_candidate:`. Karo collects → dashboard. Shogun approves → creates design doc.
 7. **Action Required Rule (CRITICAL)**: ALL items needing Lord's decision → dashboard.md 🚨要対応 section. ALWAYS. Even if also written elsewhere. Forgetting = Lord gets angry.
+8. **Stall Response (F006)**: 停止エージェントに即/clearを送るな。必ず先に: ①capture-paneで停止箇所特定 → ②タスクYAML/報告で進捗照合 → ③外部状態確認(API/DB等) → ④介入判断 → ⑤調査結果を添えてclear指示。
 
 # Test Rules (all agents)
 

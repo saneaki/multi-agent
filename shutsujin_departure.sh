@@ -558,6 +558,11 @@ else
     tmux set-environment -t multiagent DISPLAY_MODE "shout"
 fi
 
+# TZ: サーバーはUTCだが全エージェントはJSTで動作する
+# date コマンド、jst_now.sh、全スクリプトが自動的にJSTになる
+tmux set-environment -t multiagent TZ "Asia/Tokyo"
+echo "  🕐 タイムゾーン: Asia/Tokyo (JST)"
+
 # 3x3グリッド作成（合計9ペイン）
 # ペイン番号は pane-base-index に依存（0 または 1）
 # 最初に3列に分割
