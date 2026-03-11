@@ -14,6 +14,11 @@
   - YAML+mailbox 固有の変更、Android app、upstream 固有テスト等は除外
 - **Memory MCP 参照削除**: auto memory で代替。`instructions/shogun_core.md`、`instructions/shogun_ref.md`、`CLAUDE.md` から `mcp__memory__*` 参照を除去
 - **バグ修正**: `shutsujin_departure.sh` の `project_context.md` 参照を削除（存在しないファイルへの参照）
+- **guard.sh 導入**: [halsk/multi-agent-shogun](https://github.com/halsk/multi-agent-shogun) の guard.sh をベースに、破壊的操作ガード（D001-D008）+ rm→trash 強制を Claude 全体フックとして導入
+  - `scripts/hooks/guard.sh`: **新規** — halsk 版から Hook 1(Co-Authored-By禁止), Hook 3(main保護), Hook 4(lint), Hook 5(GH_TOKEN), Hook 6(code-review) を削除し、rm→trash 強制を追加
+  - `scripts/hooks/test_guard.sh`: **新規** — テストスイート（41テスト）
+  - `~/.claude/settings.json`: PreToolUse に Bash matcher + guard.sh を追加
+  - `~/.claude/hooks/guard.sh`: シンボリックリンク → `scripts/hooks/guard.sh`
 
 ## 2026-03-03
 
