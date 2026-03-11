@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # 🏯 multi-agent-shogun 撤退スクリプト（全終了用）
 # Retreat Script - Graceful shutdown of all agents
 # Agent Teams 版

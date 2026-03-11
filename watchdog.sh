@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # watchdog.sh - multi-agent-shogun 監視スクリプト
 # 使い方: ./watchdog.sh [--project-dir=/path/to/project]
 #         ./watchdog.sh &

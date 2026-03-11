@@ -3,6 +3,18 @@
 [yohey-w/multi-agent-shogun](https://github.com/yohey-w/multi-agent-shogun) の `9e23e2c` からfork。
 以降の変更履歴を記す。
 
+## 2026-03-11
+
+- **upstream マージ**: [yohey-w/multi-agent-shogun](https://github.com/yohey-w/multi-agent-shogun) の `73c4113`〜`2ef81f9`（49コミット）を選択的に取り込み
+  - **shebang 修正**: 全スクリプトの `#!/bin/bash` → `#!/usr/bin/env bash`（ポータビリティ向上）
+  - **Post-Compaction Recovery 強化**: `CLAUDE.md` にコンパクション後の指示書再読み込み必須を明記
+  - **Bloom QC routing**: `CLAUDE.md` と `config/settings.yaml` に Bloom Taxonomy ベースの QC ルーティング設定を追加
+  - **skill-creator 更新**: upstream の 2026-02 最新仕様を反映。Agent Teams 向けに調整（`inbox_write` → `SendMessage`/`TaskCreate`）
+  - **新規ファイル取り込み**: `memory/MEMORY.md.sample`、`skills/shogun-model-switch/SKILL.md`、`skills/shogun-readme-sync/SKILL.md`
+  - YAML+mailbox 固有の変更、Android app、upstream 固有テスト等は除外
+- **Memory MCP 参照削除**: auto memory で代替。`instructions/shogun_core.md`、`instructions/shogun_ref.md`、`CLAUDE.md` から `mcp__memory__*` 参照を除去
+- **バグ修正**: `shutsujin_departure.sh` の `project_context.md` 参照を削除（存在しないファイルへの参照）
+
 ## 2026-03-03
 
 - **EnterPlanMode 使用禁止**: Agent Teams のチームリーダーが EnterPlanMode/ExitPlanMode を使うとチームコンテキスト（spawn 済みメンバー情報）が失われ、全エージェントが終了する問題が判明。作戦書ファイル方式（`.shogun/plans/`）に統一

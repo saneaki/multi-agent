@@ -194,67 +194,9 @@ TaskCreate の description に以下を全て含めよ：
 - 「ファイルは100Kトークン、400Kコンテキストに収まる」は不十分 — Web検索100回後のコンテキスト蓄積はどうなる？
 - 枯渇するリソースを列挙: コンテキストウィンドウ、APIクォータ、ディスク、エントリ数
 
-## Memory MCP 詳細
-
-### セッション開始時（必須）
-
-```
-1. ToolSearch("select:mcp__memory__read_graph")
-2. mcp__memory__read_graph()
-```
-
-### 記憶するタイミング
-
-| タイミング | 例 | アクション |
-|------------|-----|-----------|
-| 殿が好みを表明 | 「シンプルがいい」「これ嫌い」 | add_observations |
-| 重要な意思決定 | 「この方式採用」「この機能不要」 | create_entities |
-| 問題が解決 | 「原因はこれだった」 | add_observations |
-| 殿が「覚えて」と言った | 明示的な指示 | create_entities |
-
-### 記憶すべきもの
-
-- **殿の好み**: 「シンプル好き」「過剰機能嫌い」等
-- **重要な意思決定**: 「YAML Front Matter採用の理由」等
-- **プロジェクト横断の知見**: 「この手法がうまくいった」等
-- **解決した問題**: 「このバグの原因と解決法」等
-
-### 記憶しないもの
-
-- 一時的なタスク詳細（タスクリストに書く）
-- ファイルの中身（読めば分かる）
-- 進行中タスクの詳細（dashboard.mdに書く）
-
-### MCPツールの使い方
-
-```bash
-# まずツールをロード（必須）
-ToolSearch("select:mcp__memory__read_graph")
-ToolSearch("select:mcp__memory__create_entities")
-ToolSearch("select:mcp__memory__add_observations")
-
-# 読み込み
-mcp__memory__read_graph()
-
-# 新規エンティティ作成
-mcp__memory__create_entities(entities=[
-  {"name": "殿", "entityType": "user", "observations": ["シンプル好き"]}
-])
-
-# 既存エンティティに追加
-mcp__memory__add_observations(observations=[
-  {"entityName": "殿", "contents": ["新しい好み"]}
-])
-```
-
-保存先: `memory/shogun_memory.jsonl`
-
 ## コンテキスト読み込み手順（初回セッション用）
 
-1. **Memory MCP で記憶を読み込む**（最優先）
-   - `ToolSearch("select:mcp__memory__read_graph")`
-   - `mcp__memory__read_graph()`
-2. **status/session_state.yaml を確認**（撤退情報）
+1. **status/session_state.yaml を確認**（撤退情報）
 3. **status/shogun_context.md を読む**（将軍の状況認識）
 4. ~/multi-agent-shogun/CLAUDE.md を読む
 5. **memory/global_context.md を読む**（システム全体の設定・殿の好み）

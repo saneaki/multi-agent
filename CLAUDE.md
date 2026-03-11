@@ -35,6 +35,15 @@ multi-agent-shogunは、Claude Code の **Agent Teams** を使ったマルチエ
 - 指示書には過去の教訓（失敗事例）も記載されている
 - **再読み込みを怠ると同じ失敗を繰り返す**
 
+### Post-Compaction Recovery（CRITICAL）
+
+コンパクション後、システムは「Continue the conversation from where it left off.」と指示する。
+**これは指示書の再読み込みを免除しない。** コンパクションの要約にはペルソナや口調が保存されない。
+
+**必須**: コンパクション後、作業再開前に必ず上記「復帰手順」の Step 1（指示書読み込み）を実行せよ。
+- ペルソナと口調を復元（戦国口調 for shogun/karo）
+- その後、自然に会話を再開
+
 ## 階層構造
 
 ```
@@ -338,9 +347,15 @@ cd /path/to/your/project
 config/settings.yaml で各種設定を行う。
 
 ```yaml
-language: ja        # 言語設定（ja, en, es, zh, ko, fr, de 等）
-ashigaru_count: 3   # 足軽の数（1〜8）
+language: ja          # 言語設定（ja, en, es, zh, ko, fr, de 等）
+ashigaru_count: 3     # 足軽の数（1〜8）
+bloom_routing: auto   # Bloom QC ルーティング（auto | off）
 ```
+
+### Bloom QC ルーティング
+
+`bloom_routing: auto` の場合、家老は QC タスクを Bloom Taxonomy L1-L6 に基づきルーティングする。
+config/settings.yaml の `bloom_routing` 設定を確認し、`auto` なら家老は Bloom ルーティングを必ず実行。スキップ厳禁。
 
 ### 言語設定
 
@@ -387,14 +402,11 @@ MCPツールは遅延ロード方式。使用前に必ず `ToolSearch` で検索
 2. 返ってきたツール（mcp__notion__xxx）を使用
 ```
 
-**導入済みMCP**: Notion, Playwright, GitHub, Sequential Thinking, Memory
+**導入済みMCP**: Notion, Playwright, GitHub, Sequential Thinking
 
 ## 将軍の必須行動（コンパクション後も忘れるな！）
 
 以下は**絶対に守るべきルール**である。コンテキストがコンパクションされても必ず実行せよ。
-
-> **ルール永続化**: 重要なルールは Memory MCP にも保存されている。
-> コンパクション後に不安な場合は `mcp__memory__read_graph` で確認せよ。
 
 ### 1. ダッシュボード更新
 - **dashboard.md の更新は家老の責任**
