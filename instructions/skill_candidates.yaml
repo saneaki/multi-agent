@@ -169,3 +169,188 @@ candidates:
     evaluated_at: "2026-02-19"
     approved_at: "2026-02-19"
     skill_path: "~/.claude/skills/shogun-notion-multi-source-db"
+
+  - id: SC-019
+    name: n8n-continueOnFail-pattern
+    source_cmd: cmd_291
+    occurrences: 2
+    status: merged
+    evaluation: "有用度: 高。外部API呼び出しノードのonError設定パターン。n8n-pipeline-cut-guardの外部API onErrorセクションとして統合済み。git a386f39。"
+    evaluated_at: "2026-03-14"
+    merged_into: n8n-pipeline-cut-guard
+
+  - id: SC-020
+    name: n8n-notion-stale-data-cleanup
+    source_cmd: cmd_291
+    occurrences: 3
+    status: pending_approval
+    evaluation: "有用度: 高。Notion DBのstaleデータ(draftId/誤アーカイブ済フラグ)がWF誤動作を引き起こす。cmd_291で116件・cmd_293で328件修復。バッチ処理(page_size:100)でNotionレート制限対応。occurrences≧3でクリティカル障害防止。"
+    evaluated_at: "2026-03-14"
+
+  - id: SC-021
+    name: n8n-gmail-trigger-manual-exec-single-item
+    source_cmd: cmd_297
+    occurrences: 1
+    status: pending_approval
+    evaluation: "有用度: 中。Gmail Trigger非アクティブWF手動実行は1通/execのみ返す。複数メール同時処理テストはWF active化+ポーリング待機が必要。テスト設計時の前提知識として有用。"
+    evaluated_at: "2026-03-14"
+
+  - id: SC-022
+    name: n8n-sib-loopback-multi-input-guard
+    source_cmd: cmd_297
+    occurrences: 2
+    status: pending_approval
+    evaluation: "有用度: 中。SiB(Split In Batches)に複数loop-backを直接接続すると暗黙JOINで処理停止。Merge(appendモード)でloop-backを1本化して回避。shogun-n8n-merge-either-or-branchと関連。occurrences=2。"
+    evaluated_at: "2026-03-14"
+
+  - id: SC-023
+    name: n8n-code-node-multi-item-index
+    source_cmd: cmd_290
+    occurrences: 2
+    status: pending_approval
+    evaluation: "有用度: 中。Code nodeで$('nodeName').itemがループ内でインデックス連動しない問題。$('nodeName').all()[index].jsonで解決。occurrences=2で特定WFで再発リスクあり。"
+    evaluated_at: "2026-03-14"
+
+  - id: SC-024
+    name: n8n-gmail-oauth2-http-request
+    source_cmd: cmd_287c3
+    occurrences: 1
+    status: pending_approval
+    evaluation: "有用度: 低。HTTP RequestでGmail OAuth2使用時のauthentication/nodeCredentialType必須パターン。n8n-http-predefined-credential(SC-026)と統合検討要。occurrences=1。"
+    evaluated_at: "2026-03-14"
+
+  - id: SC-025
+    name: n8n-drive-ai-text-injection
+    source_cmd: cmd_277
+    occurrences: 1
+    status: pending_approval
+    evaluation: "有用度: 低。Drive _ai_text/サブフォルダからmd読み込み→Geminiプロンプト注入パターン。コスト制御(3件/12000字/30000字)含む。occurrences=1かつ汎用性限定的。"
+    evaluated_at: "2026-03-14"
+
+  - id: SC-026
+    name: n8n-http-predefined-credential
+    source_cmd: cmd_277
+    occurrences: 1
+    status: pending_approval
+    evaluation: "有用度: 低。HTTP RequestノードでpredefinedCredentialType使用パターン。Code nodeのhttpRequestWithAuthentication不可の回避策。occurrences=1。SC-024と統合検討要。"
+    evaluated_at: "2026-03-14"
+
+  - id: SC-027
+    name: n8n-gmail-search-sanitize
+    source_cmd: cmd_291
+    occurrences: 4
+    status: pending_approval
+    evaluation: "有用度: 高。Gmail件名検索でNotion件名に含まれる改行・タブ・句読点がAPIクエリを壊す問題。cmd_291/293/294/295の4cmdに跨り繰り返し発生。replace(/[\\n\\r\\t]+/g,' ')サニタイズ+Gmail ID直接参照方式(cmd_295)で根本解消。occurrences≧3。"
+    evaluated_at: "2026-03-14"
+
+  - id: SC-028
+    name: n8n-gmail-wf-batch-convergence-diagnosis
+    source_cmd: cmd_300
+    occurrences: 1
+    status: pending_approval
+    evaluation: "有用度: 中。Gmail Trigger複数メール取得時にWFパイプラインが1件に収束しサイレントドロップする問題の診断パターン。execノード別アイテム数トレース(6→4→1)で収束ノード特定。SiB or $input.all()修正で解決。"
+    evaluated_at: "2026-03-14"
+
+  - id: SC-029
+    name: n8n-code-node-n-to-n-convergence-fix
+    source_cmd: cmd_305
+    occurrences: 1
+    status: pending_approval
+    evaluation: "有用度: 中。n8n Code nodeでflatMap・[0]固定・件数不一致mapという3パターンのN→N違反を修正するパターン。(1)flatMap→map (2)[0]→[idx]インデックスマッチ (3)$items(IFノード)参照で件数一致保証。"
+    evaluated_at: "2026-03-14"
+
+  - id: SC-030
+    name: n8n-code-node-v2-return-format
+    source_cmd: cmd_308
+    occurrences: 1
+    status: pending_approval
+    evaluation: "有用度: 中。Code node v2 runOnceForEachItemモードでは配列return禁止。return [{json:{...}}]→return {json:{...}}。手動実行(内部API)でのみ失敗するバリデーション差異。"
+    evaluated_at: "2026-03-14"
+
+  - id: SC-031
+    name: shogun-n8n-sib-trigger-incompatibility
+    source_cmd: cmd_297
+    occurrences: 2
+    status: created
+    evaluation: "有用度: 高。SiB+Trigger互換性バグ+ループバック暗黙JOIN+Code nodeインデックス+Gmail Trigger手動制約。4セクション統合。SKILL.md 185行作成済み。git 589fdda。"
+    evaluated_at: "2026-03-14"
+    approved_at: "2026-02-25"
+    skill_path: "~/.claude/skills/shogun-n8n-sib-trigger-incompatibility"
+
+  - id: SC-032
+    name: shogun-n8n-gmail-id-archive-pattern
+    source_cmd: cmd_295
+    occurrences: 3
+    status: created
+    evaluation: "有用度: 高。Gmail ID直接参照アーカイブ+件名サニタイズ吸収。5セクション(件名検索限界/ID保存/API/フォールバック/移行CL)。SKILL.md 246行作成済み。git 589fdda。"
+    evaluated_at: "2026-03-14"
+    approved_at: "2026-02-25"
+    skill_path: "~/.claude/skills/shogun-n8n-gmail-id-archive-pattern"
+
+  - id: SC-033
+    name: shogun-n8n-docx-text-extraction
+    source_cmd: cmd_275
+    occurrences: 2
+    status: created
+    evaluation: "有用度: 高。n8n docxテキスト抽出3アプローチ(unzip+XML/Mammoth.js/Docs API)。SKILL.md 13KB作成済み。git efcd1cc。"
+    evaluated_at: "2026-03-14"
+    approved_at: "2026-02-23"
+    skill_path: "~/.claude/skills/shogun-n8n-docx-text-extraction"
+
+  - id: SC-034
+    name: shogun-n8n-gmail-trigger-cron-step-guard
+    source_cmd: cmd_267b
+    occurrences: 2
+    status: created
+    evaluation: "有用度: 高。Gmail Trigger cron */N step値→explicit minute list変換。SKILL.md 187行作成済み。git 41de19a。"
+    evaluated_at: "2026-03-14"
+    approved_at: "2026-02-22"
+    skill_path: "~/.claude/skills/shogun-n8n-gmail-trigger-cron-step-guard"
+
+  - id: SC-035
+    name: shogun-notion-inline-db-api-version
+    source_cmd: cmd_242
+    occurrences: 3
+    status: created
+    evaluation: "有用度: 高。is_inline=TrueのNotionDBはAPIバージョン2022-06-28必須。2025-09-03ではmulti-source扱いで動作しない。SKILL.md 7.9KB作成済み。cmd_242/248/252で3回発生。"
+    evaluated_at: "2026-03-14"
+    approved_at: "2026-02-20"
+    skill_path: "~/.claude/skills/shogun-notion-inline-db-api-version"
+
+  - id: SC-036
+    name: shogun-notion-dual-property-relation
+    source_cmd: cmd_248
+    occurrences: 2
+    status: created
+    evaluation: "有用度: 中。Notion dual_propertyによるDB間双方向リレーション自動設定パターン。SKILL.md 9.5KB作成済み。cmd_248/252で2回使用。"
+    evaluated_at: "2026-03-14"
+    approved_at: "2026-02-20"
+    skill_path: "~/.claude/skills/shogun-notion-dual-property-relation"
+
+  - id: SC-037
+    name: shogun-n8n-merge-either-or-branch
+    source_cmd: cmd_234
+    occurrences: 2
+    status: created
+    evaluation: "有用度: 高。MergeノードでIF分岐統合時は同一入力index(0,0)に接続すべし。異なるindex接続で片方パス不発時にMerge停止。SKILL.md 174行作成済み。cmd_234/236で2回発生。"
+    evaluated_at: "2026-03-14"
+    approved_at: "2026-02-20"
+    skill_path: "~/.claude/skills/shogun-n8n-merge-either-or-branch"
+
+  - id: SC-038
+    name: shogun-n8n-trigger-stuck-recovery
+    source_cmd: cmd_307
+    occurrences: 2
+    status: created
+    evaluation: "有用度: 高。PUT更新後のcron解除→Trigger停止の診断・復旧・予防パターン。6セクション237行。POST /activate vs PATCH比較。SKILL.md作成済み。git 0c0802a。cmd_307/309で2回発生。"
+    evaluated_at: "2026-03-14"
+    approved_at: "2026-03-10"
+    skill_path: "~/.claude/skills/shogun-n8n-trigger-stuck-recovery"
+
+  - id: SC-039
+    name: n8n-manual-execution-api-supplement
+    source_cmd: cmd_296
+    occurrences: 1
+    status: pending_approval
+    evaluation: "有用度: 低。SC-013(n8n-manual-execution-api)の補足情報。内部API /rest/workflows/{id}/run はworkflowData+triggerToStartFrom必須。Cookie n8n-auth必須(APIキー/Basic認証不可)。既存SKILL.mdへの追記が適切かもしれない。"
+    evaluated_at: "2026-03-14"
