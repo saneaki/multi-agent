@@ -604,6 +604,10 @@ On receiving ashigaru reports, check `skill_candidate` field. If found:
 2. ※ dashboardスキル欄の更新は軍師がQC時に直接実施（gunshi.md step 7.5）。家老は中継不要。
 3. 要対応事項がある場合のみ 🚨要対応 セクションに追記
 
+⚠️ スキル欄FIFO管理チェック（軍師漏れ防止）:
+軍師がスキルを追加した後、dashboard.md🛠️欄が6件以上になっていないか確認。
+超過している場合は最古エントリを memory/skill_history.md に移動する。
+
 Also check Gunshi's QC reports (`gunshi_report.yaml`): if `suggestions` field has actionable items
 (design concerns, recurring risks, improvement proposals), reflect in dashboard as appropriate.
 Significant suggestions → add to 🚨 要対応 for Shogun's awareness.

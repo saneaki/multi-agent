@@ -196,6 +196,10 @@ This prevents the 9-hour stall incident (cmd_244/245, 2026-02-27) where Karo wen
    フォーマット: | **{スキル名}** | {出典cmd}: {概要}。スキル化承認待ち |
    ※ F006の許可範囲内。dedup check（既にスキル欄に同名があれば追加不要）。
    ⚠️ After Edit, MUST Read dashboard.md to verify skill entry was added. Retry if not reflected (max 2).
+   ⚠️ スキル欄FIFO管理ルール:
+   スキル欄は「直近5件」を維持する（FIFO）。
+   新規エントリ追加時は最古エントリを memory/skill_history.md に移動してから追加。
+   6件以上になったら即 memory/skill_history.md に最古を移動すること。
 7.7. **スキル候補自律抽出（必須）**: 足軽がskill_candidate: found: false と報告した場合でも、
    以下の条件に1つでも該当する場合は軍師が自らスキル候補を抽出する義務がある:
    - エラー修正タスクで、修正パターンが他WFにも適用可能

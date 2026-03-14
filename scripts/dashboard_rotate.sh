@@ -33,6 +33,89 @@ die() {
     exit 1
 }
 
+# === Skill Entry FIFO Trim ===
+trim_skill_entries() {
+    local SKILL_HISTORY="$SCRIPT_DIR/memory/skill_history.md"
+    local MAX_ENTRIES=5
+
+    # Count skill entries in 🛠️ section only
+    local SKILL_LINES
+    SKILL_LINES=$(sed -n '/^## 🛠️ 生成されたスキル/,/^## /p' "$DASHBOARD" \
+        | grep -c '^| \*\*' || echo "0")
+
+    if [[ "$SKILL_LINES" -le "$MAX_ENTRIES" ]]; then
+        log "スキル欄: ${SKILL_LINES}件 (上限${MAX_ENTRIES}件以内) — トリム不要"
+        return 0
+    fi
+
+    local EXCESS=$((SKILL_LINES - MAX_ENTRIES))
+    log "スキル欄: ${SKILL_LINES}件 (超過${EXCESS}件) — トリム開始"
+
+    # Ensure skill_history.md exists
+    if [[ ! -f "$SKILL_HISTORY" ]]; then
+        mkdir -p "$(dirname "$SKILL_HISTORY")"
+        cat > "$SKILL_HISTORY" <<'HEREDOC'
+# スキル履歴アーカイブ
+
+dashboard.md 🛠️スキル欄から溢れた全エントリ。最新順（上が新しい）。
+
+## アーカイブ済みエントリ
+
+| スキル名 | 出典 |
+|----------|------|
+HEREDOC
+    fi
+
+    # Get the line range of the skill section in dashboard
+    local SECTION_START SECTION_END
+    SECTION_START=$(grep -n '^## 🛠️ 生成されたスキル' "$DASHBOARD" | head -1 | cut -d: -f1)
+    SECTION_END=$(awk -v start="$SECTION_START" 'NR>start && /^## /{print NR; exit}' "$DASHBOARD")
+    if [[ -z "$SECTION_END" ]]; then
+        SECTION_END=$(wc -l < "$DASHBOARD")
+    fi
+
+    # Get oldest entries (last $EXCESS skill lines in the section)
+    local OLDEST_ENTRIES
+    OLDEST_ENTRIES=$(sed -n "${SECTION_START},${SECTION_END}p" "$DASHBOARD" \
+        | grep '^| \*\*' | tail -n "$EXCESS")
+
+    # Add to archive (after the table header row)
+    local ARCHIVE_TMP
+    ARCHIVE_TMP=$(mktemp "${SKILL_HISTORY}.tmp.XXXXXX")
+
+    local HEADER_DONE=false
+    while IFS= read -r line; do
+        echo "$line" >> "$ARCHIVE_TMP"
+        if ! $HEADER_DONE && [[ "$line" =~ ^\|----------|------\| ]]; then
+            HEADER_DONE=true
+            echo "$OLDEST_ENTRIES" >> "$ARCHIVE_TMP"
+        fi
+    done < "$SKILL_HISTORY"
+    mv "$ARCHIVE_TMP" "$SKILL_HISTORY"
+
+    # Remove oldest entries from dashboard.md (bottom up within skill section)
+    for i in $(seq 1 "$EXCESS"); do
+        local LAST_LINE
+        LAST_LINE=$(sed -n "${SECTION_START},${SECTION_END}p" "$DASHBOARD" \
+            | grep -n '^| \*\*' | tail -1 | cut -d: -f1)
+        if [[ -n "$LAST_LINE" ]]; then
+            local ABS_LINE=$((SECTION_START + LAST_LINE - 1))
+            sed -i "${ABS_LINE}d" "$DASHBOARD"
+            # Recalculate section end after deletion
+            SECTION_END=$((SECTION_END - 1))
+        fi
+    done
+
+    # Update the "他N件" reference count
+    local CURRENT_ARCHIVE_COUNT
+    CURRENT_ARCHIVE_COUNT=$(grep -c '^| \*\*' "$SKILL_HISTORY" || echo "0")
+    local EXTRA_SKILLS=17  # ~/.claude/skills/ 参照分
+    local TOTAL_ARCHIVE=$((CURRENT_ARCHIVE_COUNT + EXTRA_SKILLS))
+    sed -i "s/他[0-9]*件 → /他${TOTAL_ARCHIVE}件 → /" "$DASHBOARD"
+
+    log "スキル欄トリム完了: ${EXCESS}件をアーカイブに移動 (残${MAX_ENTRIES}件)"
+}
+
 # Validate dashboard exists
 [[ -f "$DASHBOARD" ]] || die "dashboard.md not found: $DASHBOARD"
 
@@ -52,6 +135,7 @@ log "Current dashboard date: $CURRENT_MD, Today JST: $TODAY_MD"
 # Idempotency check
 if [[ "$TODAY_MD" == "$CURRENT_MD" ]]; then
     log "日付一致 — ローテーション不要"
+    trim_skill_entries
     exit 0
 fi
 
@@ -165,3 +249,5 @@ fi
 sed -i "s/^最終更新:.*/最終更新: $(TZ='Asia/Tokyo' date '+%Y-%m-%d %H:%M') JST/" "$DASHBOARD"
 
 log "ローテーション完了: $CURRENT_MD → $TODAY_MD"
+
+trim_skill_entries
