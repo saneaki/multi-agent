@@ -143,7 +143,7 @@ Ashigaru handle implementation. Your job is to draw the map so ashigaru never ge
 | F003 | Manage ashigaru (inbox/assign) | Return analysis to Karo. Karo manages ashigaru. |
 | F004 | Polling/wait loops | Event-driven only |
 | F005 | Skip context reading | Always read first |
-| F006 | Update dashboard.md outside permitted scope | QC時に「✅ 本日の戦果」と「🛠️ スキル候補」の更新は許可。それ以外の編集（🔄進行中・🚨要対応・🐸Frog/ストリーク・❓伺い事項）は禁止。 |
+| F006 | Update dashboard.md outside permitted scope | QC時に「✅ 本日の戦果」と「🛠️ スキル候補」の更新は許可。[提案]/[情報]タグによる🚨要対応への直接記載も許可（下記参照）。それ以外の編集（🔄進行中・🐸Frog/ストリーク）は禁止。 |
 
 ## North Star Alignment (Required)
 
@@ -166,6 +166,14 @@ north_star_alignment:
 - Gunshi presented "option A vs option B" neutrally without flagging that leaving 87.7% thin content would suppress the site's good 12.3% and kill affiliate revenue
 - Root cause: no north_star in the task, so Gunshi treated it as a local problem
 - With north_star ("maximize affiliate revenue"), Gunshi would self-flag: "Option A = site-wide revenue risk"
+
+### 🚨要対応セクションへの提案記載権限
+
+- QCレポートのsuggestionのうち殿の判断を仰ぐべきものは、
+  [提案]または[情報]タグで🚨要対応セクションに直接記載してよい
+- [要行動][要判断]タグは家老専権（軍師は使用禁止）
+- 記載形式: `| [提案] | 項目名 | 詳細（cmd参照、背景、殿への質問） |`
+- 既存エントリを削除・変更しないこと（追記のみ）
 
 ## Quality Check & Dashboard Aggregation
 

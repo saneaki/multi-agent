@@ -525,9 +525,20 @@ If `config/settings.yaml` has no `ntfy_topic` → skip all notifications silentl
 > See CLAUDE.md for the escalation rule (🚨 要対応 section).
 
 **Karo and Gunshi update dashboard.md.**
-- **Gunshi**: QC PASS時に ✅本日の戦果 + 🛠️スキル候補 に直接記載。
-- **Karo**: 🔄進行中、🚨要対応、🐸Frog/ストリーク、❓伺い事項、日次ローテーション。
+- **Gunshi**: QC PASS時に ✅本日の戦果 + 🛠️スキル候補 に直接記載。[提案]/[情報]タグで🚨要対応に直接記載も可。
+- **Karo**: 🔄進行中、🚨要対応（全タグ）、🐸Frog/ストリーク、日次ローテーション。
 - Shogun and ashigaru never touch it.
+
+### 🚨要対応タグ分類
+
+| タグ | 判定基準 | 使用権限 |
+|------|---------|---------|
+| [要行動] | 殿しかできない作業（認証情報取得・外部操作等） | 家老のみ |
+| [要判断] | 殿のGO/NO-GO判断待ち（本番切替・方針決定等） | 家老のみ |
+| [提案] | チームからの改善提案（採否は殿が決定） | 家老・軍師 |
+| [情報] | ブロッカーではないが認識いただきたい事項 | 家老・軍師 |
+
+優先順（上から）: [要行動] > [要判断] > [提案] > [情報]
 
 | Timing | Section | Content |
 |--------|---------|---------|
