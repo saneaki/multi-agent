@@ -236,9 +236,9 @@ YAML
     [ "$status" -eq 0 ]  # 0 = busy (cooldown overrides idle flag)
 }
 
-# ─── T-008: nudge送信後にフラグ削除 ───
+# ─── T-008: nudge送信後もフラグ保持（デッドロック防止） ───
 
-@test "T-008: send_wakeup removes idle flag after sending nudge" {
+@test "T-008: send_wakeup retains idle flag after sending nudge (stop_hook removes it later)" {
     # Create idle flag (agent was idle)
     touch "$IDLE_FLAG_DIR/shogun_idle_test_idle_agent"
 
@@ -252,8 +252,9 @@ YAML
     # Nudge was sent (send-keys)
     grep -q "send-keys.*inbox1" "$MOCK_LOG"
 
-    # Flag should be removed after nudge (agent is now busy processing)
-    [ ! -f "$IDLE_FLAG_DIR/shogun_idle_test_idle_agent" ]
+    # Flag should be RETAINED after nudge — removed by agent's stop_hook when turn ends.
+    # See: send_wakeup L835-837 コメント（idle flag保持設計）
+    [ -f "$IDLE_FLAG_DIR/shogun_idle_test_idle_agent" ]
 }
 
 # ─── T-009: shutsujin時に全フラグクリア ───

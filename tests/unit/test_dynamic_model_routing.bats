@@ -1004,31 +1004,43 @@ print(len(doc.get('history', [])))
 # ============================================================
 # TC-FAM-001〜009: find_agent_for_model() — Phase 2 ユニットテスト
 # ============================================================
-# NOTE: ユニットテスト環境ではtmuxセッションが存在しない。
-#       pane_target が空 → 最初の候補を即返す動作になる（設計どおり）。
+# NOTE: tmuxセッション内でテスト実行される場合、実pane情報が返り
+#       busy判定が介入するため、tmuxをモックして pane_target=空 を強制する。
 #       tmux統合はE2Eテストで検証する。
+
+# tmuxモック: find_agent_for_model内のtmux list-panesを無効化
+_mock_tmux_for_fam() { tmux() { return 1; }; export -f tmux; }
+_restore_tmux_for_fam() { unset -f tmux 2>/dev/null; }
 
 @test "TC-FAM-001: 完全一致の足軽が存在 → ashigaru1 を返す（Spark）" {
     load_adapter_with "${TEST_TMP}/settings_mixed_cli.yaml"
+    _mock_tmux_for_fam
     result=$(find_agent_for_model "gpt-5.3-codex-spark")
+    _restore_tmux_for_fam
     [ "$result" = "ashigaru1" ]
 }
 
 @test "TC-FAM-002: Sonnet足軽が存在 → ashigaru4 を返す" {
     load_adapter_with "${TEST_TMP}/settings_mixed_cli.yaml"
+    _mock_tmux_for_fam
     result=$(find_agent_for_model "claude-sonnet-4-6")
+    _restore_tmux_for_fam
     [ "$result" = "ashigaru4" ]
 }
 
 @test "TC-FAM-003: Opus足軽が存在 → ashigaru6 を返す" {
     load_adapter_with "${TEST_TMP}/settings_mixed_cli.yaml"
+    _mock_tmux_for_fam
     result=$(find_agent_for_model "claude-opus-4-6")
+    _restore_tmux_for_fam
     [ "$result" = "ashigaru6" ]
 }
 
 @test "TC-FAM-004: 対応モデルの足軽がない + 他の足軽が存在 → フォールバック（いずれかの足軽）" {
     load_adapter_with "${TEST_TMP}/settings_mixed_cli.yaml"
+    _mock_tmux_for_fam
     result=$(find_agent_for_model "gpt-5.1-codex-max")
+    _restore_tmux_for_fam
     # 完全一致なし → フォールバックとして番号最小の足軽を返す
     [ -n "$result" ]
     [[ "$result" =~ ^ashigaru[0-9]+$ ]]
@@ -1048,21 +1060,27 @@ print(len(doc.get('history', [])))
 
 @test "TC-FAM-007: 複数の同モデル足軽 → 番号最小を返す（ashigaru1）" {
     load_adapter_with "${TEST_TMP}/settings_all_spark.yaml"
+    _mock_tmux_for_fam
     result=$(find_agent_for_model "gpt-5.3-codex-spark")
+    _restore_tmux_for_fam
     [ "$result" = "ashigaru1" ]
 }
 
 @test "TC-FAM-008: capability_tiersなし設定でも動作する（後方互換）" {
     load_adapter_with "${TEST_TMP}/settings_no_tiers.yaml"
+    _mock_tmux_for_fam
     # no_tiersでもagents定義がある場合はSpark足軽を探して返す
     result=$(find_agent_for_model "gpt-5.3-codex-spark")
+    _restore_tmux_for_fam
     [ "$result" = "ashigaru1" ]
 }
 
 @test "TC-FAM-009: 足軽のみ対象（karo, gunshiは除外される）" {
     load_adapter_with "${TEST_TMP}/settings_mixed_cli.yaml"
+    _mock_tmux_for_fam
     # karo, gunshiのモデルを指定 → ashiguruの中に一致なし → フォールバックor先頭
     result=$(find_agent_for_model "claude-sonnet-4-5-20250929")
+    _restore_tmux_for_fam
     # karo (claude-sonnet-4-5-20250929) は候補に入らない
     # 他のashiguruにもこのモデルがないのでフォールバック
     [[ "$result" =~ ^ashigaru[0-9]+$ ]]
