@@ -1,250 +1,138 @@
-task_id: subtask_312b
+task_id: subtask_315a
 assigned_to: ashigaru2
-cmd_ref: cmd_312
-project: hananoen-legal
-priority: critical
+cmd_ref: cmd_315
+project: shogun-system
+priority: medium
 status: done
 bloom_level: L3
 report_to: gunshi
 blocked_by: []
-created_at: '2026-03-11T21:54:41+09:00'
-title: 'cmd_312B: 法律事務所料金調査 グループ1（7事務所）'
-north_star: グループ1の7事務所の料金情報を実際にWebサイトから収集し、共同親権関連申立ての費用を把握する
-purpose: 'グループ1の7つの法律事務所のWebサイトを実際にWebFetchで調査し、
+created_at: "2026-03-14T09:59:00+09:00"
 
-  親権者変更・監護者指定・親権者指定・面会交流・養育費・離婚調停の
+title: "cmd_315: dashboardスキル欄の肥大化防止（直近5件ルール徹底）"
 
-  着手金・報酬金・初回相談料を収集してqueue/reports/ashigaru2_report.yamlに記録する。
+north_star: "dashboardの可読性を維持し、殿が一目で最新スキルを把握できる状態を保つ"
 
-  '
-context: '調査対象グループ1（7事務所）:
+purpose: |
+  dashboard.mdの🛠️スキル欄が「直近5件」と銘打ちながら24件以上蓄積している。
+  以下3層で抜本的に解決する:
+  1. 即時クリーンアップ（5件に絞りアーカイブ）
+  2. ルール明文化（gunshi.md・karo.md）
+  3. 防御的自動チェック（dashboard_rotate.sh に追加）
 
-  1. ベリーベスト法律事務所
+context: |
+  ■ 現状
+  dashboard.mdの🛠️生成されたスキルセクションに24件のエントリが蓄積。
+  「直近5件」と書かれているが機能していない。
 
-  2. デイライト法律事務所
+  ■ 残す5件（直近・✅優先）
+  1. **n8n-code-node-v2-return-format** | cmd_308: Code node v2 runOnceForEachItemモードでは...
+  2. **shogun-n8n-trigger-stuck-recovery** ✅ | cmd_307/309: PUT更新後のcron解除...
+  3. **n8n-code-node-n-to-n-convergence-fix** | cmd_305: n8n Code nodeでflatMap...
+  4. **n8n-gmail-wf-batch-convergence-diagnosis** | cmd_300: Gmail Trigger複数メール取得時...
+  5. **shogun-n8n-gmail-search-sanitize** | cmd_291/293/294/295: Gmail件名検索でNotion件名...
 
-  3. 弁護士法人ALG
+  ■ 関連ファイル
+  - dashboard.md: 🛠️スキル欄を5件に整理
+  - memory/skill_history.md: アーカイブ先（新規作成）
+  - instructions/gunshi.md: FIFOルール追記
+  - instructions/karo.md: FIFOルール追記
+  - scripts/dashboard_rotate.sh: 自動トリム追加
 
-  4. アディーレ法律事務所
-
-  5. 名古屋第一法律事務所
-
-  6. 片岡総合法律事務所
-
-  7. しょうぶ法律事務所
-
-  '
 steps:
-- ■ 各事務所について以下を実施（7事務所 × 以下手順）
-- 1. 事務所名でWebSearchして料金ページを特定
-- '   例: ''ベリーベスト法律事務所 親権 料金'' ''ベリーベスト法律事務所 料金表'''
-- 2. WebFetchで料金ページを取得
-- '3. 以下の料金情報を収集:'
-- '   - 親権者変更: 着手金・報酬金'
-- '   - 監護者指定: 着手金・報酬金'
-- '   - 親権者指定: 着手金・報酬金'
-- '   - 面会交流（親子交流）: 着手金・報酬金'
-- '   - 養育費請求: 着手金・報酬金'
-- '   - 離婚調停/訴訟: 着手金・報酬金（親権争い加算がある場合はその金額）'
-- '   - 初回相談料（無料/有料・金額）'
-- '   - 共同親権に関する解説ページの有無'
-- '   - 料金ページURL'
-- '4. 料金が見つからない場合: ''ページに掲載なし（要問い合わせ）'' と記載'
-- 5. 7事務所全て完了したら報告
-- ■ 報告
-- 6. Write queue/reports/ashigaru2_report.yaml
-- 7. bash scripts/inbox_write.sh gunshi '足軽2号、subtask_312b完了。グループ1 7事務所料金調査完了。report確認されたし。'
-  report_received ashigaru2
+  - "■ Step 1: 現状確認"
+  - "1. Read dashboard.md — 🛠️スキル欄の全エントリを確認"
+  - "2. ls memory/ — skill_history.md の有無を確認"
+
+  - "■ Step 2: memory/skill_history.md を作成（アーカイブ）"
+  - "3. Write memory/skill_history.md を以下のフォーマットで作成:"
+  - "   # スキル履歴アーカイブ"
+  - "   # dashboard.md 🛠️スキル欄から溢れた全エントリ"
+  - "   # 最新順（上が新しい）"
+  - ""
+  - "   dashboard.mdから entries 6〜24 + 「他17件」コメントを全てここに移動する。"
+  - "   (entry 1〜5は dashboard に残す)"
+  - "   ⚠️ 削除ではなくアーカイブ。全履歴を保持すること"
+
+  - "■ Step 3: dashboard.md の🛠️スキル欄を整理"
+  - "4. Read dashboard.md"
+  - "5. Edit dashboard.md の 🛠️生成されたスキル セクションを以下のように更新:"
+  - "   - 直近5件のみ残す（上記「残す5件」参照）"
+  - "   - 表の下に「他N件 → memory/skill_history.md 参照」を追記"
+  - "     （Nは dashboard から除外したエントリ数 + 元々の「他17件」）"
+  - "   例: 「他36件 → memory/skill_history.md 参照」など"
+  - "6. Edit後にRead dashboard.mdで確認。スキル欄が5件になっていること"
+
+  - "■ Step 4: instructions/gunshi.md にFIFOルール追記"
+  - "7. Read instructions/gunshi.md"
+  - "8. 🛠️スキル候補の更新箇所（step 7.5付近）の後に以下を追記:"
+  - "   ⚠️ スキル欄FIFO管理ルール:"
+  - "   スキル欄は「直近5件」を維持する（FIFO）。"
+  - "   新規エントリ追加時は最古エントリを memory/skill_history.md に移動してから追加。"
+  - "   6件以上になったら即 memory/skill_history.md に最古を移動すること。"
+
+  - "■ Step 5: instructions/karo.md にFIFOルール追記"
+  - "9. Read instructions/karo.md"
+  - "10. スキル候補関連箇所の後に以下を追記:"
+  - "    ⚠️ スキル欄FIFO管理チェック（軍師漏れ防止）:"
+  - "    軍師がスキルを追加した後、dashboard.md🛠️欄が6件以上になっていないか確認。"
+  - "    超過している場合は最古エントリを memory/skill_history.md に移動する。"
+
+  - "■ Step 6: dashboard_rotate.sh に自動トリム追加"
+  - "11. Read scripts/dashboard_rotate.sh"
+  - "12. ローテーション完了後（log \"ローテーション完了\"の後）に以下の処理を追加:"
+  - "    スキル欄のエントリ数をカウントし、5件超の場合に最古エントリを"
+  - "    memory/skill_history.md に移動するロジックを追加。"
+  - "    関数名: trim_skill_entries"
+  - "    シグネチャ: trim_skill_entries() { ... }"
+  - "    ロジック:"
+  - "      - 🛠️生成されたスキル セクションのテーブル行を数える（| **...** | ... | 形式）"
+  - "      - 5件超の場合: 最古エントリ（テーブル最下行）を memory/skill_history.md の先頭に追記"
+  - "      - dashboard.md から最古エントリを削除"
+  - "      - 超過分がなくなるまで繰り返す"
+  - "    実装後にlog \"スキル欄トリム完了\"などを追加"
+
+  - "■ Step 7: git commit + push"
+  - "13. git add memory/skill_history.md dashboard.md instructions/gunshi.md instructions/karo.md scripts/dashboard_rotate.sh"
+  - "14. git commit -m 'feat: dashboardスキル欄FIFO管理（直近5件・自動トリム・ルール明文化）'"
+  - "15. git push origin original"
+
+  - "■ Step 8: 報告"
+  - "16. Write queue/reports/ashigaru2_report.yaml"
+  - "17. bash scripts/inbox_write.sh gunshi '足軽2号、subtask_315a完了。dashboardスキル欄5件整理+アーカイブ+ルール追記+自動トリム実装+push済み。report確認されたし。' report_received ashigaru2"
+
 quality_rules:
-- 実際にWebFetchでページを取得すること（推測・捏造禁止）
-- 料金不明の場合は「要問い合わせ」と記載（空欄・不明のまま放置禁止）
-- 出典URL必須（各事務所の料金ページURL）
-- 共同親権解説ページの有無は必ず確認
-- SKIP=FAILルール適用
+  - "スキルを削除しない — 全て memory/skill_history.md にアーカイブ"
+  - "dashboard.md🛠️欄が直近5件のみになっていること"
+  - "memory/skill_history.md に元の24件全てのエントリが含まれていること（うち5件はdashboardに残る）"
+  - "gunshi.md・karo.md に FIFOルールが明記されていること"
+  - "dashboard_rotate.sh の trim_skill_entries 関数が動作すること"
+  - "git push --force 禁止（D003）"
+
 important_notes:
-- 7事務所全てを調査すること（1-2件だけで終わらない）
-- 料金が複数パターンある場合は全パターンを記録
-- 消費税の記載有無も確認
+  - "「他17件」は既存の参照で、追加で17件が ~/.claude/skills/ にある。これも skill_history.md に記録すること"
+  - "memory/ ディレクトリは既存（global_context.md がある）。skill_history.md を新規作成"
+  - "trim_skill_entries はdashboard_rotate.sh の末尾に追加し、main処理から呼び出す"
+  - "5件の カウント基準: | **スキル名** | ... | 形式の行のみ（ヘッダー行は除く）"
+
 report_template:
-  task_id: subtask_312b
+  task_id: subtask_315a
   report_to: gunshi
-  group: 1
-  offices:
-  - name: ベリーベスト法律事務所
-    fee_page_url: ''
-    joint_custody_explanation_page: false
-    first_consultation: ''
-    fees:
-      parental_authority_change:
-        retainer: ''
-        success_fee: ''
-      custodian_designation:
-        retainer: ''
-        success_fee: ''
-      parental_authority_designation:
-        retainer: ''
-        success_fee: ''
-      visitation:
-        retainer: ''
-        success_fee: ''
-      child_support:
-        retainer: ''
-        success_fee: ''
-      divorce_mediation:
-        retainer: ''
-        success_fee: ''
-        custody_surcharge: ''
-    notes: ''
-  - name: デイライト法律事務所
-    fee_page_url: ''
-    joint_custody_explanation_page: false
-    first_consultation: ''
-    fees:
-      parental_authority_change:
-        retainer: ''
-        success_fee: ''
-      custodian_designation:
-        retainer: ''
-        success_fee: ''
-      parental_authority_designation:
-        retainer: ''
-        success_fee: ''
-      visitation:
-        retainer: ''
-        success_fee: ''
-      child_support:
-        retainer: ''
-        success_fee: ''
-      divorce_mediation:
-        retainer: ''
-        success_fee: ''
-        custody_surcharge: ''
-    notes: ''
-  - name: 弁護士法人ALG
-    fee_page_url: ''
-    joint_custody_explanation_page: false
-    first_consultation: ''
-    fees:
-      parental_authority_change:
-        retainer: ''
-        success_fee: ''
-      custodian_designation:
-        retainer: ''
-        success_fee: ''
-      parental_authority_designation:
-        retainer: ''
-        success_fee: ''
-      visitation:
-        retainer: ''
-        success_fee: ''
-      child_support:
-        retainer: ''
-        success_fee: ''
-      divorce_mediation:
-        retainer: ''
-        success_fee: ''
-        custody_surcharge: ''
-    notes: ''
-  - name: アディーレ法律事務所
-    fee_page_url: ''
-    joint_custody_explanation_page: false
-    first_consultation: ''
-    fees:
-      parental_authority_change:
-        retainer: ''
-        success_fee: ''
-      custodian_designation:
-        retainer: ''
-        success_fee: ''
-      parental_authority_designation:
-        retainer: ''
-        success_fee: ''
-      visitation:
-        retainer: ''
-        success_fee: ''
-      child_support:
-        retainer: ''
-        success_fee: ''
-      divorce_mediation:
-        retainer: ''
-        success_fee: ''
-        custody_surcharge: ''
-    notes: ''
-  - name: 名古屋第一法律事務所
-    fee_page_url: ''
-    joint_custody_explanation_page: false
-    first_consultation: ''
-    fees:
-      parental_authority_change:
-        retainer: ''
-        success_fee: ''
-      custodian_designation:
-        retainer: ''
-        success_fee: ''
-      parental_authority_designation:
-        retainer: ''
-        success_fee: ''
-      visitation:
-        retainer: ''
-        success_fee: ''
-      child_support:
-        retainer: ''
-        success_fee: ''
-      divorce_mediation:
-        retainer: ''
-        success_fee: ''
-        custody_surcharge: ''
-    notes: ''
-  - name: 片岡総合法律事務所
-    fee_page_url: ''
-    joint_custody_explanation_page: false
-    first_consultation: ''
-    fees:
-      parental_authority_change:
-        retainer: ''
-        success_fee: ''
-      custodian_designation:
-        retainer: ''
-        success_fee: ''
-      parental_authority_designation:
-        retainer: ''
-        success_fee: ''
-      visitation:
-        retainer: ''
-        success_fee: ''
-      child_support:
-        retainer: ''
-        success_fee: ''
-      divorce_mediation:
-        retainer: ''
-        success_fee: ''
-        custody_surcharge: ''
-    notes: ''
-  - name: しょうぶ法律事務所
-    fee_page_url: ''
-    joint_custody_explanation_page: false
-    first_consultation: ''
-    fees:
-      parental_authority_change:
-        retainer: ''
-        success_fee: ''
-      custodian_designation:
-        retainer: ''
-        success_fee: ''
-      parental_authority_designation:
-        retainer: ''
-        success_fee: ''
-      visitation:
-        retainer: ''
-        success_fee: ''
-      child_support:
-        retainer: ''
-        success_fee: ''
-      divorce_mediation:
-        retainer: ''
-        success_fee: ''
-        custody_surcharge: ''
-    notes: ''
-  blockers: なし
+  step2_archive:
+    skill_history_created: false
+    archived_count: 0
+  step3_dashboard:
+    entries_reduced_to_5: false
+    archive_link_added: false
+  step4_gunshi_md:
+    fifo_rule_added: false
+  step5_karo_md:
+    fifo_rule_added: false
+  step6_rotate_sh:
+    trim_function_added: false
+  step7_push:
+    commit_hash: ""
+    push_success: false
+  blockers: "なし"
   skill_candidate:
     found: false

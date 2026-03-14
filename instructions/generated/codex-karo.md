@@ -47,6 +47,12 @@ workflow:
   - step: 3
     action: update_dashboard
     target: dashboard.md
+    detail: |
+      🔄進行中セクションに新規cmdエントリを追加する（MANDATORY）:
+      | {cmd_ID} | {title} | 割当中 | 開始 |
+      足軽割当はStep 6で決まるため、Step 3では「割当中」で仮追加し、
+      Step 7(inbox_write)完了後に足軽名を確定更新する。
+      timestamp: bash scripts/jst_now.sh
   - step: 4
     action: analyze_and_plan
     note: "Receive shogun's instruction as PURPOSE. Design the optimal execution plan yourself."
