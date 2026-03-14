@@ -1,5 +1,250 @@
-task_id: idle
+task_id: subtask_312b
 assigned_to: ashigaru2
-status: idle
-created_at: "2026-03-03T15:15:00+09:00"
-note: "subtask_279aは足軽1号に再割当済み（/clear後プロンプト停止のため）"
+cmd_ref: cmd_312
+project: hananoen-legal
+priority: critical
+status: done
+bloom_level: L3
+report_to: gunshi
+blocked_by: []
+created_at: '2026-03-11T21:54:41+09:00'
+title: 'cmd_312B: 法律事務所料金調査 グループ1（7事務所）'
+north_star: グループ1の7事務所の料金情報を実際にWebサイトから収集し、共同親権関連申立ての費用を把握する
+purpose: 'グループ1の7つの法律事務所のWebサイトを実際にWebFetchで調査し、
+
+  親権者変更・監護者指定・親権者指定・面会交流・養育費・離婚調停の
+
+  着手金・報酬金・初回相談料を収集してqueue/reports/ashigaru2_report.yamlに記録する。
+
+  '
+context: '調査対象グループ1（7事務所）:
+
+  1. ベリーベスト法律事務所
+
+  2. デイライト法律事務所
+
+  3. 弁護士法人ALG
+
+  4. アディーレ法律事務所
+
+  5. 名古屋第一法律事務所
+
+  6. 片岡総合法律事務所
+
+  7. しょうぶ法律事務所
+
+  '
+steps:
+- ■ 各事務所について以下を実施（7事務所 × 以下手順）
+- 1. 事務所名でWebSearchして料金ページを特定
+- '   例: ''ベリーベスト法律事務所 親権 料金'' ''ベリーベスト法律事務所 料金表'''
+- 2. WebFetchで料金ページを取得
+- '3. 以下の料金情報を収集:'
+- '   - 親権者変更: 着手金・報酬金'
+- '   - 監護者指定: 着手金・報酬金'
+- '   - 親権者指定: 着手金・報酬金'
+- '   - 面会交流（親子交流）: 着手金・報酬金'
+- '   - 養育費請求: 着手金・報酬金'
+- '   - 離婚調停/訴訟: 着手金・報酬金（親権争い加算がある場合はその金額）'
+- '   - 初回相談料（無料/有料・金額）'
+- '   - 共同親権に関する解説ページの有無'
+- '   - 料金ページURL'
+- '4. 料金が見つからない場合: ''ページに掲載なし（要問い合わせ）'' と記載'
+- 5. 7事務所全て完了したら報告
+- ■ 報告
+- 6. Write queue/reports/ashigaru2_report.yaml
+- 7. bash scripts/inbox_write.sh gunshi '足軽2号、subtask_312b完了。グループ1 7事務所料金調査完了。report確認されたし。'
+  report_received ashigaru2
+quality_rules:
+- 実際にWebFetchでページを取得すること（推測・捏造禁止）
+- 料金不明の場合は「要問い合わせ」と記載（空欄・不明のまま放置禁止）
+- 出典URL必須（各事務所の料金ページURL）
+- 共同親権解説ページの有無は必ず確認
+- SKIP=FAILルール適用
+important_notes:
+- 7事務所全てを調査すること（1-2件だけで終わらない）
+- 料金が複数パターンある場合は全パターンを記録
+- 消費税の記載有無も確認
+report_template:
+  task_id: subtask_312b
+  report_to: gunshi
+  group: 1
+  offices:
+  - name: ベリーベスト法律事務所
+    fee_page_url: ''
+    joint_custody_explanation_page: false
+    first_consultation: ''
+    fees:
+      parental_authority_change:
+        retainer: ''
+        success_fee: ''
+      custodian_designation:
+        retainer: ''
+        success_fee: ''
+      parental_authority_designation:
+        retainer: ''
+        success_fee: ''
+      visitation:
+        retainer: ''
+        success_fee: ''
+      child_support:
+        retainer: ''
+        success_fee: ''
+      divorce_mediation:
+        retainer: ''
+        success_fee: ''
+        custody_surcharge: ''
+    notes: ''
+  - name: デイライト法律事務所
+    fee_page_url: ''
+    joint_custody_explanation_page: false
+    first_consultation: ''
+    fees:
+      parental_authority_change:
+        retainer: ''
+        success_fee: ''
+      custodian_designation:
+        retainer: ''
+        success_fee: ''
+      parental_authority_designation:
+        retainer: ''
+        success_fee: ''
+      visitation:
+        retainer: ''
+        success_fee: ''
+      child_support:
+        retainer: ''
+        success_fee: ''
+      divorce_mediation:
+        retainer: ''
+        success_fee: ''
+        custody_surcharge: ''
+    notes: ''
+  - name: 弁護士法人ALG
+    fee_page_url: ''
+    joint_custody_explanation_page: false
+    first_consultation: ''
+    fees:
+      parental_authority_change:
+        retainer: ''
+        success_fee: ''
+      custodian_designation:
+        retainer: ''
+        success_fee: ''
+      parental_authority_designation:
+        retainer: ''
+        success_fee: ''
+      visitation:
+        retainer: ''
+        success_fee: ''
+      child_support:
+        retainer: ''
+        success_fee: ''
+      divorce_mediation:
+        retainer: ''
+        success_fee: ''
+        custody_surcharge: ''
+    notes: ''
+  - name: アディーレ法律事務所
+    fee_page_url: ''
+    joint_custody_explanation_page: false
+    first_consultation: ''
+    fees:
+      parental_authority_change:
+        retainer: ''
+        success_fee: ''
+      custodian_designation:
+        retainer: ''
+        success_fee: ''
+      parental_authority_designation:
+        retainer: ''
+        success_fee: ''
+      visitation:
+        retainer: ''
+        success_fee: ''
+      child_support:
+        retainer: ''
+        success_fee: ''
+      divorce_mediation:
+        retainer: ''
+        success_fee: ''
+        custody_surcharge: ''
+    notes: ''
+  - name: 名古屋第一法律事務所
+    fee_page_url: ''
+    joint_custody_explanation_page: false
+    first_consultation: ''
+    fees:
+      parental_authority_change:
+        retainer: ''
+        success_fee: ''
+      custodian_designation:
+        retainer: ''
+        success_fee: ''
+      parental_authority_designation:
+        retainer: ''
+        success_fee: ''
+      visitation:
+        retainer: ''
+        success_fee: ''
+      child_support:
+        retainer: ''
+        success_fee: ''
+      divorce_mediation:
+        retainer: ''
+        success_fee: ''
+        custody_surcharge: ''
+    notes: ''
+  - name: 片岡総合法律事務所
+    fee_page_url: ''
+    joint_custody_explanation_page: false
+    first_consultation: ''
+    fees:
+      parental_authority_change:
+        retainer: ''
+        success_fee: ''
+      custodian_designation:
+        retainer: ''
+        success_fee: ''
+      parental_authority_designation:
+        retainer: ''
+        success_fee: ''
+      visitation:
+        retainer: ''
+        success_fee: ''
+      child_support:
+        retainer: ''
+        success_fee: ''
+      divorce_mediation:
+        retainer: ''
+        success_fee: ''
+        custody_surcharge: ''
+    notes: ''
+  - name: しょうぶ法律事務所
+    fee_page_url: ''
+    joint_custody_explanation_page: false
+    first_consultation: ''
+    fees:
+      parental_authority_change:
+        retainer: ''
+        success_fee: ''
+      custodian_designation:
+        retainer: ''
+        success_fee: ''
+      parental_authority_designation:
+        retainer: ''
+        success_fee: ''
+      visitation:
+        retainer: ''
+        success_fee: ''
+      child_support:
+        retainer: ''
+        success_fee: ''
+      divorce_mediation:
+        retainer: ''
+        success_fee: ''
+        custody_surcharge: ''
+    notes: ''
+  blockers: なし
+  skill_candidate:
+    found: false

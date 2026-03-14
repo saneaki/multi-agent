@@ -132,12 +132,20 @@ build_cli_command() {
     local thinking
     thinking=$(_cli_adapter_read_yaml "cli.agents.${agent_id}.thinking" "")
 
+    # effort level: Claude CLI でのみ有効
+    # effort: high/medium/low → CLAUDE_CODE_EFFORT_LEVEL=xxx を先頭に付与
+    local effort
+    effort=$(_cli_adapter_read_yaml "cli.agents.${agent_id}.effort" "")
+
     # thinking prefix: Claude CLI でのみ有効
     # thinking: true or 未設定 → そのまま（デフォルトでThinking ON）
     # thinking: false → MAX_THINKING_TOKENS=0 を先頭に付与
     local prefix=""
+    if [[ "$cli_type" == "claude" && -n "$effort" ]]; then
+        prefix="CLAUDE_CODE_EFFORT_LEVEL=${effort} "
+    fi
     if [[ "$cli_type" == "claude" && "$thinking" == "false" || "$thinking" == "False" ]]; then
-        prefix="MAX_THINKING_TOKENS=0 "
+        prefix="${prefix}MAX_THINKING_TOKENS=0 "
     fi
 
     case "$cli_type" in
