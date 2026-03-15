@@ -32,4 +32,4 @@ export CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1
 # tmux split-window で生成されるチームメイトには引き継がれない。
 export SHOGUN_ROLE=shogun
 
-exec npx -y @anthropic-ai/claude-code --teammate-mode tmux "$@"
+exec npx -y @anthropic-ai/claude-code "$@"

@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 # 🏯 multi-agent-shogun 出陣スクリプト（毎日の起動用）
 # Daily Deployment Script for Multi-Agent Orchestration System
 # Agent Teams 版
