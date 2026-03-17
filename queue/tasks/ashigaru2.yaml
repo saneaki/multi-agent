@@ -1,138 +1,116 @@
-task_id: subtask_315a
+task_id: subtask_321b
 assigned_to: ashigaru2
-cmd_ref: cmd_315
-project: shogun-system
-priority: medium
-status: done
+cmd_ref: cmd_321
+project: claude-ecc
+priority: high
+status: pending
 bloom_level: L3
 report_to: gunshi
 blocked_by: []
-created_at: "2026-03-14T09:59:00+09:00"
+created_at: "2026-03-18T07:40:00+09:00"
 
-title: "cmd_315: dashboardスキル欄の肥大化防止（直近5件ルール徹底）"
+title: "cmd_321-B: n8n-node-configuration SKILL.md リファクタリング (785L→<500L) + SC-026 Credential Section追加"
 
-north_star: "dashboardの可読性を維持し、殿が一目で最新スキルを把握できる状態を保つ"
+north_star: "コア概念・操作フローを保持しながら500行未満に圧縮し、credential設定パターンを追加する"
 
 purpose: |
-  dashboard.mdの🛠️スキル欄が「直近5件」と銘打ちながら24件以上蓄積している。
-  以下3層で抜本的に解決する:
-  1. 即時クリーンアップ（5件に絞りアーカイブ）
-  2. ルール明文化（gunshi.md・karo.md）
-  3. 防御的自動チェック（dashboard_rotate.sh に追加）
+  n8n-node-configuration/SKILL.md (785行) を500行未満にリファクタリングする。
+  詳細な設定例はDEPENDENCIES.md/OPERATION_PATTERNS.mdへポインタ化する。
+  SC-026 (predefinedCredentialType使用パターン) をCredentialセクションとして追加する。
 
 context: |
-  ■ 現状
-  dashboard.mdの🛠️生成されたスキルセクションに24件のエントリが蓄積。
-  「直近5件」と書かれているが機能していない。
+  ■ 作業ディレクトリ: /home/ubuntu/.claude
+  ■ 対象ファイル: skills/n8n-node-configuration/SKILL.md (785行)
+  ■ 既存サブファイル(削除しない):
+    - skills/n8n-node-configuration/DEPENDENCIES.md
+    - skills/n8n-node-configuration/OPERATION_PATTERNS.md
+    - skills/n8n-node-configuration/README.md
 
-  ■ 残す5件（直近・✅優先）
-  1. **n8n-code-node-v2-return-format** | cmd_308: Code node v2 runOnceForEachItemモードでは...
-  2. **shogun-n8n-trigger-stuck-recovery** ✅ | cmd_307/309: PUT更新後のcron解除...
-  3. **n8n-code-node-n-to-n-convergence-fix** | cmd_305: n8n Code nodeでflatMap...
-  4. **n8n-gmail-wf-batch-convergence-diagnosis** | cmd_300: Gmail Trigger複数メール取得時...
-  5. **shogun-n8n-gmail-search-sanitize** | cmd_291/293/294/295: Gmail件名検索でNotion件名...
-
-  ■ 関連ファイル
-  - dashboard.md: 🛠️スキル欄を5件に整理
-  - memory/skill_history.md: アーカイブ先（新規作成）
-  - instructions/gunshi.md: FIFOルール追記
-  - instructions/karo.md: FIFOルール追記
-  - scripts/dashboard_rotate.sh: 自動トリム追加
+  ■ SC-026 内容:
+    名前: n8n-http-predefined-credential
+    問題: HTTP RequestノードでCode nodeのhttpRequestWithAuthentication()が使えない場合の認証設定
+    解法: HTTP Requestノードのauthentication="predefinedCredentialType"を使い既存クレデンシャルを参照する
+    パターン:
+      HTTP Request node parameters:
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "gmailOAuth2",   // 例: Gmail OAuth2
+      他の例:
+        "nodeCredentialType": "googleSheetsOAuth2Api"
+        "nodeCredentialType": "slackApi"
+    注意:
+      - Code nodeの$helpers.httpRequestWithAuthentication()はCode node内専用
+      - HTTP Requestノードには使えないためpredefinedCredentialTypeを使う
+      - 詳細パターンはn8n-http-credential-patterns参照
 
 steps:
-  - "■ Step 1: 現状確認"
-  - "1. Read dashboard.md — 🛠️スキル欄の全エントリを確認"
-  - "2. ls memory/ — skill_history.md の有無を確認"
+  - "■ Step 1: ファイル読み込み"
+  - "1. Read skills/n8n-node-configuration/SKILL.md (全785行)"
+  - "2. Read skills/n8n-node-configuration/DEPENDENCIES.md (先頭20行, 構成確認)"
+  - "3. Read skills/n8n-node-configuration/OPERATION_PATTERNS.md (先頭20行, 構成確認)"
 
-  - "■ Step 2: memory/skill_history.md を作成（アーカイブ）"
-  - "3. Write memory/skill_history.md を以下のフォーマットで作成:"
-  - "   # スキル履歴アーカイブ"
-  - "   # dashboard.md 🛠️スキル欄から溢れた全エントリ"
-  - "   # 最新順（上が新しい）"
-  - ""
-  - "   dashboard.mdから entries 6〜24 + 「他17件」コメントを全てここに移動する。"
-  - "   (entry 1〜5は dashboard に残す)"
-  - "   ⚠️ 削除ではなくアーカイブ。全履歴を保持すること"
+  - "■ Step 2: SKILL.md リファクタリング方針"
+  - "以下のセクションを縮小/ポインタ化:"
+  - "  - 'Configuration Workflow' (96行) → 8ステップのフロー箇条書き ~15行に圧縮"
+  - "    HTTP Requestの具体的なStep-by-Stepコード例(Step 1〜8)は全削除"
+  - "  - 'Property Dependencies Deep Dive' (95行) → 2段落要約 + 'See: DEPENDENCIES.md for details' ~10行"
+  - "  - 'Operation-Specific Configuration' (110行) → 1行 'See: OPERATION_PATTERNS.md for node-specific examples' で置換"
+  - "  - 'Handling Conditional Requirements' (53行) → 1段落要約 ~8行"
+  - "  - 'Best Practices' (68行) → Do/Dontの箇条書きのみ ~20行 (コード例全削除)"
+  - "  - 'Summary' (20行) → 10行に圧縮"
+  - "以下はそのまま保持:"
+  - "  - Core Concepts (3概念の説明), get_node Detail Levels (Decision Treeを含む)"
+  - "  - Common Node Patterns (4パターン名+1〜2行説明, コード例は削除), Related Skills"
 
-  - "■ Step 3: dashboard.md の🛠️スキル欄を整理"
-  - "4. Read dashboard.md"
-  - "5. Edit dashboard.md の 🛠️生成されたスキル セクションを以下のように更新:"
-  - "   - 直近5件のみ残す（上記「残す5件」参照）"
-  - "   - 表の下に「他N件 → memory/skill_history.md 参照」を追記"
-  - "     （Nは dashboard から除外したエントリ数 + 元々の「他17件」）"
-  - "   例: 「他36件 → memory/skill_history.md 参照」など"
-  - "6. Edit後にRead dashboard.mdで確認。スキル欄が5件になっていること"
+  - "■ Step 3: SC-026 Credential Section追加"
+  - "4. 'Detailed References' セクションの前(または 'Best Practices' の後)に追加:"
+  - "   ## HTTP Request Credential Configuration"
+  - "   ### Pattern: predefinedCredentialType (SC-026)"
+  - "   問題説明・設定例(YAMLブロック)・注意事項を含める"
+  - "   末尾に '**See also**: n8n-http-credential-patterns for complete patterns' を追加"
+  - "   このセクションは20行以内に収める"
 
-  - "■ Step 4: instructions/gunshi.md にFIFOルール追記"
-  - "7. Read instructions/gunshi.md"
-  - "8. 🛠️スキル候補の更新箇所（step 7.5付近）の後に以下を追記:"
-  - "   ⚠️ スキル欄FIFO管理ルール:"
-  - "   スキル欄は「直近5件」を維持する（FIFO）。"
-  - "   新規エントリ追加時は最古エントリを memory/skill_history.md に移動してから追加。"
-  - "   6件以上になったら即 memory/skill_history.md に最古を移動すること。"
+  - "■ Step 4: 行数検証"
+  - "5. wc -l skills/n8n-node-configuration/SKILL.md で499行以下を確認"
+  - "   超過する場合は 'Operation-Specific Configuration' セクションをさらに削減"
 
-  - "■ Step 5: instructions/karo.md にFIFOルール追記"
-  - "9. Read instructions/karo.md"
-  - "10. スキル候補関連箇所の後に以下を追記:"
-  - "    ⚠️ スキル欄FIFO管理チェック（軍師漏れ防止）:"
-  - "    軍師がスキルを追加した後、dashboard.md🛠️欄が6件以上になっていないか確認。"
-  - "    超過している場合は最古エントリを memory/skill_history.md に移動する。"
+  - "■ Step 5: markdownlint"
+  - "6. npx markdownlint-cli skills/n8n-node-configuration/SKILL.md"
+  - "   エラーがあれば修正する"
 
-  - "■ Step 6: dashboard_rotate.sh に自動トリム追加"
-  - "11. Read scripts/dashboard_rotate.sh"
-  - "12. ローテーション完了後（log \"ローテーション完了\"の後）に以下の処理を追加:"
-  - "    スキル欄のエントリ数をカウントし、5件超の場合に最古エントリを"
-  - "    memory/skill_history.md に移動するロジックを追加。"
-  - "    関数名: trim_skill_entries"
-  - "    シグネチャ: trim_skill_entries() { ... }"
-  - "    ロジック:"
-  - "      - 🛠️生成されたスキル セクションのテーブル行を数える（| **...** | ... | 形式）"
-  - "      - 5件超の場合: 最古エントリ（テーブル最下行）を memory/skill_history.md の先頭に追記"
-  - "      - dashboard.md から最古エントリを削除"
-  - "      - 超過分がなくなるまで繰り返す"
-  - "    実装後にlog \"スキル欄トリム完了\"などを追加"
+  - "■ Step 6: git commit + push"
+  - "7. cd /home/ubuntu/.claude"
+  - "8. git add skills/n8n-node-configuration/SKILL.md"
+  - "9. git commit -m 'refactor(n8n-node-config): SKILL.md 500行未満圧縮+SC-026統合 (cmd_321)'"
+  - "10. git push origin main"
+  - "    競合時: git pull --rebase origin main && git push origin main"
 
-  - "■ Step 7: git commit + push"
-  - "13. git add memory/skill_history.md dashboard.md instructions/gunshi.md instructions/karo.md scripts/dashboard_rotate.sh"
-  - "14. git commit -m 'feat: dashboardスキル欄FIFO管理（直近5件・自動トリム・ルール明文化）'"
-  - "15. git push origin original"
-
-  - "■ Step 8: 報告"
-  - "16. Write queue/reports/ashigaru2_report.yaml"
-  - "17. bash scripts/inbox_write.sh gunshi '足軽2号、subtask_315a完了。dashboardスキル欄5件整理+アーカイブ+ルール追記+自動トリム実装+push済み。report確認されたし。' report_received ashigaru2"
+  - "■ Step 7: 報告"
+  - "11. Write /home/ubuntu/shogun/queue/reports/ashigaru2_report.yaml (Writeツールで完全上書き)"
+  - "12. bash /home/ubuntu/shogun/scripts/inbox_write.sh gunshi '足軽2号、subtask_321b完了。n8n-node-configuration SKILL.md {実際の行数}L。SC-026統合。push成功。report確認されたし。' report_received ashigaru2"
 
 quality_rules:
-  - "スキルを削除しない — 全て memory/skill_history.md にアーカイブ"
-  - "dashboard.md🛠️欄が直近5件のみになっていること"
-  - "memory/skill_history.md に元の24件全てのエントリが含まれていること（うち5件はdashboardに残る）"
-  - "gunshi.md・karo.md に FIFOルールが明記されていること"
-  - "dashboard_rotate.sh の trim_skill_entries 関数が動作すること"
+  - "wc -l skills/n8n-node-configuration/SKILL.md が499以下であること"
+  - "Core Concepts(3概念)・get_node Detail Levelsセクションが保持されていること"
+  - "SC-026 predefinedCredentialType セクションが追加されていること"
+  - "DEPENDENCIES.md/OPERATION_PATTERNS.mdへの参照リンクがあること"
+  - "npx markdownlint-cli 通過"
+  - "git push origin main 成功"
   - "git push --force 禁止（D003）"
 
 important_notes:
-  - "「他17件」は既存の参照で、追加で17件が ~/.claude/skills/ にある。これも skill_history.md に記録すること"
-  - "memory/ ディレクトリは既存（global_context.md がある）。skill_history.md を新規作成"
-  - "trim_skill_entries はdashboard_rotate.sh の末尾に追加し、main処理から呼び出す"
-  - "5件の カウント基準: | **スキル名** | ... | 形式の行のみ（ヘッダー行は除く）"
+  - "サブファイル(DEPENDENCIES.md等)は削除しない。SKILL.mdのみ編集する"
+  - "SC-026の詳細パターンはn8n-http-credential-patterns(足軽3号が作成)に委譲するため、ここは20行以内の簡潔なサマリーで十分"
+  - "報告YAMLはWriteツールで完全上書きすること（旧タスクデータ残存防止）"
+  - "git pull --rebase: 他の足軽と同時pushするため競合が起きる可能性あり"
 
 report_template:
-  task_id: subtask_315a
+  task_id: subtask_321b
   report_to: gunshi
-  step2_archive:
-    skill_history_created: false
-    archived_count: 0
-  step3_dashboard:
-    entries_reduced_to_5: false
-    archive_link_added: false
-  step4_gunshi_md:
-    fifo_rule_added: false
-  step5_karo_md:
-    fifo_rule_added: false
-  step6_rotate_sh:
-    trim_function_added: false
-  step7_push:
-    commit_hash: ""
-    push_success: false
+  final_line_count: 0
+  sc_026_section_added: false
+  markdownlint_pass: false
+  push_success: false
+  commit_hash: ""
   blockers: "なし"
   skill_candidate:
     found: false

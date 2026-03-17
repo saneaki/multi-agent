@@ -183,89 +183,111 @@ candidates:
     name: n8n-notion-stale-data-cleanup
     source_cmd: cmd_291
     occurrences: 3
-    status: pending_approval
+    status: merged
     evaluation: "有用度: 高。Notion DBのstaleデータ(draftId/誤アーカイブ済フラグ)がWF誤動作を引き起こす。cmd_291で116件・cmd_293で328件修復。バッチ処理(page_size:100)でNotionレート制限対応。occurrences≧3でクリティカル障害防止。"
     evaluated_at: "2026-03-14"
+    merged_at: "2026-03-18"
+    merged_into: "~/.claude/skills/shogun-n8n-notion-property-sync (Pattern 5: Stale Data Detection and Batch Cleanup)"
 
   - id: SC-021
     name: n8n-gmail-trigger-manual-exec-single-item
     source_cmd: cmd_297
     occurrences: 1
-    status: pending_approval
+    status: merged
     evaluation: "有用度: 中。Gmail Trigger非アクティブWF手動実行は1通/execのみ返す。複数メール同時処理テストはWF active化+ポーリング待機が必要。テスト設計時の前提知識として有用。"
     evaluated_at: "2026-03-14"
+    merged_at: "2026-03-18"
+    merged_into: "~/.claude/skills/shogun-n8n-manual-execution-api (Pattern 5: Gmail Trigger Manual Execution Constraint)"
 
   - id: SC-022
     name: n8n-sib-loopback-multi-input-guard
     source_cmd: cmd_297
     occurrences: 2
-    status: pending_approval
+    status: merged
     evaluation: "有用度: 中。SiB(Split In Batches)に複数loop-backを直接接続すると暗黙JOINで処理停止。Merge(appendモード)でloop-backを1本化して回避。shogun-n8n-merge-either-or-branchと関連。occurrences=2。"
     evaluated_at: "2026-03-14"
+    merged_at: "2026-03-18"
+    merged_into: "~/.claude/skills/shogun-n8n-sib-trigger-incompatibility (§2 強化: Mergeノード設定詳細追記)"
 
   - id: SC-023
     name: n8n-code-node-multi-item-index
     source_cmd: cmd_290
     occurrences: 2
-    status: pending_approval
+    status: merged
     evaluation: "有用度: 中。Code nodeで$('nodeName').itemがループ内でインデックス連動しない問題。$('nodeName').all()[index].jsonで解決。occurrences=2で特定WFで再発リスクあり。"
     evaluated_at: "2026-03-14"
+    merged_at: "2026-03-18"
+    merged_into: "~/.claude/skills/n8n-code-javascript (Multi-Item Processing Patterns: SC-023)"
 
   - id: SC-024
     name: n8n-gmail-oauth2-http-request
     source_cmd: cmd_287c3
     occurrences: 1
-    status: pending_approval
-    evaluation: "有用度: 低。HTTP RequestでGmail OAuth2使用時のauthentication/nodeCredentialType必須パターン。n8n-http-predefined-credential(SC-026)と統合検討要。occurrences=1。"
+    status: merged
+    evaluation: "有用度: 低→統合済み。HTTP RequestでGmail OAuth2使用時のauthentication/nodeCredentialType必須パターン。SC-026と統合してn8n-http-credential-patternsとして新規スキル化。"
     evaluated_at: "2026-03-14"
+    merged_at: "2026-03-18"
+    merged_into: "~/.claude/skills/n8n-http-credential-patterns (新規作成: Gmail OAuth2 Integration)"
 
   - id: SC-025
     name: n8n-drive-ai-text-injection
     source_cmd: cmd_277
     occurrences: 1
-    status: pending_approval
+    status: merged
     evaluation: "有用度: 低。Drive _ai_text/サブフォルダからmd読み込み→Geminiプロンプト注入パターン。コスト制御(3件/12000字/30000字)含む。occurrences=1かつ汎用性限定的。"
     evaluated_at: "2026-03-14"
+    merged_at: "2026-03-18"
+    merged_into: "~/.claude/skills/shogun-n8n-gemini-pdf-analysis (Pattern 8: Drive _ai_text Context Injection)"
 
   - id: SC-026
     name: n8n-http-predefined-credential
     source_cmd: cmd_277
     occurrences: 1
-    status: pending_approval
-    evaluation: "有用度: 低。HTTP RequestノードでpredefinedCredentialType使用パターン。Code nodeのhttpRequestWithAuthentication不可の回避策。occurrences=1。SC-024と統合検討要。"
+    status: merged
+    evaluation: "有用度: 低→統合済み。HTTP RequestノードでpredefinedCredentialType使用パターン。SC-024と統合してn8n-http-credential-patternsとして新規スキル化。n8n-node-configurationにも概要セクション追記。"
     evaluated_at: "2026-03-14"
+    merged_at: "2026-03-18"
+    merged_into: "~/.claude/skills/n8n-http-credential-patterns (canonical: 詳細パターン) + ~/.claude/skills/n8n-node-configuration (Credential Configuration Pattern: 概要セクション)"
 
   - id: SC-027
     name: n8n-gmail-search-sanitize
     source_cmd: cmd_291
     occurrences: 4
-    status: pending_approval
+    status: merged
     evaluation: "有用度: 高。Gmail件名検索でNotion件名に含まれる改行・タブ・句読点がAPIクエリを壊す問題。cmd_291/293/294/295の4cmdに跨り繰り返し発生。replace(/[\\n\\r\\t]+/g,' ')サニタイズ+Gmail ID直接参照方式(cmd_295)で根本解消。occurrences≧3。"
     evaluated_at: "2026-03-14"
+    merged_at: "2026-03-18"
+    merged_into: "~/.claude/skills/shogun-n8n-gmail-id-archive-pattern (§2 包含済み確認 + SC-027相互参照追記)"
 
   - id: SC-028
     name: n8n-gmail-wf-batch-convergence-diagnosis
     source_cmd: cmd_300
     occurrences: 1
-    status: pending_approval
+    status: merged
     evaluation: "有用度: 中。Gmail Trigger複数メール取得時にWFパイプラインが1件に収束しサイレントドロップする問題の診断パターン。execノード別アイテム数トレース(6→4→1)で収束ノード特定。SiB or $input.all()修正で解決。"
     evaluated_at: "2026-03-14"
+    merged_at: "2026-03-18"
+    merged_into: "~/.claude/skills/shogun-n8n-sib-trigger-incompatibility (§5 新規追加: Gmail Batchフロー収束診断)"
 
   - id: SC-029
     name: n8n-code-node-n-to-n-convergence-fix
     source_cmd: cmd_305
     occurrences: 1
-    status: pending_approval
+    status: merged
     evaluation: "有用度: 中。n8n Code nodeでflatMap・[0]固定・件数不一致mapという3パターンのN→N違反を修正するパターン。(1)flatMap→map (2)[0]→[idx]インデックスマッチ (3)$items(IFノード)参照で件数一致保証。"
     evaluated_at: "2026-03-14"
+    merged_at: "2026-03-18"
+    merged_into: "~/.claude/skills/n8n-code-javascript (Multi-Item Processing Patterns: SC-029)"
 
   - id: SC-030
     name: n8n-code-node-v2-return-format
     source_cmd: cmd_308
     occurrences: 1
-    status: pending_approval
+    status: merged
     evaluation: "有用度: 中。Code node v2 runOnceForEachItemモードでは配列return禁止。return [{json:{...}}]→return {json:{...}}。手動実行(内部API)でのみ失敗するバリデーション差異。"
     evaluated_at: "2026-03-14"
+    merged_at: "2026-03-18"
+    merged_into: "~/.claude/skills/n8n-code-javascript (Multi-Item Processing Patterns: SC-030)"
 
   - id: SC-031
     name: shogun-n8n-sib-trigger-incompatibility
@@ -351,6 +373,8 @@ candidates:
     name: n8n-manual-execution-api-supplement
     source_cmd: cmd_296
     occurrences: 1
-    status: pending_approval
+    status: merged
     evaluation: "有用度: 低。SC-013(n8n-manual-execution-api)の補足情報。内部API /rest/workflows/{id}/run はworkflowData+triggerToStartFrom必須。Cookie n8n-auth必須(APIキー/Basic認証不可)。既存SKILL.mdへの追記が適切かもしれない。"
     evaluated_at: "2026-03-14"
+    merged_at: "2026-03-18"
+    merged_into: "~/.claude/skills/shogun-n8n-manual-execution-api (SC-039補足: workflowData+triggerToStartFrom必須・Cookie認証強調)"
