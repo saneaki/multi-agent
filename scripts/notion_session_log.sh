@@ -178,21 +178,26 @@ UPLOADED_FILES_TMPFILE=""
 trap 'rm -f "${PARSE_RESULT_FILE}" "${UPLOADED_FILES_TMPFILE}"' EXIT
 
 # ============================================================
-# 冪等性チェック (Notion DB検索)
+# ローカルステートキャッシュ読み込み
 # ============================================================
+STATE_FILE="/tmp/notion_session_log_state_${TODAY}.json"
+CACHED_PAGE_ID=""
 
-EXISTING=$(curl -s -X POST \
-  "${NOTION_API}/data_sources/${ACTIVITY_LOG_DS_ID}/query" \
-  -H "Authorization: Bearer ${NOTION_TOKEN}" \
-  -H "Content-Type: application/json" \
-  -H "Notion-Version: ${NOTION_VERSION}" \
-  -d "{\"filter\": {\"property\": \"日付\", \"date\": {\"equals\": \"${TODAY}\"}}}")
-
-EXISTING_COUNT=$(echo "${EXISTING}" | python3 -c "
+if [[ -f "${STATE_FILE}" ]]; then
+  CACHED_PAGE_ID=$(python3 -c "
 import json, sys
-data = json.load(sys.stdin)
-print(len(data.get('results', [])))
-" 2>/dev/null || echo "0")
+try:
+    with open('${STATE_FILE}') as f:
+        d = json.load(f)
+    pid = d.get('page_id', '')
+    print(pid if pid else '')
+except Exception:
+    print('')
+" 2>/dev/null || echo "")
+  if [[ -n "${CACHED_PAGE_ID}" ]]; then
+    echo "[INFO] ステートキャッシュヒット (page_id: ${CACHED_PAGE_ID})"
+  fi
+fi
 
 # ============================================================
 # Notion DBレコード作成 or 既存URL取得
@@ -201,25 +206,10 @@ print(len(data.get('results', [])))
 ACTIVITY_LOG_URL=""
 ACTIVITY_LOG_PAGE_ID=""
 
-if [[ "${EXISTING_COUNT}" -gt 0 ]]; then
-  # 既存レコードをPATCHで上書き更新（修正: スキップ→UPDATE）
-  EXISTING_PAGE_ID=$(echo "${EXISTING}" | python3 -c "
-import json, sys
-data = json.load(sys.stdin)
-results = data.get('results', [])
-print(results[0].get('id', '') if results else '')
-" 2>/dev/null || echo "")
-
-  ACTIVITY_LOG_URL=$(echo "${EXISTING_PAGE_ID}" | python3 -c "
-import sys
-pid = sys.stdin.read().strip().replace('-', '')
-print(f'https://www.notion.so/{pid}' if pid else '')
-")
-  ACTIVITY_LOG_PAGE_ID="${EXISTING_PAGE_ID}"
-
-  echo "[INFO] ${TODAY} の活動ログを更新中 (ID: ${EXISTING_PAGE_ID})..."
-
-  UPDATE_PAYLOAD=$(python3 - <<PYEOF
+# UPDATE_PAYLOADを共通化（PATCH用）
+_build_update_payload() {
+  local page_id="${1}"
+  python3 - <<PYEOF
 import json
 with open("${PARSE_RESULT_FILE}") as _f:
     data = json.load(_f)
@@ -250,7 +240,94 @@ payload = {
 }
 print(json.dumps(payload, ensure_ascii=False))
 PYEOF
-)
+}
+
+# ---------- キャッシュヒット: Notion APIクエリをスキップしてPATCHへ ----------
+if [[ -n "${CACHED_PAGE_ID}" ]]; then
+  ACTIVITY_LOG_PAGE_ID="${CACHED_PAGE_ID}"
+  ACTIVITY_LOG_URL=$(python3 -c "
+pid = '${CACHED_PAGE_ID}'.replace('-', '')
+print(f'https://www.notion.so/{pid}' if pid else '')
+")
+  echo "[INFO] ${TODAY} の活動ログをキャッシュ経由で更新中 (ID: ${CACHED_PAGE_ID})..."
+
+  UPDATE_PAYLOAD=$(_build_update_payload "${CACHED_PAGE_ID}")
+  UPDATE_RESP=$(curl -s -X PATCH \
+    "${NOTION_API}/pages/${CACHED_PAGE_ID}" \
+    -H "Authorization: Bearer ${NOTION_TOKEN}" \
+    -H "Content-Type: application/json" \
+    -H "Notion-Version: ${NOTION_VERSION}" \
+    -d "${UPDATE_PAYLOAD}")
+
+  UPDATE_STATUS=$(echo "${UPDATE_RESP}" | python3 -c "
+import json, sys
+data = json.load(sys.stdin)
+if data.get('object') == 'page':
+    print('success')
+else:
+    print('error: ' + str(data.get('message', 'unknown')))
+" 2>/dev/null || echo "error: parse failed")
+
+  if [[ "${UPDATE_STATUS}" == "success" ]]; then
+    echo "[SUCCESS] ${TODAY} の活動ログをキャッシュ経由で更新しました。"
+    # ステートのupdated_atを更新
+    python3 -c "
+import json
+with open('${STATE_FILE}') as f:
+    d = json.load(f)
+import datetime
+d['updated_at'] = datetime.datetime.now(datetime.timezone.utc).isoformat()
+with open('${STATE_FILE}', 'w') as f:
+    json.dump(d, f)
+" 2>/dev/null || true
+  else
+    echo "[WARN] キャッシュ経由PATCH失敗 (${UPDATE_STATUS})。キャッシュをクリアして通常フローへフォールバック。" >&2
+    CACHED_PAGE_ID=""
+    ACTIVITY_LOG_PAGE_ID=""
+    ACTIVITY_LOG_URL=""
+    rm -f "${STATE_FILE}" 2>/dev/null || true
+  fi
+fi
+
+# ---------- キャッシュミス or キャッシュPATCH失敗: 通常フロー ----------
+if [[ -z "${CACHED_PAGE_ID}" ]]; then
+
+# ============================================================
+# 冪等性チェック (Notion DB検索)
+# ============================================================
+
+EXISTING=$(curl -s -X POST \
+  "${NOTION_API}/data_sources/${ACTIVITY_LOG_DS_ID}/query" \
+  -H "Authorization: Bearer ${NOTION_TOKEN}" \
+  -H "Content-Type: application/json" \
+  -H "Notion-Version: ${NOTION_VERSION}" \
+  -d "{\"filter\": {\"property\": \"日付\", \"date\": {\"equals\": \"${TODAY}\"}}}")
+
+EXISTING_COUNT=$(echo "${EXISTING}" | python3 -c "
+import json, sys
+data = json.load(sys.stdin)
+print(len(data.get('results', [])))
+" 2>/dev/null || echo "0")
+
+if [[ "${EXISTING_COUNT}" -gt 0 ]]; then
+  # 既存レコードをPATCHで上書き更新（修正: スキップ→UPDATE）
+  EXISTING_PAGE_ID=$(echo "${EXISTING}" | python3 -c "
+import json, sys
+data = json.load(sys.stdin)
+results = data.get('results', [])
+print(results[0].get('id', '') if results else '')
+" 2>/dev/null || echo "")
+
+  ACTIVITY_LOG_URL=$(echo "${EXISTING_PAGE_ID}" | python3 -c "
+import sys
+pid = sys.stdin.read().strip().replace('-', '')
+print(f'https://www.notion.so/{pid}' if pid else '')
+")
+  ACTIVITY_LOG_PAGE_ID="${EXISTING_PAGE_ID}"
+
+  echo "[INFO] ${TODAY} の活動ログを更新中 (ID: ${EXISTING_PAGE_ID})..."
+
+  UPDATE_PAYLOAD=$(_build_update_payload "${EXISTING_PAGE_ID}")
 
   UPDATE_RESP=$(curl -s -X PATCH \
     "${NOTION_API}/pages/${EXISTING_PAGE_ID}" \
@@ -270,6 +347,12 @@ else:
 
   if [[ "${UPDATE_STATUS}" == "success" ]]; then
     echo "[SUCCESS] ${TODAY} の活動ログを更新しました。"
+    # ステートファイルに保存（後続セッションはキャッシュヒットする）
+    python3 -c "
+import json, datetime
+with open('${STATE_FILE}', 'w') as f:
+    json.dump({'page_id': '${EXISTING_PAGE_ID}', 'updated_at': datetime.datetime.now(datetime.timezone.utc).isoformat()}, f)
+" 2>/dev/null || true
   else
     echo "[ERROR] 活動ログ更新失敗: ${UPDATE_STATUS}" >&2
   fi
@@ -340,10 +423,19 @@ data = json.load(sys.stdin)
 page_id = data.get('id', '').replace('-', '')
 print(f'https://www.notion.so/{page_id}')
 " 2>/dev/null || echo "")
+    # ステートファイルに保存（後続セッションはキャッシュヒットする）
+    python3 -c "
+import json, datetime
+with open('${STATE_FILE}', 'w') as f:
+    json.dump({'page_id': '${CREATED_ID}', 'updated_at': datetime.datetime.now(datetime.timezone.utc).isoformat()}, f)
+" 2>/dev/null || true
+    echo "[INFO] ステートファイル保存: ${STATE_FILE}"
   else
     echo "[ERROR] Notion DBレコード作成: 不明なエラー" >&2
   fi
 fi
+
+fi  # end キャッシュミス or キャッシュPATCH失敗フロー
 
 echo "[INFO] 活動ログURL: ${ACTIVITY_LOG_URL}"
 
