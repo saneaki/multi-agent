@@ -1,0 +1,48 @@
+# multi-agent-shogun 設定ファイル
+
+# 言語設定
+# ja: 日本語（戦国風日本語のみ、併記なし）
+# en: 英語（戦国風日本語 + 英訳併記）
+# その他の言語コード（es, zh, ko, fr, de 等）も対応
+language: ja
+
+# シェル設定
+# bash: bash用プロンプト（デフォルト）
+# zsh: zsh用プロンプト
+shell: bash
+
+# スキル設定
+skill:
+  # スキル保存先（スキル名に shogun- プレフィックスを付けて保存）
+  save_path: "~/.claude/skills/"
+
+  # ローカルスキル保存先（このプロジェクト専用）
+  local_path: "/home/ubuntu/shogun/skills/"
+
+# ログ設定
+logging:
+  level: info  # debug | info | warn | error
+  path: "/home/ubuntu/shogun/logs/"
+
+# Bloomルーティング設定
+# off: 全タスクを足軽に直送（軍師QCなし）
+# manual: 家老がbloom_levelを判定しルーティング（L1-L3→足軽、L4-L6→軍師）
+# auto: 軍師が全タスクをBloom分析してからルーティング
+bloom_routing: "manual"
+
+#ntfy通知設定
+ntfy_topic: "hananoen"
+
+screenshot:
+  path: "/mnt/c/Users/drug-/OneDrive/画像/スクリーンショット"
+
+# CLI設定
+cli:
+  default: claude
+  agents:
+    shogun:
+      effort: high
+    karo:
+      effort: high
+    gunshi:
+      effort: high
