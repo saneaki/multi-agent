@@ -69,15 +69,17 @@
 # Config (sample files only, no secrets)
 !config/
 !config/settings.yaml
+!config/projects.yaml
 !config/ntfy_auth.env.sample
 
 # Templates
 !templates/
 !templates/**
 
-# Context README
+# Context (operational docs needed for multi-agent work)
 !context/
 !context/README.md
+!context/n8n-operations.md
 
 # Python venv
 !requirements.txt
@@ -101,6 +103,8 @@
 !scripts/notion_session_log.sh
 !scripts/switch_cli.sh
 !scripts/cmd_complete_notifier.sh
+!scripts/jst_now.sh
+!scripts/send_test_email.py
 !scripts/dashboard_rotate.sh
 
 
@@ -110,9 +114,10 @@
 
 # Reports (private — not tracked)
 
-# Memory (MEMORY.md is private; only the sample template is OSS)
+# Memory (MEMORY.md is private; only the sample template and skill_history are OSS)
 !memory/
 !memory/MEMORY.md.sample
+!memory/skill_history.md
 
 
 # Docs
