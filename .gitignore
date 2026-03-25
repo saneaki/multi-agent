@@ -106,6 +106,7 @@
 !scripts/jst_now.sh
 !scripts/send_test_email.py
 !scripts/dashboard_rotate.sh
+!scripts/watch_gmail_trigger.sh
 
 
 # SayTask (sample template only, not actual data)
