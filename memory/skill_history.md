@@ -7,6 +7,11 @@ dashboard.md 🛠️スキル欄から溢れた全エントリ。最新順（上
 
 | スキル名 | 出典 |
 |----------|------|
+| **shogun-n8n-jq-false-alternative-guard** ✅ | cmd_332(SC-040): jq `//` 演算子がfalseを偽値扱いするバグ。n8n API `.active` 解析で誤判定。`\| tostring` で回避。独立スキル95行。 |
+| **shogun-n8n-trigger-stuck-recovery** 更新 ✅ | cmd_332(SC-041/042): Poll Trigger Stall(Offer expired主因/Pruning誘発/cron再登録バグ)+ N8N_RUNNERS_ENABLED廃止(v2.7.5)セクション追加。237L→322L。 |
+| **n8n-wf-dual-active-guard** ✅ | cmd_325: 同一TriggerのWFが複数active時の二重処理防止。activate前に同一Trigger WFのactive確認必須。旧WFパッチ後はactivateしない運用ルール。 |
+| **n8n-code-javascript** ✅ | cmd_321圧縮: 699L→347L(50%削減)。SC-023(runMode切替)/SC-029(パフォーマンス)/SC-030(デバッグ)統合。 |
+| **n8n-node-configuration** ✅ | cmd_321圧縮: 785L→300L(62%削減)。SC-026(credential設定)統合。 |
 | **shogun-n8n-sib-trigger-incompatibility** ✅ | cmd_321: SC-022(SiB+Trigger制約)+SC-028(Webhook+SiB)統合。244L。 |
 | **n8n-code-rfc2822-subject-sanitize** ✅ | cmd_323: RFC2822ヘッダー折り返し(\r?\n\s*)→空文字削除パターン。\n→スペース変換ではGmail検索ミスマッチ発生。 |
 | **shogun-n8n-notion-property-sync** ✅ | cmd_321: SC-020(staleデータ116件+328件修復パターン)統合。459L。 |

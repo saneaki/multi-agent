@@ -378,3 +378,33 @@ candidates:
     evaluated_at: "2026-03-14"
     merged_at: "2026-03-18"
     merged_into: "~/.claude/skills/shogun-n8n-manual-execution-api (SC-039補足: workflowData+triggerToStartFrom必須・Cookie認証強調)"
+
+  - id: SC-040
+    name: shogun-n8n-jq-false-alternative-guard
+    source_cmd: cmd_329
+    occurrences: 1
+    status: created
+    evaluation: "jq `//` 演算子はfalseを偽値扱い。n8n APIのboolean解析で `.active // \"error\"` がfalseのとき \"error\" を返すバグ。`| tostring` で回避。bashスクリプト固有のパターンで独立スキルが適切。"
+    evaluated_at: "2026-03-26"
+    created_at: "2026-03-26"
+    skill_path: "~/.claude/skills/shogun-n8n-jq-false-alternative-guard/SKILL.md"
+
+  - id: SC-041
+    name: shogun-n8n-poll-trigger-stall-diagnosis
+    source_cmd: cmd_330
+    occurrences: 1
+    status: merged
+    evaluation: "n8n poll trigger(Gmail等)スタック診断パターン。Offer expiredが主因。Pruningによるリソース圧迫が誘発。cron再登録バグ(#14322)が自己回復を妨げる。shogun-n8n-trigger-stuck-recoveryに統合。"
+    evaluated_at: "2026-03-26"
+    merged_at: "2026-03-26"
+    merged_into: "shogun-n8n-trigger-stuck-recovery (## Poll Trigger Stall (Offer Expired) セクション追加)"
+
+  - id: SC-042
+    name: shogun-n8n-runners-enabled-deprecation
+    source_cmd: cmd_331
+    occurrences: 1
+    status: merged
+    evaluation: "n8n 2.7.5でN8N_RUNNERS_ENABLED廃止。Task Runner常時有効・無効化不可。SC-041と同一ドメインのためshogun-n8n-trigger-stuck-recoveryに統合。"
+    evaluated_at: "2026-03-26"
+    merged_at: "2026-03-26"
+    merged_into: "shogun-n8n-trigger-stuck-recovery (### N8N_RUNNERS_ENABLED Deprecation (v2.7.5+) サブセクション追加)"
