@@ -1,31 +1,27 @@
 worker_id: ashigaru3
-task_id: subtask_346a
-parent_cmd: cmd_346
-timestamp: "2026-03-27T15:49:27+09:00"
+task_id: subtask_348a
+parent_cmd: cmd_348
+timestamp: "2026-03-27T23:25:16+09:00"
 status: done
 
 result:
-  summary: "v5.3 Schedule Trigger業務時間帯cron式を5分→20分間隔に変更完了"
-  workflow:
-    id: QfAYLSoYe1TcLtWC
-    name: "Gmail自動化WF v5.3 (Schedule Trigger移行)"
-    active: true
-  change:
-    target: "cron[0] (業務時間帯 平日)"
-    before: "0,5,10,15,20,25,30,35,40,45,50,55 0-9 * * 1-5"
-    after: "0,20,40 0-9 * * 1-5"
-  unchanged:
-    - "cron[1]: 0 10,12,14,16,18,20,22 * * 1-5"
-    - "cron[2]: 0 0,2,4,6,8,10,12,14,16,18,20,22 * * 0,6"
-  verification:
-    api_put: "SUCCESS (200)"
-    get_confirm: "3つのcron式が正しく反映されていることをGETで確認"
-    active_state: "true (変更なし)"
-    backup: "/tmp/wf_QfAYLSoYe1TcLtWC_backup.json"
-  note: |
-    変更直後のため20分間隔での自動発火は未確認（次回発火: 07:00 UTC / 16:00 JST）。
-    変更前の直近executionは5分間隔（id=10439〜10444）で正常動作していた。
-    ポーリング禁止(F004)のため発火待ちは行わず、GET確認をもって検証完了とした。
+  summary: "watch_gmail_trigger.sh廃止完了（cron削除+git rm+commit+push+dashboard🚨削除）"
+  crontab:
+    removed: "*/15 * * * * /home/ubuntu/shogun/scripts/watch_gmail_trigger.sh >> /home/ubuntu/shogun/logs/watch_gmail_trigger.log 2>&1"
+    remaining:
+      - "0 15 * * * dashboard_rotate.sh"
+      - "30 18 * * * restart_n8n.sh"
+      - "0 * * * * notion_session_log.sh"
+    verification: "他の3エントリ全て健在確認済み"
+  git:
+    action: "git rm scripts/watch_gmail_trigger.sh"
+    commit_hash: bacf119
+    commit_msg: "chore: watch_gmail_trigger.sh廃止（v5.3 Schedule Trigger移行済みのため不要）"
+    push: "SUCCESS (7292423..bacf119 original -> original)"
+  dashboard:
+    action: "🚨要対応[情報]からwatch_gmail_trigger.sh行を削除"
+    note: "dashboard.mdはgitignore対象のため、ローカル変更のみ"
+  log_file: "logs/watch_gmail_trigger.log は履歴参照用に残留（quality_rules準拠）"
 
 blockers: "なし"
 

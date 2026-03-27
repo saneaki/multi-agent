@@ -161,7 +161,7 @@ result = {
     "detail": detail,
     "yoyaku": yoyaku[:500],
     "multi_select": multi_select,
-    "bullets": bullets[:10],
+    "bullets": bullets[:50],
     "projects": list(projects_count.keys())
 }
 print(json.dumps(result, ensure_ascii=False))
