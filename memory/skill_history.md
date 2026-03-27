@@ -7,6 +7,7 @@ dashboard.md 🛠️スキル欄から溢れた全エントリ。最新順（上
 
 | スキル名 | 出典 |
 |----------|------|
+| **shogun-n8n-wf-version-switch-checklist** ✅ | cmd_344(SC-046): WFバージョン切替時のスクリプトWF_ID更新チェックリスト。grep -r洗い出し・dual-active防止・実例付き。SKILL.md 122行新規作成。 |
 | **shogun-n8n-runners-enabled-deprecation** → 統合済 | cmd_331→cmd_332: trigger-stuck-recoveryに統合済み。 |
 | **skill-creation-workflow** ✅ | cmd_340(SC-045): スキル候補評価→統合/新規判断→SKILL.md作成→更新→push の標準プロセスをメタスキルとして171L新規作成。 |
 | **shogun-n8n-trigger-stuck-recovery** 更新 ✅ | cmd_340(SC-044): docker restart escalation(deactivate/activate不能な固着+Offer expiredなしSTALL新知見+watchdog設計)追加。322L→391L。 |

@@ -442,6 +442,8 @@ candidates:
     name: shogun-n8n-wf-version-switch-checklist
     source_cmd: cmd_344
     occurrences: 1
-    status: pending
+    status: created
     evaluation: "WFバージョン切替時に監視/再起動/切替スクリプトのWF_IDも同時更新するチェックリスト。grep -r '旧WF_ID' scripts/ で網羅的洗い出し。cmd_344でwatch_gmail_trigger.sh更新漏れによるdual-active再発の実例あり。"
     evaluated_at: "2026-03-27"
+    created_at: "2026-03-27"
+    skill_path: "~/.claude/skills/shogun-n8n-wf-version-switch-checklist/SKILL.md"
