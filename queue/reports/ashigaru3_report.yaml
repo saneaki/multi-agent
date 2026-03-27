@@ -1,166 +1,31 @@
 worker_id: ashigaru3
-task_id: subtask_312c
-parent_cmd: cmd_312
-timestamp: "2026-03-11T22:03:39+09:00"
+task_id: subtask_346a
+parent_cmd: cmd_346
+timestamp: "2026-03-27T15:49:27+09:00"
 status: done
-report_to: gunshi
 
 result:
-  summary: "グループ2（7事務所）料金調査完了。全事務所WebSearch+WebFetchで実データ収集済み"
-  files_modified: []
-  notes: "全7事務所についてWebSearch/WebFetchで料金ページを調査。詳細は下記officesセクション参照"
-
-group: 2
-offices:
-  - name: "後楽園フィリア法律事務所"
-    fee_page_url: "https://korakuen-philia.com/ （専用料金ページなし。サイト上に料金表の掲載なし）"
-    joint_custody_explanation_page: true
-    joint_custody_url: "https://korakuen-philia.com/2025/11/06/kyodo-shinken-minpo-kaisei/"
-    first_consultation: "女性の離婚相談・文京区住民の相続相談は初回30分無料。その他は30分5,500円（税込）"
-    fees:
-      parental_authority_change: {retainer: "ページに掲載なし（要問い合わせ）", success_fee: "ページに掲載なし（要問い合わせ）"}
-      custodian_designation: {retainer: "ページに掲載なし（要問い合わせ）", success_fee: "ページに掲載なし（要問い合わせ）"}
-      parental_authority_designation: {retainer: "ページに掲載なし（要問い合わせ）", success_fee: "ページに掲載なし（要問い合わせ）"}
-      visitation: {retainer: "ページに掲載なし（要問い合わせ）", success_fee: "ページに掲載なし（要問い合わせ）"}
-      child_support: {retainer: "ページに掲載なし（要問い合わせ）", success_fee: "ページに掲載なし（要問い合わせ）"}
-      divorce_mediation: {retainer: "ページに掲載なし（要問い合わせ）", success_fee: "ページに掲載なし（要問い合わせ）", custody_surcharge: "ページに掲載なし"}
-    notes: |
-      女性弁護士が離婚・労働・相続に対応。料金表はWeb上に公開されていない。
-      共同親権に関する詳細な解説記事あり（2026年4月1日施行の民法改正解説）。
-      電話: 03-6801-6176。出典: WebFetch https://korakuen-philia.com/
-
-  - name: "ゆずりは綜合法律事務所"
-    fee_page_url: "https://yuzurihalaw.jp/hiyou/"
-    joint_custody_explanation_page: false
-    first_consultation: "初回30分無料。以降30分5,500円（税込）。ビデオ通話: 初回5,500円、2回目以降11,000円（税込）"
-    fees:
-      parental_authority_change: {retainer: "ページに掲載なし（要問い合わせ）", success_fee: "ページに掲載なし（要問い合わせ）"}
-      custodian_designation: {retainer: "ページに掲載なし（要問い合わせ）", success_fee: "ページに掲載なし（要問い合わせ）"}
-      parental_authority_designation: {retainer: "ページに掲載なし（要問い合わせ）", success_fee: "ページに掲載なし（要問い合わせ）"}
-      visitation: {retainer: "離婚事件本体と別進行の場合は別途協議（具体額なし）", success_fee: "別途協議"}
-      child_support: {retainer: "離婚事件本体と別進行の場合は別途協議（具体額なし）", success_fee: "別途協議"}
-      divorce_mediation:
-        retainer: "385,000円（税込）※親権争いなし"
-        success_fee: "440,000円または報酬基準表の高い方（税込）"
-        custody_surcharge: "着手金・報酬金それぞれ110,000円加算"
-    notes: |
-      離婚交渉: 着手金275,000円/報酬金330,000円（税込・親権争いなし）
-      離婚訴訟: 着手金550,000円/報酬金550,000円（税込・親権争いなし）
-      親権争いがある場合は着手金・報酬金それぞれ110,000円加算。
-      婚姻費用・養育費・面会交流は離婚と別進行の場合は個別協議。
-      出典: WebFetch https://yuzurihalaw.jp/hiyou/
-
-  - name: "柏グリーン法律事務所"
-    fee_page_url: "https://kgreen-law.com/fee/"
-    joint_custody_explanation_page: true
-    joint_custody_url: "https://kgreen-law.com/ （2026年4月1日施行 離婚後の『共同親権』制度とは？記事あり）"
-    first_consultation: "交通事故・相続・借金・顧問契約は初回無料。その他個人相談30分3,000円（税込）"
-    fees:
-      parental_authority_change: {retainer: "ページに掲載なし（要問い合わせ）", success_fee: "ページに掲載なし（要問い合わせ）"}
-      custodian_designation: {retainer: "ページに掲載なし（要問い合わせ）", success_fee: "ページに掲載なし（要問い合わせ）"}
-      parental_authority_designation: {retainer: "ページに掲載なし（要問い合わせ）", success_fee: "ページに掲載なし（要問い合わせ）"}
-      visitation: {retainer: "ページに掲載なし（要問い合わせ）", success_fee: "ページに掲載なし（要問い合わせ）"}
-      child_support: {retainer: "ページに掲載なし（要問い合わせ）", success_fee: "ページに掲載なし（要問い合わせ）"}
-      divorce_mediation:
-        retainer: "220,000〜550,000円（税込）"
-        success_fee: "220,000〜550,000円（税込）"
-        custody_surcharge: "ページに掲載なし"
-    notes: |
-      離婚の着手金・報酬金は幅がある（22万〜55万円）。事案の難易度に応じる。
-      親権・養育費・面会交流の個別料金はWeb上に掲載なし。
-      共同親権制度に関する解説記事あり。
-      電話: 04-7165-0277。出典: WebFetch https://kgreen-law.com/fee/
-
-  - name: "虎ノ門法律経済事務所"
-    fee_page_url: "https://www.t-leo.com/customer/divorce/fee/"
-    joint_custody_explanation_page: false
-    first_consultation: "初回1案件1時間まで無料（東京本店）"
-    fees:
-      parental_authority_change: {retainer: "ページに掲載なし（要問い合わせ）", success_fee: "ページに掲載なし（要問い合わせ）"}
-      custodian_designation: {retainer: "ページに掲載なし（要問い合わせ）", success_fee: "ページに掲載なし（要問い合わせ）"}
-      parental_authority_designation: {retainer: "ページに掲載なし（要問い合わせ）", success_fee: "ページに掲載なし（要問い合わせ）"}
-      visitation: {retainer: "ページに掲載なし（要問い合わせ）", success_fee: "ページに掲載なし（要問い合わせ）"}
-      child_support: {retainer: "ページに掲載なし（経済的利益の5〜16%で報酬金算定）", success_fee: "経済的利益の5〜16%（税込5.5〜17.6%）"}
-      divorce_mediation:
-        retainer: "330,000円（税込）"
-        success_fee: "440,000円（税込）+ 経済的利益の5〜16%（税込5.5〜17.6%）。報酬金最低110,000円（税込）"
-        custody_surcharge: "ページに掲載なし"
-    notes: |
-      離婚交渉: 着手金220,000円（税込）〜 / 報酬金330,000円（税込）〜
-      離婚訴訟: 着手金440,000円（税込）〜 / 報酬金440,000円（税込）〜
-      追加事件（財産分与・養育費等を同時受任）は追加着手金なし（報酬のみ上乗せ）。
-      遠方出廷日当: 3回目以降22,000円（税込）/回。
-      全国35支店。支店により費用体系が異なる場合あり。
-      共同親権の専用解説ページは確認できず。
-      出典: WebFetch https://www.t-leo.com/customer/divorce/fee/
-
-  - name: "日栄法律事務所"
-    fee_page_url: "https://l-nic.jp/services/rikon/ （離婚ページ内に料金記載。専用料金ページなし）"
-    joint_custody_explanation_page: true
-    joint_custody_url: "https://l-nic.jp/kaiseishinken/"
-    first_consultation: "初回30分無料。電話相談にも対応"
-    fees:
-      parental_authority_change: {retainer: "ページに掲載なし（要問い合わせ）", success_fee: "ページに掲載なし（要問い合わせ）"}
-      custodian_designation: {retainer: "ページに掲載なし（要問い合わせ）", success_fee: "ページに掲載なし（要問い合わせ）"}
-      parental_authority_designation: {retainer: "ページに掲載なし（要問い合わせ）", success_fee: "ページに掲載なし（要問い合わせ）"}
-      visitation: {retainer: "ページに掲載なし（要問い合わせ）", success_fee: "ページに掲載なし（要問い合わせ）"}
-      child_support: {retainer: "ページに掲載なし（要問い合わせ）", success_fee: "ページに掲載なし（要問い合わせ）"}
-      divorce_mediation:
-        retainer: "220,000円〜（税込）"
-        success_fee: "基礎報酬220,000円 + 離婚達成/阻止110,000円 + 経済的利益の11%（税込）"
-        custody_surcharge: "ページに掲載なし"
-    notes: |
-      離婚交渉: 着手金165,000円〜（税込）
-      離婚訴訟: 着手金330,000円〜（税込）
-      報酬金: 基礎報酬220,000円 + 離婚達成/阻止110,000円 + 経済的利益の11%。
-      「料金表は例示。事案の難易に応じて異なる報酬を定める場合あり」との注記。
-      親権・養育費・面会交流の個別料金はページに掲載なし。
-      共同親権解説ページあり（現行制度→新制度の比較解説）。
-      電話: 0120-990-354。出典: WebFetch https://l-nic.jp/services/rikon/
-
-  - name: "東京法律事務所"
-    fee_page_url: "https://www.tokyolaw.gr.jp/fee/"
-    joint_custody_explanation_page: false
-    first_consultation: "相談料30分5,500円（税込）。事件依頼時の相談料は無料"
-    fees:
-      parental_authority_change: {retainer: "離婚事件は別途算定基準（具体額なし・要問い合わせ）", success_fee: "別途算定基準（要問い合わせ）"}
-      custodian_designation: {retainer: "別途算定基準（要問い合わせ）", success_fee: "別途算定基準（要問い合わせ）"}
-      parental_authority_designation: {retainer: "別途算定基準（要問い合わせ）", success_fee: "別途算定基準（要問い合わせ）"}
-      visitation: {retainer: "別途算定基準（要問い合わせ）", success_fee: "別途算定基準（要問い合わせ）"}
-      child_support: {retainer: "別途算定基準（要問い合わせ）", success_fee: "別途算定基準（要問い合わせ）"}
-      divorce_mediation:
-        retainer: "離婚事件は別途算定基準（一般民事の基準とは異なる。要問い合わせ）"
-        success_fee: "別途算定基準（要問い合わせ）"
-        custody_surcharge: "ページに掲載なし"
-    notes: |
-      一般民事の着手金基準: 経済的利益300万円未満で8%、300万〜3000万で5%+9万等。
-      離婚・借地非訟・破産等は「別途の算定基準」と明記されており、具体額はWeb上に掲載なし。
-      着手金最低額11万円（税込）。
-      共同親権の解説ページは確認できず。
-      電話: 03-3355-0611。出典: WebFetch https://www.tokyolaw.gr.jp/fee/detail.html
-
-  - name: "道ひらき法律事務所"
-    fee_page_url: "https://michihiraki-kodomo.com/fee/"
-    joint_custody_explanation_page: false
-    first_consultation: "初回60分無料"
-    fees:
-      parental_authority_change: {retainer: "330,000円（税込）", success_fee: "330,000〜440,000円（税込）"}
-      custodian_designation: {retainer: "330,000円（税込）", success_fee: "330,000〜440,000円（税込）"}
-      parental_authority_designation: {retainer: "ページに掲載なし（要問い合わせ）", success_fee: "ページに掲載なし（要問い合わせ）"}
-      visitation: {retainer: "330,000円（税込）", success_fee: "330,000〜440,000円（税込）"}
-      child_support: {retainer: "330,000円（税込）", success_fee: "2年分合計の11%（税込）"}
-      divorce_mediation:
-        retainer: "440,000円（税込）"
-        success_fee: "440,000円 + 経済的利益の11%（税込）。財産分与・慰謝料は13.2%"
-        custody_surcharge: "親権が実質的に争われる場合、着手金・報酬金とも各110,000円加算"
-    notes: |
-      最も詳細な料金表を公開している事務所。親権・監護権・面会交流・養育費の専門サイトあり。
-      離婚協議: 着手金330,000円/報酬金330,000円+経済的利益の11%（税込）
-      離婚訴訟: 着手金550,000円/報酬金550,000円+経済的利益の11%（税込）
-      バックアッププラン（代理なし）: 55,000円/6ヶ月。離婚協議書作成110,000円。
-      着手金に婚姻費用・面会交流調停の費用含む（追加着手金なし）。
-      共同親権の専用解説ページは確認できず（親権・面会交流の専門サイトだが）。
-      電話: 042-710-8901。出典: WebFetch https://michihiraki-kodomo.com/fee/
+  summary: "v5.3 Schedule Trigger業務時間帯cron式を5分→20分間隔に変更完了"
+  workflow:
+    id: QfAYLSoYe1TcLtWC
+    name: "Gmail自動化WF v5.3 (Schedule Trigger移行)"
+    active: true
+  change:
+    target: "cron[0] (業務時間帯 平日)"
+    before: "0,5,10,15,20,25,30,35,40,45,50,55 0-9 * * 1-5"
+    after: "0,20,40 0-9 * * 1-5"
+  unchanged:
+    - "cron[1]: 0 10,12,14,16,18,20,22 * * 1-5"
+    - "cron[2]: 0 0,2,4,6,8,10,12,14,16,18,20,22 * * 0,6"
+  verification:
+    api_put: "SUCCESS (200)"
+    get_confirm: "3つのcron式が正しく反映されていることをGETで確認"
+    active_state: "true (変更なし)"
+    backup: "/tmp/wf_QfAYLSoYe1TcLtWC_backup.json"
+  note: |
+    変更直後のため20分間隔での自動発火は未確認（次回発火: 07:00 UTC / 16:00 JST）。
+    変更前の直近executionは5分間隔（id=10439〜10444）で正常動作していた。
+    ポーリング禁止(F004)のため発火待ちは行わず、GET確認をもって検証完了とした。
 
 blockers: "なし"
 

@@ -408,3 +408,40 @@ candidates:
     evaluated_at: "2026-03-26"
     merged_at: "2026-03-26"
     merged_into: "shogun-n8n-trigger-stuck-recovery (### N8N_RUNNERS_ENABLED Deprecation (v2.7.5+) サブセクション追加)"
+
+  - id: SC-043
+    name: bash-crlf-write-tool-guard
+    source_cmd: cmd_333
+    occurrences: 1
+    status: created
+    evaluation: "ClaudeのWriteツールでbashスクリプト作成時にCRLF改行コードが混入し、set -euo pipefail等が失敗するパターン。cmd_333のrestart_n8n.sh作成時に発生。sed -i 's/\r//' で修正。診断・修正・予防策を257行のスキルに体系化。"
+    evaluated_at: "2026-03-26"
+    skill_path: "bash-crlf-write-tool-guard/SKILL.md"
+
+  - id: SC-044
+    name: shogun-n8n-trigger-stuck-docker-restart-escalation
+    source_cmd: cmd_335
+    occurrences: 1
+    status: merged
+    evaluation: "deactivate/activate繰り返しでも復旧しないTask Runner固着にはdocker restartが唯一有効。Offer expiredログなしでもSTALL発生する新知見。watchdog設計(連続3回→docker restart)も含む。shogun-n8n-trigger-stuck-recoveryに統合。"
+    evaluated_at: "2026-03-27"
+    merged_at: "2026-03-27"
+    merged_into: "shogun-n8n-trigger-stuck-recovery (## Docker Restart Escalation セクション追加. 322L→391L)"
+
+  - id: SC-045
+    name: skill-creation-workflow
+    source_cmd: cmd_340
+    occurrences: 1
+    status: created
+    evaluation: "スキル候補評価→統合/新規判断→SKILL.md作成→skill_candidates.yaml更新→memory/skill_history.md更新→git pushの標準プロセスを体系化。メタスキルとして独立作成。"
+    evaluated_at: "2026-03-27"
+    created_at: "2026-03-27"
+    skill_path: "~/.claude/skills/skill-creation-workflow/SKILL.md"
+
+  - id: SC-046
+    name: shogun-n8n-wf-version-switch-checklist
+    source_cmd: cmd_344
+    occurrences: 1
+    status: pending
+    evaluation: "WFバージョン切替時に監視/再起動/切替スクリプトのWF_IDも同時更新するチェックリスト。grep -r '旧WF_ID' scripts/ で網羅的洗い出し。cmd_344でwatch_gmail_trigger.sh更新漏れによるdual-active再発の実例あり。"
+    evaluated_at: "2026-03-27"

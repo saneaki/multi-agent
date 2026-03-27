@@ -7,6 +7,12 @@ dashboard.md 🛠️スキル欄から溢れた全エントリ。最新順（上
 
 | スキル名 | 出典 |
 |----------|------|
+| **shogun-n8n-runners-enabled-deprecation** → 統合済 | cmd_331→cmd_332: trigger-stuck-recoveryに統合済み。 |
+| **skill-creation-workflow** ✅ | cmd_340(SC-045): スキル候補評価→統合/新規判断→SKILL.md作成→更新→push の標準プロセスをメタスキルとして171L新規作成。 |
+| **shogun-n8n-trigger-stuck-recovery** 更新 ✅ | cmd_340(SC-044): docker restart escalation(deactivate/activate不能な固着+Offer expiredなしSTALL新知見+watchdog設計)追加。322L→391L。 |
+| **n8n-http-credential-patterns** ✅ | cmd_321新規: SC-024(HTTP認証パターン)+SC-026(credential設定)統合。345L新規作成。 |
+| **bash-crlf-write-tool-guard** ✅ | cmd_334(SC-043): WriteツールでbashスクリプトにCRLF混入→set -euo pipefailが「invalid option name」で失敗。診断(cat -A/file/hexdump)+修正(sed -i 's/\r//')+予防策を257行に体系化。 |
+| **shogun-gemini-markdown-json-guard** ✅ | cmd_324: Gemini 2.5 FlashがJSON応答を```json...```でラップする問題の対処パターン。JSON.parse前にMarkdownブロック除去。将来はresponseMimeType設定で根本解決。 |
 | **shogun-n8n-jq-false-alternative-guard** ✅ | cmd_332(SC-040): jq `//` 演算子がfalseを偽値扱いするバグ。n8n API `.active` 解析で誤判定。`\| tostring` で回避。独立スキル95行。 |
 | **shogun-n8n-trigger-stuck-recovery** 更新 ✅ | cmd_332(SC-041/042): Poll Trigger Stall(Offer expired主因/Pruning誘発/cron再登録バグ)+ N8N_RUNNERS_ENABLED廃止(v2.7.5)セクション追加。237L→322L。 |
 | **n8n-wf-dual-active-guard** ✅ | cmd_325: 同一TriggerのWFが複数active時の二重処理防止。activate前に同一Trigger WFのactive確認必須。旧WFパッチ後はactivateしない運用ルール。 |

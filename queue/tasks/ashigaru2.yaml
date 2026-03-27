@@ -1,116 +1,43 @@
-task_id: subtask_321b
-assigned_to: ashigaru2
-cmd_ref: cmd_321
-project: claude-ecc
-priority: high
-status: pending
-bloom_level: L3
-report_to: gunshi
-blocked_by: []
-created_at: "2026-03-18T07:40:00+09:00"
-
-title: "cmd_321-B: n8n-node-configuration SKILL.md リファクタリング (785L→<500L) + SC-026 Credential Section追加"
-
-north_star: "コア概念・操作フローを保持しながら500行未満に圧縮し、credential設定パターンを追加する"
-
-purpose: |
-  n8n-node-configuration/SKILL.md (785行) を500行未満にリファクタリングする。
-  詳細な設定例はDEPENDENCIES.md/OPERATION_PATTERNS.mdへポインタ化する。
-  SC-026 (predefinedCredentialType使用パターン) をCredentialセクションとして追加する。
-
-context: |
-  ■ 作業ディレクトリ: /home/ubuntu/.claude
-  ■ 対象ファイル: skills/n8n-node-configuration/SKILL.md (785行)
-  ■ 既存サブファイル(削除しない):
-    - skills/n8n-node-configuration/DEPENDENCIES.md
-    - skills/n8n-node-configuration/OPERATION_PATTERNS.md
-    - skills/n8n-node-configuration/README.md
-
-  ■ SC-026 内容:
-    名前: n8n-http-predefined-credential
-    問題: HTTP RequestノードでCode nodeのhttpRequestWithAuthentication()が使えない場合の認証設定
-    解法: HTTP Requestノードのauthentication="predefinedCredentialType"を使い既存クレデンシャルを参照する
-    パターン:
-      HTTP Request node parameters:
-        "authentication": "predefinedCredentialType",
-        "nodeCredentialType": "gmailOAuth2",   // 例: Gmail OAuth2
-      他の例:
-        "nodeCredentialType": "googleSheetsOAuth2Api"
-        "nodeCredentialType": "slackApi"
-    注意:
-      - Code nodeの$helpers.httpRequestWithAuthentication()はCode node内専用
-      - HTTP Requestノードには使えないためpredefinedCredentialTypeを使う
-      - 詳細パターンはn8n-http-credential-patterns参照
-
-steps:
-  - "■ Step 1: ファイル読み込み"
-  - "1. Read skills/n8n-node-configuration/SKILL.md (全785行)"
-  - "2. Read skills/n8n-node-configuration/DEPENDENCIES.md (先頭20行, 構成確認)"
-  - "3. Read skills/n8n-node-configuration/OPERATION_PATTERNS.md (先頭20行, 構成確認)"
-
-  - "■ Step 2: SKILL.md リファクタリング方針"
-  - "以下のセクションを縮小/ポインタ化:"
-  - "  - 'Configuration Workflow' (96行) → 8ステップのフロー箇条書き ~15行に圧縮"
-  - "    HTTP Requestの具体的なStep-by-Stepコード例(Step 1〜8)は全削除"
-  - "  - 'Property Dependencies Deep Dive' (95行) → 2段落要約 + 'See: DEPENDENCIES.md for details' ~10行"
-  - "  - 'Operation-Specific Configuration' (110行) → 1行 'See: OPERATION_PATTERNS.md for node-specific examples' で置換"
-  - "  - 'Handling Conditional Requirements' (53行) → 1段落要約 ~8行"
-  - "  - 'Best Practices' (68行) → Do/Dontの箇条書きのみ ~20行 (コード例全削除)"
-  - "  - 'Summary' (20行) → 10行に圧縮"
-  - "以下はそのまま保持:"
-  - "  - Core Concepts (3概念の説明), get_node Detail Levels (Decision Treeを含む)"
-  - "  - Common Node Patterns (4パターン名+1〜2行説明, コード例は削除), Related Skills"
-
-  - "■ Step 3: SC-026 Credential Section追加"
-  - "4. 'Detailed References' セクションの前(または 'Best Practices' の後)に追加:"
-  - "   ## HTTP Request Credential Configuration"
-  - "   ### Pattern: predefinedCredentialType (SC-026)"
-  - "   問題説明・設定例(YAMLブロック)・注意事項を含める"
-  - "   末尾に '**See also**: n8n-http-credential-patterns for complete patterns' を追加"
-  - "   このセクションは20行以内に収める"
-
-  - "■ Step 4: 行数検証"
-  - "5. wc -l skills/n8n-node-configuration/SKILL.md で499行以下を確認"
-  - "   超過する場合は 'Operation-Specific Configuration' セクションをさらに削減"
-
-  - "■ Step 5: markdownlint"
-  - "6. npx markdownlint-cli skills/n8n-node-configuration/SKILL.md"
-  - "   エラーがあれば修正する"
-
-  - "■ Step 6: git commit + push"
-  - "7. cd /home/ubuntu/.claude"
-  - "8. git add skills/n8n-node-configuration/SKILL.md"
-  - "9. git commit -m 'refactor(n8n-node-config): SKILL.md 500行未満圧縮+SC-026統合 (cmd_321)'"
-  - "10. git push origin main"
-  - "    競合時: git pull --rebase origin main && git push origin main"
-
-  - "■ Step 7: 報告"
-  - "11. Write /home/ubuntu/shogun/queue/reports/ashigaru2_report.yaml (Writeツールで完全上書き)"
-  - "12. bash /home/ubuntu/shogun/scripts/inbox_write.sh gunshi '足軽2号、subtask_321b完了。n8n-node-configuration SKILL.md {実際の行数}L。SC-026統合。push成功。report確認されたし。' report_received ashigaru2"
-
-quality_rules:
-  - "wc -l skills/n8n-node-configuration/SKILL.md が499以下であること"
-  - "Core Concepts(3概念)・get_node Detail Levelsセクションが保持されていること"
-  - "SC-026 predefinedCredentialType セクションが追加されていること"
-  - "DEPENDENCIES.md/OPERATION_PATTERNS.mdへの参照リンクがあること"
-  - "npx markdownlint-cli 通過"
-  - "git push origin main 成功"
-  - "git push --force 禁止（D003）"
-
-important_notes:
-  - "サブファイル(DEPENDENCIES.md等)は削除しない。SKILL.mdのみ編集する"
-  - "SC-026の詳細パターンはn8n-http-credential-patterns(足軽3号が作成)に委譲するため、ここは20行以内の簡潔なサマリーで十分"
-  - "報告YAMLはWriteツールで完全上書きすること（旧タスクデータ残存防止）"
-  - "git pull --rebase: 他の足軽と同時pushするため競合が起きる可能性あり"
-
-report_template:
-  task_id: subtask_321b
+task:
+  task_id: subtask_345a
+  parent_cmd: cmd_345
+  bloom_level: L3
+  description: "cmd_344修正のcommit+push + SC-046スキル新規作成"
+  assigned_to: ashigaru2
   report_to: gunshi
-  final_line_count: 0
-  sc_026_section_added: false
-  markdownlint_pass: false
-  push_success: false
-  commit_hash: ""
-  blockers: "なし"
-  skill_candidate:
-    found: false
+  status: in_progress
+  timestamp: "2026-03-27T14:25:44+09:00"
+  project: hananoen-gmail
+  priority: high
+  quality_rules:
+    - "コミットメッセージは日本語"
+    - "スキルファイルはmarkdownlint準拠"
+    - "既存スキルとの重複確認必須"
+  steps:
+    - step: 1
+      action: "git statusで変更対象を確認"
+      note: "cmd_344で修正されたファイル(watch_gmail_trigger.sh等)を確認"
+    - step: 2
+      action: "SC-046スキル作成: shogun-n8n-wf-version-switch-checklist"
+      note: |
+        保存先: ~/.claude/skills/shogun-n8n-wf-version-switch-checklist/SKILL.md
+        内容:
+        - WFバージョン切替時に関連スクリプトのWF_IDも同時更新する必要があるパターン
+        - grep -r による網羅的洗い出し手順
+        - cmd_344のdual-active再発を実例として記載
+        - チェックリスト形式: watch_*.sh, restart_*.sh, switch_*.sh, cron設定等
+        既存スキルとの重複確認:
+        - shogun-n8n-trigger-stuck-recovery と重複しないか確認
+        - shogun-n8n-wf-versioning と重複しないか確認（あれば統合を検討）
+        skill-creation-workflowスキルの手順に従うこと
+    - step: 3
+      action: "instructions/skill_candidates.yaml更新"
+      note: "SC-046のstatusをcreatedに更新、skill_pathを記載"
+    - step: 4
+      action: "全変更を1つのcommitにまとめてpush"
+      note: |
+        対象: watch_gmail_trigger.sh修正 + SKILL.md新規 + skill_candidates.yaml更新
+        コミットメッセージ例: fix(watch_gmail_trigger): WF_ID v5.3更新 + SC-046スキル新規作成
+    - step: 5
+      action: "レポート作成・報告"
+      note: "commit hash、作成ファイル一覧、pushの成否を報告。報告先: gunshi"

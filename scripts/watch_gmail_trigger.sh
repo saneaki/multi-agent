@@ -2,7 +2,7 @@
 # Gmail Trigger自動監視・自動復旧スクリプト
 # cmd_329 / subtask_329b (bugs fixed)
 #
-# Gmail自動化WF v5.2 (19oFs9lh8Vri10kA) のTrigger Stuckを検知し自動復旧する。
+# Gmail自動化WF v5.3 (QfAYLSoYe1TcLtWC) のTrigger Stuckを検知し自動復旧する。
 # cron登録: */30 * * * *
 
 set -euo pipefail
@@ -10,7 +10,7 @@ set -euo pipefail
 # ============================================================
 # 設定
 # ============================================================
-WF_ID="19oFs9lh8Vri10kA"
+WF_ID="QfAYLSoYe1TcLtWC"
 N8N_URL="http://localhost:5678"
 N8N_ENV="/home/ubuntu/.n8n-mcp/n8n/.env"
 SHOGUN_DIR="/home/ubuntu/shogun"
