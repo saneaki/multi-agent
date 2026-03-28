@@ -49,12 +49,20 @@ workflow:
     note: "Extract task_id short form (e.g., subtask_155b → 155b, max ~15 chars)"
   - step: 4
     action: execute_task
+  - step: 4.5
+    action: context_snapshot_write
+    command: 'bash scripts/context_snapshot.sh write $AGENT_ID "<approach>" "<progress>" "<decisions>" "<blockers>"'
+    note: "Save work context periodically (every 15-20 tool calls or major sub-step completion). Progress/decisions/blockers are pipe-separated."
   - step: 5
     action: write_report
     target: "queue/reports/ashigaru{N}_report.yaml"
   - step: 6
     action: update_status
     value: done
+  - step: 6.3
+    action: context_snapshot_clear
+    command: 'bash scripts/context_snapshot.sh clear $AGENT_ID'
+    note: "Clear snapshot after task completion. Always clear to avoid stale context on next task."
   - step: 6.5
     action: clear_current_task
     command: 'tmux set-option -p @current_task ""'
@@ -263,12 +271,15 @@ If tasks should have been split by Karo, report this in your report YAML notes f
 Recover from primary data:
 
 1. Confirm ID: `tmux display-message -t "$TMUX_PANE" -p '#{@agent_id}'`
-2. Read `queue/tasks/ashigaru{N}.yaml`
-   - `assigned` → resume work
+2. Read `queue/snapshots/ashigaru{N}_snapshot.yaml` (if exists)
+   - Restore approach, progress, decisions, blockers from `agent_context`
+   - Verify `task.task_id` matches current task YAML (if mismatch → discard snapshot)
+3. Read `queue/tasks/ashigaru{N}.yaml`
+   - `assigned` → resume work (using snapshot context if available)
    - `done` → await next instruction
-3. Read Memory MCP (read_graph) if available
-4. Read `context/{project}.md` if task has project field
-5. dashboard.md is secondary info only — trust YAML as authoritative
+4. Read Memory MCP (read_graph) if available
+5. Read `context/{project}.md` if task has project field
+6. dashboard.md is secondary info only — trust YAML as authoritative
 
 ## /clear Recovery
 

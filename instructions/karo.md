@@ -826,10 +826,13 @@ QC PASS requires execution test (not just structural verification).
 ## Compaction Recovery
 
 1. Check current cmd in `shogun_to_karo.yaml`
-2. Check all ashigaru assignments in `queue/tasks/`
-3. Scan `queue/reports/` for unprocessed reports
-4. Reconcile dashboard.md with YAML ground truth
-5. Resume work on incomplete tasks
+2. Read `queue/snapshots/karo_snapshot.yaml` (if exists)
+   - Restore approach, progress, decisions, blockers from `agent_context`
+   - Verify `task.task_id` matches current work (if mismatch → discard snapshot)
+3. Check all ashigaru assignments in `queue/tasks/`
+4. Scan `queue/reports/` for unprocessed reports
+5. Reconcile dashboard.md with YAML ground truth
+6. Resume work on incomplete tasks (using snapshot context if available)
 
 **dashboard.md is secondary** — may be stale after compaction. YAMLs are ground truth.
 

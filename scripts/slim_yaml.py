@@ -302,6 +302,34 @@ def slim_shugun_to_karo():
     return True
 
 
+def clean_old_snapshots(dry_run=False):
+    """Remove snapshot files older than 24 hours (by mtime)."""
+    snapshots_dir = get_queue_dir() / 'snapshots'
+    if not snapshots_dir.exists():
+        return True
+
+    cutoff = time.time() - 86400  # 24 hours
+    removed = 0
+
+    for filepath in sorted(snapshots_dir.glob('*.yaml')):
+        try:
+            if filepath.stat().st_mtime < cutoff:
+                if dry_run:
+                    print(f"[DRY-RUN] would remove old snapshot: {filepath}", file=sys.stderr)
+                else:
+                    os.remove(filepath)
+                    removed += 1
+        except FileNotFoundError:
+            continue
+        except OSError as e:
+            print(f"Warning: could not remove {filepath}: {e}", file=sys.stderr)
+            continue
+
+    if removed > 0:
+        print(f"Removed {removed} old snapshot(s) from {snapshots_dir}", file=sys.stderr)
+    return True
+
+
 def slim_all_inboxes(dry_run=False):
     queue_dir = get_queue_dir()
     inbox_dir = queue_dir / 'inbox'
@@ -376,6 +404,8 @@ def main():
         if not slim_reports(dry_run):
             sys.exit(1)
         if not slim_all_inboxes(dry_run):
+            sys.exit(1)
+        if not clean_old_snapshots(dry_run):
             sys.exit(1)
 
     # Process inbox for all agents

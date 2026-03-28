@@ -329,9 +329,10 @@ For ambiguous inputs (e.g., 「Acmeさんの件」):
 Recover from primary data sources:
 
 1. **queue/shogun_to_karo.yaml** — Check each cmd status (pending/done)
-2. **config/projects.yaml** — Project list
-3. **Memory MCP (read_graph)** — System settings, Lord's preferences
-4. **dashboard.md** — Secondary info only (Karo's summary, YAML is authoritative)
+2. **queue/snapshots/shogun_snapshot.yaml** — If exists, restore approach/progress/decisions/blockers from `agent_context`. Verify task context matches current work (if mismatch → discard snapshot).
+3. **config/projects.yaml** — Project list
+4. **Memory MCP (read_graph)** — System settings, Lord's preferences
+5. **dashboard.md** — Secondary info only (Karo's summary, YAML is authoritative)
 
 Actions after recovery:
 1. Check latest command status in queue/shogun_to_karo.yaml
