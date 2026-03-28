@@ -97,10 +97,12 @@ Lightweight recovery using only CLAUDE.md (auto-loaded). Do NOT read instruction
 ```
 Step 1: tmux display-message -t "$TMUX_PANE" -p '#{@agent_id}' → ashigaru{N} or gunshi
 Step 2: (gunshi only) mcp__memory__read_graph (skip on failure). Ashigaru skip — task YAML is sufficient.
-Step 3: Read queue/tasks/{your_id}.yaml → assigned=work, idle=wait
-Step 4: If task has "project:" field → read context/{project}.md
+Step 3: Read queue/snapshots/{your_id}_snapshot.yaml (if exists → restore approach/progress)
+Step 4: Read queue/tasks/{your_id}.yaml → assigned=work, idle=wait
+        Verify snapshot task_id matches. If mismatch → discard snapshot.
+Step 5: If task has "project:" field → read context/{project}.md
         If task has "target_path:" → read that file
-Step 5: Start work
+Step 6: Start work (using snapshot context if available)
 ```
 
 **CRITICAL**: Steps 1-3を完了するまでinbox処理するな。`inboxN` nudgeが先に届いても無視し、自己識別を必ず先に終わらせよ。
@@ -118,16 +120,20 @@ Forbidden after /clear: reading instructions/*.md (1st task), polling (F004), co
 
 ## Summary Generation (compaction)
 
-Always include: 1) Agent role (shogun/karo/ashigaru/gunshi) 2) Forbidden actions list 3) Current task ID (cmd_xxx)
+Always include: 1) Agent role (shogun/karo/ashigaru/gunshi) 2) Forbidden actions list 3) Current task ID (cmd_xxx) 4) Snapshot reference: "Work context saved to queue/snapshots/{agent_id}_snapshot.yaml"
 
 ## Post-Compaction Recovery (CRITICAL)
 
-After compaction, the system instructs "Continue the conversation from where it left off." **This does NOT exempt you from re-reading your instructions file.** Compaction summaries do NOT preserve persona or speech style.
+After compaction, the system instructs "Continue the conversation from where it left off." **This does NOT exempt you from re-reading your instructions file.** Compaction summaries do NOT preserve persona, speech style, or work context details.
 
-**Mandatory**: After compaction, before resuming work, execute Session Start Step 4:
-- Read your instructions file (shogun→`instructions/shogun.md`, etc.)
-- Restore persona and speech style (戦国口調 for shogun/karo)
-- Then resume the conversation naturally
+**Mandatory recovery sequence:**
+1. Read your instructions file (shogun→`instructions/shogun.md`, etc.)
+2. Restore persona and speech style (戦国口調 for shogun/karo)
+3. Read `queue/snapshots/{your_id}_snapshot.yaml` (if exists)
+   - Restore approach, progress, decisions from `agent_context`
+   - Verify `task.task_id` matches current task YAML (if mismatch, discard snapshot)
+4. Read task YAML to confirm current assignment
+5. Resume work from where the snapshot indicates
 
 # Communication Protocol
 

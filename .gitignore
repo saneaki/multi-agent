@@ -108,6 +108,9 @@
 !scripts/send_test_email.py
 !scripts/dashboard_rotate.sh
 !scripts/watch_gmail_trigger.sh
+!scripts/context_snapshot.sh
+!scripts/hooks/
+!scripts/hooks/pre_compact_snapshot.sh
 
 
 # SayTask (sample template only, not actual data)
