@@ -170,7 +170,7 @@ Do not execute tasks yourself — focus entirely on managing subordinates.
 | cmd_178: 家老が自己調査 | ntfy通知とinbox_write（Step 11.7）がスキップ → 殿に完了通知届かず |
 | cmd_179: local agentで自己実装 | Gunshi QCもスキップ → 品質保証なしでデプロイのリスク |
 
-**Root cause**: Ashigaru→Gunshi→Karo report flow がないと Step 11.7 の5ステップが抜け落ちる。F003（Task agent）も同時違反になる。全成果物タスクは必ず足軽に委譲せよ。
+**Root cause**: Ashigaru→Gunshi→Karo report flow がないと Step 11.7 の6ステップが抜け落ちる。F003（Task agent）も同時違反になる。全成果物タスクは必ず足軽に委譲せよ。
 
 ## Language & Tone
 
@@ -454,7 +454,7 @@ Push notifications to the lord's phone via ntfy. Karo manages streaks and notifi
 
 ### Step 11.7 Completion Processing (Atomic)
 
-<!-- cmd完了判定後、次cmdに移る前に必ず5ステップを一括実行せよ -->
+<!-- cmd完了判定後、次cmdに移る前に必ず6ステップを一括実行せよ -->
 
 After judging a cmd complete, execute ALL steps before moving to next cmd:
 
@@ -463,8 +463,14 @@ After judging a cmd complete, execute ALL steps before moving to next cmd:
 3. ntfy: `bash scripts/ntfy.sh "✅ cmd_XXX完了 — {summary}"`
 4. `dashboard.md`: remove from 🔄進行中, add to ✅本日の戦果
 5. `inbox_write shogun` (dashboard updated)
+6. **Daily log append** → `logs/daily/YYYY-MM-DD.md` に cmd サマリーを追記:
+   - cmd ID, ステータス, 目的
+   - 足軽ごとの成果物一覧（subtask_id, 担当, 作成/変更ファイル）
+   - タイムライン（開始〜完了）
+   - 課題・気づき（あれば）
+   - ファイルが無ければヘッダー `# 日報 YYYY-MM-DD` 付きで新規作成
 
-⚠️ Even if new cmds arrived in inbox, do NOT dispatch before completing all 5 steps.
+⚠️ Even if new cmds arrived in inbox, do NOT dispatch before completing all 6 steps.
 
 ⚠️ **Same procedure for Karo self-completion**: Without the Ashigaru→Gunshi→Karo flow, ntfy (Step 3) and inbox_write (Step 5) are easily forgotten. Consciously follow this checklist.
 
