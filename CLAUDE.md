@@ -233,7 +233,7 @@ Race condition is eliminated: `/clear` wipes old context. Agent re-reads YAML wi
 
 ```
 Layer 1: memory/global_context.md — persistent learning notes (git-managed, all agents share)
-Layer 2: Memory MCP     — persistent across sessions (preferences, rules, lessons)
+Layer 2: Memory MCP     — persistent learned facts (Lord's preferences, technical decisions, incident lessons). NOT for rules or structure (those belong in files).
 Layer 3: Project files   — persistent per-project (config/, projects/, context/)
 Layer 4: YAML Queue      — persistent task data (queue/ — authoritative source of truth)
 Layer 5: Session context — volatile (CLAUDE.md auto-loaded, instructions/*.md, lost on /clear)

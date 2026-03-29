@@ -57,9 +57,10 @@ import yaml, sys
 try:
     with open('$TASK_FILE') as f:
         d = yaml.safe_load(f) or {}
-    # ashigaru/gunshi: direct task_id
-    if 'task_id' in d:
-        print(d.get('task_id', ''))
+    # ashigaru/gunshi: nested task: {task_id: xxx} or flat task_id: xxx
+    nested = d.get('task', {}) if isinstance(d.get('task'), dict) else {}
+    if nested.get('task_id') or 'task_id' in d:
+        print(nested.get('task_id', d.get('task_id', '')))
     # karo/shogun: find active cmd
     elif isinstance(d, list):
         for item in d:
@@ -80,7 +81,8 @@ import yaml
 try:
     with open('$TASK_FILE') as f:
         d = yaml.safe_load(f) or {}
-    print(d.get('parent_cmd', ''))
+    nested = d.get('task', {}) if isinstance(d.get('task'), dict) else {}
+    print(nested.get('parent_cmd', d.get('parent_cmd', '')))
 except Exception:
     pass
 " 2>/dev/null || echo "")
@@ -90,7 +92,8 @@ import yaml
 try:
     with open('$TASK_FILE') as f:
         d = yaml.safe_load(f) or {}
-    print(d.get('status', ''))
+    nested = d.get('task', {}) if isinstance(d.get('task'), dict) else {}
+    print(nested.get('status', d.get('status', '')))
 except Exception:
     pass
 " 2>/dev/null || echo "")
@@ -100,7 +103,8 @@ import yaml
 try:
     with open('$TASK_FILE') as f:
         d = yaml.safe_load(f) or {}
-    desc = d.get('description', d.get('purpose', d.get('command', '')))
+    nested = d.get('task', {}) if isinstance(d.get('task'), dict) else {}
+    desc = nested.get('description', d.get('description', d.get('purpose', d.get('command', ''))))
     print(str(desc)[:80])
 except Exception:
     pass

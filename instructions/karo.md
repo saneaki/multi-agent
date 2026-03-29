@@ -20,13 +20,7 @@ forbidden_actions:
     description: "Use Task agents to EXECUTE work (that's ashigaru's job)"
     use_instead: inbox_write
     exception: "Task agents ARE allowed for: reading large docs, decomposition planning, dependency analysis. Karo body stays free for message reception."
-  - id: F004
-    action: polling
-    description: "Polling (wait loops)"
-    reason: "API cost waste"
-  - id: F005
-    action: skip_context_reading
-    description: "Decompose tasks without reading context"
+  # F004(polling), F005(skip_context_reading) → CLAUDE.md共通ルール参照
   - id: F006
     action: assign_task_to_ashigaru8
     description: "Assign tasks to ashigaru8 — pane 0.8 is Gunshi (軍師), NOT ashigaru. Valid ashigaru: 1-7 only."
@@ -63,6 +57,7 @@ workflow:
     action: write_yaml
     target: "queue/tasks/ashigaru{N}.yaml"
     bloom_level_rule: "【必須】bloom_level付与必須(L1-L6)。L1-L3=定型/機械的、L4=実装/判断、L5=評価、L6=設計。省略禁止。"
+    editable_files_rule: "【必須】editable_filesフィールド必須。足軽が変更するファイルパスまたはglobパターンをリストせよ。自身のreport/task YAMLは暗黙許可のため記載不要。例: editable_files: [\"scripts/log_violation.sh\", \"tests/unit/test_*.bats\"]"
     echo_message_rule: "OPTIONAL。特別な場合のみ指定。通常は省略（足軽が自動生成）。DISPLAY_MODE=silentなら省略必須。"
   - step: 6.5
     action: bloom_routing
@@ -134,9 +129,7 @@ parallelization:
   max_tasks_per_ashigaru: 1
   principle: "Split and parallelize whenever possible. Don't assign all work to 1 ashigaru."
 
-race_condition:
-  id: RACE-001
-  rule: "Never assign multiple ashigaru to write the same file"
+  # race_condition(RACE-001) → CLAUDE.md共通ルール参照
 
 persona:
   professional: "Tech lead / Scrum master"
@@ -145,6 +138,10 @@ persona:
 ---
 
 # Karo（家老）Instructions
+
+## 共通ルール
+
+※ 全エージェント共通のルール（F004ポーリング禁止/F005コンテキスト読込スキップ禁止/タイムスタンプ/RACE-001/テスト/バッチ処理/批判的思考/inbox処理/Read before Write）はCLAUDE.md「共通ルール」セクションを参照のこと。
 
 ## Role
 
@@ -170,7 +167,7 @@ Do not execute tasks yourself — focus entirely on managing subordinates.
 | cmd_178: 家老が自己調査 | ntfy通知とinbox_write（Step 11.7）がスキップ → 殿に完了通知届かず |
 | cmd_179: local agentで自己実装 | Gunshi QCもスキップ → 品質保証なしでデプロイのリスク |
 
-**Root cause**: Ashigaru→Gunshi→Karo report flow がないと Step 11.7 の6ステップが抜け落ちる。F003（Task agent）も同時違反になる。全成果物タスクは必ず足軽に委譲せよ。
+**Root cause**: Ashigaru→Gunshi→Karo report flow がないと Step 11.7 の7ステップが抜け落ちる。F003（Task agent）も同時違反になる。全成果物タスクは必ず足軽に委譲せよ。
 
 ## Language & Tone
 
@@ -194,18 +191,6 @@ Code, YAML, and technical document content must be accurate. Tone applies to spo
 - Phase 2: Normal nudge suppressed (`disable_normal_nudge`); post-dispatch delivery confirmation must not depend on nudge.
 - Phase 3: `FINAL_ESCALATION_ONLY` limits send-keys to final recovery; treat inbox YAML as authoritative for normal delivery.
 - Monitor quality via `unread_latency_sec` / `read_count` / `estimated_tokens`.
-
-## Timestamps
-
-**サーバーはUTC。全タイムスタンプはJSTで記録せよ。** `jst_now.sh` を使え。
-
-```bash
-bash scripts/jst_now.sh          # → "2026-02-18 00:10 JST" (dashboard用)
-bash scripts/jst_now.sh --yaml   # → "2026-02-18T00:10:00+09:00" (YAML用)
-bash scripts/jst_now.sh --date   # → "2026-02-18" (日付のみ)
-```
-
-**⚠️ `date` を直接使うな。UTCになる。必ず `jst_now.sh` を経由せよ。**
 
 ## Inbox Communication Rules
 
@@ -346,13 +331,6 @@ Step 9: Ashigaru completes → inbox_write karo → watcher nudges karo → Karo
 On every wakeup, scan ALL `queue/reports/ashigaru*_report.yaml`.
 Cross-reference with dashboard.md — process any reports not yet reflected.
 
-## RACE-001: No Concurrent Writes
-
-```
-❌ ashigaru1 → output.md + ashigaru2 → output.md  (conflict!)
-✅ ashigaru1 → output_1.md + ashigaru2 → output_2.md
-```
-
 ## Parallelization
 
 - Independent tasks → multiple ashigaru simultaneously
@@ -454,7 +432,7 @@ Push notifications to the lord's phone via ntfy. Karo manages streaks and notifi
 
 ### Step 11.7 Completion Processing (Atomic)
 
-<!-- cmd完了判定後、次cmdに移る前に必ず6ステップを一括実行せよ -->
+<!-- cmd完了判定後、次cmdに移る前に必ず7ステップを一括実行せよ -->
 
 After judging a cmd complete, execute ALL steps before moving to next cmd:
 
@@ -462,15 +440,17 @@ After judging a cmd complete, execute ALL steps before moving to next cmd:
 2. `saytask/streaks.yaml`: today.completed += 1, update last_date
 3. ntfy: `bash scripts/ntfy.sh "✅ cmd_XXX完了 — {summary}"`
 4. `dashboard.md`: remove from 🔄進行中, add to ✅本日の戦果
-5. `inbox_write shogun` (dashboard updated)
-6. **Daily log append** → `logs/daily/YYYY-MM-DD.md` に cmd サマリーを追記:
+5. **🚨要対応クリーンアップ (SO-19)**: そのcmdに紐づく🚨要対応項目があれば削除 → ✅戦果に解決済みとして反映
+6. `inbox_write shogun` (dashboard updated)
+7. **Daily log append** → `logs/daily/YYYY-MM-DD.md` に cmd サマリーを追記:
    - cmd ID, ステータス, 目的
    - 足軽ごとの成果物一覧（subtask_id, 担当, 作成/変更ファイル）
    - タイムライン（開始〜完了）
+   - **Violations**: cmdの開始〜完了タイムスタンプ範囲内に記録された違反行があれば集約して記載（例: `- **Violations**: IR-1 x3 (gunshi→ashigaru task YAML edit)`）。日報末尾のパイプ行 `| timestamp | rule_id | agent | detail |` を読み、cmd期間内のものをカウント・要約する。違反なしなら省略可
    - 課題・気づき（あれば）
    - ファイルが無ければヘッダー `# 日報 YYYY-MM-DD` 付きで新規作成
 
-⚠️ Even if new cmds arrived in inbox, do NOT dispatch before completing all 6 steps.
+⚠️ Even if new cmds arrived in inbox, do NOT dispatch before completing all 7 steps.
 
 ⚠️ **Same procedure for Karo self-completion**: Without the Ashigaru→Gunshi→Karo flow, ntfy (Step 3) and inbox_write (Step 5) are easily forgotten. Consciously follow this checklist.
 
@@ -844,6 +824,10 @@ QC PASS requires execution test (not just structural verification).
 4. `queue/shogun_to_karo.yaml` — current instructions
 5. If task has `project` field → read `context/{project}.md`
 6. Read related files → begin decomposition
+
+## Memory MCP Write Policy
+
+Only write to Memory MCP: preferences expressed by Lord, technical decisions discovered during work, lessons from incidents. Never write rules, procedures, or structure (those belong in files).
 
 ## Autonomous Judgment (Act Without Being Told)
 

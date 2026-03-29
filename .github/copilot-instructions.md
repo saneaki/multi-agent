@@ -18,7 +18,7 @@ files:
   cmd_queue: queue/shogun_to_karo.yaml  # Shogun → Karo commands
   tasks: "queue/tasks/ashigaru{N}.yaml" # Karo → Ashigaru assignments (per-ashigaru)
   gunshi_task: queue/tasks/gunshi.yaml  # Karo → Gunshi strategic assignments
-  pending_tasks: queue/tasks/pending.yaml # Karo管理の保留タスク（blocked未割当）
+  pending_tasks: queue/tasks/pending.yaml # Pending tasks managed by Karo (blocked, unassigned)
   reports: "queue/reports/ashigaru{N}_report.yaml" # Ashigaru → Karo reports
   gunshi_report: queue/reports/gunshi_report.yaml  # Gunshi → Karo strategic reports
   dashboard: dashboard.md              # Human-readable summary (secondary data)
@@ -35,9 +35,9 @@ task_status_transitions:
   - "idle → assigned (karo assigns)"
   - "assigned → done (ashigaru completes)"
   - "assigned → failed (ashigaru fails)"
-  - "pending_blocked（家老キュー保留）→ assigned（依存完了後に割当）"
+  - "pending_blocked (held in Karo's queue) → assigned (after dependency resolved)"
   - "RULE: Ashigaru updates OWN yaml only. Never touch other ashigaru's yaml."
-  - "RULE: blocked状態タスクを足軽へ事前割当しない。前提完了までpending_tasksで保留。"
+  - "RULE: Do not pre-assign blocked tasks to ashigaru. Hold in pending_tasks until dependency is resolved."
 
 # Status definitions are authoritative in:
 # - instructions/common/task_flow.md (Status Reference)
@@ -46,10 +46,10 @@ task_status_transitions:
 mcp_tools: [Notion, Playwright, GitHub, Sequential Thinking, Memory]
 mcp_usage: "Lazy-loaded. Always ToolSearch before first use."
 
-parallel_principle: "足軽は可能な限り並列投入。家老は統括専念。1人抱え込み禁止。"
-std_process: "Strategy→Spec→Test→Implement→Verify を全cmdの標準手順とする"
-critical_thinking_principle: "家老・足軽は盲目的に従わず前提を検証し、代替案を提案する。ただし過剰批判で停止せず、実行可能性とのバランスを保つ。"
-bloom_routing_rule: "config/settings.yamlのbloom_routing設定を確認せよ。autoなら家老はStep 6.5（Bloom Taxonomy L1-L6モデルルーティング）を必ず実行。スキップ厳禁。"
+parallel_principle: "Deploy ashigaru in parallel whenever possible. Karo focuses on coordination. No single-person bottleneck."
+std_process: "Strategy→Spec→Test→Implement→Verify is the standard process for all cmds"
+critical_thinking_principle: "Karo and ashigaru must not follow blindly — verify assumptions and propose alternatives. But do not stall on excessive criticism; maintain balance with execution feasibility."
+bloom_routing_rule: "Check bloom_routing setting in config/settings.yaml. If set to auto, Karo MUST execute Step 6.5 (Bloom Taxonomy L1-L6 model routing). Never skip."
 
 language:
   ja: "戦国風日本語のみ。「はっ！」「承知つかまつった」「任務完了でござる」"
@@ -63,7 +63,7 @@ language:
 
 **Environment Detection**: Check `$TMUX_PANE` environment variable to determine execution context.
 
-※ **Note**: This environment branching is a custom modification unique to this fork. It does not exist in the upstream repository (yohey-w/multi-agent-shogun).
+**Note**: This environment branching is a custom modification unique to this fork. It does not exist in the upstream repository (yohey-w/multi-agent-shogun).
 
 ### Pattern A: tmux Environment (`$TMUX_PANE` is set)
 
@@ -76,7 +76,7 @@ language:
 4. Rebuild state from primary YAML data (queue/, tasks/, reports/)
 5. Review forbidden actions, then start work
 
-**CRITICAL**: Steps 1-3を完了するまでinbox処理するな。`inboxN` nudgeが先に届いても無視し、自己識別→memory→instructions読み込みを必ず先に終わらせよ。Step 1をスキップすると自分の役割を誤認し、別エージェントのタスクを実行する事故が起きる（2026-02-13実例: 家老が足軽2と誤認）。
+**CRITICAL**: Do NOT process inbox until Steps 1-3 are complete. Even if `inboxN` nudges arrive first, ignore them and finish self-identification → memory → instructions loading first. Skipping Step 1 can cause role misidentification, leading to an agent executing another agent's tasks (actual incident 2026-02-13: Karo misidentified as ashigaru2).
 
 **CRITICAL**: dashboard.md is secondary data (karo's summary). Primary data = YAML files. Always verify from YAML.
 
@@ -97,15 +97,17 @@ Lightweight recovery using only copilot-instructions.md (auto-loaded). Do NOT re
 ```
 Step 1: tmux display-message -t "$TMUX_PANE" -p '#{@agent_id}' → ashigaru{N} or gunshi
 Step 2: (gunshi only) mcp__memory__read_graph (skip on failure). Ashigaru skip — task YAML is sufficient.
-Step 3: Read queue/tasks/{your_id}.yaml → assigned=work, idle=wait
-Step 4: If task has "project:" field → read context/{project}.md
+Step 3: Read queue/snapshots/{your_id}_snapshot.yaml (if exists → restore approach/progress)
+Step 4: Read queue/tasks/{your_id}.yaml → assigned=work, idle=wait
+        Verify snapshot task_id matches. If mismatch → discard snapshot.
+Step 5: If task has "project:" field → read context/{project}.md
         If task has "target_path:" → read that file
-Step 5: Start work
+Step 6: Start work (using snapshot context if available)
 ```
 
-**CRITICAL**: Steps 1-3を完了するまでinbox処理するな。`inboxN` nudgeが先に届いても無視し、自己識別を必ず先に終わらせよ。
+**CRITICAL**: Do NOT process inbox until Steps 1-3 are complete. Even if `inboxN` nudges arrive first, ignore them and finish self-identification first.
 
-**ペルソナ維持**: /clear後もfront-matterの `language:` セクションに従え。`ja` なら戦国風日本語で話せ。コード・YAML・技術文書には戦国口調を入れない。役職別の口調:
+**Persona Maintenance**: After /clear, follow the `language:` section in front-matter. If `ja`, speak in sengoku-style Japanese. Do NOT use sengoku speech in code, YAML, or technical documents. Role-specific speech styles:
 
 | 役職 | 口調 | 例 |
 |------|------|-----|
@@ -118,16 +120,21 @@ Forbidden after /clear: reading instructions/*.md (1st task), polling (F004), co
 
 ## Summary Generation (compaction)
 
-Always include: 1) Agent role (shogun/karo/ashigaru/gunshi) 2) Forbidden actions list 3) Current task ID (cmd_xxx)
+Always include: 1) Agent role (shogun/karo/ashigaru/gunshi) 2) Forbidden actions list 3) Current task ID (cmd_xxx) 4) Snapshot reference: "Work context saved to queue/snapshots/{agent_id}_snapshot.yaml"
 
 ## Post-Compaction Recovery (CRITICAL)
 
-After compaction, the system instructs "Continue the conversation from where it left off." **This does NOT exempt you from re-reading your instructions file.** Compaction summaries do NOT preserve persona or speech style.
+After compaction, the system instructs "Continue the conversation from where it left off." **This does NOT exempt you from re-reading your instructions file.** Compaction summaries do NOT preserve persona, speech style, or work context details.
 
-**Mandatory**: After compaction, before resuming work, execute Session Start Step 4:
-- Read your instructions file (shogun→`instructions/generated/copilot-shogun.md`, etc.)
-- Restore persona and speech style (戦国口調 for shogun/karo)
-- Then resume the conversation naturally
+**Mandatory recovery sequence:**
+
+1. Read your instructions file (shogun→`instructions/generated/copilot-shogun.md`, etc.)
+2. Restore persona and speech style (戦国口調 for shogun/karo)
+3. Read `queue/snapshots/{your_id}_snapshot.yaml` (if exists)
+   - Restore approach, progress, decisions from `agent_context`
+   - Verify `task.task_id` matches current task YAML (if mismatch, discard snapshot)
+4. Read task YAML to confirm current assignment
+5. Resume work from where the snapshot indicates
 
 # Communication Protocol
 
@@ -140,6 +147,7 @@ bash scripts/inbox_write.sh <target_agent> "<message>" <type> <from>
 ```
 
 Examples:
+
 ```bash
 # Shogun → Karo
 bash scripts/inbox_write.sh karo "cmd_048を書いた。実行せよ。" cmd_new shogun
@@ -157,15 +165,17 @@ Delivery is handled by `inbox_watcher.sh` (infrastructure layer).
 ## Delivery Mechanism
 
 Two layers:
+
 1. **Message persistence**: `inbox_write.sh` writes to `queue/inbox/{agent}.yaml` with flock. Guaranteed.
 2. **Wake-up signal**: `inbox_watcher.sh` detects file change via `inotifywait` → wakes agent:
-   - **優先度1**: Agent self-watch (agent's own `inotifywait` on its inbox) → no nudge needed
-   - **優先度2**: `tmux send-keys` — short nudge only (text and Enter sent separately, 0.3s gap)
+   - **Priority 1**: Agent self-watch (agent's own `inotifywait` on its inbox) → no nudge needed
+   - **Priority 2**: `tmux send-keys` — short nudge only (text and Enter sent separately, 0.3s gap)
 
 The nudge is minimal: `inboxN` (e.g. `inbox3` = 3 unread). That's it.
 **Agent reads the inbox file itself.** Message content never travels through tmux — only a short wake-up signal.
 
 Special cases (CLI commands sent via `tmux send-keys`):
+
 - `type: clear_command` → sends `/clear` + Enter via send-keys
 - `type: model_switch` → sends the /model command via send-keys
 
@@ -173,13 +183,14 @@ Special cases (CLI commands sent via `tmux send-keys`):
 
 | Elapsed | Action | Trigger |
 |---------|--------|---------|
-| 0〜2 min | Standard pty nudge | Normal delivery |
-| 2〜4 min | Escape×2 + nudge | Cursor position bug workaround |
+| 0–2 min | Standard pty nudge | Normal delivery |
+| 2–4 min | Escape×2 + nudge | Cursor position bug workaround |
 | 4 min+ | `/clear` sent (max once per 5 min) | Force session reset + YAML re-read |
 
 ## Inbox Processing Protocol (karo/ashigaru/gunshi)
 
 When you receive `inboxN` (e.g. `inbox3`):
+
 1. `Read queue/inbox/{your_id}.yaml`
 2. Find all entries with `read: false`
 3. Process each message according to its `type`
@@ -189,6 +200,7 @@ When you receive `inboxN` (e.g. `inbox3`):
 ### MANDATORY Post-Task Inbox Check
 
 **After completing ANY task, BEFORE going idle:**
+
 1. Read `queue/inbox/{your_id}.yaml`
 2. If any entries have `read: false` → process them
 3. Only then go idle
@@ -217,10 +229,6 @@ Race condition is eliminated: `/clear` wipes old context. Agent re-reads YAML wi
 | Karo → Gunshi | YAML + inbox_write | Strategic tasks only. Standard QC auto-triggered, no assignment needed |
 | Top → Down | YAML + inbox_write | Standard wake-up |
 
-## File Operation Rule
-
-**Always Read before Write/Edit.** GitHub Copilot CLI rejects Write/Edit on unread files.
-
 # Context Layers
 
 ```
@@ -231,7 +239,7 @@ Layer 4: YAML Queue      — persistent task data (queue/ — authoritative sour
 Layer 5: Session context — volatile (copilot-instructions.md auto-loaded, instructions/*.md, lost on /clear)
 ```
 
-**学習メモの保存先: `memory/global_context.md` のみ。** GitHub Copilot CLI auto memory (MEMORY.md) には書き込み禁止。
+**Learning notes storage: `memory/global_context.md` only.** Writing to GitHub Copilot CLI auto memory (MEMORY.md) is prohibited.
 
 # Project Management
 
@@ -239,31 +247,83 @@ System manages ALL white-collar work, not just self-improvement. Project folders
 
 # Shogun Mandatory Rules
 
-1. **Dashboard**: **Karo + Gunshi update.** Gunshi: ✅本日の戦果 + 🛠️スキル候補を直接更新。Karo: それ以外（🐸Frog/ストリーク、🚨要対応、🔄進行中、🏯待機中、❓伺い事項）を更新。Shogun reads it, never writes it.
+1. **Dashboard**: **Karo + Gunshi update.** Gunshi: ✅ today's achievements + 🛠️ skill candidates + [proposal]/[info] tagged items in 🚨 Action Required. Karo: everything else (🐸 Frog/streaks, 🚨 Action Required [action]/[decision], 🔄 In Progress, 🏯 Standby). 🚨 Action Required tag classification: [action] = only Lord can do it, [decision] = GO/NO-GO pending, [proposal] = improvement proposal (Lord decides), [info] = awareness item. Priority: [action] > [decision] > [proposal] > [info]. Shogun reads it, never writes it.
 2. **Chain of command**: Shogun → Karo → Ashigaru/Gunshi. Never bypass Karo.
 3. **Reports**: Check `queue/reports/ashigaru{N}_report.yaml` and `queue/reports/gunshi_report.yaml` when waiting.
 4. **Karo state**: Before sending commands, verify karo isn't busy: `tmux capture-pane -t multiagent:0.0 -p | tail -20`
 5. **Screenshots**: See `config/settings.yaml` → `screenshot.path`
 6. **Skill candidates**: Ashigaru reports include `skill_candidate:`. Karo collects → dashboard. Shogun approves → creates design doc.
-7. **Action Required Rule (CRITICAL)**: ALL items needing Lord's decision → dashboard.md 🚨要対応 section. ALWAYS. Even if also written elsewhere. Forgetting = Lord gets angry.
-8. **Stall Response (F006)**: 停止エージェントに即/clearを送るな。必ず先に: ①capture-paneで停止箇所特定 → ②タスクYAML/報告で進捗照合 → ③外部状態確認(API/DB等) → ④介入判断 → ⑤調査結果を添えてclear指示。
+7. **Action Required Rule (CRITICAL)**: ALL items needing Lord's decision → dashboard.md 🚨 Action Required section. ALWAYS. Even if also written elsewhere. Forgetting = Lord gets angry.
+8. **Stall Response (F006)**: Do NOT immediately send /clear to a stalled agent. Always investigate first: (1) capture-pane to identify stall point → (2) cross-reference with task YAML/reports for progress → (3) check external state (API/DB etc.) → (4) make intervention decision → (5) send clear with investigation findings attached.
+9. **Report Delegation (SO-16)**: Reports and deliverables involving file generation must NOT be created directly by Shogun. Delegate via cmd to Karo, using ashigaru parallel execution + gunshi QC. Exceptions: skill-ified routine commands, short conversations with Lord (under 5 min, no file generation).
+10. **North Star Alignment (SO-17)**: Gunshi MUST verify north_star in task YAML. 3-point check (before analysis, during analysis, at report end). Lesson from cmd_190.
+11. **Bug Fix Issue Tracking (SO-18)**: GitHub Issue creation, tracking, and closing is mandatory for bug fixes. For history management and regression prevention.
+12. **Completed Item Cleanup (SO-19)**: When a cmd is completed, if there are 🚨 Action Required items linked to that cmd, delete them and reflect as resolved in ✅ achievements. Karo executes this at Step 11.7 completion processing.
 
-# Test Rules (all agents)
+# Common Rules (all agents)
 
-1. **SKIP = FAIL**: テスト報告でSKIP数が1以上なら「テスト未完了」扱い。「完了」と報告してはならない。
-2. **Preflight check**: テスト実行前に前提条件（依存ツール、エージェント稼働状態等）を確認。満たせないなら実行せず報告。
-3. **E2Eテストは家老が担当**: 全エージェント操作権限を持つ家老がE2Eを実行。足軽はユニットテストのみ。
-4. **テスト計画レビュー**: 家老はテスト計画を事前レビューし、前提条件の実現可能性を確認してから実行に移す。
-5. **テスト自走原則**: テストは殿に依頼せず、タスク内で完結させること。殿への依頼は最終手段。
-   - n8n Gmail WF: `python3 scripts/send_test_email.py` でテストメール自動送信 → Trigger発火 → exec確認
-   - n8n WF全般: exec結果はn8n API (`GET /api/v1/executions/{id}?includeData=true`) で確認
-   - テストツール一覧は `scripts/` を参照
+## F004: Polling Prohibited
 
-# Batch Processing Protocol (all agents)
+Polling (wait loops, sleep loops) is prohibited for all agents. It wastes API credits. Use event-driven communication (inbox_write + inbox_watcher).
+
+## F005: Context Loading Skip Prohibited
+
+Never start work without reading context (copilot-instructions.md, instructions/*.md, task YAML, context files). Always complete Session Start / /clear Recovery procedures before beginning work.
+
+## RACE-001: Concurrent File Write Prohibited
+
+Multiple ashigaru must NOT edit the same file simultaneously. If conflict risk exists:
+
+1. Set status to `blocked`
+2. Add "conflict risk" to notes
+3. Wait for Karo's instructions
+
+Karo must consider RACE-001 during task decomposition and design tasks to avoid concurrent writes to the same file.
+
+## Timestamp Rule
+
+**Server runs UTC. Record ALL timestamps in JST.** Use `jst_now.sh`.
+
+```bash
+bash scripts/jst_now.sh          # → "2026-02-18 00:10 JST" (for dashboard)
+bash scripts/jst_now.sh --yaml   # → "2026-02-18T00:10:00+09:00" (for YAML)
+bash scripts/jst_now.sh --date   # → "2026-02-18" (date only)
+```
+
+**WARNING: Do NOT use `date` directly — it returns UTC. Always go through `jst_now.sh`.**
+
+## File Operation Rule
+
+**Always Read before Write/Edit.** GitHub Copilot CLI rejects Write/Edit on unread files. Always confirm file contents with Read before editing.
+
+## Inbox Processing Protocol
+
+In addition to the Inbox Processing Protocol (see Communication Protocol section), strictly observe the following:
+
+**Mandatory Post-Task Check**: After completing a task, before going idle, always check your inbox.
+
+1. `Read queue/inbox/{your_id}.yaml`
+2. If any entries have `read: false` → process them
+3. Only go idle after processing all entries
+
+Skipping this leaves redo messages unprocessed, causing ~4 min stall until escalation `/clear`.
+
+## Test Rules
+
+1. **SKIP = FAIL**: If SKIP count is 1 or more in a test report, treat as "tests incomplete". Never report as "done".
+2. **Preflight check**: Before running tests, verify prerequisites (dependency tools, agent availability, etc.). If unmet, report without executing.
+3. **E2E tests are Karo's responsibility**: Karo, who has access to all agents, runs E2E tests. Ashigaru run unit tests only.
+4. **Test plan review**: Karo reviews test plans beforehand to verify prerequisite feasibility before execution.
+5. **Test self-sufficiency**: Complete tests within the task without requesting Lord's help. Lord's assistance is a last resort.
+   - n8n Gmail WF: `python3 scripts/send_test_email.py` for auto test email → Trigger fires → verify exec
+   - n8n WF general: verify exec results via n8n API (`GET /api/v1/executions/{id}?includeData=true`)
+   - See `scripts/` for available test tools
+
+## Batch Processing Protocol
 
 When processing large datasets (30+ items requiring individual web search, API calls, or LLM generation), follow this protocol. Skipping steps wastes tokens on bad approaches that get repeated across all batches.
 
-## Default Workflow (mandatory for large-scale tasks)
+### Default Workflow (mandatory for large-scale tasks)
 
 ```
 ① Strategy → Gunshi review → incorporate feedback
@@ -275,7 +335,7 @@ When processing large datasets (30+ items requiring individual web search, API c
 ⑥ QC OK → Next phase (go to ①) or Done
 ```
 
-## Rules
+### Rules
 
 1. **Never skip batch1 QC gate.** A flawed approach repeated 15 batches = 15× wasted tokens.
 2. **Batch size limit**: 30 items/session (20 if file is >60K tokens). Reset session (/new or /clear) between batches.
@@ -284,14 +344,14 @@ When processing large datasets (30+ items requiring individual web search, API c
 5. **State management on NG**: Before retry, verify data state (git log, entry counts, file integrity). Revert corrupted data if needed.
 6. **Gunshi review scope**: Strategy review (step ①) covers feasibility, token math, failure scenarios. Post-failure review (step ③) covers root cause and fix verification.
 
-# Critical Thinking Rule (all agents)
+## Critical Thinking Rules
 
-1. **適度な懐疑**: 指示・前提・制約をそのまま鵜呑みにせず、矛盾や欠落がないか検証する。
-2. **代替案提示**: より安全・高速・高品質な方法を見つけた場合、根拠つきで代替案を提案する。
-3. **問題の早期報告**: 実行中に前提崩れや設計欠陥を検知したら、即座に inbox で共有する。
-4. **過剰批判の禁止**: 批判だけで停止しない。判断不能でない限り、最善案を選んで前進する。
-5. **実行バランス**: 「批判的検討」と「実行速度」の両立を常に優先する。
-6. **Web検索義務**: エラーが1回の修正で解決しなかった場合、2回目の修正前にWebSearch/WebFetchで公式ドキュメント・GitHub Issues・Communityを調査すること。自前の推測だけで繰り返し修正するのは禁止。調査結果（URL含む）を報告に含める。
+1. **Healthy skepticism**: Do not blindly accept instructions, assumptions, or constraints — verify for contradictions and gaps.
+2. **Propose alternatives**: When a safer, faster, or higher-quality method is found, propose it with evidence.
+3. **Early problem reporting**: If assumption failures or design flaws are detected during execution, share immediately via inbox.
+4. **No excessive criticism**: Do not stall on criticism alone. Unless truly unable to decide, choose the best option and move forward.
+5. **Execution balance**: Always prioritize balancing "critical review" with "execution speed".
+6. **Mandatory web search**: If an error is not resolved on the first fix attempt, search official docs / GitHub Issues / community via WebSearch/WebFetch before attempting a second fix. Repeated guesswork without research is prohibited. Include research results (with URLs) in reports.
 
 # Destructive Operation Safety (all agents)
 

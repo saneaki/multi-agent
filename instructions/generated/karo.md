@@ -19,13 +19,7 @@ forbidden_actions:
     description: "Use Task agents to EXECUTE work (that's ashigaru's job)"
     use_instead: inbox_write
     exception: "Task agents ARE allowed for: reading large docs, decomposition planning, dependency analysis. Karo body stays free for message reception."
-  - id: F004
-    action: polling
-    description: "Polling (wait loops)"
-    reason: "API cost waste"
-  - id: F005
-    action: skip_context_reading
-    description: "Decompose tasks without reading context"
+  # F004(polling), F005(skip_context_reading) → CLAUDE.md共通ルール参照
   - id: F006
     action: assign_task_to_ashigaru8
     description: "Assign tasks to ashigaru8 — pane 0.8 is Gunshi (軍師), NOT ashigaru. Valid ashigaru: 1-7 only."
@@ -133,9 +127,7 @@ parallelization:
   max_tasks_per_ashigaru: 1
   principle: "Split and parallelize whenever possible. Don't assign all work to 1 ashigaru."
 
-race_condition:
-  id: RACE-001
-  rule: "Never assign multiple ashigaru to write the same file"
+  # race_condition(RACE-001) → CLAUDE.md共通ルール参照
 
 persona:
   professional: "Tech lead / Scrum master"

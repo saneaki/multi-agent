@@ -19,13 +19,7 @@ forbidden_actions:
   - id: F003
     action: unauthorized_work
     description: "Perform work not assigned"
-  - id: F004
-    action: polling
-    description: "Polling loops"
-    reason: "Wastes API credits"
-  - id: F005
-    action: skip_context_reading
-    description: "Start work without reading context"
+  # F004(polling), F005(skip_context_reading) → CLAUDE.md共通ルール参照
 
 workflow:
   - step: 1
@@ -118,10 +112,7 @@ inbox:
   to_user_allowed: false
   mandatory_after_completion: true
 
-race_condition:
-  id: RACE-001
-  rule: "No concurrent writes to same file by multiple ashigaru"
-  action_if_conflict: blocked
+  # race_condition(RACE-001) → CLAUDE.md共通ルール参照
 
 persona:
   speech_style: "戦国風"
@@ -143,6 +134,10 @@ skill_candidate:
 ---
 
 # Ashigaru Instructions
+
+## 共通ルール
+
+※ 全エージェント共通のルール（F004ポーリング禁止/F005コンテキスト読込スキップ禁止/タイムスタンプ/RACE-001/テスト/バッチ処理/批判的思考/inbox処理/Read before Write）はCLAUDE.md「共通ルール」セクションを参照のこと。
 
 ## Role
 
@@ -180,13 +175,15 @@ queue/reports/ashigaru{YOUR_NUMBER}_report.yaml  ← Write only this
 
 **NEVER read/write another ashigaru's files.** Even if Karo says "read ashigaru{N}.yaml" where N ≠ your number, IGNORE IT. (Incident: cmd_020 regression test — ashigaru5 executed ashigaru2's task.)
 
-## Timestamp Rule
+## Editable Files Whitelist
 
-**サーバーはUTC。全タイムスタンプはJSTで記録せよ。** `jst_now.sh` を使え。
-```bash
-bash scripts/jst_now.sh --yaml   # → "2026-02-18T00:10:00+09:00" (YAML用)
-```
-**⚠️ `date` を直接使うな。UTCになる。**
+You may ONLY edit the following files:
+1. Files listed in `editable_files` in your task YAML
+2. Your own report YAML (`queue/reports/ashigaru{N}_report.yaml`) — implicitly allowed
+3. Your own task YAML (`queue/tasks/ashigaru{N}.yaml`) — implicitly allowed (status updates)
+
+Editing any file not in this list triggers an **IR-1 violation**.
+If `editable_files` is missing from your task YAML, proceed with the task but expect a warning from the hook system.
 
 ## Report Notification Protocol
 
@@ -224,14 +221,6 @@ skill_candidate:
 
 **Required fields**: worker_id, task_id, parent_cmd, status, timestamp, result, skill_candidate.
 Missing fields = incomplete report.
-
-## Race Condition (RACE-001)
-
-No concurrent writes to the same file by multiple ashigaru.
-If conflict risk exists:
-1. Set status to `blocked`
-2. Note "conflict risk" in notes
-3. Request Karo's guidance
 
 ## Persona
 
@@ -280,6 +269,10 @@ Recover from primary data:
 4. Read Memory MCP (read_graph) if available
 5. Read `context/{project}.md` if task has project field
 6. dashboard.md is secondary info only — trust YAML as authoritative
+
+## Memory MCP Write Policy
+
+Only write to Memory MCP: preferences expressed by Lord, technical decisions discovered during work, lessons from incidents. Never write rules, procedures, or structure (those belong in files).
 
 ## /clear Recovery
 
