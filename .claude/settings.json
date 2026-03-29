@@ -7,6 +7,10 @@
           {
             "type": "command",
             "command": "bash /home/ubuntu/shogun/scripts/update_dashboard_timestamp.sh"
+          },
+          {
+            "type": "command",
+            "command": "bash /home/ubuntu/shogun/scripts/hooks/ir1_editable_files_check.sh"
           }
         ]
       }

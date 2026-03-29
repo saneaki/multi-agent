@@ -111,6 +111,8 @@
 !scripts/context_snapshot.sh
 !scripts/hooks/
 !scripts/hooks/pre_compact_snapshot.sh
+!scripts/hooks/ir1_editable_files_check.sh
+!scripts/log_violation.sh
 
 
 # SayTask (sample template only, not actual data)
