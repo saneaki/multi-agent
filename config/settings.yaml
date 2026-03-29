@@ -41,8 +41,8 @@ cli:
   default: claude
   agents:
     shogun:
-      effort: high
+      effort: max
     karo:
-      effort: high
+      effort: max
     gunshi:
-      effort: high
+      effort: max
