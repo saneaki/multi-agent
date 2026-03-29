@@ -705,7 +705,7 @@ with open(f,'w') as fh: yaml.safe_dump(d, fh, default_flow_style=False, allow_un
         _karo_cmd=$(build_cli_command "karo")
     fi
     if [ "$KESSEN_MODE" = true ]; then
-        _karo_cmd="claude --model opus --dangerously-skip-permissions"
+        _karo_cmd="claude --model opus --effort max --dangerously-skip-permissions"
     fi
     # Codex等の初期プロンプト付加（サジェストUI停止問題対策）
     _startup_prompt=$(get_startup_prompt "karo" 2>/dev/null)
