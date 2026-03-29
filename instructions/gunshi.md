@@ -211,6 +211,7 @@ This prevents the 9-hour stall incident (cmd_244/245, 2026-02-27) where Karo wen
    ⚠️ Time column MUST use `bash scripts/jst_now.sh` (NEVER raw `date`)
    ⚠️ After Edit, MUST Read dashboard.md to verify the write was applied.
    If not reflected, retry Edit (max 2 retries). This prevents silent write failures (ref: cmd_277b incident).
+   ⚠️ T3: 戦果追加は先頭行に挿入（降順維持）。最新cmdが常にテーブル最上段に来ること。
 7.5. skill_candidate found in ashigaru report → dashboard.md「🛠️ 生成されたスキル」セクションに1行追加。
    フォーマット: | **{スキル名}** | {出典cmd}: {概要}。スキル化承認待ち |
    ※ F006の許可範囲内。dedup check（既にスキル欄に同名があれば追加不要）。

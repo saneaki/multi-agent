@@ -157,3 +157,74 @@ make_input() {
     [ "$status" -eq 0 ]
     [ ! -f "$TEST_TMP/violation_calls.log" ]
 }
+
+@test "T-IR1-013: ashigaru editing own inbox YAML is implicitly allowed" {
+    create_task_yaml "ashigaru2" "scripts/hooks/*.sh"
+    run_hook "$(make_input "$TEST_TMP/queue/inbox/ashigaru2.yaml")" "ashigaru2"
+    [ "$status" -eq 0 ]
+    [ ! -f "$TEST_TMP/violation_calls.log" ]
+}
+
+@test "T-IR1-014: ashigaru editing OTHER agent inbox YAML triggers violation" {
+    create_task_yaml "ashigaru1" "scripts/hooks/*.sh"
+    run_hook "$(make_input "$TEST_TMP/queue/inbox/ashigaru3.yaml")" "ashigaru1"
+    [ "$status" -eq 0 ]
+    [ -f "$TEST_TMP/violation_calls.log" ]
+    grep -q "IR-1" "$TEST_TMP/violation_calls.log"
+}
+
+@test "T-IR1-015: ashigaru editing skill SKILL.md is implicitly allowed" {
+    create_task_yaml "ashigaru3" "scripts/hooks/*.sh"
+    run_hook "$(make_input "/home/ubuntu/.claude/skills/shogun-n8n-filesystem-v2-binary/SKILL.md")" "ashigaru3"
+    [ "$status" -eq 0 ]
+    [ ! -f "$TEST_TMP/violation_calls.log" ]
+}
+
+@test "T-IR1-016: ashigaru editing non-SKILL.md in skills dir triggers violation" {
+    create_task_yaml "ashigaru1" "scripts/hooks/*.sh"
+    run_hook "$(make_input "/home/ubuntu/.claude/skills/some-skill/README.md")" "ashigaru1"
+    [ "$status" -eq 0 ]
+    [ -f "$TEST_TMP/violation_calls.log" ]
+    grep -q "IR-1" "$TEST_TMP/violation_calls.log"
+}
+
+@test "T-IR1-017: target_path in task YAML allows editing that file" {
+    local agent_id="ashigaru4"
+    local yaml_file="$TEST_TMP/queue/tasks/${agent_id}.yaml"
+    cat > "$yaml_file" << YAML
+task:
+  task_id: test_task_tp
+  status: assigned
+  target_path: "context/some_project.md"
+  editable_files:
+    - "scripts/*.sh"
+YAML
+    run_hook "$(make_input "$TEST_TMP/context/some_project.md")" "$agent_id"
+    [ "$status" -eq 0 ]
+    [ ! -f "$TEST_TMP/violation_calls.log" ]
+}
+
+@test "T-IR1-018: target_path directory allows editing files under it" {
+    local agent_id="ashigaru6"
+    local yaml_file="$TEST_TMP/queue/tasks/${agent_id}.yaml"
+    mkdir -p "$TEST_TMP/projects/myproject"
+    cat > "$yaml_file" << YAML
+task:
+  task_id: test_task_dir
+  status: assigned
+  target_path: "$TEST_TMP/projects/myproject"
+  editable_files:
+    - "scripts/*.sh"
+YAML
+    run_hook "$(make_input "$TEST_TMP/projects/myproject/main.py")" "$agent_id"
+    [ "$status" -eq 0 ]
+    [ ! -f "$TEST_TMP/violation_calls.log" ]
+}
+
+@test "T-IR1-019: existing block targets still trigger violation" {
+    create_task_yaml "ashigaru1" "scripts/hooks/*.sh"
+    run_hook "$(make_input "$TEST_TMP/instructions/shogun.md")" "ashigaru1"
+    [ "$status" -eq 0 ]
+    [ -f "$TEST_TMP/violation_calls.log" ]
+    grep -q "IR-1" "$TEST_TMP/violation_calls.log"
+}

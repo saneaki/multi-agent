@@ -7,6 +7,7 @@ dashboard.md 🛠️スキル欄から溢れた全エントリ。最新順（上
 
 | スキル名 | 出典 |
 |----------|------|
+| **n8n-credential-oauth-refresh** | cmd_354: n8n SQLite復号→OAuth refresh_token→access_token取得→Google Sheets API直叩きパターン。スキル化承認待ち |
 | **skill-creation-workflow** ✅ | cmd_340(SC-045): スキル候補→評価→統合/新規判断→SKILL.md作成→更新→pushの標準プロセス。171L新規作成。 |
 | **shogun-n8n-wf-version-switch-checklist** ✅ | cmd_344(SC-046): WFバージョン切替時のスクリプトWF_ID更新チェックリスト。grep -r洗い出し・dual-active防止・実例付き。SKILL.md 122行新規作成。 |
 | **shogun-n8n-runners-enabled-deprecation** → 統合済 | cmd_331→cmd_332: trigger-stuck-recoveryに統合済み。 |

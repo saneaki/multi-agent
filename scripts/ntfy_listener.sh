@@ -155,8 +155,21 @@ while true; do
         [ "$EVENT" != "message" ] && continue
 
         # Skip outbound messages (sent by our own scripts/ntfy.sh)
+        # Exception: outbound+cmd_complete → notify shogun (not via ntfy_inbox)
         TAGS=$(echo "$line" | parse_tags)
-        echo "$TAGS" | grep -q "outbound" && continue
+        if echo "$TAGS" | grep -q "outbound"; then
+            if echo "$TAGS" | grep -q "cmd_complete"; then
+                # cmd_complete: send lightweight notification to shogun pane
+                CMD_MSG=$(echo "$line" | parse_json message)
+                [ -z "$CMD_MSG" ] && continue
+                echo "[$(date)] cmd_complete received: $CMD_MSG" >&2
+                SHOGUN_PANE=$(tmux list-panes -t multiagent -a -F '#{pane_id} #{@agent_id}' 2>/dev/null | grep shogun | awk '{print $1}')
+                if [ -n "$SHOGUN_PANE" ]; then
+                    tmux send-keys -t "$SHOGUN_PANE" "cmd_complete: ${CMD_MSG:0:80}" Enter
+                fi
+            fi
+            continue
+        fi
 
         # Extract message content
         MSG=$(echo "$line" | parse_json message)

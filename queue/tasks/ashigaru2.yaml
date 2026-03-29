@@ -1,43 +1,63 @@
 task:
-  task_id: subtask_345a
-  parent_cmd: cmd_345
+  task_id: subtask_377a
+  parent_cmd: cmd_377
+  status: done
   bloom_level: L3
-  description: "cmd_344修正のcommit+push + SC-046スキル新規作成"
+  description: "ntfy cmd_completeタグ実装: ntfy.sh第3引数タグ追加+ntfy_listener.shのcmd_complete通知処理+karo.md Step11.7更新+テスト"
   assigned_to: ashigaru2
   report_to: gunshi
-  status: in_progress
-  timestamp: "2026-03-27T14:25:44+09:00"
-  project: hananoen-gmail
-  priority: high
-  quality_rules:
-    - "コミットメッセージは日本語"
-    - "スキルファイルはmarkdownlint準拠"
-    - "既存スキルとの重複確認必須"
-  steps:
-    - step: 1
-      action: "git statusで変更対象を確認"
-      note: "cmd_344で修正されたファイル(watch_gmail_trigger.sh等)を確認"
-    - step: 2
-      action: "SC-046スキル作成: shogun-n8n-wf-version-switch-checklist"
-      note: |
-        保存先: ~/.claude/skills/shogun-n8n-wf-version-switch-checklist/SKILL.md
-        内容:
-        - WFバージョン切替時に関連スクリプトのWF_IDも同時更新する必要があるパターン
-        - grep -r による網羅的洗い出し手順
-        - cmd_344のdual-active再発を実例として記載
-        - チェックリスト形式: watch_*.sh, restart_*.sh, switch_*.sh, cron設定等
-        既存スキルとの重複確認:
-        - shogun-n8n-trigger-stuck-recovery と重複しないか確認
-        - shogun-n8n-wf-versioning と重複しないか確認（あれば統合を検討）
-        skill-creation-workflowスキルの手順に従うこと
-    - step: 3
-      action: "instructions/skill_candidates.yaml更新"
-      note: "SC-046のstatusをcreatedに更新、skill_pathを記載"
-    - step: 4
-      action: "全変更を1つのcommitにまとめてpush"
-      note: |
-        対象: watch_gmail_trigger.sh修正 + SKILL.md新規 + skill_candidates.yaml更新
-        コミットメッセージ例: fix(watch_gmail_trigger): WF_ID v5.3更新 + SC-046スキル新規作成
-    - step: 5
-      action: "レポート作成・報告"
-      note: "commit hash、作成ファイル一覧、pushの成否を報告。報告先: gunshi"
+  north_star: "将軍がcmd完了を自動検知し殿に即報告できる体制を構築する。cmd_366のtrigger-based設計と整合する形で実現する"
+  editable_files:
+    - "scripts/ntfy.sh"
+    - "scripts/ntfy_listener.sh"
+    - "instructions/karo.md"
+  acceptance_criteria:
+    - "ntfy.shに第3引数(追加タグ)オプションが実装されている"
+    - "第3引数指定時 Tags: outbound,{追加タグ} が送信される"
+    - "ntfy_listener.shがoutbound+cmd_completeタグ付きメッセージをスキップしない"
+    - "cmd_completeメッセージ受信時、将軍paneにtmux send-keysで軽量通知を送信する"
+    - "ntfy_inbox.yamlには書き込まない(殿の指示と混同しない)"
+    - "from_karo_allowed: falseルールは維持(inbox_writeは使わない)"
+    - "karo.md Step 11.7のntfy送信にcmd_completeタグ追加が記載されている"
+    - "テスト: cmd_completeタグ付きntfy送信が正常動作する"
+  instructions: |
+    ntfy経由のcmd完了通知で将軍を自動起動する仕組みを実装せよ。
+
+    ■ 修正1: scripts/ntfy.sh
+    - Read scripts/ntfy.sh
+    - 第3引数 EXTRA_TAGS を追加（オプション）
+    - 指定時: Tags: outbound,{EXTRA_TAGS}
+    - 未指定時: Tags: outbound（現行動作維持）
+    - 例: bash scripts/ntfy.sh "message" "title" "cmd_complete"
+      → Tags: outbound,cmd_complete
+
+    ■ 修正2: scripts/ntfy_listener.sh
+    - Read scripts/ntfy_listener.sh
+    - L157-159のoutboundスキップロジックを変更:
+      - outboundのみ → スキップ（現行動作維持）
+      - outbound + cmd_complete → スキップしない → 将軍起動処理へ
+    - 将軍起動処理を追加:
+      - cmd_completeタグ検出時、tmux send-keys で将軍paneに通知
+      - 将軍pane: tmux display-message -t "$(tmux list-panes -t multiagent -a -F '#{window_name}:#{pane_index} #{@agent_id}' | grep shogun | cut -d' ' -f1)" 等で特定
+        → または shogun:main (固定) を使用
+      - 通知内容は短く: "cmd_complete: {メッセージの一部}" 程度
+      - ntfy_inbox.yamlには絶対に書き込まない
+
+    ■ 修正3: instructions/karo.md
+    - Read instructions/karo.md
+    - Step 11.7の ntfy送信ステップを探す
+    - 既存: bash scripts/ntfy.sh "メッセージ" "タイトル"
+    - 変更: bash scripts/ntfy.sh "メッセージ" "タイトル" "cmd_complete"
+    - cmd_completeタグを付ける旨を明記
+
+    ■ 設計制約
+    - from_karo_allowed: false は絶対に変更しない
+    - inbox_write.shは使わない（ntfy経路のみ）
+    - 将軍への通知は起動トリガーのみ。内容はdashboard.mdから読む設計
+
+    ■ テスト
+    - bash scripts/ntfy.sh "テスト" "test" "cmd_complete" が正常送信されることを確認
+    - Tags ヘッダーに outbound,cmd_complete が含まれることを確認(curlの-v等で)
+    - ntfy_listener.shの変更箇所が構文エラーなくbash -n通過
+  project: shogun-system
+  timestamp: "2026-03-29T21:45:00+09:00"

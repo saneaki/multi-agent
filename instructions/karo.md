@@ -86,7 +86,7 @@ workflow:
     action: update_dashboard
     target: dashboard.md
     timestamp: "bash scripts/jst_now.sh (NEVER raw date command)"
-    cleanup_rule: "完了cmd→🔄進行中から削除→✅戦果に1-3行サマリ追加。50行超→2週超古いエントリ削除。ステータスボードとして簡潔に。"
+    cleanup_rule: "完了cmd→🔄進行中から削除→✅戦果に1-3行サマリ追加。戦果追加は先頭行に挿入（降順維持）。最新cmdが常にテーブル最上段に来ること。50行超→2週超古いエントリ削除。ステータスボードとして簡潔に。"
   - step: 11.5
     action: unblock_dependent_tasks
     note: "blocked_by に完了task_idがあれば削除。リスト空→blocked→assigned→send-keys。"
@@ -438,9 +438,9 @@ After judging a cmd complete, execute ALL steps before moving to next cmd:
 
 1. `shogun_to_karo.yaml`: status → done
 2. `saytask/streaks.yaml`: today.completed += 1, update last_date
-3. ntfy: `bash scripts/ntfy.sh "✅ cmd_XXX完了 — {summary}"`
+3. ntfy: `bash scripts/ntfy.sh "✅ cmd_XXX完了 — {summary}" "" "cmd_complete"`
 4. `dashboard.md`: remove from 🔄進行中, add to ✅本日の戦果
-5. **🚨要対応クリーンアップ (SO-19)**: そのcmdに紐づく🚨要対応項目があれば削除 → ✅戦果に解決済みとして反映
+5. **🚨要対応クリーンアップ (SO-19)**: `bash scripts/cmd_complete.sh {cmd_id}` を実行し、🚨残存を確認。WARNING表示があれば該当項目を削除 → ✅戦果に解決済みとして反映
 6. `inbox_write shogun` (dashboard updated)
 7. **Daily log append** → `logs/daily/YYYY-MM-DD.md` に cmd サマリーを追記:
    - cmd ID, ステータス, 目的
@@ -578,7 +578,7 @@ Update on every dashboard.md update. Frog section at **top** (after title, befor
 ## ntfy Notification to Lord
 
 ```bash
-bash scripts/ntfy.sh "✅ cmd_{id} 完了 — {summary}"
+bash scripts/ntfy.sh "✅ cmd_{id} 完了 — {summary}" "" "cmd_complete"
 bash scripts/ntfy.sh "❌ {subtask} 失敗 — {reason}"
 bash scripts/ntfy.sh "🚨 要対応 — {content}"
 ```

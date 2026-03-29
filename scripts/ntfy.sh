@@ -21,13 +21,18 @@ while IFS= read -r line; do
     [ -n "$line" ] && AUTH_ARGS+=("$line")
 done < <(ntfy_get_auth_args "$SCRIPT_DIR/config/ntfy_auth.env")
 
-# メッセージとTitle（オプション）
+# メッセージとTitle（オプション）とExtra Tags（オプション）
 MESSAGE="$1"
 TITLE="${2:-}"
+EXTRA_TAGS="${3:-}"
 
 # curlヘッダー構築
 CURL_HEADERS=()
-CURL_HEADERS+=(-H "Tags: outbound")
+if [[ -n "$EXTRA_TAGS" ]]; then
+  CURL_HEADERS+=(-H "Tags: outbound,$EXTRA_TAGS")
+else
+  CURL_HEADERS+=(-H "Tags: outbound")
+fi
 CURL_HEADERS+=(-H "Markdown: yes")
 if [[ -n "$TITLE" ]]; then
   CURL_HEADERS+=(-H "Title: $TITLE")

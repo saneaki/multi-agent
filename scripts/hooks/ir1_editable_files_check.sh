@@ -42,11 +42,17 @@ if [[ ! "$AGENT_ID" =~ ^ashigaru[0-9]+$ ]]; then
     exit 0
 fi
 
-# Implicit allowlist: own report YAML and own task YAML
+# Implicit allowlist: own report YAML, task YAML, and inbox YAML
 REPORT_YAML="${SHOGUN_ROOT}/queue/reports/${AGENT_ID}_report.yaml"
 TASK_YAML="${SHOGUN_ROOT}/queue/tasks/${AGENT_ID}.yaml"
+INBOX_YAML="${SHOGUN_ROOT}/queue/inbox/${AGENT_ID}.yaml"
 
-if [ "$FILE_PATH" = "$REPORT_YAML" ] || [ "$FILE_PATH" = "$TASK_YAML" ]; then
+if [ "$FILE_PATH" = "$REPORT_YAML" ] || [ "$FILE_PATH" = "$TASK_YAML" ] || [ "$FILE_PATH" = "$INBOX_YAML" ]; then
+    exit 0
+fi
+
+# Implicit allowlist: skill SKILL.md files (skill creation/update tasks)
+if [[ "$FILE_PATH" == /home/ubuntu/.claude/skills/*/SKILL.md ]]; then
     exit 0
 fi
 
@@ -68,6 +74,17 @@ with open(task_yaml) as f:
 
 task = data.get('task', {})
 editable = task.get('editable_files', None)
+
+# Check target_path (implicit editable)
+target_path = task.get('target_path', None)
+if target_path:
+    if not os.path.isabs(target_path):
+        target_path = os.path.join(shogun_root, target_path)
+    target_path = os.path.abspath(target_path)
+    fp = os.path.abspath(file_path)
+    if fp == target_path or fp.startswith(target_path + os.sep):
+        print('MATCH')
+        sys.exit(0)
 
 if editable is None:
     print('MISSING')

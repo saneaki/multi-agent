@@ -20,6 +20,7 @@
 !CHANGELOG.md
 !CONTRIBUTING.md
 !SECURITY.md
+!difference.md
 
 # Claude Code settings (spinner verbs only, no secrets)
 !.claude/

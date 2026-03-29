@@ -1,27 +1,36 @@
 worker_id: ashigaru3
-task_id: subtask_348a
-parent_cmd: cmd_348
-timestamp: "2026-03-27T23:25:16+09:00"
+task_id: subtask_379a
+parent_cmd: cmd_379
+timestamp: "2026-03-29T22:00:37+09:00"
 status: done
 
 result:
-  summary: "watch_gmail_trigger.sh廃止完了（cron削除+git rm+commit+push+dashboard🚨削除）"
-  crontab:
-    removed: "*/15 * * * * /home/ubuntu/shogun/scripts/watch_gmail_trigger.sh >> /home/ubuntu/shogun/logs/watch_gmail_trigger.log 2>&1"
-    remaining:
-      - "0 15 * * * dashboard_rotate.sh"
-      - "30 18 * * * restart_n8n.sh"
-      - "0 * * * * notion_session_log.sh"
-    verification: "他の3エントリ全て健在確認済み"
-  git:
-    action: "git rm scripts/watch_gmail_trigger.sh"
-    commit_hash: bacf119
-    commit_msg: "chore: watch_gmail_trigger.sh廃止（v5.3 Schedule Trigger移行済みのため不要）"
-    push: "SUCCESS (7292423..bacf119 original -> original)"
-  dashboard:
-    action: "🚨要対応[情報]からwatch_gmail_trigger.sh行を削除"
-    note: "dashboard.mdはgitignore対象のため、ローカル変更のみ"
-  log_file: "logs/watch_gmail_trigger.log は履歴参照用に残留（quality_rules準拠）"
+  summary: "dashboard.md本日の戦果テーブルから重複エントリ8行除去（cmd_362-368の7cmd、15行→7行）"
+  files_modified:
+    - "dashboard.md"
+  notes: |
+    除去判定（各cmdで詳細な方を残留）:
+    - cmd_362: 「401挿入/347削除+AC指定5ルール違反0」の行を残留（具体的数値あり）
+    - cmd_363: 同一内容2行のうち後時刻(10:29)を残留
+    - cmd_364: 「dashboard+日次ログ+軍師提案HIGH/MED/LOW評価」の行を残留（機能説明が詳細）
+    - cmd_365: combined行（365a+365b統合）を残留（1cmd1行ルール遵守）
+    - cmd_366: 「+workflow step4更新」追加情報がある行を残留
+    - cmd_367: 「→2obs残+Key_Decisions維持」表現の行を残留（後時刻15:13）
+    - cmd_368: 「fork-vs-upstream」コンテキスト表現の行を残留
+    降順（時刻降順）維持を確認済み。
+    ※タスク記載は7組14行→7行だが実際はcmd_365が3行あり15行→7行（8行削減）。
+  acceptance_criteria:
+    - criteria: "重複エントリが全て除去されている"
+      met: true
+      evidence: "cmd_362-368各1行のみ。15行→7行（8行削減）"
+    - criteria: "各cmdの戦果は1行のみ残っている（内容がより詳細な方を残す）"
+      met: true
+    - criteria: "残した行の内容が欠落・変質していない"
+      met: true
+      evidence: "Read確認済み。元テキスト完全維持"
+    - criteria: "テーブルの降順（新しいものが上）が維持されている"
+      met: true
+      evidence: "15:32>15:13>14:08>10:54>10:29>10:29>10:23"
 
 blockers: "なし"
 

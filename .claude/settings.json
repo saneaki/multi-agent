@@ -13,6 +13,35 @@
             "command": "bash /home/ubuntu/shogun/scripts/hooks/ir1_editable_files_check.sh"
           }
         ]
+      },
+      {
+        "matcher": "tool == \"Bash\"",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{const i=JSON.parse(d);const cmd=i.tool_input?.command||'';const agent=process.env.TMUX_PANE?(()=>{try{return require('child_process').execSync('tmux display-message -t \\\"'+process.env.TMUX_PANE+'\\\" -p \\'#{@agent_id}\\'',{encoding:'utf8'}).trim()}catch(e){return'unknown'}})():'unknown';const patterns=[{p:/rm\\\\s+-rf/,r:'IR-2: rm -rf detected'},{p:/git\\\\s+push\\\\s+(-f|--force)(?!-with-lease)/,r:'IR-2: git push --force without --force-with-lease'},{p:/git\\\\s+reset\\\\s+--hard/,r:'IR-2: git reset --hard detected'},{p:/\\\\bkill(all)?\\\\b|\\\\bpkill\\\\b|tmux\\\\s+kill/,r:'IR-2: process kill detected'},{p:/\\\\bsudo\\\\b|\\\\bsu\\\\s/,r:'IR-2: privilege escalation detected'},{p:/curl.*\\\\|.*sh|wget.*\\\\|.*sh/,r:'IR-2: pipe-to-shell detected'}];patterns.forEach(({p,r})=>{if(p.test(cmd)){console.error('[Hook] WARNING: '+r+' | cmd: '+cmd.substring(0,80));try{require('child_process').execSync('bash /home/ubuntu/shogun/scripts/log_violation.sh IR-2 '+agent+' \\\"'+r.replace(/\\\"/g,'')+'\\\"')}catch(e){}}});console.log(d)})\""
+          }
+        ]
+      },
+      {
+        "matcher": "tool == \"Bash\"",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{const i=JSON.parse(d);const cmd=i.tool_input?.command||'';const agent=process.env.TMUX_PANE?(()=>{try{return require('child_process').execSync('tmux display-message -t \\\"'+process.env.TMUX_PANE+'\\\" -p \\'#{@agent_id}\\'',{encoding:'utf8'}).trim()}catch(e){return'unknown'}})():'unknown';if(/\\\\bsleep\\\\s+[0-9]|while\\\\s+(true|:).*sleep|\\\\bwatch\\\\s|for\\\\s.*sleep/.test(cmd)){console.error('[Hook] WARNING: IR-5 polling/sleep pattern detected | agent: '+agent+' | cmd: '+cmd.substring(0,80));try{require('child_process').execSync('bash /home/ubuntu/shogun/scripts/log_violation.sh IR-5 '+agent+' \\\"polling/sleep pattern: '+cmd.substring(0,60).replace(/\\\"/g,'')+'\\\"')}catch(e){}}console.log(d)})\""
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /home/ubuntu/shogun/scripts/hooks/pre_compact_snapshot.sh"
+          }
+        ]
       }
     ],
     "Stop": [
@@ -22,6 +51,15 @@
             "type": "command",
             "command": "bash scripts/stop_hook_inbox.sh",
             "timeout": 60
+          }
+        ]
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /home/ubuntu/shogun/scripts/notion_session_log.sh >> /tmp/notion_session_log.log 2>&1 || true"
           }
         ]
       }
