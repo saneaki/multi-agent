@@ -3,10 +3,10 @@
 # Log Violation: Record rule violations to daily log
 #
 # Usage:
-#   bash scripts/log_violation.sh <rule_id> <agent_id> <detail>
+#   bash scripts/log_violation.sh <rule_id> <agent_id> <detail> [cmd_id]
 #
 # Example:
-#   bash scripts/log_violation.sh IR-1 ashigaru3 "F001: Shogun edited implementation file directly"
+#   bash scripts/log_violation.sh IR-1 ashigaru3 "F001: Shogun edited implementation file directly" cmd_381/subtask_381a
 #
 # Output: Appends to logs/daily/YYYY-MM-DD.md
 # ============================================================
@@ -17,9 +17,10 @@ SHOGUN_ROOT="/home/ubuntu/shogun"
 RULE_ID="${1:-}"
 AGENT_ID="${2:-}"
 DETAIL="${3:-}"
+CMD_ID="${4:-}"
 
 if [ -z "$RULE_ID" ] || [ -z "$AGENT_ID" ] || [ -z "$DETAIL" ]; then
-    echo "Usage: log_violation.sh <rule_id> <agent_id> <detail>" >&2
+    echo "Usage: log_violation.sh <rule_id> <agent_id> <detail> [cmd_id]" >&2
     exit 1
 fi
 
@@ -44,7 +45,7 @@ mkdir -p "$LOG_DIR"
 
     # Append a single pipe-delimited violation line (no heading, no table header)
     # Karo consolidates these raw lines into cmd entries in Step 11.7
-    echo "| ${TIMESTAMP} | ${RULE_ID} | ${AGENT_ID} | ${DETAIL} |" >> "$LOG_FILE"
+    echo "| ${TIMESTAMP} | ${RULE_ID} | ${AGENT_ID} | ${CMD_ID} | ${DETAIL} |" >> "$LOG_FILE"
 
 ) 200>"$LOCKFILE"
 

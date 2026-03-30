@@ -1,8 +1,8 @@
 # Fork Difference Analysis: shogun vs upstream
 
-> **Generated**: 2026-03-29
-> **Base**: `git diff upstream/main...original` (61 files, +7701/−2023 lines)
-> **Upstream**: yohey-w/multi-agent-shogun
+> **Generated**: 2026-03-31
+> **Base**: `git diff upstream/main...original` (63 files, +8047/−2024 lines)
+> **Upstream**: https://github.com/yohey-w/multi-agent-shogun.git
 > **Fork branch**: original
 
 ## Summary
@@ -12,9 +12,9 @@ This fork extends the upstream multi-agent-shogun system with production-grade o
 1. **Context resilience** — Snapshot write/clear system for surviving /clear and compaction
 2. **Autonomous QC pipeline** — Gunshi self-triggers quality checks without Karo assignment
 3. **JST timestamp enforcement** — All timestamps use `jst_now.sh` (prevents UTC accidents)
-4. **Skill management lifecycle** — Candidate tracking, policy, evaluation, and promotion pipeline
+4. **Skill management lifecycle** — Candidate tracking, policy, evaluation, promotion pipeline, and periodic stocktake (cmd_390: 16 candidates reviewed, 5 new + 4 integrated)
 5. **Operational safety** — F006 blind-clear ban, IR-1 editable-files whitelist guard, SO-19 completion cleanup enforcement, stall response protocol
-6. **Notification integration** — ntfy push (with cmd_complete tag for Shogun auto-wake) + Google Chat + Notion session logging
+6. **Notification integration** — ntfy push (with cmd_complete tag for Shogun auto-wake) + Google Chat (`gchat_send.sh` with rate-limit sleep) + Notion session logging
 7. **VPS/WSL2 environment** — Paths, tmux TZ, hostname guards, dual-environment settings
 8. **Rule enforcement automation** — Hook-based violation detection (IR-1/IR-2/IR-5), qc_auto_check.sh, cmd_complete.sh for SO-19 compliance
 
@@ -26,13 +26,14 @@ This fork extends the upstream multi-agent-shogun system with production-grade o
 
 | File | Change Type | Intent | Upstream Merge Guidance |
 |------|-------------|--------|------------------------|
-| `scripts/cmd_complete_notifier.sh` | fork-added | Watches dashboard.md with inotifywait; sends ntfy push to Lord's phone on new ✅ cmd completion. Pre-seeds state to prevent startup flood. | Keep fork — no upstream equivalent |
+| `scripts/cmd_complete_notifier.sh` | fork-added | Watches dashboard.md with inotifywait; sends ntfy push to Lord's phone on new cmd completion. Pre-seeds state to prevent startup flood. | Keep fork — no upstream equivalent |
 | `scripts/context_snapshot.sh` | fork-added | CLI (write/clear/read) to persist agent work-in-progress context to `queue/snapshots/<agent_id>_snapshot.yaml` with flock concurrency. Enables post-compaction recovery. | Keep fork — no upstream equivalent |
 | `scripts/dashboard_rotate.sh` | fork-added | Daily midnight JST cron: renames "本日の戦果"→"昨日の戦果", resets streak/frog/completion fields, trims skill section to 5 entries via FIFO archive to `memory/skill_history.md`. | Keep fork — no upstream equivalent |
+| `scripts/gchat_send.sh` | fork-added | Google Chat Webhook wrapper (9 lines): sources `.env` for `GCHAT_WEBHOOK_URL`, sends JSON-escaped message via curl, enforces `sleep 5` between calls to avoid 429 rate-limit errors (lesson from cmd_386 18-part send). | Keep fork — no upstream equivalent |
 | `scripts/hooks/ir1_editable_files_check.sh` | fork-added | PostToolUse hook enforcing IR-1 editable-files whitelist for ashigaru agents. Reads task YAML, resolves globs, implicit allowlist (own inbox, SKILL.md), logs violations via `log_violation.sh`. Non-ashigaru exempt. | Keep fork — no upstream equivalent |
 | `scripts/hooks/pre_compact_snapshot.sh` | fork-added | PreCompact hook that auto-captures task metadata and uncommitted file list before context compaction. Handles nested task YAML structure. Preserves existing `agent_context`. Always exits 0. | Keep fork — no upstream equivalent |
 | `scripts/inbox_watcher.sh` | fork-modified | Bug fix: after sending `/clear`, sets `NEW_CONTEXT_SENT=1` (was 0) preventing spurious CONTEXT-RESET loop. Two cosmetic blank-line changes. | Merge upstream, preserve fork sections |
-| `scripts/inbox_write.sh` | fork-modified | After writing shogun inbox with `cmd_complete`/`cmd_milestone` type, auto-calls `ntfy.sh` with formatted title (✅/📌 + cmd_id). Non-blocking; ntfy errors logged to stderr only. | Keep fork — no upstream equivalent |
+| `scripts/inbox_write.sh` | fork-modified | After writing shogun inbox with `cmd_complete`/`cmd_milestone` type, auto-calls `ntfy.sh` with formatted title. Non-blocking; ntfy errors logged to stderr only. | Keep fork — no upstream equivalent |
 | `scripts/jst_now.sh` | fork-added | Tiny utility outputting JST time in three formats (dashboard, YAML ISO-8601, date-only). Required by all timestamp-producing scripts to avoid UTC accidents (L006 lesson). | Keep fork — no upstream equivalent |
 | `scripts/log_violation.sh` | fork-added | Appends pipe-delimited violation entries to daily log `logs/daily/YYYY-MM-DD.md` with flock. Used by IR-1 hook and other enforcement points. | Keep fork — no upstream equivalent |
 | `scripts/notion_session_log.sh` | fork-added | 914-line Stop-hook: extracts dashboard data (streak, completed count, project breakdown) and upserts to Notion Activity Log DB + owner's diary page. Idempotent per day. | Keep fork — no upstream equivalent |
@@ -56,14 +57,14 @@ This fork extends the upstream multi-agent-shogun system with production-grade o
 
 | File | Change Type | Intent | Upstream Merge Guidance |
 |------|-------------|--------|------------------------|
-| `instructions/ashigaru.md` | fork-modified | Adds: context snapshot steps (4.5, 6.3), expanded skill_candidate guidance with n8n heuristics, JST timestamp rule, report target switched to Gunshi, `suggestions.yaml` persistence, editable_files whitelist section, Fork Extensions (output naming, n8n fix protocol, internal parallelization). | Keep fork — no upstream equivalent |
+| `instructions/ashigaru.md` | fork-modified | Adds: context snapshot steps (4.5, 6.3), expanded skill_candidate guidance with n8n heuristics, JST timestamp rule, report target switched to Gunshi, `suggestions.yaml` persistence, editable_files whitelist section, GChat Webhook send guidelines (`gchat_send.sh` usage), Fork Extensions (output naming, n8n fix protocol, internal parallelization). | Keep fork — no upstream equivalent |
 | `instructions/common/worktree.md` | fork-added | Guide for git worktree-based parallel execution. Defines when to create worktrees, branch naming, dispatch procedure, merge workflow. From cmd_144 lesson. | Keep fork — no upstream equivalent |
 | `instructions/generated/codex-karo.md` | fork-modified | Prepends 144-line YAML front-matter (role, F001-F006 forbidden actions, full workflow, pane map, inbox rules). Machine-readable config for Codex-based Karo. | Keep fork — no upstream equivalent |
 | `instructions/generated/copilot-karo.md` | fork-modified | Same YAML front-matter as codex-karo.md. Config for Copilot-based Karo variant. | Keep fork — no upstream equivalent |
 | `instructions/generated/karo.md` | fork-modified | Same YAML front-matter. Config for default generated Karo. | Keep fork — no upstream equivalent |
 | `instructions/generated/kimi-karo.md` | fork-modified | Same YAML front-matter. Config for Kimi-based Karo variant. | Keep fork — no upstream equivalent |
-| `instructions/gunshi.md` | fork-modified | Adds: context snapshot steps, Autonomous QC Protocol (auto-QC on `report_received`), expanded F006 dashboard permissions, `suggestions.yaml` persistence (step 8.5), Bloom Analysis support, JST rule, Memory MCP write policy, Fork Extensions (n8n QC criteria, Bloom routing docs). | Keep fork — no upstream equivalent |
-| `instructions/karo.md` | fork-modified | Major restructuring: F006 added, workflow expanded with `yaml_slim` (1.5), `bloom_routing` (6.5), dashboard cleanup rules (descending order), SO-19 cmd_complete.sh at Step 11.7, `cmd_complete` tag ntfy, autonomous QC notes, skill suggestions, snapshot recovery, JST enforcement, editable_files mandatory in task YAML. | Keep fork — no upstream equivalent |
+| `instructions/gunshi.md` | fork-modified | Adds: context snapshot steps, Autonomous QC Protocol (auto-QC on `report_received`), expanded F006 dashboard permissions, `suggestions.yaml` persistence (step 8.5), Bloom Analysis support, JST rule, Memory MCP write policy, QC checklist reference with auto_check integration, Fork Extensions (n8n QC criteria, Bloom routing docs). | Keep fork — no upstream equivalent |
+| `instructions/karo.md` | fork-modified | Major restructuring: F006 added, workflow expanded with `yaml_slim` (1.5), `bloom_routing` (6.5), dashboard cleanup rules (descending order), SO-19 cmd_complete.sh at Step 11.7, `cmd_complete` tag ntfy, autonomous QC notes, skill suggestions, snapshot recovery, JST enforcement, editable_files mandatory in task YAML, `report_to: gunshi` default rule. | Keep fork — no upstream equivalent |
 | `instructions/shogun.md` | fork-modified | Restructured to 2 core missions (translate intent + proactive detection). F006 blind_clear ban, stall_response_protocol (5-step), Proactive Detection & Reporting (3 triggers: session start, post-ntfy, idle), Memory MCP write policy. 477→331 lines. | Keep fork — no upstream equivalent |
 | `instructions/skill_candidates.yaml` | fork-added | Registry of 46 skill candidates (SC-001 to SC-046) from cmd_134 to cmd_344. Tracks id, source, occurrences, status (created/merged/hold), evaluation, skill_path. | Keep fork — no upstream equivalent |
 | `instructions/skill_policy.md` | fork-added | Formal skill lifecycle policy: creation criteria (2-occurrence threshold), reusability assessment, integration-vs-new decision matrix, file structure standards, maintenance rules. | Keep fork — no upstream equivalent |
@@ -92,7 +93,7 @@ This fork extends the upstream multi-agent-shogun system with production-grade o
 |------|-------------|--------|------------------------|
 | `context/n8n-operations.md` | fork-added | n8n operational runbook: error notification WF architecture, ntfy topic, per-WF error workflow IDs, new-WF checklist. | Keep fork — no upstream equivalent |
 | `memory/global_context.md` | fork-added | Persistent cross-session learning ledger (L001-L006): inbox atomicity, googlechat integration, UTC→JST, stall response, n8n technical notes. | Keep fork — no upstream equivalent |
-| `memory/skill_history.md` | fork-added | Skill candidate archive: creation status and source cmd references. Overflow from dashboard's 5-entry limit. | Keep fork — no upstream equivalent |
+| `memory/skill_history.md` | fork-added | Skill candidate archive: tracks creation/integration status and source cmd references. Managed by dashboard_rotate.sh and cmd_390 stocktake. | Keep fork — no upstream equivalent |
 | `output/cmd_307_upstream_merge_plan.md` | fork-added | Planning doc for upstream v4.4.x merge. Now superseded by commit 7573f2c. | Keep fork — no upstream equivalent |
 | `output/スキル/cmd_320_skills_evaluation_update.md` | fork-added | Skills stocktake: evaluates skill files for compression/consolidation. 530-line evaluation artifact. | Keep fork — no upstream equivalent |
 | `queue/reports/ashigaru3_report.yaml` | fork-added | Live task report. Active operational state. | Keep fork — no upstream equivalent |
@@ -129,11 +130,9 @@ This fork extends the upstream multi-agent-shogun system with production-grade o
 
 | Guidance | Count | Files |
 |----------|-------|-------|
-| Keep fork — no upstream equivalent | 49 | All fork-added files + fork-modified files with no upstream counterpart |
+| Keep fork — no upstream equivalent | 51 | All fork-added files + fork-modified files with no upstream counterpart |
 | Merge upstream, preserve fork sections | 8 | `inbox_watcher.sh`, `watcher_supervisor.sh`, `lib/agent_status.sh`, `lib/cli_adapter.sh`, `AGENTS.md`, `agents/default/system.md`, `.github/copilot-instructions.md`, `tests/e2e/e2e_bloom_routing.bats`, `tests/unit/test_dynamic_model_routing.bats`, `tests/unit/test_send_wakeup.bats` |
 | Accept upstream changes | 1 | `tests/e2e/e2e_codex_startup.bats` |
 | Manual review required | 1 | `CLAUDE.md` (core config, both sides actively modify) |
 
 **CLAUDE.md** is the highest-risk merge target: both fork and upstream actively modify this file. On merge, preserve fork's Pattern B branch, snapshot system, Gunshi auto-QC, SO-16 through SO-19, F006, Batch Processing Protocol, Critical Thinking Rules, and dashboard tag taxonomy while accepting upstream structural/procedural updates.
-
-**Upstream update detected**: upstream/main advanced from c461ef9 to 3dafe0a since last analysis. Review upstream changelog before next merge.

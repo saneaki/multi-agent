@@ -206,20 +206,26 @@ This prevents the 9-hour stall incident (cmd_244/245, 2026-02-27) where Karo wen
    b. Read `config/qc_checklist.yaml` → check remaining `required` items not covered by auto-check
    c. Check `conditional` items only when their trigger condition is met
    d. On violation detected → run: `bash scripts/log_violation.sh <rule_id> <agent_id> "<detail>"` + reflect in QC FAIL
+   e. **SO-20 editable_files完全性チェック（必須）**:
+      - task YAMLのinstructions/descriptionテキストから、Edit/Write/Create/更新/再生成/修正/追加/書き換えの動詞を検索
+      - 対象ファイルパスを抽出（Read/参照/確認のみのファイルは除外）
+      - 抽出したファイルパスをtask YAMLのeditable_filesリストと照合
+      - 不足があればQC NG + karo宛で「SO-20違反: {不足ファイル}がeditable_filesに未記載」と指摘
+      - 注: Readのみ指示のファイルは対象外。IR-1がReadでも発火する場合はimplicit allowlist（report/task YAML等）で対応すべき旨を報告に付記
 6. Perform QC (see Quality Check Criteria below)
 7. QC PASS → append 1 row to dashboard.md ✅本日の戦果 (F006 permitted)
    ⚠️ Time column MUST use `bash scripts/jst_now.sh` (NEVER raw `date`)
    ⚠️ After Edit, MUST Read dashboard.md to verify the write was applied.
    If not reflected, retry Edit (max 2 retries). This prevents silent write failures (ref: cmd_277b incident).
    ⚠️ T3: 戦果追加は先頭行に挿入（降順維持）。最新cmdが常にテーブル最上段に来ること。
-7.5. skill_candidate found in ashigaru report → dashboard.md「🛠️ 生成されたスキル」セクションに1行追加。
-   フォーマット: | **{スキル名}** | {出典cmd}: {概要}。スキル化承認待ち |
+7.5. skill_candidate found in ashigaru report → dashboard.md「🛠️ スキル候補（承認待ち）」セクションに1行追加。
+   フォーマット: | **{スキル名}** | {出典cmd}: {概要} | 承認待ち |
    ※ F006の許可範囲内。dedup check（既にスキル欄に同名があれば追加不要）。
    ⚠️ After Edit, MUST Read dashboard.md to verify skill entry was added. Retry if not reflected (max 2).
-   ⚠️ スキル欄FIFO管理ルール:
-   スキル欄は「直近5件」を維持する（FIFO）。
-   新規エントリ追加時は最古エントリを memory/skill_history.md に移動してから追加。
-   6件以上になったら即 memory/skill_history.md に最古を移動すること。
+   ⚠️ スキル欄全件表示ルール（件数制限なし）:
+   スキル欄は承認待ち候補を全件表示する（FIFO件数制限は撤廃）。
+   ✅実装済みになったら memory/skill_history.md に移動してスキル欄から削除する。
+   スキル候補そのものは🛠️欄のみに記載。🚨[提案]にはスキル候補の統合推奨・不要判断等の意見のみ記載（候補名だけの[提案]は不可）。
 7.7. **スキル候補自律抽出（必須）**: 足軽がskill_candidate: found: false と報告した場合でも、
    以下の条件に1つでも該当する場合は軍師が自らスキル候補を抽出する義務がある:
    - エラー修正タスクで、修正パターンが他WFにも適用可能
@@ -251,6 +257,9 @@ This prevents the 9-hour stall incident (cmd_244/245, 2026-02-27) where Karo wen
    3. skill_candidateが足軽報告にあった場合、dashboard🛠️に転記済みか確認
    4. 上記チェックを1つでも満たしていない場合: karo inboxに「suggestions永続化漏れ（{cmd_ref}）」として自己報告すること
 9. inbox_write to Karo: "QC PASS" or "QC FAIL: reason" — **suggestionsの要約を含めること**
+   ⚠️ **cmd_completeタグリマインド（必須）**: QC PASSの場合、メッセージ末尾に以下を含めること:
+   「ntfy送信時cmd_completeタグ必須: `bash scripts/ntfy.sh "✅ cmd_XXX完了 — {summary}" "" "cmd_complete"`」
+   家老がStep 11.7でntfy送信する際、cmd_completeタグ省略を防止するためのリマインド。
 10. Re-check inbox → if more report_received pending → go to 1
 ```
 

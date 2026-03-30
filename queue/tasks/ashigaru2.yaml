@@ -1,63 +1,52 @@
-task:
-  task_id: subtask_377a
-  parent_cmd: cmd_377
-  status: done
-  bloom_level: L3
-  description: "ntfy cmd_completeタグ実装: ntfy.sh第3引数タグ追加+ntfy_listener.shのcmd_complete通知処理+karo.md Step11.7更新+テスト"
-  assigned_to: ashigaru2
-  report_to: gunshi
-  north_star: "将軍がcmd完了を自動検知し殿に即報告できる体制を構築する。cmd_366のtrigger-based設計と整合する形で実現する"
-  editable_files:
-    - "scripts/ntfy.sh"
-    - "scripts/ntfy_listener.sh"
-    - "instructions/karo.md"
-  acceptance_criteria:
-    - "ntfy.shに第3引数(追加タグ)オプションが実装されている"
-    - "第3引数指定時 Tags: outbound,{追加タグ} が送信される"
-    - "ntfy_listener.shがoutbound+cmd_completeタグ付きメッセージをスキップしない"
-    - "cmd_completeメッセージ受信時、将軍paneにtmux send-keysで軽量通知を送信する"
-    - "ntfy_inbox.yamlには書き込まない(殿の指示と混同しない)"
-    - "from_karo_allowed: falseルールは維持(inbox_writeは使わない)"
-    - "karo.md Step 11.7のntfy送信にcmd_completeタグ追加が記載されている"
-    - "テスト: cmd_completeタグ付きntfy送信が正常動作する"
-  instructions: |
-    ntfy経由のcmd完了通知で将軍を自動起動する仕組みを実装せよ。
+task_id: subtask_390b4
+cmd_id: cmd_390
+assigned_to: ashigaru2
+assigned_at: '2026-03-30T15:09:45+09:00'
+redo_of: subtask_390b4(ashigaru6応答なし→再割当)
+status: assigned
+blocked_by: []
+bloom_level: L3
+report_to: gunshi
+north_star: "スキルをSKILL.md化することで将来の同種問題への対応速度を向上させる"
 
-    ■ 修正1: scripts/ntfy.sh
-    - Read scripts/ntfy.sh
-    - 第3引数 EXTRA_TAGS を追加（オプション）
-    - 指定時: Tags: outbound,{EXTRA_TAGS}
-    - 未指定時: Tags: outbound（現行動作維持）
-    - 例: bash scripts/ntfy.sh "message" "title" "cmd_complete"
-      → Tags: outbound,cmd_complete
+purpose: "cmd_390 Phase1-4(再割当): n8n-credential-oauth-refresh SKILL.md新規作成"
 
-    ■ 修正2: scripts/ntfy_listener.sh
-    - Read scripts/ntfy_listener.sh
-    - L157-159のoutboundスキップロジックを変更:
-      - outboundのみ → スキップ（現行動作維持）
-      - outbound + cmd_complete → スキップしない → 将軍起動処理へ
-    - 将軍起動処理を追加:
-      - cmd_completeタグ検出時、tmux send-keys で将軍paneに通知
-      - 将軍pane: tmux display-message -t "$(tmux list-panes -t multiagent -a -F '#{window_name}:#{pane_index} #{@agent_id}' | grep shogun | cut -d' ' -f1)" 等で特定
-        → または shogun:main (固定) を使用
-      - 通知内容は短く: "cmd_complete: {メッセージの一部}" 程度
-      - ntfy_inbox.yamlには絶対に書き込まない
+persona: "スキル文書化の専門家。SKILL.mdベストプラクティスに従い、正確で発火精度の高いスキルを作成する。"
 
-    ■ 修正3: instructions/karo.md
-    - Read instructions/karo.md
-    - Step 11.7の ntfy送信ステップを探す
-    - 既存: bash scripts/ntfy.sh "メッセージ" "タイトル"
-    - 変更: bash scripts/ntfy.sh "メッセージ" "タイトル" "cmd_complete"
-    - cmd_completeタグを付ける旨を明記
+instructions: |
+  ⚠️ 注意: SKILL.mdはWriteツールで直接ファイルを作成すること。スキル作成コマンド（/skill-create等）やSkillツールは使用するな。
 
-    ■ 設計制約
-    - from_karo_allowed: false は絶対に変更しない
-    - inbox_write.shは使わない（ntfy経路のみ）
-    - 将軍への通知は起動トリガーのみ。内容はdashboard.mdから読む設計
+  ■ 目的: n8n-credential-oauth-refresh の SKILL.md を新規作成
 
-    ■ テスト
-    - bash scripts/ntfy.sh "テスト" "test" "cmd_complete" が正常送信されることを確認
-    - Tags ヘッダーに outbound,cmd_complete が含まれることを確認(curlの-v等で)
-    - ntfy_listener.shの変更箇所が構文エラーなくbash -n通過
-  project: shogun-system
-  timestamp: "2026-03-29T21:45:00+09:00"
+  ■ Step 1: ベストプラクティス確認
+  /home/ubuntu/shogun/skills/skill-creator/SKILL.md を読む。
+  既存参考例: ~/.claude/skills/n8n-http-credential-patterns/SKILL.md
+
+  ■ Step 2: SKILL.md作成
+  mkdir -p ~/.claude/skills/n8n-credential-oauth-refresh
+  ~/.claude/skills/n8n-credential-oauth-refresh/SKILL.md を作成
+
+  内容:
+  - name: n8n-credential-oauth-refresh
+  - descriptionトリガー: "OAuth", "refresh_token", "credential", "Google Sheets", "SQLite", "access_token"
+  - ネガティブトリガー: "通常のn8n Google Sheets設定（OAuth2ノード経由で動作中）"
+  - 本文:
+    - 症状: n8nのCredential Storeに保存されたOAuth2トークンを直接使いたい
+    - 原因: n8n標準ノードではCredential StoreのSQLiteから直接refresh_tokenを取得できない
+    - 解決策: Execute Commandノードでsqlite3コマンドを使いCredential DBを読み取り、
+              refresh_tokenからaccess_tokenを取得し、Google Sheets APIを直接叩くパターン
+    - コード例: sqlite3コマンドでCredential復号 → HTTP RequestでOAuth refresh → API呼出し
+    - 注意: Credential DBパス（~/.n8n/database.sqlite）、暗号化キーはN8N_ENCRYPTION_KEY
+
+  ■ Step 3: report
+  作成完了をreport_pathに記録。git操作不要（Phase2のashigaru1が担当）。
+
+acceptance_criteria:
+  - "~/.claude/skills/n8n-credential-oauth-refresh/SKILL.md が作成されている"
+  - "frontmatter(name/description/argument-hint)が正しく記載されている"
+  - "description が1024文字以内"
+
+editable_files:
+  - "~/.claude/skills/n8n-credential-oauth-refresh/SKILL.md"
+
+report_path: queue/reports/ashigaru2_report.yaml

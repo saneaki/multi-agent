@@ -122,8 +122,28 @@ case "$EDITABLE_RESULT" in
         exit 0
         ;;
     NO_MATCH)
+        # Extract cmd_id (parent_cmd/task_id) from task YAML for traceability
+        CMD_ID=$(python3 -c "
+import yaml, sys
+try:
+    with open(sys.argv[1]) as f:
+        data = yaml.safe_load(f)
+    t = data.get('task', {})
+    parent = t.get('parent_cmd', '')
+    tid = t.get('task_id', '')
+    if parent and tid:
+        print(f'{parent}/{tid}')
+    elif parent:
+        print(parent)
+    elif tid:
+        print(tid)
+    else:
+        print('unknown')
+except Exception:
+    print('unknown')
+" "$TASK_YAML" 2>/dev/null || echo "unknown")
         LOG_SCRIPT="${__IR1_LOG_SCRIPT:-${SHOGUN_ROOT}/scripts/log_violation.sh}"
-        bash "$LOG_SCRIPT" IR-1 "$AGENT_ID" "IR-1: ${AGENT_ID} editing file not in editable_files whitelist: ${FILE_PATH}"
+        bash "$LOG_SCRIPT" IR-1 "$AGENT_ID" "IR-1: ${AGENT_ID} editing file not in editable_files whitelist: ${FILE_PATH}" "$CMD_ID"
         echo "IR-1 VIOLATION: ${AGENT_ID} edited ${FILE_PATH} (not in editable_files whitelist)" >&2
         exit 0
         ;;

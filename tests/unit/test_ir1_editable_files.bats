@@ -221,6 +221,52 @@ YAML
     [ ! -f "$TEST_TMP/violation_calls.log" ]
 }
 
+@test "T-IR1-020: violation log includes cmd_id from task YAML" {
+    local agent_id="ashigaru1"
+    local yaml_file="$TEST_TMP/queue/tasks/${agent_id}.yaml"
+    cat > "$yaml_file" << YAML
+task:
+  task_id: subtask_381a
+  parent_cmd: cmd_381
+  status: assigned
+  editable_files:
+    - "scripts/hooks/*.sh"
+YAML
+    run_hook "$(make_input "$TEST_TMP/dashboard.md")" "$agent_id"
+    [ "$status" -eq 0 ]
+    [ -f "$TEST_TMP/violation_calls.log" ]
+    grep -q "cmd_381/subtask_381a" "$TEST_TMP/violation_calls.log"
+}
+
+@test "T-IR1-021: violation log shows unknown when task YAML has no parent_cmd or task_id" {
+    local agent_id="ashigaru2"
+    local yaml_file="$TEST_TMP/queue/tasks/${agent_id}.yaml"
+    cat > "$yaml_file" << YAML
+task:
+  status: assigned
+  editable_files:
+    - "scripts/hooks/*.sh"
+YAML
+    run_hook "$(make_input "$TEST_TMP/dashboard.md")" "$agent_id"
+    [ "$status" -eq 0 ]
+    [ -f "$TEST_TMP/violation_calls.log" ]
+    grep -q "unknown" "$TEST_TMP/violation_calls.log"
+}
+
+@test "T-IR1-022: log_violation.sh accepts cmd_id as 4th argument" {
+    # Direct test: log_violation.sh with 4 args writes to daily log with cmd_id column
+    run bash "$SCRIPT_DIR/scripts/log_violation.sh" "IR-1" "ashigaru1" "test detail" "cmd_381/subtask_381a"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"violation logged"* ]]
+}
+
+@test "T-IR1-023: log_violation.sh without cmd_id still works (backward compat)" {
+    # Backward compatibility: 3 args still accepted
+    run bash "$SCRIPT_DIR/scripts/log_violation.sh" "IR-1" "ashigaru1" "test detail no cmd"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"violation logged"* ]]
+}
+
 @test "T-IR1-019: existing block targets still trigger violation" {
     create_task_yaml "ashigaru1" "scripts/hooks/*.sh"
     run_hook "$(make_input "$TEST_TMP/instructions/shogun.md")" "ashigaru1"

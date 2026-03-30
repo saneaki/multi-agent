@@ -7,7 +7,15 @@ dashboard.md 🛠️スキル欄から溢れた全エントリ。最新順（上
 
 | スキル名 | 出典 |
 |----------|------|
-| **n8n-credential-oauth-refresh** | cmd_354: n8n SQLite復号→OAuth refresh_token→access_token取得→Google Sheets API直叩きパターン。スキル化承認待ち |
+| **n8n-gmail-downloadattachments-from-uppercase** ✅統合 | cmd_389→cmd_390: shogun-n8n-gmail-id-archive-patternに統合済み。downloadAttachments=true時のemail.From大文字問題+フォールバックコード。 |
+| **n8n-continueOnFail-audit-pattern** ✅統合 | cmd_388→cmd_390: n8n-pipeline-cut-guardに統合済み。continueOnFail=trueによるデータエラー隠蔽の検出・修正パターン。 |
+| **shogun-ir1-implicit-allowlist-pattern** ✅ | cmd_376→cmd_390: IR-1 Hookのimplicit allowlistパターン(agent YAML/SKILL.md/target_path)3種+editable_files設定方法+task YAML設計ガイドライン。SKILL.md 176行作成済み。 |
+| **shogun-labor-status-case-analysis** ✅ | cmd_387→cmd_390: 在宅勤務者・業務委託者の労働者性判断フレームワーク(昭和60年報告6要素+判例3件+チェックリスト10項)。SKILL.md 174行作成済み。 |
+| **n8n-filesystem-v2-binary-workaround** ✅ | cmd_369→cmd_390: n8n filesystem-v2バイナリストレージ環境でbinaryData.dataが参照文字列を返す問題。getBinaryDataBuffer()等での回避。shogun-n8n-filesystem-v2-binary SKILL.md実装済み。 |
+| **shogun-n8n-jq-false-alternative-guard** ✅ | cmd_332(SC-040): jq `//`演算子はfalseも偽値扱い。独立スキル95行作成済み。 |
+| **shogun-obsidian-legal-templater-design** ✅ | cmd_386→cmd_390: 法律文書向けObsidianテンプレート設計パターン(Templater7種+Dataview4種)。SKILL.md 169行作成済み。 |
+| **bash-crlf-write-tool-guard** ✅ | cmd_334(SC-043): WriteツールCRLF混入の診断・修正・予防パターン。257L/8セクション。push b8ec13f。 |
+| **n8n-credential-oauth-refresh** ✅ | cmd_354→cmd_390: n8n API方式(推奨)+SQLite直接(代替)+OAuth refresh→access_token+Google Sheets API直叩き+セキュリティ+トラブルシュート。SKILL.md 362行作成済み。 |
 | **skill-creation-workflow** ✅ | cmd_340(SC-045): スキル候補→評価→統合/新規判断→SKILL.md作成→更新→pushの標準プロセス。171L新規作成。 |
 | **shogun-n8n-wf-version-switch-checklist** ✅ | cmd_344(SC-046): WFバージョン切替時のスクリプトWF_ID更新チェックリスト。grep -r洗い出し・dual-active防止・実例付き。SKILL.md 122行新規作成。 |
 | **shogun-n8n-runners-enabled-deprecation** → 統合済 | cmd_331→cmd_332: trigger-stuck-recoveryに統合済み。 |
@@ -34,7 +42,7 @@ dashboard.md 🛠️スキル欄から溢れた全エントリ。最新順（上
 | **shogun-n8n-code-node-multi-item-index** | cmd_290: Code nodeで$('nodeName').itemがループ内でインデックス連動しない問題。$('nodeName').all()[index].jsonで解決。スキル化承認待ち |
 | **shogun-n8n-gmail-oauth2-http-request** | cmd_287c3: HTTP RequestでGmail OAuth2使用時のauthentication/nodeCredentialType必須パターン。n8n-http-predefined-credentialと統合検討要。スキル化承認待ち |
 | **shogun-claude-code-posttooluse-hook-guard** ✅ | cmd_283+284: PostToolUse Hook未発火の診断・修正パターン(matcher構文制約+settings.json優先順位)。SKILL.md 225行作成済み。git a62dcb8 |
-| **n8n-drive-ai-text-injection** | cmd_277: Drive _ai_text/サブフォルダからmd読み込み→Geminiプロンプト注入パターン。コスト制御(3件/12000字/30000字)含む。スキル化承認待ち |
+| **n8n-drive-ai-text-injection** ✅ | cmd_277→cmd_390: Drive _ai_text/サブフォルダからmd読み込み→Geminiプロンプト注入パターン。コスト制御(3件/12000字/30000字)含む。SKILL.md 277行作成済み。 |
 | **n8n-http-predefined-credential** | cmd_277: HTTP RequestノードでpredefinedCredentialType使用。Code nodeのhttpRequestWithAuthentication不可の回避策。スキル化承認待ち |
 | **shogun-n8n-docx-text-extraction** ✅ | cmd_275+276: n8n docxテキスト抽出3アプローチ(unzip+XML/Mammoth.js/Docs API)。SKILL.md 13KB作成済み。git efcd1cc |
 | **shogun-n8n-gmail-trigger-cron-step-guard** ✅ | cmd_267b+272: Gmail Trigger cron */N step値→explicit minute list変換。SKILL.md 187行作成済み。git 41de19a |
