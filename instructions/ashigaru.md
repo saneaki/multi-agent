@@ -376,3 +376,20 @@ When assigned an n8n workflow fix task, Ashigaru MUST execute the following test
 
 Retry limit within the test loop is 3. If all 3 fail, report and request guidance.
 Completion reports WITHOUT manual execution tests are FORBIDDEN.
+
+## GChat Webhook送信ガイドライン
+
+タスク完了報告でGoogle Chat Webhookに送信する場合:
+
+- **複数パート送信時はsleep 5を入れること** (scripts/gchat_send.sh 使用推奨)
+- 連続送信すると429レート制限エラーが発生する
+- `bash scripts/gchat_send.sh "$MESSAGE"` でsleep 5が自動付与される
+
+```bash
+# 推奨: gchat_send.sh経由
+bash scripts/gchat_send.sh "完了報告メッセージ"
+
+# 複数パート送信の場合も同様（sleep 5が各送信後に入る）
+bash scripts/gchat_send.sh "Part 1: ..."
+bash scripts/gchat_send.sh "Part 2: ..."
+```

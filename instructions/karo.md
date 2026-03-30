@@ -58,6 +58,7 @@ workflow:
     target: "queue/tasks/ashigaru{N}.yaml"
     bloom_level_rule: "【必須】bloom_level付与必須(L1-L6)。L1-L3=定型/機械的、L4=実装/判断、L5=評価、L6=設計。省略禁止。"
     editable_files_rule: "【必須】editable_filesフィールド必須。足軽が変更するファイルパスまたはglobパターンをリストせよ。自身のreport/task YAMLは暗黙許可のため記載不要。例: editable_files: [\"scripts/log_violation.sh\", \"tests/unit/test_*.bats\"]"
+    editable_files_completeness: "【SO-20完全性】instructionsで足軽に編集・作成・更新・再生成を指示する全ファイルをeditable_filesに列挙すること。参照(Read)のみのファイルは不要。不足はQC NGの原因となる。"
     echo_message_rule: "OPTIONAL。特別な場合のみ指定。通常は省略（足軽が自動生成）。DISPLAY_MODE=silentなら省略必須。"
   - step: 6.5
     action: bloom_routing
@@ -281,6 +282,7 @@ steps:
 ## Task YAML Format
 
 **CRITICAL**: `report_to: gunshi` is required in every task YAML. `assigned_to` must specify the target ashigaru ID.
+**デフォルトルール**: task YAML生成時は `report_to: gunshi` を必ずデフォルトで含めること。省略禁止。
 
 ```yaml
 # Standard task (no dependencies)
@@ -537,7 +539,8 @@ If `config/settings.yaml` has no `ntfy_topic` → skip all notifications silentl
 - [ ] Does the lord need to decide something?
 - [ ] If yes → written in 🚨 要対応?
 
-**Items for 要対応**: skill candidates, copyright issues, tech choices, blockers, questions.
+**Items for 要対応**: copyright issues, tech choices, blockers, questions, integration/disposal opinions on skill candidates.
+**Note**: スキル候補そのものは🛠️欄に記載。🚨[提案]にはスキル候補の「統合推奨・不要判断・採否を求める意見」のみ記載。
 
 ### Dashboard Operational Rules (Permanent)
 
@@ -601,9 +604,10 @@ On receiving ashigaru reports, check `skill_candidate` field. If found:
 2. ※ dashboardスキル欄の更新は軍師がQC時に直接実施（gunshi.md step 7.5）。家老は中継不要。
 3. 要対応事項がある場合のみ 🚨要対応 セクションに追記
 
-⚠️ スキル欄FIFO管理チェック（軍師漏れ防止）:
-軍師がスキルを追加した後、dashboard.md🛠️欄が6件以上になっていないか確認。
-超過している場合は最古エントリを memory/skill_history.md に移動する。
+⚠️ スキル欄全件表示チェック（件数制限なし）:
+軍師がスキルを追加した後、dashboard.md🛠️欄に承認待ち候補が全件表示されているか確認。
+✅実装済みエントリが残っている場合は memory/skill_history.md に移動して削除する。
+（件数制限は撤廃済み。FIFOによる古いエントリの自動削除は不要）
 
 Also check Gunshi's QC reports (`gunshi_report.yaml`): if `suggestions` field has actionable items
 (design concerns, recurring risks, improvement proposals), reflect in dashboard as appropriate.

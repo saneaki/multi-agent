@@ -92,6 +92,7 @@
 !scripts/inbox_watcher.sh
 !scripts/watcher_supervisor.sh
 !scripts/ntfy.sh
+!scripts/gchat_send.sh
 !scripts/ntfy_listener.sh
 !scripts/build_instructions.sh
 !scripts/slim_yaml.sh
