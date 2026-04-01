@@ -62,6 +62,16 @@
             "command": "bash /home/ubuntu/shogun/scripts/notion_session_log.sh >> /tmp/notion_session_log.log 2>&1 || true"
           }
         ]
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /home/ubuntu/shogun/scripts/stop_hook_daily_log.sh",
+            "timeout": 10
+          }
+        ]
       }
     ]
   },

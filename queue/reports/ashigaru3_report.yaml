@@ -1,23 +1,30 @@
 worker_id: ashigaru3
-task_id: subtask_390b1
-parent_cmd: cmd_390
-timestamp: "2026-03-30T21:33:07+09:00"
+task_id: subtask_393b
+parent_cmd: cmd_393
+timestamp: "2026-03-31T08:39:09+09:00"
 status: done
 result:
-  summary: "SKILL.md新規作成完了。~/.claude/skills/shogun-ir1-implicit-allowlist-pattern/SKILL.md を作成。frontmatter・description(287文字/1024文字以内)・implicit allowlist3パターンを正しく記載。"
+  summary: "ダッシュボード4種+README.md作成・push完了。saneaki/legal-vault Phase1完成。"
   files_created:
-    - "~/.claude/skills/shogun-ir1-implicit-allowlist-pattern/SKILL.md"
+    - "dashboards/全案件一覧.md"
+    - "dashboards/文書種別.md"
+    - "dashboards/最近の文書.md"
+    - "dashboards/Notion連携.md"
+    - "README.md（上書き更新）"
   acceptance_criteria:
-    skill_file_exists: true
-    frontmatter_valid: true
-    description_within_limit: "287文字 (1024文字以内 PASS)"
+    dashboards_created: true
+    readme_with_pat_setup: true
+    github_issue: "saneaki/multi-agent#18 (created + closed)"
+    git_push: true
+    gchat_sent: true
+    ntfy_sent: true
   coverage:
-    - "パターン1: エージェント固有YAML（report/task/inbox）常時許可"
-    - "パターン2: ~/.claude/skills/*/SKILL.md 常時許可"
-    - "パターン3: target_pathフィールド以下のファイル常時許可"
-    - "cmd_376での拡張履歴（inbox/SKILL.md/target_path追加）を記載"
-    - "task YAML設計ガイドライン・トラブルシューティング表を含む"
-  git_operations: "不要（Phase2のashigaru1が担当）"
-notes: "implicit allowlist実装をir1_editable_files_check.sh（L46-57）から直接確認し、正確なパターンと行番号を記載した。"
+    - "全案件一覧: 依頼者別文書数サマリー、起案中文書一覧、全文書一覧"
+    - "文書種別: 訴状/準備書面/答弁書/申立書/依頼者報告書/送付状の種別分類"
+    - "最近の文書: 直近7日作成・更新、期限間近・期限超過の警告"
+    - "Notion連携: 連携済み/未連携文書、依頼者別連携カバレッジ"
+    - "README: Vault概要、Obsidianセットアップ(Windows)、PAT認証、プラグイン4種設定、Vault構造、テンプレート・ダッシュボード使い方"
+  git_operations: "git push origin main完了 (commit: 5b39596)"
+notes: "cmd_386 Part B/Cの仕様書をベースにダッシュボード4種のDataviewクエリとREADMEを作成。足軽2号のテンプレート7種配置済み状態からの継続作業。"
 skill_candidate:
   found: false

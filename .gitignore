@@ -115,6 +115,7 @@
 !scripts/hooks/pre_compact_snapshot.sh
 !scripts/hooks/ir1_editable_files_check.sh
 !scripts/log_violation.sh
+!scripts/stop_hook_daily_log.sh
 
 
 # SayTask (sample template only, not actual data)

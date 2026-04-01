@@ -1,52 +1,114 @@
-task_id: subtask_390b4
-cmd_id: cmd_390
+task_id: subtask_393a
+cmd_id: cmd_393
 assigned_to: ashigaru2
-assigned_at: '2026-03-30T15:09:45+09:00'
-redo_of: subtask_390b4(ashigaru6応答なし→再割当)
-status: assigned
+assigned_at: '2026-03-31T08:24:35+09:00'
+status: done
 blocked_by: []
 bloom_level: L3
 report_to: gunshi
-north_star: "スキルをSKILL.md化することで将来の同種問題への対応速度を向上させる"
+north_star: "Obsidianベースの法律文書管理Vaultを構築し、案件文書の横断検索・テンプレート起案・Notion手動連携を実現する"
 
-purpose: "cmd_390 Phase1-4(再割当): n8n-credential-oauth-refresh SKILL.md新規作成"
+purpose: "GitHubリポジトリ作成+Vault構造+テンプレート7種+フロントマター+.obsidian設定を構築し初回push"
 
-persona: "スキル文書化の専門家。SKILL.mdベストプラクティスに従い、正確で発火精度の高いスキルを作成する。"
+persona: "Obsidian Vault構築の実装者。cmd_386レポートの仕様を忠実にコードに落とし込む。"
 
 instructions: |
-  ⚠️ 注意: SKILL.mdはWriteツールで直接ファイルを作成すること。スキル作成コマンド（/skill-create等）やSkillツールは使用するな。
+  ■ Obsidian法律Vault Phase1 — Part A: リポジトリ+テンプレート
 
-  ■ 目的: n8n-credential-oauth-refresh の SKILL.md を新規作成
+  ■ Step 1: 参照資料読み込み
+  以下を順に読んで全体像を把握:
+  - /home/ubuntu/shogun/output/cmd_386_part_a.md（アーキテクチャ・フロントマター）
+  - /home/ubuntu/shogun/output/cmd_386_part_b.md（テンプレート・ダッシュボード）
+  統合版は大きいため読まなくてよい。Part A + B で十分。
 
-  ■ Step 1: ベストプラクティス確認
-  /home/ubuntu/shogun/skills/skill-creator/SKILL.md を読む。
-  既存参考例: ~/.claude/skills/n8n-http-credential-patterns/SKILL.md
+  ■ Step 2: GitHubリポジトリ作成
+  GitHub MCP (mcp__github__create_repository) で:
+  - name: legal-vault
+  - owner: saneaki
+  - private: true
+  - description: "Obsidian法律文書管理Vault"
 
-  ■ Step 2: SKILL.md作成
-  mkdir -p ~/.claude/skills/n8n-credential-oauth-refresh
-  ~/.claude/skills/n8n-credential-oauth-refresh/SKILL.md を作成
+  ■ Step 3: ローカルにクローン+構造作成
+  cd /tmp
+  git clone https://github.com/saneaki/legal-vault.git
+  cd legal-vault
 
-  内容:
-  - name: n8n-credential-oauth-refresh
-  - descriptionトリガー: "OAuth", "refresh_token", "credential", "Google Sheets", "SQLite", "access_token"
-  - ネガティブトリガー: "通常のn8n Google Sheets設定（OAuth2ノード経由で動作中）"
-  - 本文:
-    - 症状: n8nのCredential Storeに保存されたOAuth2トークンを直接使いたい
-    - 原因: n8n標準ノードではCredential StoreのSQLiteから直接refresh_tokenを取得できない
-    - 解決策: Execute Commandノードでsqlite3コマンドを使いCredential DBを読み取り、
-              refresh_tokenからaccess_tokenを取得し、Google Sheets APIを直接叩くパターン
-    - コード例: sqlite3コマンドでCredential復号 → HTTP RequestでOAuth refresh → API呼出し
-    - 注意: Credential DBパス（~/.n8n/database.sqlite）、暗号化キーはN8N_ENCRYPTION_KEY
+  フォルダ構造を作成:
+  mkdir -p .obsidian templates dashboards cases/_sample drafts pdfs reference
 
-  ■ Step 3: report
-  作成完了をreport_pathに記録。git操作不要（Phase2のashigaru1が担当）。
+  ■ Step 4: .gitignore作成
+  ```
+  .obsidian/workspace.json
+  .obsidian/workspace-mobile.json
+  .trash/
+  .DS_Store
+  *.swp
+  ```
+
+  ■ Step 5: .obsidian/設定ファイル
+  .obsidian/community-plugins.json:
+  ["obsidian-git", "templater-obsidian", "dataview", "omnisearch"]
+
+  .obsidian/app.json:
+  {"promptDelete": false, "alwaysUpdateLinks": true}
+
+  ■ Step 6: テンプレート7種作成（cmd_386 Part Bのコードブロックをベースに）
+  各テンプレートにTemplater構文+フロントマタースキーマを含める。
+
+  フロントマター共通スキーマ（cmd_386 Part A参照）:
+  ---
+  client: ""
+  case_name: ""
+  doc_type: "訴状"  # (種別に応じて変更)
+  status: "draft"
+  created: "<% tp.date.now('YYYY-MM-DD') %>"
+  due_date: ""
+  notion_url: ""
+  court: ""
+  case_number: ""
+  tags: []
+  ---
+
+  作成するファイル:
+  - templates/訴状.md
+  - templates/準備書面.md
+  - templates/答弁書.md
+  - templates/申立書.md
+  - templates/依頼者報告書.md
+  - templates/送付状_FAX.md
+  - templates/送付状_郵送.md
+
+  テンプレート内容はcmd_386 Part Bのコードブロックをそのまま使用してよい。
+  Templater構文（<% tp.date.now() %> 等）を含めること。
+
+  ■ Step 7: サンプル案件
+  cases/_sample/README.md を作成:
+  案件フォルダの構造例を示すドキュメント（訴状/準備書面/証拠リスト等のサブフォルダ）。
+
+  ■ Step 8: pdfs/ と reference/
+  pdfs/.gitkeep を作成（閲覧専用フォルダ、中身は空）
+  reference/.gitkeep を作成（pandocテンプレート用、Phase2で使用）
+
+  ■ Step 9: git commit + push
+  cd /tmp/legal-vault
+  git add -A
+  git commit -m "feat: Obsidian法律Vault Phase1 — リポジトリ構造+テンプレート7種"
+  git push origin main
+
+  ■ 注意
+  - テンプレートの日本語ファイル名はそのまま使用（Obsidianは日本語ファイル名対応）
+  - pdfs/ は .gitkeep のみ。中身は入れない
+  - Notion連携Phase2のn8n WFは今回作成しない
+  - pandocのpython-docxポストプロセスは実装しない
 
 acceptance_criteria:
-  - "~/.claude/skills/n8n-credential-oauth-refresh/SKILL.md が作成されている"
-  - "frontmatter(name/description/argument-hint)が正しく記載されている"
-  - "description が1024文字以内"
+  - "GitHubリポジトリ saneaki/legal-vault (private) が作成されている"
+  - "Vault構造（templates/dashboards/cases/drafts/pdfs/reference/.obsidian）が作成されている"
+  - "テンプレート7種（訴状/準備書面/答弁書/申立書/依頼者報告書/送付状FAX/送付状郵送）が配置されている"
+  - "フロントマタースキーマが全テンプレートに統一的に実装されている"
+  - ".obsidian/community-plugins.json に推奨プラグイン4種が設定されている"
+  - "git push完了"
 
-editable_files:
-  - "~/.claude/skills/n8n-credential-oauth-refresh/SKILL.md"
+editable_files: []
 
 report_path: queue/reports/ashigaru2_report.yaml
