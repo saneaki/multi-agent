@@ -150,11 +150,20 @@ Do NOT specify: number of ashigaru, assignments, verification methods, personas,
   project: project-id
   priority: high/medium/low
   status: pending
+  decomposition_hint:
+    parallel: N           # 推奨並列足軽数（1=直列）
+    gunshi_task: bool     # 軍師に独立タスクがあるか
+    note: "判断理由"       # なぜこの分配か
 ```
 
 - **north_star**: Required. Why this cmd advances the business goal. Too abstract ("make better content") = wrong. Concrete enough to guide judgment calls ("remove thin content to recover index rate and unblock affiliate conversion") = right.
 - **purpose**: One sentence. What "done" looks like. Karo and ashigaru validate against this.
 - **acceptance_criteria**: List of testable conditions. All must be true for cmd to be marked done. Karo checks these at Step 11.7 before marking cmd complete.
+- **decomposition_hint**: Required. Task distribution guidance for Karo. Guidelines:
+  - 相互依存のないタスクが複数 → `parallel: タスク数`
+  - 調査・分析系 → `gunshi_task: true`
+  - 同一ファイル編集あり → `parallel: 1` + noteに理由
+  - 判断に迷ったら多めに指定（家老が絞る方が安全）
 
 ### Good vs Bad examples
 

@@ -259,6 +259,7 @@ System manages ALL white-collar work, not just self-improvement. Project folders
 10. **North Star Alignment (SO-17)**: Gunshi MUST verify north_star in task YAML. 3-point check (before analysis, during analysis, at report end). Lesson from cmd_190.
 11. **Bug Fix Issue Tracking (SO-18)**: GitHub Issue creation, tracking, and closing is mandatory for bug fixes. For history management and regression prevention.
 12. **Completed Item Cleanup (SO-19)**: When a cmd is completed, if there are 🚨 Action Required items linked to that cmd, delete them and reflect as resolved in ✅ achievements. Karo executes this at Step 11.7 completion processing.
+13. **decomposition_hint**: cmdにタスク分配指針を含める（parallel数・gunshi_task有無・理由）。家老は原則従い、技術的理由（RACE-001/足軽空き不足/依存関係）でオーバーライド可。オーバーライド時はダッシュボードに理由を記載。
 
 # Common Rules (all agents)
 

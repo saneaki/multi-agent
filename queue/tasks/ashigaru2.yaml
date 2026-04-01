@@ -1,129 +1,64 @@
-id: subtask_402
-cmd_id: cmd_402
+task_id: subtask_406a
+cmd_id: cmd_406
 assigned_to: ashigaru2
-assigned_at: '2026-04-01T11:05:33+09:00'
+assigned_by: karo
+timestamp: '2026-04-01T22:08:00+09:00'
 status: assigned
-priority: critical
+priority: high
 report_to: gunshi
-north_star: "家老のSession Start Step 1省略を構造的に不可能にし、環境誤認→連鎖違反の再発を根絶する"
-purpose: "家老専用SessionStart hookを作成し、tmux環境でのStep 1未実行を検出・警告する"
+project: shogun
+
+title: "cmd_406 shogun.mdにdecomposition_hint必須フィールド追加 + CLAUDE.md Rule 13追加"
+
+north_star: "将軍→家老の指揮効率を向上させ、足軽の並列活用率を高めることで、cmd完了速度を改善する"
+
+purpose: "shogun.mdのcmd必須フィールドにdecomposition_hintを追加し、CLAUDE.mdのShogun Mandatory Rules Rule 13を追記する"
+
 acceptance_criteria:
-  - "scripts/hooks/karo_session_start_check.sh が作成されている"
-  - "hookは$TMUX_PANEが設定されている場合のみ発動する（VSCode環境では発動しない）"
-  - "agent_idがkaroの場合のみ警告メッセージを出力する"
-  - "karo以外のagent_idでは何も出力しない（exit 0）"
-  - ".claude/settings.jsonのSessionStartセクションに登録されている"
-  - "hookの動作テスト済み"
-  - "git push済み（difference.md当日確認後）"
-instructions: |
-  # cmd_402: 家老専用SessionStart hook作成
+  - "shogun.mdのcmd必須フィールドYAMLテンプレートにdecomposition_hintが追加されている（parallel, gunshi_task, noteの3フィールド）"
+  - "shogun.mdにdecomposition_hintの記載ガイドラインが含まれている（独立タスク判定基準、並列数の目安）"
+  - "CLAUDE.md Shogun Mandatory RulesにRule 13が追加されている（decomposition_hintの概要1行）"
+  - "git push済み（/pub-uc使用）"
 
-  作業ディレクトリ: /home/ubuntu/shogun
-  Writeツールで直接ファイル作成すること。スキルコマンド・Skillツール使用禁止。
+context: |
+  【背景】
+  cmd_405で独立した3タスクが足軽1名に直列割当された。
+  家老のコンテキスト負荷を考慮し、分配判断を将軍側に移管する。殿の裁定済み。
 
-  ## 【1】scripts/hooks/karo_session_start_check.sh を作成
+  【変更1】shogun.md — cmd必須フィールドにdecomposition_hint追加
+  既存の「Required cmd fields」またはcmdのYAMLテンプレート部分に追加:
 
-  以下の内容でWriteツールを使い直接作成:
+    decomposition_hint:
+      parallel: N           # 推奨並列足軽数（1=直列）
+      gunshi_task: bool     # 軍師に独立タスクがあるか
+      note: "判断理由"       # なぜこの分配か
 
-  #!/usr/bin/env bash
-  # karo_session_start_check.sh
-  # 家老専用SessionStart環境確認hook
-  # $TMUX_PANE未設定（VSCode環境）では何もしない
-  # agent_id=karoの場合のみ委譲経路・禁止事項を通知する
+  ガイドライン（同じセクションに追記）:
+  - 相互依存のないタスクが複数 → parallel: タスク数
+  - 調査・分析系 → gunshi_task: true
+  - 同一ファイル編集あり → parallel: 1 + noteに理由
+  - 判断に迷ったら多めに指定（家老が絞る方が安全）
 
-  set -euo pipefail
+  【変更2】CLAUDE.md — Shogun Mandatory Rules Rule 13追加
+  CLAUDE.md の「Shogun Mandatory Rules」セクションに追加（現在のRule数+1番号で追記）:
+  「13. **decomposition_hint**: cmdにタスク分配指針を含める（parallel数・gunshi_task有無・理由）。家老は原則従い、技術的理由（RACE-001/足軽空き不足/依存関係）でオーバーライド可。オーバーライド時はダッシュボードに理由を記載。」
 
-  if [ -z "${TMUX_PANE:-}" ]; then
-      exit 0
-  fi
+steps:
+  - "1. Read /home/ubuntu/shogun/instructions/shogun.md（cmd必須フィールドセクション確認）"
+  - "2. shogun.md を編集: decomposition_hintフィールドとガイドラインを追加"
+  - "3. Read /home/ubuntu/shogun/CLAUDE.md（Shogun Mandatory Rules確認、現在のRule数確認）"
+  - "4. CLAUDE.md を編集: Rule 13を追加（既存番号の続きで）"
+  - "5. 変更内容をReadで確認"
+  - "6. /pub-uc でgit push"
+  - "7. レポート作成: /home/ubuntu/shogun/queue/reports/ashigaru2_report.yaml"
+  - "   標準フィールド: worker_id, task_id, parent_cmd, status, timestamp"
+  - "8. bash scripts/inbox_write.sh gunshi '足軽2号、subtask_406a完了。report確認されたし。' report_completed ashigaru2"
 
-  AGENT_ID=$(tmux display-message -t "$TMUX_PANE" -p '#{@agent_id}' 2>/dev/null || echo "")
+quality_rules:
+  - "shogun.mdの既存フォーマット・スタイルを維持すること"
+  - "CLAUDE.md Rule番号は既存の最後のRule番号+1とすること（事前にReadで確認）"
+  - "git pushは/pub-ucコマンドを使用（pre-push hookあり）"
 
-  if [ "$AGENT_ID" != "karo" ]; then
-      exit 0
-  fi
-
-  echo "⚠️ 家老環境確認: tmux pane=$TMUX_PANE, agent_id=karo。"
-  echo "   足軽1〜7号(multiagent:0.1〜0.7)への委譲経路は有効。"
-  echo "   Agent()による成果物生成は禁止（F003）。足軽に委譲せよ。"
-  echo "   Session Start Step 1完了。"
-  exit 0
-
-  その後: chmod +x scripts/hooks/karo_session_start_check.sh
-
-  ## 【2】.claude/settings.json への登録
-
-  /home/ubuntu/shogun/.claude/settings.json を読み込み（必ずReadしてから）、
-  hooks.SessionStart 配列に以下を追加（既存エントリは保持すること）:
-  {
-    "matcher": "*",
-    "hooks": [
-      {
-        "type": "command",
-        "command": "bash /home/ubuntu/shogun/scripts/hooks/karo_session_start_check.sh"
-      }
-    ]
-  }
-
-  python3でJSONを読み込み・更新・書き出しすること。
-
-  ## 【3】動作テスト
-
-  bash scripts/hooks/karo_session_start_check.sh
-  # （tmuxパネルで実行するため、$TMUX_PANEが設定されていれば発動する）
-
-  $TMUX_PANEなし時の確認:
-  env -u TMUX_PANE bash scripts/hooks/karo_session_start_check.sh
-  echo "exit: $?"  # → exit: 0
-
-  ## 【4】.gitignore 確認・更新
-
-  git check-ignore -v scripts/hooks/karo_session_start_check.sh
-  対象外ならば .gitignore の !scripts/hooks/ 行があることを確認。
-  （既存の !scripts/hooks/ があれば追加不要）
-
-  ## 【5】git commit & push
-
-  difference.mdが今日(2026-04-01)であることを確認してからpush:
-  grep "Generated" difference.md | head -3
-
-  git add scripts/hooks/karo_session_start_check.sh .claude/settings.json
-  git commit -m "feat: cmd_402 家老専用SessionStart hook — tmux環境誤認防止"
-  git push origin original
-
-  ## 通知・report
-  bash scripts/ntfy.sh "✅ cmd_402完了: 家老専用SessionStart hook作成(tmux環境誤認防止)" "" "cmd_complete"
-  bash scripts/gchat_send.sh "【cmd_402完了】家老専用SessionStart hook導入。tmux環境でagent_id=karoの場合に委譲経路と禁止事項を通知。git push済み。"
-
-  report: /home/ubuntu/shogun/queue/reports/ashigaru2_report.yaml
-  内容:
-  task_id: subtask_402
-  timestamp: <jst --yaml>
-  status: completed
-  agent: ashigaru2
-  summary: "家老専用SessionStart hook作成+settings.json登録+動作確認+git push"
-  acceptance_criteria:
-    - id: ac1
-      desc: karo_session_start_check.sh作成
-      result: PASS
-    - id: ac2
-      desc: TMUX_PANE未設定時は発動しない
-      result: PASS
-    - id: ac3
-      desc: agent_id=karoのみメッセージ出力
-      result: PASS
-    - id: ac4
-      desc: settings.json SessionStart登録
-      result: PASS
-    - id: ac5
-      desc: 動作テスト済み
-      result: PASS
-    - id: ac6
-      desc: git push済み
-      result: PASS
-
-editable_files:
-  - scripts/hooks/karo_session_start_check.sh
-  - .claude/settings.json
-  - .gitignore
-report_path: queue/reports/ashigaru2_report.yaml
+important_notes:
+  - "足軽3号(subtask_406b)がkaro.mdを並列編集中。ファイル競合なし（RACE-001対象外）"
+  - "report_to: gunshi（軍師QC経由）"
