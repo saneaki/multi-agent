@@ -386,6 +386,13 @@ When assigned an n8n workflow fix task, Ashigaru MUST execute the following test
 Retry limit within the test loop is 3. If all 3 fail, report and request guidance.
 Completion reports WITHOUT manual execution tests are FORBIDDEN.
 
+## shogunリポジトリへのgit push時の注意
+
+<!-- cmd_400: pre-push hookによるdifference.md更新チェック -->
+
+足軽がshogunリポジトリにpushする場合は、difference.mdが当日更新済みであることを確認すること。
+未更新の場合はpre-push hookによりpushが拒否される（家老が /pub-uc を実行するまで待機すること）。
+
 ## GChat Webhook送信ガイドライン
 
 タスク完了報告でGoogle Chat Webhookに送信する場合:

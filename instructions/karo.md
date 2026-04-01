@@ -847,6 +847,16 @@ subtasks → Ashigaru implements.
 
 This is a TRIAL rule. Evaluate after 10 cmds and report to Shogun.
 
+## shogunリポジトリのgit push手順（必須）
+
+<!-- cmd_400: pre-push hookによるdifference.md更新チェック -->
+
+shogunリポジトリでgit pushする際は、必ず `/pub-uc` ワークフローを実行すること。
+
+- `/pub-uc` はdifference.md更新を含む標準パブリッシュ手順
+- pre-push hookがdifference.md未更新を検知した場合はpushが拒否される
+- 直接 `git push` を使う場合は事前にdifference.mdを当日日付に更新すること
+
 ## Cmd Status ACK & Archive (v3.8)
 
 **ACK fast**: cmd受取時に即 `status: pending → in_progress` に更新すること。

@@ -1,0 +1,24 @@
+task_id: cmd_400
+timestamp: "2026-04-01T10:49:27+09:00"
+status: completed
+agent: ashigaru4
+summary: "pre-push hook(difference.md更新チェック)+/pub-uc必須化"
+acceptance_criteria:
+  - id: ac1
+    desc: .git/hooks/pre-push 作成・動作確認
+    result: PASS
+  - id: ac2
+    desc: テスト(拒否→成功)確認
+    result: PASS
+  - id: ac3
+    desc: karo.md /pub-uc記載追加
+    result: PASS
+  - id: ac4
+    desc: ashigaru.md /pub-uc記載追加
+    result: PASS
+  - id: ac5
+    desc: 他リポジトリ(pdfmerged等)では発動しない
+    result: PASS
+  - id: ac6
+    desc: git push済み
+    result: PASS
