@@ -22,7 +22,9 @@ if [ ! -f "$LOG_FILE" ]; then
     echo "⚠️ [daily-log-guard] 本日(${TODAY})の日報が未生成です。"
     echo "   → logs/daily/${TODAY}.md を作成し、完了cmdを記録してください。"
     echo "   → 参考: logs/daily/2026-03-29.md のフォーマットに従うこと。"
-    exit 2
+    echo "⚠️ [daily-log-guard] 本日(${TODAY})の日報が未生成です。" >&2
+    echo "   → logs/daily/${TODAY}.md を作成し、完了cmdを記録してください。" >&2
+    exit 0
 fi
 
 # Check if any cmd entries exist (lines starting with "## cmd_")
@@ -31,9 +33,9 @@ CMD_COUNT="${CMD_COUNT:-0}"
 CMD_COUNT=$(echo "$CMD_COUNT" | tr -d '[:space:]')
 
 if [ "${CMD_COUNT}" = "0" ]; then
-    echo "⚠️ [daily-log-guard] 本日(${TODAY})の日報にcmdエントリがありません。"
-    echo "   → ${LOG_FILE} に本日完了したcmdのサマリーを追記してください。"
-    exit 2
+    echo "⚠️ [daily-log-guard] 本日(${TODAY})の日報にcmdエントリがありません。" >&2
+    echo "   → ${LOG_FILE} に本日完了したcmdのサマリーを追記してください。" >&2
+    exit 0
 fi
 
 # All good

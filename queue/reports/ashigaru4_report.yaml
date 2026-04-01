@@ -1,24 +1,57 @@
-task_id: cmd_400
-timestamp: "2026-04-01T10:49:27+09:00"
-status: completed
-agent: ashigaru4
-summary: "pre-push hook(difference.md更新チェック)+/pub-uc必須化"
-acceptance_criteria:
-  - id: ac1
-    desc: .git/hooks/pre-push 作成・動作確認
-    result: PASS
-  - id: ac2
-    desc: テスト(拒否→成功)確認
-    result: PASS
-  - id: ac3
-    desc: karo.md /pub-uc記載追加
-    result: PASS
-  - id: ac4
-    desc: ashigaru.md /pub-uc記載追加
-    result: PASS
-  - id: ac5
-    desc: 他リポジトリ(pdfmerged等)では発動しない
-    result: PASS
-  - id: ac6
-    desc: git push済み
-    result: PASS
+worker_id: ashigaru4
+task_id: subtask_407d
+parent_cmd: cmd_407
+timestamp: '2026-04-01T22:23:17+09:00'
+status: done
+report_to: gunshi
+
+result:
+  summary: "n8n-gcal-api-pagination-guard SKILL.md作成・push完了"
+
+  files_created:
+    - "/home/ubuntu/.claude/skills/n8n-gcal-api-pagination-guard/SKILL.md (277行)"
+
+  files_modified:
+    - "/home/ubuntu/shogun/memory/skill_history.md"
+
+  details:
+    skill_content:
+      sections:
+        - "1. 問題: GCal API maxResultsデフォルト制限(実インシデント: 643件中250件のみ取得)"
+        - "2. 修正パターン1: GCalノードmaxResults=2500明示設定"
+        - "2. 修正パターン2: HTTP Request v4.2組込みページネーション($input.all()結合)"
+        - "3. 検出パターン: API確認コマンド・実行ログ警告サイン・nextPageToken警告Codeノード"
+        - "4. Google API横展開: Drive/Gmail/Sheets等のmaxResults制限一覧"
+        - "5. 検証方法: 手動実行+件数確認+syncToken確認チェックリスト"
+        - "6. 適用コンテキスト表"
+      tags: [n8n, google-calendar, pagination, gcal, maxResults, syncToken]
+      references:
+        - "cmd_392: 根本原因特定(maxResults未指定→250件打ち切り)"
+        - "cmd_394: HTTP Request v4.2ページネーション完全対応"
+        - "sug_cmd_392_002: Google API横展開推奨"
+        - "sug_cmd_394_002: HTTP Request v4.2組込みページネーション推奨手法"
+
+    git:
+      claude_repo:
+        commit: "7d3b37d"
+        message: "feat: n8n-gcal-api-pagination-guard スキル追加 — GCal API maxResults未指定による部分取得バグ対策 (cmd_407)"
+        pushed: true
+      shogun_repo:
+        commit: "8fdd36a"
+        message: "chore: skill_history.md更新 — n8n-gcal-api-pagination-guard追加 (cmd_407)"
+        pushed: true
+        pre_push_hook: "pass (difference.md 2026-04-01更新確認OK)"
+
+acceptance_criteria_check:
+  - item: "~/.claude/skills/n8n-gcal-api-pagination-guard.md が作成されている"
+    status: PASS
+    note: "~/.claude/skills/n8n-gcal-api-pagination-guard/SKILL.md として作成（既存スキルと同形式）"
+  - item: "スキルの内容が充実している（問題の説明・根本原因・修正パターン・コード例・検証方法）"
+    status: PASS
+    note: "277行。6セクション構成。cmd_392/394の実際の修正内容を反映。Google API横展開含む。"
+  - item: "git push済み（/pub-uc使用）"
+    status: PASS
+    note: "~/.claude repo: main 7d3b37d, shogun repo: original 8fdd36a"
+
+skill_candidate:
+  found: false
