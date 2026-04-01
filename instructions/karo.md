@@ -171,17 +171,6 @@ Agent()の出力が「成果物」か「判断材料」かで判定する:
 
 違反実例: cmd_396 — Agent()でpdfmergedの実装を全実行し、報告書にagent:ashigaru1と虚偽記載。
 
-### F001 Violation Real Impact (cmd_178/179)
-
-<!-- F001違反の実害。「自分でやった方が早い」は禁止の根拠 -->
-
-| Violation | Actual Harm |
-|-----------|-------------|
-| cmd_178: 家老が自己調査 | ntfy通知とinbox_write（Step 11.7）がスキップ → 殿に完了通知届かず |
-| cmd_179: local agentで自己実装 | Gunshi QCもスキップ → 品質保証なしでデプロイのリスク |
-
-**Root cause**: Ashigaru→Gunshi→Karo report flow がないと Step 11.7 の7ステップが抜け落ちる。F003（Task agent）も同時違反になる。全成果物タスクは必ず足軽に委譲せよ。
-
 ## Language & Tone
 
 <!-- 口調設定。戦国風必須 -->
@@ -197,13 +186,6 @@ Examples:
 - ❌ 「cmd_055受信。2足軽並列で処理する。」（← 味気なさすぎ）
 
 Code, YAML, and technical document content must be accurate. Tone applies to spoken output and monologue only.
-
-## Agent Self-Watch Phase Rules (cmd_107)
-
-- Phase 1: Watcher operates with `process_unread_once` / inotify + timeout fallback as baseline.
-- Phase 2: Normal nudge suppressed (`disable_normal_nudge`); post-dispatch delivery confirmation must not depend on nudge.
-- Phase 3: `FINAL_ESCALATION_ONLY` limits send-keys to final recovery; treat inbox YAML as authoritative for normal delivery.
-- Monitor quality via `unread_latency_sec` / `read_count` / `estimated_tokens`.
 
 ## Inbox Communication Rules
 
@@ -762,20 +744,6 @@ QC PASS requires execution test (not just structural verification).
 
 **L3/L4 boundary**: Does a procedure/template exist? YES = L3 (Ashigaru). NO = L4 (Gunshi).
 
-## OSS Pull Request Review
-
-1. **Thank contributor** via PR comment (in shogun's name)
-2. **Post review plan** — which ashigaru reviews with what expertise
-3. Assign ashigaru with **expert personas**
-4. **Instruct to note positives**, not just criticisms
-
-| Severity | Decision |
-|----------|----------|
-| Minor (typo, small bug) | Maintainer fixes & merges |
-| Direction correct, non-critical | Maintainer fix OK |
-| Critical (design flaw, fatal bug) | Request revision with specific guidance |
-| Fundamental design disagreement | Escalate to shogun |
-
 ## Compaction Recovery
 
 1. Check current cmd in `shogun_to_karo.yaml`
@@ -815,11 +783,6 @@ Only write to Memory MCP: preferences expressed by Lord, technical decisions dis
 - Ashigaru report overdue → check pane status
 - Own context < 20% remaining → report to shogun via dashboard, prepare for /clear
 
-## Dispatch-and-Move Principle (cmd_150)
-
-After assigning → immediately move to next dispatch. capture-pane monitoring is **forbidden**.
-Ashigaru self-determines completion and reports via inbox.
-
 ## 30-Minute Rule (cmd_150)
 
 Ashigaru 30分以上作業中 → 1) ステータス確認 2) 問題引き取り 3) タスク分割・再割当。
@@ -844,19 +807,6 @@ All deliverables go into `output/` as **flat files** (no per-cmd subdirectories)
 When creating task YAML for ashigaru, always specify the flat file path in the output field.
 
 ## Worktree → see [instructions/common/worktree.md](./common/worktree.md)
-
-## TRIAL: Error Analysis → Gunshi Routing (v3.3)
-
-<!-- WFエラー調査は必ずGunshiにルーティング。Karo自身が分析するのはF001違反 -->
-
-When a cmd involves investigating WF errors or bugs with UNKNOWN root cause,
-the analysis phase MUST be routed to Gunshi (L4 Analyze) BEFORE implementation
-subtasks are created for Ashigaru. Karo must NOT perform error analysis itself.
-
-Workflow: cmd received → Gunshi analyzes root cause → Karo creates implementation
-subtasks → Ashigaru implements.
-
-This is a TRIAL rule. Evaluate after 10 cmds and report to Shogun.
 
 ## shogunリポジトリのgit push手順（必須）
 

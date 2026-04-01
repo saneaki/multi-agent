@@ -1,64 +1,57 @@
-task_id: subtask_406a
-cmd_id: cmd_406
+task_id: subtask_407b
+cmd_id: cmd_407
 assigned_to: ashigaru2
 assigned_by: karo
-timestamp: '2026-04-01T22:08:00+09:00'
+timestamp: '2026-04-01T22:16:48+09:00'
 status: assigned
-priority: high
+priority: medium
 report_to: gunshi
 project: shogun
 
-title: "cmd_406 shogun.mdにdecomposition_hint必須フィールド追加 + CLAUDE.md Rule 13追加"
+title: "cmd_407 karo.md月次棚卸し（4月）"
 
-north_star: "将軍→家老の指揮効率を向上させ、足軽の並列活用率を高めることで、cmd完了速度を改善する"
+north_star: "品質管理プロセスの穴を塞ぎ、蓄積された提案を消化して運用負債を解消する"
 
-purpose: "shogun.mdのcmd必須フィールドにdecomposition_hintを追加し、CLAUDE.mdのShogun Mandatory Rules Rule 13を追記する"
+purpose: "karo.mdの月次棚卸しを実施し、過去2ヶ月未参照セクションの外出し・削除で行数を削減する"
 
 acceptance_criteria:
-  - "shogun.mdのcmd必須フィールドYAMLテンプレートにdecomposition_hintが追加されている（parallel, gunshi_task, noteの3フィールド）"
-  - "shogun.mdにdecomposition_hintの記載ガイドラインが含まれている（独立タスク判定基準、並列数の目安）"
-  - "CLAUDE.md Shogun Mandatory RulesにRule 13が追加されている（decomposition_hintの概要1行）"
+  - "karo.mdの棚卸し完了（過去2ヶ月未参照セクションを外出しまたは削除）"
+  - "棚卸し結果（削減行数・移動先）がレポートに記載されている"
   - "git push済み（/pub-uc使用）"
 
 context: |
   【背景】
-  cmd_405で独立した3タスクが足軽1名に直列割当された。
-  家老のコンテキスト負荷を考慮し、分配判断を将軍側に移管する。殿の裁定済み。
+  cmd_399でS1+S2最適化を実施済み（908行→858行）。
+  本日4/1の月次棚卸し（cmd_402軍師提案）。
 
-  【変更1】shogun.md — cmd必須フィールドにdecomposition_hint追加
-  既存の「Required cmd fields」またはcmdのYAMLテンプレート部分に追加:
-
-    decomposition_hint:
-      parallel: N           # 推奨並列足軽数（1=直列）
-      gunshi_task: bool     # 軍師に独立タスクがあるか
-      note: "判断理由"       # なぜこの分配か
-
-  ガイドライン（同じセクションに追記）:
-  - 相互依存のないタスクが複数 → parallel: タスク数
-  - 調査・分析系 → gunshi_task: true
-  - 同一ファイル編集あり → parallel: 1 + noteに理由
-  - 判断に迷ったら多めに指定（家老が絞る方が安全）
-
-  【変更2】CLAUDE.md — Shogun Mandatory Rules Rule 13追加
-  CLAUDE.md の「Shogun Mandatory Rules」セクションに追加（現在のRule数+1番号で追記）:
-  「13. **decomposition_hint**: cmdにタスク分配指針を含める（parallel数・gunshi_task有無・理由）。家老は原則従い、技術的理由（RACE-001/足軽空き不足/依存関係）でオーバーライド可。オーバーライド時はダッシュボードに理由を記載。」
+  【方針】
+  1. karo.mdを読む（現在の行数確認）
+  2. gunshi.mdの月次棚卸しルール（もしあれば）を確認
+  3. 過去2ヶ月参照されていないと思われるセクションを特定:
+     - 一時的なメモや過去のcmd固有の記録
+     - すでにtemplates/やconfig/に移動済みの重複内容
+     - 廃止された手順や古い注記
+  4. templates/ または config/ に外出し可能なものは移動
+  5. 不要なものは削除
+  6. 削減行数を記録
 
 steps:
-  - "1. Read /home/ubuntu/shogun/instructions/shogun.md（cmd必須フィールドセクション確認）"
-  - "2. shogun.md を編集: decomposition_hintフィールドとガイドラインを追加"
-  - "3. Read /home/ubuntu/shogun/CLAUDE.md（Shogun Mandatory Rules確認、現在のRule数確認）"
-  - "4. CLAUDE.md を編集: Rule 13を追加（既存番号の続きで）"
-  - "5. 変更内容をReadで確認"
-  - "6. /pub-uc でgit push"
-  - "7. レポート作成: /home/ubuntu/shogun/queue/reports/ashigaru2_report.yaml"
+  - "1. Read /home/ubuntu/shogun/instructions/karo.md（全体構成確認）"
+  - "2. Read /home/ubuntu/shogun/instructions/gunshi.md（月次棚卸しルール確認）"
+  - "3. 棚卸し対象セクションを特定（過去2ヶ月未参照・重複・廃止）"
+  - "4. karo.md を編集: 対象セクションを外出しまたは削除"
+  - "5. 必要であれば templates/ や config/ にファイル作成"
+  - "6. 削減前後の行数を記録"
+  - "7. /pub-uc でgit push"
+  - "8. レポート作成: /home/ubuntu/shogun/queue/reports/ashigaru2_report.yaml"
   - "   標準フィールド: worker_id, task_id, parent_cmd, status, timestamp"
-  - "8. bash scripts/inbox_write.sh gunshi '足軽2号、subtask_406a完了。report確認されたし。' report_completed ashigaru2"
+  - "9. bash scripts/inbox_write.sh gunshi '足軽2号、subtask_407b完了。report確認されたし。' report_completed ashigaru2"
 
 quality_rules:
-  - "shogun.mdの既存フォーマット・スタイルを維持すること"
-  - "CLAUDE.md Rule番号は既存の最後のRule番号+1とすること（事前にReadで確認）"
-  - "git pushは/pub-ucコマンドを使用（pre-push hookあり）"
+  - "削除する前にReadで内容を確認し、本当に不要か判断すること"
+  - "活発に参照されているセクションは削除しないこと"
+  - "git pushは/pub-ucコマンドを使用"
 
 important_notes:
-  - "足軽3号(subtask_406b)がkaro.mdを並列編集中。ファイル競合なし（RACE-001対象外）"
+  - "足軽1・3・4号が別ファイルを並列編集中。RACE-001リスクなし"
   - "report_to: gunshi（軍師QC経由）"

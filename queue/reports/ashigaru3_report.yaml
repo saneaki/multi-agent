@@ -1,48 +1,25 @@
 worker_id: ashigaru3
-task_id: cmd_399
-parent_cmd: cmd_399
-timestamp: "2026-04-01T10:40:37+09:00"
-status: completed
-agent: ashigaru3
-summary: "karo.md最適化(S1+S2+S3) + gunshi.md日報移管 + 月次棚卸し"
-karo_lines_before: 908
-karo_lines_after: 858
-result:
-  files_modified:
-    - instructions/karo.md
-    - instructions/gunshi.md
-    - .gitignore
-  files_created:
-    - templates/karo_task_template.yaml
-    - config/streaks_format.yaml
-acceptance_criteria:
-  - id: ac1
-    desc: "karo.md -500トークン以上削減（約35行以上）"
-    result: PASS
-    detail: "908行 → 858行（50行削減）"
-  - id: ac2
-    desc: "外出しファイル作成"
-    result: PASS
-    detail: "templates/karo_task_template.yaml + config/streaks_format.yaml"
-  - id: ac3
-    desc: "gunshi.md日報追記ステップ追加"
-    result: PASS
-    detail: "Autonomous QC Procedure にStep 9.5として追加"
-  - id: ac4
-    desc: "karo.md Step 11.7から日報ステップ削除"
-    result: PASS
-    detail: "Step 7（Daily log append）を削除。6ステップに更新"
-  - id: ac5
-    desc: "月次棚卸しgunshi.md追加"
-    result: PASS
-    detail: "Fork Extensionsに月次棚卸し（毎月1日）セクション追加"
-  - id: ac6
-    desc: "圧縮復帰手順に外出しファイル参照追記"
-    result: PASS
-    detail: "Compaction Recoveryに外出しファイル2件参照を追記"
-  - id: ac7
-    desc: "git push済み"
-    result: PASS
-    detail: "commit f58b736, origin/original"
-skill_candidate:
-  found: false
+task_id: subtask_407c
+parent_cmd: cmd_407
+status: done
+timestamp: '2026-04-01T22:21:36+09:00'
+
+summary: "n8n-gcal-allday-end-date-fix SKILL.md作成完了"
+
+details:
+  - "/home/ubuntu/.claude/skills/n8n-gcal-allday-end-date-fix.md 作成（178行）"
+  - "内容: 問題説明・根本原因(GCal API排他仕様)・修正パターンA/B・n8nコード例・検証方法・参考情報"
+  - "memory/skill_history.md に追記（✅実装済みとして）"
+  - ".claude repo: commit be88eeb → push済み（saneaki/claude_everythingclaudecode）"
+  - "shogun repo: commit 5292e61 → push済み（skill_history.md更新）"
+
+acceptance_criteria_check:
+  - criterion: "~/.claude/skills/n8n-gcal-allday-end-date-fix.md が作成されている"
+    result: "PASS"
+  - criterion: "スキルの内容が充実している（問題の説明・根本原因・修正パターン・コード例・検証方法）"
+    result: "PASS"
+  - criterion: "git push済み（/pub-uc使用）"
+    result: "PASS"
+
+agent_usage: false
+skill_candidate: ~
