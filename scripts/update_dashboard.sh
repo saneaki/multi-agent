@@ -52,7 +52,7 @@ for yaml_file in "$TASKS_DIR"/ashigaru*.yaml; do
     assigned|in_progress|working)
       echo "| ${cmd_id} | ${title} | ${agent_name}作業中 | ${status} |" >> "$TMP_IN_PROG"
       ;;
-    done|completed|idle)
+    done|completed|idle|canceled)
       echo "| ${agent_name} | 待機 | ${task_id}完了: ${title} |" >> "$TMP_STANDBY"
       ;;
   esac
