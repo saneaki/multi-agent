@@ -20,6 +20,9 @@
 # timestamp     : from jst_now.sh --yaml
 # editable_files: 【必須/SO-20】足軽が変更するファイルパスまたはglobパターン
 #                 自身のreport/task YAMLは暗黙許可のため記載不要
+#                 【n8n WFタスクの場合】n8n API経由の修正はファイルパスではなくWF IDで記載:
+#                   "n8n WF: {workflow_id} ({workflow_name})"
+#                   例: "n8n WF: calendar-sync-v32 (Googleカレンダー同期フロー v4.1)"
 # blocked_by    : 依存タスクIDリスト（依存あり時のみ）
 # redo_of       : やり直し元タスクID（redo時のみ）
 
