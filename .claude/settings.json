@@ -73,6 +73,17 @@
           }
         ]
       }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /home/ubuntu/shogun/scripts/hooks/karo_session_start_check.sh"
+          }
+        ]
+      }
     ]
   },
   "permissions": {

@@ -116,6 +116,7 @@
 !scripts/hooks/pre_compact_snapshot.sh
 !scripts/hooks/ir1_editable_files_check.sh
 !scripts/hooks/pre_push_difference_check.sh
+!scripts/hooks/karo_session_start_check.sh
 !scripts/log_violation.sh
 !scripts/stop_hook_daily_log.sh
 
