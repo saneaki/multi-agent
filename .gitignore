@@ -103,6 +103,7 @@
 !scripts/stop_hook_inbox.sh
 !scripts/agent_status.sh
 !scripts/ratelimit_check.sh
+!scripts/update_dashboard.sh
 !scripts/update_dashboard_timestamp.sh
 !scripts/notion_session_log.sh
 !scripts/switch_cli.sh
