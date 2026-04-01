@@ -1,57 +1,99 @@
-task_id: subtask_407b
-cmd_id: cmd_407
+task_id: subtask_410b
+cmd_id: cmd_410
 assigned_to: ashigaru2
-assigned_by: karo
-timestamp: '2026-04-01T22:16:48+09:00'
-status: assigned
-priority: medium
+project: shogun-system
+priority: high
+status: done
 report_to: gunshi
-project: shogun
+blocked_by: []
+created_at: "2026-04-02T02:21:38+09:00"
 
-title: "cmd_407 karo.md月次棚卸し（4月）"
+title: "cmd_410 Phase2-B: マルチモデル協調 コマンド→スキル変換 (7件)"
 
-north_star: "品質管理プロセスの穴を塞ぎ、蓄積された提案を消化して運用負債を解消する"
+north_star: "旧commands/*.md形式をskills/*/SKILL.md形式に移行し、Claude Codeがスキルを正しく認識できる状態にする"
 
-purpose: "karo.mdの月次棚卸しを実施し、過去2ヶ月未参照セクションの外出し・削除で行数を削減する"
+purpose: |
+  ~/.claude/commands/ のマルチモデル協調系コマンド7件を
+  ~/.claude/skills/{name}/SKILL.md 形式に変換する。
+  Codex/Gemini外部モデル依存箇所にはモデル可用性注記を追加すること。
+
+target_commands:
+  - multi-workflow
+  - multi-backend
+  - multi-execute
+  - multi-frontend
+  - multi-plan
+  - orchestrate
+  - model-route
 
 acceptance_criteria:
-  - "karo.mdの棚卸し完了（過去2ヶ月未参照セクションを外出しまたは削除）"
-  - "棚卸し結果（削減行数・移動先）がレポートに記載されている"
-  - "git push済み（/pub-uc使用）"
+  - "7件全て /home/ubuntu/.claude/skills/{name}/SKILL.md が作成されている"
+  - "各SKILL.mdのYAMLフロントマターが正しい（name・description必須）"
+  - "元コマンドのワークフローステップが全て保持されている"
+  - "Codex/Gemini依存コマンドにモデル可用性注記が追加されている"
+  - "report YAMLをqueue/reports/ashigaru2_report.yamlに記載している"
 
 context: |
-  【背景】
-  cmd_399でS1+S2最適化を実施済み（908行→858行）。
-  本日4/1の月次棚卸し（cmd_402軍師提案）。
+  【作業対象ディレクトリ】
+  - 読込元: /home/ubuntu/.claude/commands/{name}.md
+  - 作成先: /home/ubuntu/.claude/skills/{name}/SKILL.md
+  ※ skills/{name}/ ディレクトリは mkdir -p で事前作成すること
 
-  【方針】
-  1. karo.mdを読む（現在の行数確認）
-  2. gunshi.mdの月次棚卸しルール（もしあれば）を確認
-  3. 過去2ヶ月参照されていないと思われるセクションを特定:
-     - 一時的なメモや過去のcmd固有の記録
-     - すでにtemplates/やconfig/に移動済みの重複内容
-     - 廃止された手順や古い注記
-  4. templates/ または config/ に外出し可能なものは移動
-  5. 不要なものは削除
-  6. 削減行数を記録
+  【SKILL.mdテンプレート】
+  ---
+  name: {name}
+  description: "{250文字以内。キーワードを先頭に。英語}"
+  disable-model-invocation: true  # 副作用ありの場合のみ
+  # argument-hint: [args]  # 引数がある場合
+  ---
+  （本文は commands/*.md の内容を移植）
+
+  【構造改善】
+  - "## When to Activate" セクションを冒頭に追加
+  - Phase分けがある場合はその構造を踏襲・明確化
+  - DO/DON'T セクション（該当する場合）
+  - Codex/Gemini外部モデルを使う場合は注記:
+    "Note: Requires Codex/Gemini availability. Falls back to Claude-only if unavailable."
+
+  【副作用判定 — 以下に該当すれば disable-model-invocation: true 必須】
+  - git commit/push を含む → 該当なし（マルチモデル系は分析・生成のみ）
+  - ファイル削除を含む → 要確認
+  - 外部サービスへの送信を含む → Codex/Gemini APIコール = 副作用
+
+  【各コマンドの概要】
+  - multi-workflow: 6フェーズ協調開発（Research→Ideation→Plan→Execute→Optimize→Review）with Codex/Gemini routing
+  - multi-backend: バックエンド特化マルチモデル開発（Codex主導）
+  - multi-execute: マルチモデル協調実行（プロトタイプ→Claude実装→マルチモデル監査）
+  - multi-frontend: フロントエンド特化マルチモデル開発（Gemini主導）
+  - multi-plan: マルチモデル協調計画（デュアルモデル分析→実装計画生成）
+  - orchestrate: 逐次マルチエージェントワークフロー（feature/bugfix/refactor/security）
+  - model-route: タスク複雑度・予算制約からhaiku/sonnet/opusの最適モデル推奨
+
+  【既存スキルの参考フォーマット】
+  /home/ubuntu/.claude/skills/tdd-workflow/SKILL.md を参照せよ
 
 steps:
-  - "1. Read /home/ubuntu/shogun/instructions/karo.md（全体構成確認）"
-  - "2. Read /home/ubuntu/shogun/instructions/gunshi.md（月次棚卸しルール確認）"
-  - "3. 棚卸し対象セクションを特定（過去2ヶ月未参照・重複・廃止）"
-  - "4. karo.md を編集: 対象セクションを外出しまたは削除"
-  - "5. 必要であれば templates/ や config/ にファイル作成"
-  - "6. 削減前後の行数を記録"
-  - "7. /pub-uc でgit push"
-  - "8. レポート作成: /home/ubuntu/shogun/queue/reports/ashigaru2_report.yaml"
-  - "   標準フィールド: worker_id, task_id, parent_cmd, status, timestamp"
-  - "9. bash scripts/inbox_write.sh gunshi '足軽2号、subtask_407b完了。report確認されたし。' report_completed ashigaru2"
+  - "1. Read /home/ubuntu/.claude/skills/tdd-workflow/SKILL.md（フォーマット確認）"
+  - "2. 7件のcommandファイルを順番にRead・変換:"
+  - "   a. Read /home/ubuntu/.claude/commands/multi-workflow.md"
+  - "   b. Bash: mkdir -p /home/ubuntu/.claude/skills/multi-workflow/"
+  - "   c. Write /home/ubuntu/.claude/skills/multi-workflow/SKILL.md"
+  - "   d. 以降 multi-backend, multi-execute, multi-frontend, multi-plan, orchestrate, model-route も同様"
+  - "3. 全7件完了後、queue/reports/ashigaru2_report.yamlに結果記載"
+  - "4. bash /home/ubuntu/shogun/scripts/inbox_write.sh gunshi '足軽2号、subtask_410b完了。7件のSKILL.md作成完了。report確認されたし。' report_completed ashigaru2"
 
 quality_rules:
-  - "削除する前にReadで内容を確認し、本当に不要か判断すること"
-  - "活発に参照されているセクションは削除しないこと"
-  - "git pushは/pub-ucコマンドを使用"
+  - "必ずReadしてからWriteすること（ファイル未読のWrite=エラー）"
+  - "元コマンドのワークフローステップを省略・簡略化しないこと"
+  - "descriptionは英語250文字以内、キーワードを先頭に配置"
+  - "Codex/Gemini依存コマンドにはモデル可用性注記を追加すること"
+  - "mkdir -p でディレクトリ作成してからWriteすること"
 
-important_notes:
-  - "足軽1・3・4号が別ファイルを並列編集中。RACE-001リスクなし"
-  - "report_to: gunshi（軍師QC経由）"
+editable_files:
+  - "/home/ubuntu/.claude/skills/multi-workflow/SKILL.md (new)"
+  - "/home/ubuntu/.claude/skills/multi-backend/SKILL.md (new)"
+  - "/home/ubuntu/.claude/skills/multi-execute/SKILL.md (new)"
+  - "/home/ubuntu/.claude/skills/multi-frontend/SKILL.md (new)"
+  - "/home/ubuntu/.claude/skills/multi-plan/SKILL.md (new)"
+  - "/home/ubuntu/.claude/skills/orchestrate/SKILL.md (new)"
+  - "/home/ubuntu/.claude/skills/model-route/SKILL.md (new)"
