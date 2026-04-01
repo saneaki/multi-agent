@@ -77,24 +77,24 @@ jobs:
         run: |
           SYNC_DATE=$(date -u +%Y-%m-%d)
           CONFLICT_FILES=$(cat /tmp/conflict_files.txt 2>/dev/null || echo "確認不可")
+          cat > /tmp/issue_body.md << ISSUE_BODY
+          ## upstream/main 週次同期でコンフリクトが発生しました
+          **発生日時**: ${SYNC_DATE}
+          ### 競合ファイル
+          \`\`\`
+          ${CONFLICT_FILES}
+          \`\`\`
+          ### 手動解決手順
+          1. git fetch upstream main
+          2. git merge --no-ff upstream/main
+          3. コンフリクトを手動解決
+          4. git add . && git commit
+          5. git push origin original
+          ISSUE_BODY
           gh issue create \
             --title "upstream/main sync conflict ($SYNC_DATE)" \
             --label "upstream-sync" \
-            --body "## upstream/main 週次同期でコンフリクトが発生しました
-
-**発生日時**: ${SYNC_DATE}
-
-### 競合ファイル
-\`\`\`
-${CONFLICT_FILES}
-\`\`\`
-
-### 手動解決手順
-1. \`git fetch upstream main\`
-2. \`git merge --no-ff upstream/main\`
-3. コンフリクトを手動解決
-4. \`git add .\` && \`git commit\`
-5. \`git push origin original\`"
+            --body-file /tmp/issue_body.md
 
       - name: Notify conflict
         if: steps.check.outputs.behind != '0' && steps.merge.outputs.result == 'conflict'
