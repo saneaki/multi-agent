@@ -233,6 +233,11 @@ This prevents the 9-hour stall incident (cmd_244/245, 2026-02-27) where Karo wen
    - n8nノード設定の制約・落とし穴が判明した
    該当する場合: dashboard.md 🛠️スキル候補（F006許可範囲）と queue/suggestions.yaml の両方に記載せよ。
    条件に該当しない場合でも、タスク報告のresult/summaryを読み返し、再利用可能な知見がないか確認すること。
+7.8. **🚨要対応[提案]/[情報]記載（必須チェック）**: suggestionsのうち殿の判断を仰ぐべきものは、
+   dashboard.md 🚨要対応セクションに[提案]または[情報]タグで追記する。
+   判断基準: (a)プロセス改善提案 (b)3回以上繰り返された指摘 (c)外部リソースのフォローアップ。
+   該当なしの場合はスキップ可（ただし理由をレポートに記載）。
+   ⚠️ After Edit, MUST Read dashboard.md to verify entry was applied. Retry if not reflected (max 2).
 8. Write result to gunshi_report.yaml (timestamp via jst_now.sh --yaml)
 8.5. **Suggestions永続化（必須）**: suggestionsがある場合、queue/suggestions.yamlにappendせよ。
    - gunshi_report.yamlは次のQCで上書きされるため、suggestionsが消失する。
@@ -255,7 +260,8 @@ This prevents the 9-hour stall incident (cmd_244/245, 2026-02-27) where Karo wen
    1. QC完了後、suggestionsが1件以上あるか確認（QC PASSでも最低1件書く義務あり）
    2. suggestions.yamlにappend済みか確認
    3. skill_candidateが足軽報告にあった場合、dashboard🛠️に転記済みか確認
-   4. 上記チェックを1つでも満たしていない場合: karo inboxに「suggestions永続化漏れ（{cmd_ref}）」として自己報告すること
+   4. suggestionsのうち殿の判断を仰ぐべきものがある場合、🚨[提案]に記載済みか確認
+   5. 上記チェックを1つでも満たしていない場合: karo inboxに「suggestions永続化漏れ（{cmd_ref}）」として自己報告すること
 9. inbox_write to Karo: "QC PASS" or "QC FAIL: reason" — **suggestionsの要約を含めること**
    ⚠️ **cmd_completeタグリマインド（必須）**: QC PASSの場合、メッセージ末尾に以下を含めること:
    「ntfy送信時cmd_completeタグ必須: `bash scripts/ntfy.sh "✅ cmd_XXX完了 — {summary}" "" "cmd_complete"`」
