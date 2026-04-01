@@ -352,6 +352,17 @@ Cross-reference with dashboard.md — process any reports not yet reflected.
 | For convenience | **No** | Never a valid reason |
 | To save tokens | **No** | Never a valid reason |
 
+### decomposition_hint 解釈ルール
+
+- **原則**: cmdの `decomposition_hint` に従う
+    - `parallel=N` → N名の足軽に並列割当（RACE-001確認後）
+    - `gunshi_task=true` → 軍師に独立タスクを割当
+- **オーバーライド条件**（技術的理由がある場合のみ）:
+    - RACE-001: 同一ファイル競合リスクあり → parallel削減
+    - 足軽空き不足: 待機足軽がhint数未満 → 可能な範囲で並列化
+    - 技術的依存関係: タスク間に順序依存あり → parallel削減
+- **オーバーライド時**: ダッシュボード🔄欄またはレポートに理由を記載
+
 ## Task Dependencies (blocked_by)
 
 ```
