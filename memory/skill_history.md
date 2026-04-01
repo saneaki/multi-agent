@@ -7,6 +7,7 @@ dashboard.md 🛠️スキル欄から溢れた全エントリ。最新順（上
 
 | スキル名 | 出典 |
 |----------|------|
+| **n8n-gcal-allday-end-date-fix** ✅実装済み | cmd_404→cmd_407: GCal終日イベントend.date排他仕様(exclusive)とn8nのinclusive解釈のズレによる+1日ズレバグ。-1日補正パターン+JavaScriptコード例+検証方法。フラットファイル作成済み。 |
 | **n8n-gmail-downloadattachments-from-uppercase** ✅統合 | cmd_389→cmd_390: shogun-n8n-gmail-id-archive-patternに統合済み。downloadAttachments=true時のemail.From大文字問題+フォールバックコード。 |
 | **n8n-continueOnFail-audit-pattern** ✅統合 | cmd_388→cmd_390: n8n-pipeline-cut-guardに統合済み。continueOnFail=trueによるデータエラー隠蔽の検出・修正パターン。 |
 | **shogun-ir1-implicit-allowlist-pattern** ✅ | cmd_376→cmd_390: IR-1 Hookのimplicit allowlistパターン(agent YAML/SKILL.md/target_path)3種+editable_files設定方法+task YAML設計ガイドライン。SKILL.md 176行作成済み。 |
