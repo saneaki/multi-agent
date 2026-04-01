@@ -200,6 +200,7 @@ bash scripts/inbox_write.sh ashigaru{N} "<message>" task_assigned karo
 ```bash
 bash scripts/inbox_write.sh ashigaru1 "タスクYAMLを読んで作業開始せよ。" task_assigned karo
 bash scripts/inbox_write.sh ashigaru2 "タスクYAMLを読んで作業開始せよ。" task_assigned karo
+bash scripts/update_dashboard.sh  # ダッシュボード🔄進行中・🏯待機中を自動更新
 ```
 
 ### No Inbox to Shogun
@@ -424,6 +425,7 @@ After judging a cmd complete, execute ALL steps before moving to next cmd:
 3. `dashboard.md`: remove from 🔄進行中, add to ✅本日の戦果
 4. **🚨要対応クリーンアップ (SO-19)**: `bash scripts/cmd_complete.sh {cmd_id}` を実行し、🚨残存を確認。WARNING表示があれば該当項目を削除 → ✅戦果に解決済みとして反映
 5. `inbox_write shogun` (dashboard updated)
+6. `bash scripts/update_dashboard.sh`  # 完了した足軽を🔄から🏯に移動
 
 ⚠️ cmd完了ntfy通知は `cmd_complete_notifier.sh` が dashboard.md 変更を検知して自動送信（タグ: cmd_complete）。手動送信不要。
 
