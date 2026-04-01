@@ -126,6 +126,9 @@ ntfy_inbox.yamlのtimestampはUTC(+00:00)で記録される。dashboardはJST基
 - 責任分析: 家老70%（QC割当漏れ・完了報告見落とし）/ 軍師30%（inbox処理の自律性不足）
 - 変更箇所: gunshi.md（自律QCセクション追加）、karo.md（QCルーティング更新）、CLAUDE.md（Report Flow更新）
 
+### L009: shogunリポジトリのコミット・プッシュ時は必ず/pub-ucを実行せよ
+shogunリポジトリでgit commit+pushをする際は、必ず `/pub-uc` を実行すること。/pub-ucはdifference.md更新（upstream差分分析）を含む標準パブリッシュ手順。家老にcmdを書く際も「git push時は/pub-ucを使用」と明記すること。(2026-04-01 殿指示)
+
 ### GitHub Issue運用（バグ修正時必須）
 - バグ修正cmdでは、修正着手時に関連リポジトリにGitHub Issueを作成する
 - 対応経過をコメントで記録し、解決後にクローズする
