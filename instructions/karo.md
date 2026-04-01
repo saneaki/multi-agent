@@ -415,20 +415,21 @@ Push notifications to the lord's phone via ntfy. Karo manages streaks and notifi
 
 ### Step 11.7 Completion Processing (Atomic)
 
-<!-- cmd完了判定後、次cmdに移る前に必ず7ステップを一括実行せよ -->
+<!-- cmd完了判定後、次cmdに移る前に必ず5ステップを一括実行せよ -->
 
 After judging a cmd complete, execute ALL steps before moving to next cmd:
 
 1. `shogun_to_karo.yaml`: status → done
 2. `saytask/streaks.yaml`: today.completed += 1, update last_date
-3. ntfy: `bash scripts/ntfy.sh "✅ cmd_XXX完了 — {summary}" "" "cmd_complete"`
-4. `dashboard.md`: remove from 🔄進行中, add to ✅本日の戦果
-5. **🚨要対応クリーンアップ (SO-19)**: `bash scripts/cmd_complete.sh {cmd_id}` を実行し、🚨残存を確認。WARNING表示があれば該当項目を削除 → ✅戦果に解決済みとして反映
-6. `inbox_write shogun` (dashboard updated)
+3. `dashboard.md`: remove from 🔄進行中, add to ✅本日の戦果
+4. **🚨要対応クリーンアップ (SO-19)**: `bash scripts/cmd_complete.sh {cmd_id}` を実行し、🚨残存を確認。WARNING表示があれば該当項目を削除 → ✅戦果に解決済みとして反映
+5. `inbox_write shogun` (dashboard updated)
 
-⚠️ Even if new cmds arrived in inbox, do NOT dispatch before completing all 7 steps.
+⚠️ cmd完了ntfy通知は `cmd_complete_notifier.sh` が dashboard.md 変更を検知して自動送信（タグ: cmd_complete）。手動送信不要。
 
-⚠️ **Same procedure for Karo self-completion**: Without the Ashigaru→Gunshi→Karo flow, ntfy (Step 3) and inbox_write (Step 5) are easily forgotten. Consciously follow this checklist.
+⚠️ Even if new cmds arrived in inbox, do NOT dispatch before completing all 5 steps.
+
+⚠️ **Same procedure for Karo self-completion**: Without the Ashigaru→Gunshi→Karo flow, inbox_write (Step 5) is easily forgotten. Consciously follow this checklist.
 
 ### cmd Completion Check
 
@@ -532,7 +533,7 @@ Update on every dashboard.md update. Frog section at **top** (after title, befor
 ## ntfy Notification to Lord
 
 ```bash
-bash scripts/ntfy.sh "✅ cmd_{id} 完了 — {summary}" "" "cmd_complete"
+# cmd完了通知はcmd_complete_notifier.shが自動送信（タグ: cmd_complete）。手動送信不要。
 bash scripts/ntfy.sh "❌ {subtask} 失敗 — {reason}"
 bash scripts/ntfy.sh "🚨 要対応 — {content}"
 ```

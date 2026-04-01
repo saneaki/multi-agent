@@ -17,6 +17,14 @@
 
 set -euo pipefail
 
+PIDFILE="/home/ubuntu/shogun/logs/cmd_complete_notifier.pid"
+if [ -f "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE")" 2>/dev/null; then
+    echo "Already running (PID $(cat "$PIDFILE")). Exiting." >&2
+    exit 0
+fi
+echo $$ > "$PIDFILE"
+trap 'rm -f "$PIDFILE"' EXIT
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$SCRIPT_DIR"
 
@@ -56,7 +64,7 @@ check_and_notify() {
 
         # ntfy 送信
         log "Sending ntfy for $cmd_id: $summary"
-        if bash "$SCRIPT_DIR/scripts/ntfy.sh" "✅ ${cmd_id} 完了 — ${summary}" "家老より" >> "$LOG_FILE" 2>&1; then
+        if bash "$SCRIPT_DIR/scripts/ntfy.sh" "✅ ${cmd_id} 完了 — ${summary}" "家老より" "cmd_complete" >> "$LOG_FILE" 2>&1; then
             echo "$cmd_id" >> "$STATE_FILE"
             log "ntfy sent: $cmd_id"
         else
