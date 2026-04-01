@@ -1,114 +1,129 @@
-task_id: subtask_393a
-cmd_id: cmd_393
+id: subtask_402
+cmd_id: cmd_402
 assigned_to: ashigaru2
-assigned_at: '2026-03-31T08:24:35+09:00'
-status: done
-blocked_by: []
-bloom_level: L3
+assigned_at: '2026-04-01T11:05:33+09:00'
+status: assigned
+priority: critical
 report_to: gunshi
-north_star: "Obsidianベースの法律文書管理Vaultを構築し、案件文書の横断検索・テンプレート起案・Notion手動連携を実現する"
-
-purpose: "GitHubリポジトリ作成+Vault構造+テンプレート7種+フロントマター+.obsidian設定を構築し初回push"
-
-persona: "Obsidian Vault構築の実装者。cmd_386レポートの仕様を忠実にコードに落とし込む。"
-
-instructions: |
-  ■ Obsidian法律Vault Phase1 — Part A: リポジトリ+テンプレート
-
-  ■ Step 1: 参照資料読み込み
-  以下を順に読んで全体像を把握:
-  - /home/ubuntu/shogun/output/cmd_386_part_a.md（アーキテクチャ・フロントマター）
-  - /home/ubuntu/shogun/output/cmd_386_part_b.md（テンプレート・ダッシュボード）
-  統合版は大きいため読まなくてよい。Part A + B で十分。
-
-  ■ Step 2: GitHubリポジトリ作成
-  GitHub MCP (mcp__github__create_repository) で:
-  - name: legal-vault
-  - owner: saneaki
-  - private: true
-  - description: "Obsidian法律文書管理Vault"
-
-  ■ Step 3: ローカルにクローン+構造作成
-  cd /tmp
-  git clone https://github.com/saneaki/legal-vault.git
-  cd legal-vault
-
-  フォルダ構造を作成:
-  mkdir -p .obsidian templates dashboards cases/_sample drafts pdfs reference
-
-  ■ Step 4: .gitignore作成
-  ```
-  .obsidian/workspace.json
-  .obsidian/workspace-mobile.json
-  .trash/
-  .DS_Store
-  *.swp
-  ```
-
-  ■ Step 5: .obsidian/設定ファイル
-  .obsidian/community-plugins.json:
-  ["obsidian-git", "templater-obsidian", "dataview", "omnisearch"]
-
-  .obsidian/app.json:
-  {"promptDelete": false, "alwaysUpdateLinks": true}
-
-  ■ Step 6: テンプレート7種作成（cmd_386 Part Bのコードブロックをベースに）
-  各テンプレートにTemplater構文+フロントマタースキーマを含める。
-
-  フロントマター共通スキーマ（cmd_386 Part A参照）:
-  ---
-  client: ""
-  case_name: ""
-  doc_type: "訴状"  # (種別に応じて変更)
-  status: "draft"
-  created: "<% tp.date.now('YYYY-MM-DD') %>"
-  due_date: ""
-  notion_url: ""
-  court: ""
-  case_number: ""
-  tags: []
-  ---
-
-  作成するファイル:
-  - templates/訴状.md
-  - templates/準備書面.md
-  - templates/答弁書.md
-  - templates/申立書.md
-  - templates/依頼者報告書.md
-  - templates/送付状_FAX.md
-  - templates/送付状_郵送.md
-
-  テンプレート内容はcmd_386 Part Bのコードブロックをそのまま使用してよい。
-  Templater構文（<% tp.date.now() %> 等）を含めること。
-
-  ■ Step 7: サンプル案件
-  cases/_sample/README.md を作成:
-  案件フォルダの構造例を示すドキュメント（訴状/準備書面/証拠リスト等のサブフォルダ）。
-
-  ■ Step 8: pdfs/ と reference/
-  pdfs/.gitkeep を作成（閲覧専用フォルダ、中身は空）
-  reference/.gitkeep を作成（pandocテンプレート用、Phase2で使用）
-
-  ■ Step 9: git commit + push
-  cd /tmp/legal-vault
-  git add -A
-  git commit -m "feat: Obsidian法律Vault Phase1 — リポジトリ構造+テンプレート7種"
-  git push origin main
-
-  ■ 注意
-  - テンプレートの日本語ファイル名はそのまま使用（Obsidianは日本語ファイル名対応）
-  - pdfs/ は .gitkeep のみ。中身は入れない
-  - Notion連携Phase2のn8n WFは今回作成しない
-  - pandocのpython-docxポストプロセスは実装しない
-
+north_star: "家老のSession Start Step 1省略を構造的に不可能にし、環境誤認→連鎖違反の再発を根絶する"
+purpose: "家老専用SessionStart hookを作成し、tmux環境でのStep 1未実行を検出・警告する"
 acceptance_criteria:
-  - "GitHubリポジトリ saneaki/legal-vault (private) が作成されている"
-  - "Vault構造（templates/dashboards/cases/drafts/pdfs/reference/.obsidian）が作成されている"
-  - "テンプレート7種（訴状/準備書面/答弁書/申立書/依頼者報告書/送付状FAX/送付状郵送）が配置されている"
-  - "フロントマタースキーマが全テンプレートに統一的に実装されている"
-  - ".obsidian/community-plugins.json に推奨プラグイン4種が設定されている"
-  - "git push完了"
+  - "scripts/hooks/karo_session_start_check.sh が作成されている"
+  - "hookは$TMUX_PANEが設定されている場合のみ発動する（VSCode環境では発動しない）"
+  - "agent_idがkaroの場合のみ警告メッセージを出力する"
+  - "karo以外のagent_idでは何も出力しない（exit 0）"
+  - ".claude/settings.jsonのSessionStartセクションに登録されている"
+  - "hookの動作テスト済み"
+  - "git push済み（difference.md当日確認後）"
+instructions: |
+  # cmd_402: 家老専用SessionStart hook作成
 
-editable_files: []
+  作業ディレクトリ: /home/ubuntu/shogun
+  Writeツールで直接ファイル作成すること。スキルコマンド・Skillツール使用禁止。
 
+  ## 【1】scripts/hooks/karo_session_start_check.sh を作成
+
+  以下の内容でWriteツールを使い直接作成:
+
+  #!/usr/bin/env bash
+  # karo_session_start_check.sh
+  # 家老専用SessionStart環境確認hook
+  # $TMUX_PANE未設定（VSCode環境）では何もしない
+  # agent_id=karoの場合のみ委譲経路・禁止事項を通知する
+
+  set -euo pipefail
+
+  if [ -z "${TMUX_PANE:-}" ]; then
+      exit 0
+  fi
+
+  AGENT_ID=$(tmux display-message -t "$TMUX_PANE" -p '#{@agent_id}' 2>/dev/null || echo "")
+
+  if [ "$AGENT_ID" != "karo" ]; then
+      exit 0
+  fi
+
+  echo "⚠️ 家老環境確認: tmux pane=$TMUX_PANE, agent_id=karo。"
+  echo "   足軽1〜7号(multiagent:0.1〜0.7)への委譲経路は有効。"
+  echo "   Agent()による成果物生成は禁止（F003）。足軽に委譲せよ。"
+  echo "   Session Start Step 1完了。"
+  exit 0
+
+  その後: chmod +x scripts/hooks/karo_session_start_check.sh
+
+  ## 【2】.claude/settings.json への登録
+
+  /home/ubuntu/shogun/.claude/settings.json を読み込み（必ずReadしてから）、
+  hooks.SessionStart 配列に以下を追加（既存エントリは保持すること）:
+  {
+    "matcher": "*",
+    "hooks": [
+      {
+        "type": "command",
+        "command": "bash /home/ubuntu/shogun/scripts/hooks/karo_session_start_check.sh"
+      }
+    ]
+  }
+
+  python3でJSONを読み込み・更新・書き出しすること。
+
+  ## 【3】動作テスト
+
+  bash scripts/hooks/karo_session_start_check.sh
+  # （tmuxパネルで実行するため、$TMUX_PANEが設定されていれば発動する）
+
+  $TMUX_PANEなし時の確認:
+  env -u TMUX_PANE bash scripts/hooks/karo_session_start_check.sh
+  echo "exit: $?"  # → exit: 0
+
+  ## 【4】.gitignore 確認・更新
+
+  git check-ignore -v scripts/hooks/karo_session_start_check.sh
+  対象外ならば .gitignore の !scripts/hooks/ 行があることを確認。
+  （既存の !scripts/hooks/ があれば追加不要）
+
+  ## 【5】git commit & push
+
+  difference.mdが今日(2026-04-01)であることを確認してからpush:
+  grep "Generated" difference.md | head -3
+
+  git add scripts/hooks/karo_session_start_check.sh .claude/settings.json
+  git commit -m "feat: cmd_402 家老専用SessionStart hook — tmux環境誤認防止"
+  git push origin original
+
+  ## 通知・report
+  bash scripts/ntfy.sh "✅ cmd_402完了: 家老専用SessionStart hook作成(tmux環境誤認防止)" "" "cmd_complete"
+  bash scripts/gchat_send.sh "【cmd_402完了】家老専用SessionStart hook導入。tmux環境でagent_id=karoの場合に委譲経路と禁止事項を通知。git push済み。"
+
+  report: /home/ubuntu/shogun/queue/reports/ashigaru2_report.yaml
+  内容:
+  task_id: subtask_402
+  timestamp: <jst --yaml>
+  status: completed
+  agent: ashigaru2
+  summary: "家老専用SessionStart hook作成+settings.json登録+動作確認+git push"
+  acceptance_criteria:
+    - id: ac1
+      desc: karo_session_start_check.sh作成
+      result: PASS
+    - id: ac2
+      desc: TMUX_PANE未設定時は発動しない
+      result: PASS
+    - id: ac3
+      desc: agent_id=karoのみメッセージ出力
+      result: PASS
+    - id: ac4
+      desc: settings.json SessionStart登録
+      result: PASS
+    - id: ac5
+      desc: 動作テスト済み
+      result: PASS
+    - id: ac6
+      desc: git push済み
+      result: PASS
+
+editable_files:
+  - scripts/hooks/karo_session_start_check.sh
+  - .claude/settings.json
+  - .gitignore
 report_path: queue/reports/ashigaru2_report.yaml

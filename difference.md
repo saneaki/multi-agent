@@ -1,7 +1,7 @@
 # Fork Difference Analysis: shogun vs upstream
 
 > **Generated**: 2026-04-01
-> **Base**: `git diff upstream/main...original` (66 files, +9375/−3069 lines)
+> **Base**: `git diff upstream/main...original` (69 files, +9520/−3068 lines)
 > **Upstream**: https://github.com/yohey-w/multi-agent-shogun.git
 > **Fork branch**: original
 
@@ -13,10 +13,10 @@ This fork extends the upstream multi-agent-shogun system with production-grade o
 2. **Autonomous QC pipeline** — Gunshi self-triggers quality checks without Karo assignment
 3. **JST timestamp enforcement** — All timestamps use `jst_now.sh` (prevents UTC accidents)
 4. **Skill management lifecycle** — Candidate tracking, policy, evaluation, promotion pipeline, and periodic stocktake (cmd_390: 16 candidates reviewed, 5 new + 4 integrated)
-5. **Operational safety** — F006 blind-clear ban, IR-1 editable-files whitelist guard, SO-19 completion cleanup enforcement, stall response protocol, Agent() tool governance (ashigaru: allowed with reporting, karo: analysis-only)
+5. **Operational safety** — F006 blind-clear ban, IR-1 editable-files whitelist guard, SO-19 completion cleanup enforcement, stall response protocol, Agent() tool governance (ashigaru: allowed with reporting, karo: analysis-only), karo SessionStart environment verification hook, git pre-push difference.md enforcement
 6. **Notification integration** — ntfy push (with cmd_complete tag for Shogun auto-wake) + Google Chat (`gchat_send.sh` with rate-limit sleep) + Notion session logging
 7. **VPS/WSL2 environment** — Paths, tmux TZ, hostname guards, dual-environment settings
-8. **Rule enforcement automation** — Hook-based violation detection (IR-1/IR-2/IR-5), qc_auto_check.sh, cmd_complete.sh for SO-19 compliance, daily log stop hook enforcement
+8. **Rule enforcement automation** — Hook-based violation detection (IR-1/IR-2/IR-5), qc_auto_check.sh, cmd_complete.sh for SO-19 compliance, daily log stop hook enforcement, karo SessionStart Step 1 hook enforcement, git pre-push difference.md date check
 
 **Merge strategy**: Most fork files have no upstream equivalent. For files that both fork and upstream modify (CLAUDE.md, instructions/*.md, tests/), manual merge is required — preserve fork sections while accepting upstream structural changes.
 
@@ -31,7 +31,9 @@ This fork extends the upstream multi-agent-shogun system with production-grade o
 | `scripts/dashboard_rotate.sh` | fork-added | Daily midnight JST cron: renames "本日の戦果"→"昨日の戦果", resets streak/frog/completion fields, trims skill section to 5 entries via FIFO archive to `memory/skill_history.md`. | Keep fork — no upstream equivalent |
 | `scripts/gchat_send.sh` | fork-added | Google Chat Webhook wrapper (9 lines): sources `.env` for `GCHAT_WEBHOOK_URL`, sends JSON-escaped message via curl, enforces `sleep 5` between calls to avoid 429 rate-limit errors (lesson from cmd_386 18-part send). | Keep fork — no upstream equivalent |
 | `scripts/hooks/ir1_editable_files_check.sh` | fork-added | PostToolUse hook enforcing IR-1 editable-files whitelist for ashigaru agents. Reads task YAML, resolves globs, implicit allowlist (own inbox, SKILL.md), logs violations via `log_violation.sh`. Non-ashigaru exempt. | Keep fork — no upstream equivalent |
+| `scripts/hooks/karo_session_start_check.sh` | fork-added | SessionStart hook (karo-only): checks `$TMUX_PANE` and `agent_id`, outputs environment confirmation + F003 reminder (Agent() deliverable prohibition). Prevents environment misidentification that led to cmd_395-401 violations. | Keep fork — no upstream equivalent |
 | `scripts/hooks/pre_compact_snapshot.sh` | fork-added | PreCompact hook that auto-captures task metadata and uncommitted file list before context compaction. Handles nested task YAML structure. Preserves existing `agent_context`. Always exits 0. | Keep fork — no upstream equivalent |
+| `scripts/hooks/pre_push_difference_check.sh` | fork-added | Git pre-push hook: verifies `difference.md` was updated today (JST date check) before allowing push to shogun repo. Prevents upstream diff documentation drift. Installed via symlink in `.git/hooks/pre-push`. | Keep fork — no upstream equivalent |
 | `scripts/inbox_watcher.sh` | fork-modified | Bug fix: after sending `/clear`, sets `NEW_CONTEXT_SENT=1` (was 0) preventing spurious CONTEXT-RESET loop. Two cosmetic blank-line changes. | Merge upstream, preserve fork sections |
 | `scripts/inbox_write.sh` | fork-modified | After writing shogun inbox with `cmd_complete`/`cmd_milestone` type, auto-calls `ntfy.sh` with formatted title. Non-blocking; ntfy errors logged to stderr only. | Keep fork — no upstream equivalent |
 | `scripts/jst_now.sh` | fork-added | Tiny utility outputting JST time in three formats (dashboard, YAML ISO-8601, date-only). Required by all timestamp-producing scripts to avoid UTC accidents (L006 lesson). | Keep fork — no upstream equivalent |
@@ -84,7 +86,7 @@ This fork extends the upstream multi-agent-shogun system with production-grade o
 
 | File | Change Type | Intent | Upstream Merge Guidance |
 |------|-------------|--------|------------------------|
-| `.claude/settings.json` | fork-modified | Project-level settings: PreCompact hook (pre_compact_snapshot.sh), PostToolUse hooks moved from global (update_dashboard_timestamp.sh, ir1_editable_files_check.sh, log_violation.sh). VPS-specific absolute paths. | Keep fork — no upstream equivalent |
+| `.claude/settings.json` | fork-modified | Project-level settings: PreCompact hook (pre_compact_snapshot.sh), PostToolUse hooks moved from global (update_dashboard_timestamp.sh, ir1_editable_files_check.sh, log_violation.sh), SessionStart hook (karo_session_start_check.sh). VPS-specific absolute paths. | Keep fork — no upstream equivalent |
 | `config/projects.yaml` | fork-added | Project registry: sample entry with id, name, path, priority, status, current_project fields. Referenced in CLAUDE.md `files:` map. | Keep fork — no upstream equivalent |
 | `config/settings.yaml` | fork-added | Runtime config: language, shell, skill paths, logging, bloom routing mode, ntfy topic, screenshot path (WSL2), per-agent effort levels (max). VPS/WSL2-specific. | Keep fork — no upstream equivalent |
 | `config/streaks_format.yaml` | fork-added | Extracted from karo.md (S2 optimization): streaks.yaml format specification. Referenced by karo.md to reduce inline context. | Keep fork — no upstream equivalent |
@@ -100,6 +102,7 @@ This fork extends the upstream multi-agent-shogun system with production-grade o
 | `output/cmd_307_upstream_merge_plan.md` | fork-added | Planning doc for upstream v4.4.x merge. Now superseded by commit 7573f2c. | Keep fork — no upstream equivalent |
 | `output/スキル/cmd_320_skills_evaluation_update.md` | fork-added | Skills stocktake: evaluates skill files for compression/consolidation. 530-line evaluation artifact. | Keep fork — no upstream equivalent |
 | `queue/reports/ashigaru3_report.yaml` | fork-added | Live task report. Active operational state. | Keep fork — no upstream equivalent |
+| `queue/reports/ashigaru4_report.yaml` | fork-added | Live task report. Active operational state. | Keep fork — no upstream equivalent |
 | `queue/reports/phase1_cleanup_broken_slugs.txt` | fork-added | File list output from SEO content batch job. Runtime artifact. | Keep fork — no upstream equivalent |
 | `queue/tasks/ashigaru2.yaml` | fork-added | Live task YAML for ashigaru2. Active operational state, not a template. | Keep fork — no upstream equivalent |
 
@@ -133,7 +136,7 @@ This fork extends the upstream multi-agent-shogun system with production-grade o
 
 | Guidance | Count | Files |
 |----------|-------|-------|
-| Keep fork — no upstream equivalent | 54 | All fork-added files + fork-modified files with no upstream counterpart |
+| Keep fork — no upstream equivalent | 57 | All fork-added files + fork-modified files with no upstream counterpart |
 | Merge upstream, preserve fork sections | 8 | `inbox_watcher.sh`, `watcher_supervisor.sh`, `lib/agent_status.sh`, `lib/cli_adapter.sh`, `AGENTS.md`, `agents/default/system.md`, `.github/copilot-instructions.md`, `tests/e2e/e2e_bloom_routing.bats`, `tests/unit/test_dynamic_model_routing.bats`, `tests/unit/test_send_wakeup.bats` |
 | Accept upstream changes | 1 | `tests/e2e/e2e_codex_startup.bats` |
 | Manual review required | 1 | `CLAUDE.md` (core config, both sides actively modify) |
