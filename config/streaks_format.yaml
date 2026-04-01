@@ -1,0 +1,32 @@
+# Streaks YAML Format Definition
+# ============================================================
+# saytask/streaks.yaml の操作フォーマット定義
+# ============================================================
+
+# ── フォーマット例 ──────────────────────────────────────────
+streak:
+  current: 13
+  last_date: "2026-02-06"
+  longest: 25
+today:
+  frog: "VF-032"
+  completed: 5
+  total: 8
+
+# ── フィールド説明 ───────────────────────────────────────────
+# streak.current  : 現在の連続日数
+# streak.last_date: 最終完了日 (YYYY-MM-DD JST)
+# streak.longest  : 最長ストリーク日数
+# today.frog      : 今日のFrogタスクID (VF-xxx or subtask_xxx)
+# today.completed : 今日の完了数 (cmd done + VF done)
+# today.total     : 今日のタスク総数 (cmd subtasks + VF tasks due/created today)
+
+# ── フィールド計算式 ─────────────────────────────────────────
+# today.total     : cmd subtasks (today) + VF tasks (due/created=today)
+# today.completed : cmd done + VF done
+# streak.current  : yesterday→+1, today→keep, else→reset to 1
+
+# ── 更新タイミング ───────────────────────────────────────────
+# Step 11.7の手順2で更新:
+#   saytask/streaks.yaml: today.completed += 1, update last_date
+# JST日付チェック: bash scripts/jst_now.sh --date で取得

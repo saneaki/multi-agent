@@ -260,6 +260,11 @@ This prevents the 9-hour stall incident (cmd_244/245, 2026-02-27) where Karo wen
    ⚠️ **cmd_completeタグリマインド（必須）**: QC PASSの場合、メッセージ末尾に以下を含めること:
    「ntfy送信時cmd_completeタグ必須: `bash scripts/ntfy.sh "✅ cmd_XXX完了 — {summary}" "" "cmd_complete"`」
    家老がStep 11.7でntfy送信する際、cmd_completeタグ省略を防止するためのリマインド。
+9.5. **日報追記**: QC PASS/NG確定後、当日の日報ファイル `logs/daily/YYYY-MM-DD.md` に完了cmdサマリーを1エントリ追記する。
+   - 日付取得: `bash scripts/jst_now.sh --date`
+   - フォーマット: `logs/daily/2026-03-29.md` 参照
+   - 記載内容: cmd_id・ステータス・目的・成果物・タイムライン・軍師提案・violations(あれば)
+   - ファイル未存在の場合は `# 日報 YYYY-MM-DD` ヘッダーで新規作成
 10. Re-check inbox → if more report_received pending → go to 1
 ```
 
@@ -590,6 +595,14 @@ Military strategist style:
 # Fork Extensions
 
 > フォーク独自の実運用知見。
+
+## 月次棚卸し（毎月1日）
+
+毎月1日に `instructions/karo.md` を棚卸しする:
+
+1. 過去2ヶ月で参照されていないセクションを特定
+2. 外出し・削除の提案を `dashboard.md` 🚨[提案] に記載
+3. 提案例: 「karo.md XX行のYYセクションは2ヶ月未参照 → 外出し推奨」
 
 ## Additional QC Criteria for n8n Workflows (Mandatory)
 

@@ -293,33 +293,9 @@ steps:
 
 ## Task YAML Format
 
-**CRITICAL**: `report_to: gunshi` is required in every task YAML. `assigned_to` must specify the target ashigaru ID.
-**デフォルトルール**: task YAML生成時は `report_to: gunshi` を必ずデフォルトで含めること。省略禁止。
+**CRITICAL**: `report_to: gunshi` は全タスクに必須。`assigned_to` で担当足軽IDを必ず指定すること。
 
-```yaml
-# Standard task (no dependencies)
-task:
-  task_id: subtask_001
-  parent_cmd: cmd_001
-  bloom_level: L3        # L1-L3=Ashigaru, L4-L6=Gunshi
-  description: "Create hello1.md with content 'おはよう1'"
-  target_path: "/mnt/c/tools/multi-agent-shogun/hello1.md"
-  assigned_to: ashigaru1
-  report_to: gunshi        # ← Required — ashigaru reports to gunshi, not karo
-  echo_message: "🔥 足軽1号、先陣を切って参る！"
-  status: assigned
-  timestamp: "2026-01-25T12:00:00+09:00"  # from jst_now.sh --yaml
-
-# Dependent task
-task:
-  task_id: subtask_003
-  parent_cmd: cmd_001
-  bloom_level: L6
-  blocked_by: [subtask_001, subtask_002]
-  description: "Integrate research results from ashigaru 1 and 2"
-  status: blocked
-  timestamp: "2026-01-25T12:00:00+09:00"  # from jst_now.sh --yaml
-```
+→ See [templates/karo_task_template.yaml](../templates/karo_task_template.yaml) for full field definitions and examples.
 
 ## "Wake = Full Scan" Pattern
 
@@ -456,25 +432,10 @@ After judging a cmd complete, execute ALL steps before moving to next cmd:
 4. `dashboard.md`: remove from 🔄進行中, add to ✅本日の戦果
 5. **🚨要対応クリーンアップ (SO-19)**: `bash scripts/cmd_complete.sh {cmd_id}` を実行し、🚨残存を確認。WARNING表示があれば該当項目を削除 → ✅戦果に解決済みとして反映
 6. `inbox_write shogun` (dashboard updated)
-7. **Daily log append** → `logs/daily/YYYY-MM-DD.md` に cmd サマリーを追記:
-   - cmd ID, ステータス, 目的
-   - 足軽ごとの成果物一覧（subtask_id, 担当, 作成/変更ファイル）
-   - タイムライン（開始〜完了）
-   - **Violations**: cmdの開始〜完了タイムスタンプ範囲内に記録された違反行があれば集約して記載（例: `- **Violations**: IR-1 x3 (gunshi→ashigaru task YAML edit)`）。日報末尾のパイプ行 `| timestamp | rule_id | agent | detail |` を読み、cmd期間内のものをカウント・要約する。違反なしなら省略可
-   - 課題・気づき（あれば）
-   - ファイルが無ければヘッダー `# 日報 YYYY-MM-DD` 付きで新規作成
 
 ⚠️ Even if new cmds arrived in inbox, do NOT dispatch before completing all 7 steps.
 
 ⚠️ **Same procedure for Karo self-completion**: Without the Ashigaru→Gunshi→Karo flow, ntfy (Step 3) and inbox_write (Step 5) are easily forgotten. Consciously follow this checklist.
-
-**Post-Task Checklist** (on `uncommitted` nudge from inbox_watcher):
-
-1. `git status` — check uncommitted changes
-2. If changes exist → `git add` + `git commit`
-3. Update `dashboard.md` (add 本日の戦果, remove 進行中)
-4. Update cmd in `queue/shogun_to_karo.yaml` → `status: done`
-5. `bash scripts/inbox_write.sh shogun "cmd_XXX完了。..." cmd_complete karo`
 
 ### cmd Completion Check
 
@@ -495,22 +456,7 @@ After judging a cmd complete, execute ALL steps before moving to next cmd:
 
 ### Streaks.yaml Format
 
-```yaml
-streak:
-  current: 13
-  last_date: "2026-02-06"
-  longest: 25
-today:
-  frog: "VF-032"
-  completed: 5
-  total: 8
-```
-
-| Field | Formula |
-|-------|---------|
-| `today.total` | cmd subtasks (today) + VF tasks (due/created=today) |
-| `today.completed` | cmd done + VF done |
-| `streak.current` | yesterday→+1, today→keep, else→reset to 1 |
+→ See [config/streaks_format.yaml](../config/streaks_format.yaml) for format definition and field formulas.
 
 ### Action Needed Notification
 
@@ -831,6 +777,10 @@ QC PASS requires execution test (not just structural verification).
 6. Resume work on incomplete tasks (using snapshot context if available)
 
 **dashboard.md is secondary** — may be stale after compaction. YAMLs are ground truth.
+
+外出しファイル（外出し後に参照が必要）:
+- `templates/karo_task_template.yaml` — Task YAMLフィールド定義
+- `config/streaks_format.yaml` — streaks.yaml操作フォーマット
 
 ## Context Loading Procedure
 

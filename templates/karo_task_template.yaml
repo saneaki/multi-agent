@@ -1,0 +1,73 @@
+# Karo Task YAML Template
+# ============================================================
+# 家老が足軽に割り当てるタスクYAMLのフォーマット定義
+# ============================================================
+
+# CRITICAL: report_to: gunshi は全タスクに必須。省略禁止。
+# assigned_to: target ashigaru ID を必ず指定すること。
+
+# ── フィールド説明 ───────────────────────────────────────────
+# task_id       : ユニークID (例: subtask_001, subtask_097d2)
+# parent_cmd    : 親cmd ID (例: cmd_001)
+# bloom_level   : 認知レベル L1-L6（必須。省略禁止）
+#                 L1-L3=Ashigaru, L4-L6=Gunshi
+# description   : 作業内容（目的・手順・成果物を明記）
+# target_path   : 対象ファイルパス（該当する場合）
+# assigned_to   : 担当足軽 ID (例: ashigaru1)
+# report_to     : 報告先（必ず gunshi を指定）
+# echo_message  : OPTIONAL。特別な場合のみ。通常省略（足軽が自動生成）
+# status        : assigned | blocked | done | failed
+# timestamp     : from jst_now.sh --yaml
+# editable_files: 【必須/SO-20】足軽が変更するファイルパスまたはglobパターン
+#                 自身のreport/task YAMLは暗黙許可のため記載不要
+# blocked_by    : 依存タスクIDリスト（依存あり時のみ）
+# redo_of       : やり直し元タスクID（redo時のみ）
+
+# ── Standard task (no dependencies) ────────────────────────
+task:
+  task_id: subtask_001
+  parent_cmd: cmd_001
+  bloom_level: L3        # L1-L3=Ashigaru, L4-L6=Gunshi
+  description: "Create hello1.md with content 'おはよう1'"
+  target_path: "/path/to/target.md"
+  assigned_to: ashigaru1
+  report_to: gunshi        # ← Required — ashigaru reports to gunshi, not karo
+  echo_message: "🔥 足軽1号、先陣を切って参る！"  # OPTIONAL
+  editable_files:
+    - "path/to/file.md"
+  status: assigned
+  timestamp: "2026-01-25T12:00:00+09:00"  # from jst_now.sh --yaml
+
+---
+
+# ── Dependent task (blocked_by) ────────────────────────────
+task:
+  task_id: subtask_003
+  parent_cmd: cmd_001
+  bloom_level: L6
+  blocked_by: [subtask_001, subtask_002]
+  description: "Integrate research results from ashigaru 1 and 2"
+  assigned_to: ashigaru3
+  report_to: gunshi
+  editable_files:
+    - "output/cmd_001_integration.md"
+  status: blocked
+  timestamp: "2026-01-25T12:00:00+09:00"  # from jst_now.sh --yaml
+
+---
+
+# ── Redo task ──────────────────────────────────────────────
+task:
+  task_id: subtask_097d2
+  parent_cmd: cmd_097
+  redo_of: subtask_097d
+  bloom_level: L1
+  description: |
+    【やり直し】前回の問題: echoが緑色太字でなかった。
+    修正: echo -e "\033[1;32m..." で緑色太字出力。echoを最終tool callに。
+  assigned_to: ashigaru2
+  report_to: gunshi
+  editable_files:
+    - "scripts/target.sh"
+  status: assigned
+  timestamp: "2026-02-09T07:46:00+09:00"  # from jst_now.sh --yaml
