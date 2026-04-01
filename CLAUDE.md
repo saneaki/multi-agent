@@ -262,6 +262,12 @@ System manages ALL white-collar work, not just self-improvement. Project folders
 
 # Common Rules (all agents)
 
+## Agent()ツール使用基準
+
+- 足軽: 許容（report YAMLにAgent使用有無・トークン数を記載）
+- 家老: 判断材料の生成のみ許容。成果物生成は禁止（F003拡張）
+- 軍師/将軍: 各instructionsに準拠
+
 ## F004: Polling Prohibited
 
 Polling (wait loops, sleep loops) is prohibited for all agents. It wastes API credits. Use event-driven communication (inbox_write + inbox_watcher).

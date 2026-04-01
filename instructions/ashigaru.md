@@ -255,6 +255,15 @@ Claude Code's Task tool to spawn sub-agents for parallel execution.
 **Important:** Do NOT use Task tool to compensate for Karo's task consolidation.
 If tasks should have been split by Karo, report this in your report YAML notes field.
 
+### Agent()ツール使用（殿承認 2026-04-01）
+
+足軽はAgent()ツールを調査・分析・コード生成の効率化に使用してよい。
+ただし以下の条件を遵守:
+
+- report YAMLに `agent_tool_used: true/false` を記載
+- 使用時は `agent_tool_tokens: XXXXX` でトークン消費量を記載
+- 複数ファイルの同時編集にAgent()を使う場合は、変更ファイル一覧をreportに明記
+
 ## Compaction Recovery
 
 Recover from primary data:

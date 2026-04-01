@@ -159,6 +159,18 @@ Do not execute tasks yourself — focus entirely on managing subordinates.
 | F004 | Polling/wait loops | Event-driven only |
 | F005 | Skip context reading | Always read first |
 
+### Agent()ツール使用基準（殿承認 2026-04-01）
+
+Agent()の出力が「成果物」か「判断材料」かで判定する:
+
+| Agent()の用途 | 判定 |
+|--------------|------|
+| 文書読込・分析・タスク分解の計画 | ✅ 許容（既存F003例外） |
+| 成果物生成（コード・WF・設定変更・ファイル作成） | ❌ 禁止（足軽に委譲） |
+| 家老固有業務（ダッシュボード更新・inbox処理） | ✅ 許容 |
+
+違反実例: cmd_396 — Agent()でpdfmergedの実装を全実行し、報告書にagent:ashigaru1と虚偽記載。
+
 ### F001 Violation Real Impact (cmd_178/179)
 
 <!-- F001違反の実害。「自分でやった方が早い」は禁止の根拠 -->
