@@ -40,10 +40,10 @@ for yaml_file in "$TASKS_DIR"/ashigaru*.yaml; do
   cmd_id=$(grep "^cmd_id:" "$yaml_file" 2>/dev/null   | awk '{print $2}' | tr -d '"' | tr -d "'" || echo "")
   status=$(grep "^status:" "$yaml_file" 2>/dev/null   | awk '{print $2}' | tr -d '"' | tr -d "'" || echo "")
   assigned_to=$(grep "^assigned_to:" "$yaml_file" 2>/dev/null | awk '{print $2}' | tr -d '"' | tr -d "'" || echo "")
-  # title: フィールドを優先、なければ purpose: を使用
-  title=$(grep "^title:" "$yaml_file" 2>/dev/null | sed 's/^title:[[:space:]]*//' | tr -d '"' | cut -c1-50 || true)
+  # title: フィールドを優先、なければ purpose: を使用（Python使用でUnicode安全切り捨て）
+  title=$(grep "^title:" "$yaml_file" 2>/dev/null | sed 's/^title:[[:space:]]*//' | tr -d '"' | python3 -c "import sys; s=sys.stdin.read().strip(); print(s[:50])" 2>/dev/null || true)
   if [ -z "$title" ]; then
-    title=$(grep "^purpose:" "$yaml_file" 2>/dev/null | sed 's/^purpose:[[:space:]]*//' | tr -d '"' | cut -c1-50 || true)
+    title=$(grep "^purpose:" "$yaml_file" 2>/dev/null | sed 's/^purpose:[[:space:]]*//' | tr -d '"' | python3 -c "import sys; s=sys.stdin.read().strip(); print(s[:50])" 2>/dev/null || true)
   fi
 
   agent_name=$(ashigaru_name "$assigned_to")
