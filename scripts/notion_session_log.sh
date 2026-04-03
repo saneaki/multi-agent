@@ -468,7 +468,7 @@ upload_output_files() {
     return 0
   fi
 
-  echo "[INFO] output/ → Drive アップロード開始 (webhook: ${webhook_url})"
+  echo "[INFO] 成果物 → Drive アップロード開始 (webhook: ${webhook_url})"
 
   python3 - "${UPLOAD_STATE_FILE}" "${webhook_url}" "${folder_id}" \
     "/home/ubuntu/shogun/output" "${TODAY}" "${UPLOADED_FILES_TMPFILE}" <<'PYEOF'
@@ -489,32 +489,58 @@ if os.path.exists(state_file):
     except Exception:
         state = {}
 
-files = []
-for pattern in ['**/*.md', '**/*.drawio']:
-    files.extend(glob.glob(os.path.join(output_dir, pattern), recursive=True))
-files = sorted(set(files))
+# Multi-directory scan configuration
+project_root = os.path.dirname(output_dir)  # /home/ubuntu/shogun
+scan_configs = [
+    (output_dir, ['**/*.md', '**/*.drawio'], 'output'),
+    (os.path.join(project_root, 'context'), ['**/*.md'], 'context'),
+    (os.path.join(project_root, 'instructions'), ['**/*.md'], 'instructions'),
+    (os.path.join(project_root, 'scripts'), ['**/*.sh', '**/*.py'], 'scripts'),
+]
+skills_dir = '/home/ubuntu/.claude/skills'
+if os.path.isdir(skills_dir):
+    scan_configs.append((skills_dir, ['**/*.md'], 'skills'))
+
+file_entries = []  # (filepath, category, scan_dir)
+for scan_dir, patterns, category in scan_configs:
+    if not os.path.isdir(scan_dir):
+        continue
+    for pattern in patterns:
+        for fp in glob.glob(os.path.join(scan_dir, pattern), recursive=True):
+            file_entries.append((fp, category, scan_dir))
+file_entries = sorted(set(file_entries), key=lambda x: x[0])
 
 uploaded = []
 skip_count = 0
 error_count = 0
 upload_count = 0
 
-for filepath in files:
+for filepath, category, source_dir in file_entries:
     filename = os.path.basename(filepath)
-    if filename in state:
+    rel_path = os.path.relpath(filepath, source_dir)
+    state_key = filename if category == 'output' else f"{category}/{rel_path}"
+    if category == 'output':
+        display_name = filename
+    elif '/' in rel_path:
+        display_name = rel_path.replace('/', '_')
+    else:
+        display_name = filename
+    if state_key in state:
         skip_count += 1
         continue
     try:
         with open(filepath, 'rb') as f:
             content_b64 = base64.b64encode(f.read()).decode('ascii')
     except Exception as e:
-        print(f"[ERROR] ファイル読込失敗: {filename}: {e}", flush=True)
+        print(f"[ERROR] ファイル読込失敗: {display_name}: {e}", flush=True)
         error_count += 1
         continue
 
-    mime_type = "application/xml" if filename.endswith('.drawio') else "text/plain"
+    ext = filename.rsplit('.', 1)[-1] if '.' in filename else ''
+    mime_map = {'drawio': 'application/xml', 'sh': 'text/x-shellscript', 'py': 'text/x-python'}
+    mime_type = mime_map.get(ext, 'text/plain')
     payload = {
-        "filename": filename,
+        "filename": display_name,
         "content_base64": content_b64,
         "mime_type": mime_type,
         "folder_id": folder_id
@@ -531,22 +557,23 @@ for filepath in files:
         file_id = result.get('file_id', result.get('id', ''))
         web_view_link = result.get('web_view_link', result.get('webViewLink', ''))
     except Exception as e:
-        print(f"[ERROR] アップロード失敗: {filename}: {e}", flush=True)
+        print(f"[ERROR] アップロード失敗: {display_name}: {e}", flush=True)
         error_count += 1
         continue
 
     if file_id:
-        state[filename] = {"date": today, "file_id": file_id, "web_view_link": web_view_link}
+        state[state_key] = {"date": today, "file_id": file_id, "web_view_link": web_view_link}
         uploaded.append({
-            "filename": filename,
+            "filename": display_name,
             "filepath": filepath,
             "file_id": file_id,
-            "web_view_link": web_view_link
+            "web_view_link": web_view_link,
+            "category": category
         })
         upload_count += 1
-        print(f"[INFO] アップロード完了: {filename}", flush=True)
+        print(f"[INFO] アップロード完了: {display_name}", flush=True)
     else:
-        print(f"[ERROR] アップロード失敗（file_id取得不可）: {filename}", flush=True)
+        print(f"[ERROR] アップロード失敗（file_id取得不可）: {display_name}", flush=True)
         error_count += 1
 
 if upload_count > 0:
@@ -643,16 +670,21 @@ for item in uploaded:
     cmd_num = cmd_match.group(0) if cmd_match else ""
 
     filepath = item.get("filepath", "")
+    category = item.get("category", "output")
     parts = filepath.split("/")
     project = ""
-    try:
-        output_idx = next(i for i, p in enumerate(parts) if p == "output")
-        if output_idx + 1 < len(parts) - 1:
-            project = parts[output_idx + 1]
-    except StopIteration:
-        pass
+    if category == "output":
+        try:
+            output_idx = next(i for i, p in enumerate(parts) if p == "output")
+            if output_idx + 1 < len(parts) - 1:
+                project = parts[output_idx + 1]
+        except StopIteration:
+            pass
+    else:
+        project = category
 
-    file_type = "md" if filename.endswith(".md") else ("drawio" if filename.endswith(".drawio") else "other")
+    ext = filename.rsplit(".", 1)[-1] if "." in filename else "other"
+    file_type = ext if ext in ("md", "drawio", "sh", "py") else "other"
 
     properties = {
         "ファイル名": {"title": [{"text": {"content": filename}}]},

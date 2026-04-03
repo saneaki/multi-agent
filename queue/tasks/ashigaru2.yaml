@@ -1,99 +1,60 @@
-task_id: subtask_410b
-cmd_id: cmd_410
+task_id: subtask_428b
+cmd_id: cmd_428
 assigned_to: ashigaru2
-project: shogun-system
+project: pdfmerged
 priority: high
 status: done
 report_to: gunshi
 blocked_by: []
-created_at: "2026-04-02T02:21:38+09:00"
-
-title: "cmd_410 Phase2-B: マルチモデル協調 コマンド→スキル変換 (7件)"
-
-north_star: "旧commands/*.md形式をskills/*/SKILL.md形式に移行し、Claude Codeがスキルを正しく認識できる状態にする"
-
-purpose: |
-  ~/.claude/commands/ のマルチモデル協調系コマンド7件を
-  ~/.claude/skills/{name}/SKILL.md 形式に変換する。
-  Codex/Gemini外部モデル依存箇所にはモデル可用性注記を追加すること。
-
-target_commands:
-  - multi-workflow
-  - multi-backend
-  - multi-execute
-  - multi-frontend
-  - multi-plan
-  - orchestrate
-  - model-route
-
-acceptance_criteria:
-  - "7件全て /home/ubuntu/.claude/skills/{name}/SKILL.md が作成されている"
-  - "各SKILL.mdのYAMLフロントマターが正しい（name・description必須）"
-  - "元コマンドのワークフローステップが全て保持されている"
-  - "Codex/Gemini依存コマンドにモデル可用性注記が追加されている"
-  - "report YAMLをqueue/reports/ashigaru2_report.yamlに記載している"
-
-context: |
-  【作業対象ディレクトリ】
-  - 読込元: /home/ubuntu/.claude/commands/{name}.md
-  - 作成先: /home/ubuntu/.claude/skills/{name}/SKILL.md
-  ※ skills/{name}/ ディレクトリは mkdir -p で事前作成すること
-
-  【SKILL.mdテンプレート】
-  ---
-  name: {name}
-  description: "{250文字以内。キーワードを先頭に。英語}"
-  disable-model-invocation: true  # 副作用ありの場合のみ
-  # argument-hint: [args]  # 引数がある場合
-  ---
-  （本文は commands/*.md の内容を移植）
-
-  【構造改善】
-  - "## When to Activate" セクションを冒頭に追加
-  - Phase分けがある場合はその構造を踏襲・明確化
-  - DO/DON'T セクション（該当する場合）
-  - Codex/Gemini外部モデルを使う場合は注記:
-    "Note: Requires Codex/Gemini availability. Falls back to Claude-only if unavailable."
-
-  【副作用判定 — 以下に該当すれば disable-model-invocation: true 必須】
-  - git commit/push を含む → 該当なし（マルチモデル系は分析・生成のみ）
-  - ファイル削除を含む → 要確認
-  - 外部サービスへの送信を含む → Codex/Gemini APIコール = 副作用
-
-  【各コマンドの概要】
-  - multi-workflow: 6フェーズ協調開発（Research→Ideation→Plan→Execute→Optimize→Review）with Codex/Gemini routing
-  - multi-backend: バックエンド特化マルチモデル開発（Codex主導）
-  - multi-execute: マルチモデル協調実行（プロトタイプ→Claude実装→マルチモデル監査）
-  - multi-frontend: フロントエンド特化マルチモデル開発（Gemini主導）
-  - multi-plan: マルチモデル協調計画（デュアルモデル分析→実装計画生成）
-  - orchestrate: 逐次マルチエージェントワークフロー（feature/bugfix/refactor/security）
-  - model-route: タスク複雑度・予算制約からhaiku/sonnet/opusの最適モデル推奨
-
-  【既存スキルの参考フォーマット】
-  /home/ubuntu/.claude/skills/tdd-workflow/SKILL.md を参照せよ
-
-steps:
-  - "1. Read /home/ubuntu/.claude/skills/tdd-workflow/SKILL.md（フォーマット確認）"
-  - "2. 7件のcommandファイルを順番にRead・変換:"
-  - "   a. Read /home/ubuntu/.claude/commands/multi-workflow.md"
-  - "   b. Bash: mkdir -p /home/ubuntu/.claude/skills/multi-workflow/"
-  - "   c. Write /home/ubuntu/.claude/skills/multi-workflow/SKILL.md"
-  - "   d. 以降 multi-backend, multi-execute, multi-frontend, multi-plan, orchestrate, model-route も同様"
-  - "3. 全7件完了後、queue/reports/ashigaru2_report.yamlに結果記載"
-  - "4. bash /home/ubuntu/shogun/scripts/inbox_write.sh gunshi '足軽2号、subtask_410b完了。7件のSKILL.md作成完了。report確認されたし。' report_completed ashigaru2"
-
-quality_rules:
-  - "必ずReadしてからWriteすること（ファイル未読のWrite=エラー）"
-  - "元コマンドのワークフローステップを省略・簡略化しないこと"
-  - "descriptionは英語250文字以内、キーワードを先頭に配置"
-  - "Codex/Gemini依存コマンドにはモデル可用性注記を追加すること"
-  - "mkdir -p でディレクトリ作成してからWriteすること"
+created_at: "2026-04-03T13:35:56+09:00"
+bloom_level: L4
+north_star: "pdfmerged v1.0.5を殿のテスト結果に基づき修正・リリースし、実務で使える品質にする"
+title: "cmd_428-B: スタンプ付与(横向きPDF位置+枝番認識+取消ボタン)"
+purpose: "スタンプ付与タブの3件のバグを修正する"
 
 editable_files:
-  - "/home/ubuntu/.claude/skills/multi-workflow/SKILL.md (new)"
-  - "/home/ubuntu/.claude/skills/multi-backend/SKILL.md (new)"
-  - "/home/ubuntu/.claude/skills/multi-execute/SKILL.md (new)"
-  - "/home/ubuntu/.claude/skills/multi-frontend/SKILL.md (new)"
-  - "/home/ubuntu/.claude/skills/multi-plan/SKILL.md (new)"
-  - "/home/ubuntu/.claude/skills/orchestrate/SKILL.md (new)"
-  - "/home/ubuntu/.claude/skills/model-route/SKILL.md (new)"
+  - "/home/ubuntu/pdfmerged/src/**/*.py"
+
+instructions: |
+  ■ リポジトリ: /home/ubuntu/pdfmerged (saneaki/pdfmerged)
+
+  ■ 修正3: スタンプ — 横向きPDFの位置修正 (HIGH)
+  【症状】横回転したPDFの右上(=実質右下)にスタンプ。縦にした時の右上が正解。
+  【修正】
+  - スタンプ付与のPDF操作コード（PyMuPDF/fitz使用の可能性高）を特定
+  - ページのrotation属性(0/90/180/270)を取得
+  - rotation値に応じてスタンプ座標を回転補正
+    - rotation=0: 通常の右上
+    - rotation=90: 座標変換が必要
+    - rotation=180/270: 同様に変換
+  - mediabox/cropboxのサイズも考慮
+
+  ■ 修正4: スタンプ — 枝番認識修正 (HIGH)
+  【症状】「甲4号証の1」「甲4号証の2」がどちらも「甲4」と認識される
+  【修正】
+  - ファイル名からスタンプ番号を抽出する正規表現を特定
+  - 「の1」「の2」等の枝番パターンを認識するよう修正
+  - 期待出力: 「甲4の1」「甲4の2」
+  - テスト: 「甲4号証の1.pdf」→スタンプ「甲4の1」
+
+  ■ 修正5: スタンプ — 取消ボタン修正 (MED)
+  【症状】取消ボタンを押しても機能が感じられない
+  【修正】
+  - スタンプタブの取消ボタンのイベントハンドラを確認
+  - 取消時の状態リセットロジック（ファイルリストクリア、プレビュー更新等）を確認
+  - 正しく機能するよう修正
+
+  ■ RACE-001注意
+  他の足軽が結合/変換(428a)、連番/リネーム(428c)、墨消し/分割(428d)を同時修正中。
+  スタンプタブ以外のファイルは編集しないこと。
+  共通ファイル(main_window.py等)を変更する必要がある場合はreportに明記。
+
+  ■ 報告
+  - 各修正の内容
+  - rotation対応のテスト結果
+  - 枝番パターンのテストケース
+
+acceptance_criteria:
+  - "横向きPDFのスタンプが縦表示時の右上に正しく印字される"
+  - "甲4号証の1と甲4号証の2が正しく区別される(枝番認識)"
+  - "取消ボタンが正しく機能する"

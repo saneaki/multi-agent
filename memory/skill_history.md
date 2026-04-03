@@ -7,6 +7,9 @@ dashboard.md 🛠️スキル欄から溢れた全エントリ。最新順（上
 
 | スキル名 | 出典 |
 |----------|------|
+| **github-actions-release-artifact** ✅実装済み | cmd_411→cmd_419: GITHUB_TOKEN permissions 403エラー+artifact upload/download方式+ubuntu-latestリリース。8セクション構成SKILL.md。commit 93d22de(足軽3号)。 |
+| **pyinstaller-pymupdf-dll-bundling** ✅実装済み | cmd_413→cmd_419: PyMuPDF DLLバンドル漏れ→サイレントクラッシュ。collect_dynamic_libs('pymupdf')追加+hiddenimports修正+デバッグ手法。commit e40b12f(足軽4号)。 |
+| **github-actions-powershell-continueonerror** ✅実装済み | cmd_413→cmd_419: Windows runner PowerShell互換性問題。continue-on-error:true vs shell:bash判断基準+実例。commit 3f990fe(足軽5号)。 |
 | **n8n-gcal-api-pagination-guard** ✅実装済み | cmd_392→cmd_407: GCal API maxResults未指定(デフォルト250件)で643件中393件が未同期になったバグ。maxResults=2500設定・nextPageToken警告ログ・HTTP Request v4.2組込みページネーション($input.all()結合)の3パターン収録。Google API横展開(Drive/Gmail等)含む。SKILL.md作成済み。 |
 | **n8n-gcal-allday-end-date-fix** ✅実装済み | cmd_404→cmd_407: GCal終日イベントend.date排他仕様(exclusive)とn8nのinclusive解釈のズレによる+1日ズレバグ。-1日補正パターン+JavaScriptコード例+検証方法。フラットファイル作成済み。 |
 | **n8n-gmail-downloadattachments-from-uppercase** ✅統合 | cmd_389→cmd_390: shogun-n8n-gmail-id-archive-patternに統合済み。downloadAttachments=true時のemail.From大文字問題+フォールバックコード。 |
