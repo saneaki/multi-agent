@@ -22,7 +22,8 @@ while IFS= read -r line; do
 done < <(ntfy_get_auth_args "$SCRIPT_DIR/config/ntfy_auth.env")
 
 # メッセージとTitle（オプション）とExtra Tags（オプション）
-MESSAGE="$1"
+# 環境タグ: VPS送信は[vps]を自動付与（異環境識別用）
+MESSAGE="[vps] $1"
 TITLE="${2:-}"
 EXTRA_TAGS="${3:-}"
 

@@ -178,8 +178,66 @@ while true; do
         MSG_ID=$(echo "$line" | parse_json id)
         TIMESTAMP=$(date "+%Y-%m-%dT%H:%M:%S%:z")
 
-        echo "[$(date)] Received: $MSG" >&2
+        # 環境タグ解析: [vps], [wsl] 等を抽出
+        ENV_TAG=""
+        CLEAN_MSG="$MSG"
+        if [[ "$MSG" =~ ^\[([a-z]+)\][[:space:]]+(.*) ]]; then
+            ENV_TAG="${BASH_REMATCH[1]}"
+            CLEAN_MSG="${BASH_REMATCH[2]}"
+        fi
 
+        echo "[$(date)] Received (env=$ENV_TAG): $MSG" >&2
+
+        # 環境タグによる分岐
+        if [[ -n "$ENV_TAG" && "$ENV_TAG" != "vps" ]]; then
+            # 他環境 (wsl等) → FYIとして記録、cmd処理スキップ
+            echo "[$(date)] Other env [$ENV_TAG] — logging as fyi_only, skipping cmd processing" >&2
+            NTFY_INBOX_PATH="$INBOX" \
+            NTFY_CORRUPT_DIR="$CORRUPT_DIR" \
+            MSG_ID="$MSG_ID" \
+            MSG_TS="$TIMESTAMP" \
+            MSG_TEXT="$MSG" \
+            MSG_ENV_TAG="$ENV_TAG" \
+            "$SCRIPT_DIR/.venv/bin/python3" - << 'FYPY'
+import os, yaml, tempfile
+path = os.environ["NTFY_INBOX_PATH"]
+entry = {
+    "id": os.environ.get("MSG_ID", ""),
+    "timestamp": os.environ.get("MSG_TS", ""),
+    "message": os.environ.get("MSG_TEXT", ""),
+    "status": "fyi_only",
+    "env_tag": os.environ.get("MSG_ENV_TAG", ""),
+    "note": f"他環境[{os.environ.get('MSG_ENV_TAG','')}]からの通知。cmd処理スキップ。",
+}
+data = {}
+if os.path.exists(path):
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            loaded = yaml.safe_load(f)
+        if isinstance(loaded, dict):
+            data = loaded
+    except Exception:
+        pass
+items = data.get("inbox")
+if not isinstance(items, list):
+    items = []
+items.append(entry)
+data["inbox"] = items
+tmp_fd, tmp_path = tempfile.mkstemp(dir=os.path.dirname(path), suffix=".tmp")
+try:
+    with os.fdopen(tmp_fd, "w", encoding="utf-8") as f:
+        yaml.safe_dump(data, f, default_flow_style=False, allow_unicode=True, sort_keys=False)
+    os.replace(tmp_path, path)
+except Exception:
+    try:
+        os.unlink(tmp_path)
+    except Exception:
+        pass
+FYPY
+            continue
+        fi
+
+        # [vps]またはタグなし → 従来通り処理
         # Append to inbox YAML (flock + atomic write; multiline-safe)
         if ! append_ntfy_inbox "$MSG_ID" "$TIMESTAMP" "$MSG"; then
             echo "[$(date)] [ntfy_listener] WARNING: failed to append ntfy_inbox entry" >&2

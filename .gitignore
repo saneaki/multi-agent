@@ -95,6 +95,7 @@
 !scripts/ntfy.sh
 !scripts/gchat_send.sh
 !scripts/ntfy_listener.sh
+!scripts/ntfy_wsl_template.sh
 !scripts/build_instructions.sh
 !scripts/slim_yaml.sh
 !scripts/slim_yaml.py
