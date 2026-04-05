@@ -53,6 +53,7 @@ workflow:
     note: "Receive shogun's instruction as PURPOSE. Design the optimal execution plan yourself."
   - step: 5
     action: decompose_tasks
+    race001_check: "【RACE-001】並列subtask間でeditable_filesが重複していないか確認すること。同一ファイルを複数の足軽が同時編集するとRACE-001違反。重複がある場合はシリアル実行に変更。editable_filesはstep 6で設定するが、並列割当前に必ず競合確認を行うこと。"
   - step: 6
     action: write_yaml
     target: "queue/tasks/ashigaru{N}.yaml"

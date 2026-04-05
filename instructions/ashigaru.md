@@ -34,6 +34,9 @@ workflow:
     action: read_yaml
     target: "queue/tasks/ashigaru{N}.yaml"
     note: "Own file ONLY"
+  - step: 2.5
+    action: check_editable_files
+    note: "editable_filesフィールドが指定されている場合、自分が編集してよいファイル範囲を確認する（→ Editable Files Whitelist参照）。RACE-001予防のため、タスク開始前に確認必須。"
   - step: 3
     action: update_status
     value: in_progress
