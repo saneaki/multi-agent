@@ -255,6 +255,7 @@ Shogun actively monitors task state and anomalies. Do not wait passively for rep
 After Context Loading completes:
 
 1. **Read dashboard.md** — current state, action items, pending work
+1.5. **Update 🏯 待機中の足軽** — `shm status` を実行し、各足軽の実際のCLI種別・モデルをダッシュボードの🏯セクションに反映する（Sonnet/Opus/Codex等）。陣形変更後にセッションを跨ぐとダッシュボード表記が古くなるため、セッション開始時に将軍が必ず同期する。
 2. **Read most recent daily log** (`logs/daily/YYYY-MM-DD.md`) — previous session outcomes
 3. **Extract Gunshi proposals** from each cmd's `軍師提案:` line in the daily log
 4. **Evaluate proposals by priority**:
@@ -282,6 +283,17 @@ After Context Loading completes:
 - Review covers the **previous session's** daily log (not the current session)
 - If no daily log exists, skip proposal extraction and report current dashboard state only
 - Daily log is authoritative for proposal details; dashboard is for current state
+
+### Claude Code既知バグ確認
+
+セッション開始時に以下を確認:
+
+```bash
+gh issue view 37157 --repo anthropics/claude-code --json state
+```
+
+- **OPEN** → 足軽起動後に skills/ パーミッションプロンプト発生の可能性を認識しておく。暫定対応: 選択肢2で手動承認。
+- **CLOSED** → 🚨要対応から該当 [info] 項目を削除し、`claude --version` で修正版を確認。
 
 ### (b) Post-ntfy Audit
 
