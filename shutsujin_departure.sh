@@ -81,6 +81,42 @@ log_war() {
     echo -e "\033[1;31m【戦】\033[0m $1"
 }
 
+# ダッシュボード🏯セクションのモデル表記を現在の陣形に合わせて更新
+update_dashboard_formation() {
+    local dashboard="./dashboard.md"
+    [ -f "$dashboard" ] || return 0
+
+    local formation_label
+    if [ "$HYBRID_MODE" = true ]; then
+        formation_label="hybrid"
+    elif [ "$KESSEN_MODE" = true ]; then
+        formation_label="all-opus"
+    else
+        formation_label="all-sonnet"
+    fi
+
+    local i model
+    for i in $(seq 1 "$_ASHIGARU_COUNT"); do
+        if [ "$CLI_ADAPTER_LOADED" = true ]; then
+            model=$(get_model_display_name "ashigaru${i}" 2>/dev/null || echo "Sonnet")
+        elif [ "$KESSEN_MODE" = true ]; then
+            model="Opus"
+        else
+            model="Sonnet"
+        fi
+        # 足軽N号(旧モデル名) → 足軽N号(新モデル名) に置換
+        sed -i "s/足軽${i}号([^)]*)/足軽${i}号(${model})/g" "$dashboard"
+    done
+
+    local updated_time
+    updated_time=$(bash scripts/jst_now.sh 2>/dev/null || echo "")
+    if [ -n "$updated_time" ]; then
+        log_info "🏯 ダッシュボード足軽テーブル更新完了（陣形: ${formation_label} / ${updated_time}）"
+    else
+        log_info "🏯 ダッシュボード足軽テーブル更新完了（陣形: ${formation_label}）"
+    fi
+}
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # プロンプト生成関数（bash/zsh対応）
 # ───────────────────────────────────────────────────────────────────────────────
@@ -118,6 +154,7 @@ SETUP_ONLY=false
 OPEN_TERMINAL=false
 CLEAN_MODE=false
 KESSEN_MODE=false
+HYBRID_MODE=false
 SHOGUN_NO_THINKING=false
 SILENT_MODE=false
 SHELL_OVERRIDE=""
@@ -134,6 +171,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         -k|--kessen)
             KESSEN_MODE=true
+            shift
+            ;;
+        -H|--hybrid)
+            HYBRID_MODE=true
             shift
             ;;
         -t|--terminal)
@@ -168,6 +209,8 @@ while [[ $# -gt 0 ]]; do
             echo "                      未指定時は前回の状態を維持して起動"
             echo "  -k, --kessen        決戦の陣（全員Opusで起動、家老含む）"
             echo "                      未指定時は平時の陣（足軽1-7=Sonnet, 軍師=Opus）"
+            echo "  -H, --hybrid        混成の陣（hybrid陣形を事前適用してから起動）"
+            echo "                      起動前に shc.sh deploy hybrid を実行する"
             echo "  -s, --setup-only    tmuxセッションのセットアップのみ（Claude起動なし）"
             echo "  -t, --terminal      Windows Terminal で新しいタブを開く"
             echo "  -shell, --shell SH  シェルを指定（bash または zsh）"
@@ -183,6 +226,7 @@ while [[ $# -gt 0 ]]; do
             echo "  ./shutsujin_departure.sh -t           # 全エージェント起動 + ターミナルタブ展開"
             echo "  ./shutsujin_departure.sh -shell bash  # bash用プロンプトで起動"
             echo "  ./shutsujin_departure.sh -k           # 決戦の陣（全足軽Opus）"
+            echo "  ./shutsujin_departure.sh -H           # 混成の陣（hybrid陣形適用）"
             echo "  ./shutsujin_departure.sh -c -k         # クリーンスタート＋決戦の陣"
             echo "  ./shutsujin_departure.sh -shell zsh   # zsh用プロンプトで起動"
             echo "  ./shutsujin_departure.sh --shogun-no-thinking  # 将軍のthinkingを無効化（中継特化）"
@@ -197,6 +241,7 @@ while [[ $# -gt 0 ]]; do
             echo "陣形:"
             echo "  平時の陣（デフォルト）: 足軽1-7=Sonnet, 軍師=Opus"
             echo "  決戦の陣（--kessen）:   全員=Opus（家老・足軽・軍師）"
+            echo "  混成の陣（--hybrid）:   hybrid陣形プリセットを適用（shc.sh deploy hybrid）"
             echo ""
             echo "表示モード:"
             echo "  shout（デフォルト）:  タスク完了時に戦国風echo表示"
@@ -216,6 +261,12 @@ while [[ $# -gt 0 ]]; do
             ;;
     esac
 done
+
+# KESSEN と HYBRID の排他チェック
+if [ "$KESSEN_MODE" = true ] && [ "$HYBRID_MODE" = true ]; then
+    echo "エラー: --kessen と --hybrid は同時に指定できません"
+    exit 1
+fi
 
 # シェル設定のオーバーライド（コマンドラインオプション優先）
 if [ -n "$SHELL_OVERRIDE" ]; then
@@ -665,6 +716,24 @@ if [ "$SETUP_ONLY" = false ]; then
     rm -f /tmp/shogun_idle_*
     echo "idle flags cleared"
 
+    # ═══════════════════════════════════════════════════════════════════
+    # 陣形事前適用（エージェント起動前に settings.yaml を更新）
+    # ═══════════════════════════════════════════════════════════════════
+    log_info "⚔️  陣形を事前適用中..."
+    if [ "$HYBRID_MODE" = true ]; then
+        log_info "陣形適用: hybrid"
+        bash scripts/shc.sh deploy hybrid 2>/dev/null \
+            || log_info "警告: 陣形適用(hybrid)に失敗しました。続行します"
+    elif [ "$KESSEN_MODE" = true ]; then
+        log_info "陣形適用: all-opus"
+        bash scripts/shc.sh deploy all-opus 2>/dev/null \
+            || log_info "警告: 陣形適用(all-opus)に失敗しました。続行します"
+    else
+        log_info "陣形適用: all-sonnet（平時の陣）"
+        bash scripts/shc.sh deploy all-sonnet 2>/dev/null \
+            || log_info "警告: 陣形適用(all-sonnet)に失敗しました。続行します"
+    fi
+
     log_war "👑 全軍に Claude Code を召喚中..."
 
     # 将軍: CLI Adapter経由でコマンド構築
@@ -785,11 +854,16 @@ with open(f,'w') as fh: yaml.safe_dump(d, fh, default_flow_style=False, allow_un
     tmux set-option -p -t "multiagent:agents.${p}" @model_name "$_gunshi_display" 2>/dev/null || true
     log_info "  └─ 軍師（${_gunshi_display}）、召喚完了"
 
-    if [ "$KESSEN_MODE" = true ]; then
+    if [ "$HYBRID_MODE" = true ]; then
+        log_success "✅ 混成の陣で出陣！（hybrid陣形適用済み）"
+    elif [ "$KESSEN_MODE" = true ]; then
         log_success "✅ 決戦の陣で出陣！全軍Opus！"
     else
         log_success "✅ 平時の陣で出陣（家老=Sonnet, 足軽=Sonnet, 軍師=Opus）"
     fi
+
+    # ダッシュボード🏯セクションを現在の陣形で更新
+    update_dashboard_formation
     echo ""
 
     # ═══════════════════════════════════════════════════════════════════════════
