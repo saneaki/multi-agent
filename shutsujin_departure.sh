@@ -97,10 +97,17 @@ update_dashboard_formation() {
 
     local i model
     for i in $(seq 1 "$_ASHIGARU_COUNT"); do
-        if [ "$CLI_ADAPTER_LOADED" = true ]; then
-            model=$(get_model_display_name "ashigaru${i}" 2>/dev/null || echo "Sonnet")
-        elif [ "$KESSEN_MODE" = true ]; then
+        if [ "$KESSEN_MODE" = true ]; then
+            # 決戦の陣: Opus強制（shc.sh deploy失敗時でも正しく表示）
             model="Opus"
+        elif [ "$HYBRID_MODE" = true ] && [ "$CLI_ADAPTER_LOADED" = true ]; then
+            # 混成の陣: 各足軽の陣形プリセット設定を反映
+            model=$(get_model_display_name "ashigaru${i}" 2>/dev/null || echo "Sonnet")
+        elif [ "$CLI_ADAPTER_LOADED" = true ]; then
+            # 平時の陣（shu）: settings.yamlから取得
+            model=$(get_model_display_name "ashigaru${i}" 2>/dev/null || echo "Sonnet+T")
+            # deploy失敗時のフォールバック: Opus系ならSonnet+Tに強制
+            case "$model" in Opus*) model="Sonnet+T" ;; esac
         else
             model="Sonnet"
         fi

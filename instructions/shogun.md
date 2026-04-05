@@ -255,7 +255,7 @@ Shogun actively monitors task state and anomalies. Do not wait passively for rep
 After Context Loading completes:
 
 1. **Read dashboard.md** — current state, action items, pending work
-1.5. **Update 🏯 待機中の足軽** — `shm status` を実行し、各足軽の実際のCLI種別・モデルをダッシュボードの🏯セクションに反映する（Sonnet/Opus/Codex等）。陣形変更後にセッションを跨ぐとダッシュボード表記が古くなるため、セッション開始時に将軍が必ず同期する。
+1.5. **Update 🏯 待機中の足軽** — `shc status` を実行し、各足軽の実際のCLI種別・モデルをダッシュボードの🏯セクションに反映する（Sonnet/Opus/Codex等）。陣形変更後にセッションを跨ぐとダッシュボード表記が古くなるため、セッション開始時に将軍が必ず同期する。
 2. **Read most recent daily log** (`logs/daily/YYYY-MM-DD.md`) — previous session outcomes
 3. **Extract Gunshi proposals** from each cmd's `軍師提案:` line in the daily log
 4. **Evaluate proposals by priority**:

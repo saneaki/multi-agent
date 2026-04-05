@@ -1,43 +1,55 @@
 worker_id: ashigaru3
-task_id: subtask_428c
-parent_cmd: cmd_428
-timestamp: "2026-04-03T13:40:04+09:00"
+task_id: subtask_452a
+parent_cmd: cmd_452
+timestamp: "2026-04-06T02:19:19+09:00"
 status: done
 result:
   summary: |
-    修正6（連番ダイアログ高さ）と修正7（プレフィックス追加コマンド確認）を完了。
-    連番ダイアログのgeometryを300x200→300x310に拡張し、適用ボタンが表示されるようにした。
-    プレフィックス追加は独立コマンドとしては存在せず、連番ダイアログ内のラジオボタンとして正常動作中。
+    cmd_450の2つのバグを修正完了。
+    バグ1: update_dashboard_formation()にKESSEN_MODE Opus強制+shu Sonnet+Tフォールバック追加。
+    バグ2: shcエイリアスを陣形管理ツール(scripts/shc.sh)に戻し、ハイブリッド出陣をshxに変更。
 
-  fix6_sequential_window:
-    file: "/home/ubuntu/pdfmerged/pdf_tools/tabs/rename_tab.py"
-    line: 544
-    change: "dialog.geometry('300x200') → dialog.geometry('300x310')"
-    reason: |
-      連番ダイアログ内のUI要素（開始番号entry, 桁数entry, 位置ラジオボタン2個, 適用ボタン）の
-      合計高さが約240-260pxだが、ダイアログが200pxしかなく「適用」ボタンが画面外に出ていた。
-      310pxに拡張することで全要素が表示される。
+  files_modified:
+    - "shutsujin_departure.sh"
+    - "~/.bash_aliases"
+    - "~/.bashrc"
+    - "instructions/shogun.md"
 
-  fix7_prefix_command:
-    finding: "独立した「プレフィックス追加」コマンド/ボタンは存在しない"
-    detail: |
-      リネームタブの一括操作ツールバーには「連番」「置換」「全選択」「全解除」「元に戻す」のみ。
-      「プレフィックス追加」はrenate_tab.py:561の連番ダイアログ内のラジオボタン
-      (text="先頭", value="prefix")として存在し、連番を先頭に付与する位置指定オプション。
-      これは正常な機能であり削除不要。
-    action: "確認の結果、削除済み（独立コマンドとしては元々存在しない）"
+  changes_made:
+    - "shutsujin_departure.sh L98-115: update_dashboard_formation()修正 — KESSEN_MODE時Opus強制(settings.yaml deploy失敗でも正しく表示)、shu時Opus系→Sonnet+Tフォールバック(deploy失敗時保護)"
+    - "~/.bash_aliases L4: shm→shc に変更（陣形管理ツールのエイリアスを元に戻す）"
+    - "~/.bashrc L123: shc→shx に変更（ハイブリッド出陣の新エイリアス）"
+    - "instructions/shogun.md L258: shm status→shc status に修正"
 
-  race001_check:
-    shared_files_edited: false
-    note: "rename_tab.pyのみ編集。main_window.py等の共通ファイルは変更なし"
+  root_cause: |
+    バグ1: update_dashboard_formation()がCLI_ADAPTER_LOADED=true時に常にget_model_display_name()に委譲していた。
+    この関数はsettings.yamlを読むが、shc.sh deploy all-opus失敗時はsettings.yamlが旧値のまま→
+    Sonnet+Tを返す→ダッシュボード未更新。L663-671では同条件でKESSEN_MODE時にOpusハードコードしていたが、
+    update_dashboard_formation()にはこのオーバーライドがなかった。
+    バグ2: cmd_450でshcエイリアスをhybrid出陣に流用したため、shcが陣形管理ツールとhybrid出陣の両方を指す競合状態。
 
-  acceptance_criteria_check:
-    - criterion: "連番ボタン押下時にウィンドウが適用ボタンが見える高さに拡張される"
-      result: "PASS（300x200→300x310に拡張）"
-    - criterion: "リネームタブのプレフィックス追加コマンドが削除されている(または存在しないことが確認されている)"
-      result: "PASS（独立コマンドとして存在しないことを確認）"
-
-  purpose_gap: null
+acceptance_criteria_results:
+  - criteria: "shk起動時、ダッシュボード🏯の足軽モデル表記がOpusに正しく更新される"
+    met: true
+    evidence: "KESSEN_MODE時Opus強制ロジック追加。テスト: 足軽1-7号すべてOpusに更新確認"
+  - criteria: "shu起動時、ダッシュボード🏯の足軽モデル表記がSonnet+Tに正しく更新される"
+    met: true
+    evidence: "shu時Opus系→Sonnet+Tフォールバック追加。テスト: settings.yaml=opus状態でもSonnet+T表示確認"
+  - criteria: "shcはscripts/shc.sh（陣形管理ツール）に戻す。~/.bash_aliasesを修正"
+    met: true
+    evidence: "~/.bash_aliases L4: alias shc='bash /home/ubuntu/shogun/scripts/shc.sh'"
+  - criteria: "ハイブリッド出陣コマンドはshc以外の新エイリアス（例: shx）に割り当て。~/.bashrcを修正"
+    met: true
+    evidence: "~/.bashrc L123: alias shx='bash ~/shogun/shutsujin_departure.sh --hybrid'"
+  - criteria: "shutsujin_departure.shのupdate_dashboard_formation()が全陣形で正しく動作する"
+    met: true
+    evidence: "shk(Opus)、shu(Sonnet+T)、hybrid(get_model_display_name)の3パターンテスト通過"
+  - criteria: "instructions/shogun.md等でshm参照があれば新エイリアスに修正"
+    met: true
+    evidence: "instructions/shogun.md L258: shm status→shc status修正。他ファイル(scripts/*.sh等)にshm参照なし確認"
+  - criteria: "git commit・push済み（/pub-uc使用）"
+    met: false
+    evidence: "commit/push待ち"
 
 agent_tool_used: false
 skill_candidate:
