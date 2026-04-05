@@ -40,9 +40,74 @@ screenshot:
 cli:
   default: claude
   agents:
-    shogun:
+    ashigaru1:
+      cli_type: claude
+      model: claude-sonnet-4-6
       effort: max
-    karo:
+    ashigaru2:
+      cli_type: claude
+      model: claude-sonnet-4-6
+      effort: max
+    ashigaru3:
+      cli_type: claude
+      model: claude-sonnet-4-6
+      effort: max
+    ashigaru4:
+      cli_type: claude
+      model: claude-opus-4-6
+      effort: max
+    ashigaru5:
+      cli_type: claude
+      model: claude-opus-4-6
+      effort: max
+    ashigaru6:
+      cli_type: codex
+      model: gpt-5.3-codex
+      effort: max
+    ashigaru7:
+      cli_type: codex
+      model: gpt-5.3-codex
       effort: max
     gunshi:
+      cli_type: claude
+      model: claude-opus-4-6
       effort: max
+    karo:
+      cli_type: claude
+      model: claude-sonnet-4-6
+      effort: max
+    shogun:
+      effort: max
+
+# 陣形プリセット
+formations:
+  hybrid:
+    description: "Sonnet×3+Opus×2+Codex×2の併用陣形"
+    agents:
+      ashigaru1: { cli_type: claude, model: claude-sonnet-4-6, effort: max }
+      ashigaru2: { cli_type: claude, model: claude-sonnet-4-6, effort: max }
+      ashigaru3: { cli_type: claude, model: claude-sonnet-4-6, effort: max }
+      ashigaru4: { cli_type: claude, model: claude-opus-4-6, effort: max }
+      ashigaru5: { cli_type: claude, model: claude-opus-4-6, effort: max }
+      ashigaru6: { cli_type: codex, model: gpt-5.3-codex }
+      ashigaru7: { cli_type: codex, model: gpt-5.3-codex }
+  all-sonnet:
+    description: "全員Claude Sonnet（従来構成・復帰用）"
+    agents:
+      ashigaru1: { cli_type: claude, model: claude-sonnet-4-6, effort: max }
+      ashigaru2: { cli_type: claude, model: claude-sonnet-4-6, effort: max }
+      ashigaru3: { cli_type: claude, model: claude-sonnet-4-6, effort: max }
+      ashigaru4: { cli_type: claude, model: claude-sonnet-4-6, effort: max }
+      ashigaru5: { cli_type: claude, model: claude-sonnet-4-6, effort: max }
+      ashigaru6: { cli_type: claude, model: claude-sonnet-4-6, effort: max }
+      ashigaru7: { cli_type: claude, model: claude-sonnet-4-6, effort: max }
+  all-opus:
+    description: "全員Claude Opus（高難度用）"
+    agents:
+      ashigaru1: { cli_type: claude, model: claude-opus-4-6, effort: max }
+      ashigaru2: { cli_type: claude, model: claude-opus-4-6, effort: max }
+      ashigaru3: { cli_type: claude, model: claude-opus-4-6, effort: max }
+      ashigaru4: { cli_type: claude, model: claude-opus-4-6, effort: max }
+      ashigaru5: { cli_type: claude, model: claude-opus-4-6, effort: max }
+      ashigaru6: { cli_type: claude, model: claude-opus-4-6, effort: max }
+      ashigaru7: { cli_type: claude, model: claude-opus-4-6, effort: max }
