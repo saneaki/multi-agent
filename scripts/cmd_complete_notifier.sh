@@ -3,14 +3,22 @@
 # cmd_complete_notifier.sh — dashboard.md 変更検知 → ntfy自動通知
 #
 # 概要:
-#   dashboard.md の「本日の戦果」セクションの完了行を監視し、
+#   dashboard.md の「本日の戦果」セクションの🏆完了行を監視し、
 #   新しく追加された cmd 完了時に殿のスマートフォンへ ntfy 通知を送る。
 #
 # 動作:
-#   - inotifywait -m -e modify dashboard.md で常時監視
-#   - 変更検知時: 「| HH:MM | * | cmd_NNN * | ✅」行を抽出
+#   - inotifywait で dashboard.md を常時監視
+#   - 変更検知時: 🏆マーカーを含む完了行のみ抽出（セマンティックゲート）
 #   - 未通知 cmd ID を state file（logs/ntfy_notified_cmds.txt）で管理
 #   - 未通知のものだけ ntfy 送信（重複防止）
+#
+# 🏆セマンティッ���ゲート設計 (cmd_444/cmd_445):
+#   dashboard.mdには2種類の✅行が書かれる:
+#     1) 軍師QC PASS行: 「✅ QC PASS」（🏆なし） — QC完了時点
+#     2) 家老🏆完了行: 「🏆cmd_NNN完了」（🏆あり） — 全完了判定後
+#   notifierは🏆を含む行のみをトリガーにすることで、
+#   QC完了前の早期通知を防止する。
+#   🏆は家老がStep 11.7 Step3で書く = QC PASS確認+完了判定後。
 #
 # 起動: watcher_supervisor.sh から nohup で起動される
 # ═══════════════════════════════════════════════════════════════
@@ -47,6 +55,7 @@ check_and_notify() {
     fi
 
     # 完了行パターン: | HH:MM | ... 🏆cmd_NNN完了 ... | ✅ ... |
+    # 🏆フィルタ: 軍師QC PASS行(🏆なし)を除外し、家老🏆完了行のみトリガー
     while IFS= read -r line; do
         # cmd番号を抽出
         cmd_id=$(echo "$line" | grep -oP 'cmd_\d+' | head -1 || true)

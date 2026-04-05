@@ -427,7 +427,7 @@ After judging a cmd complete, execute ALL steps before moving to next cmd:
 5. `inbox_write shogun` (dashboard updated)
 6. `bash scripts/update_dashboard.sh`  # 完了した足軽を🔄から🏯に移動
 
-⚠️ cmd完了ntfy通知は `cmd_complete_notifier.sh` が dashboard.md 変更を検知して自動送信（タグ: cmd_complete）。手動送信不要。
+⚠️ cmd完了ntfy通知は `cmd_complete_notifier.sh` が dashboard.md 変更を検知して自動送信（タグ: cmd_complete）。手動送信不要。**Step 3の🏆マーカーがntfyトリガー**。軍師のQC PASS行(🏆なし)では発火せず、家老の🏆完了行でのみ発火する設計(cmd_445恒久対策)。
 
 ⚠️ Even if new cmds arrived in inbox, do NOT dispatch before completing all 5 steps.
 
