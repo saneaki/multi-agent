@@ -182,7 +182,7 @@ while i < len(lines):
         final_model = new_model if new_model else existing_fields.get('model', '')
 
         if final_type:
-            new_lines.append(f'{inner_indent}type: {final_type}')
+            new_lines.append(f'{inner_indent}cli_type: {final_type}')
         if final_model:
             if new_model:
                 new_lines.append(f'{inner_indent}model: {final_model}  {comment}')
