@@ -1,0 +1,45 @@
+task_id: subtask_454b
+cmd_id: cmd_454
+assigned_to: ashigaru7
+assigned_at: '2026-04-06T02:59:00+09:00'
+status: done
+priority: medium
+bloom_level: L2
+report_to: gunshi
+north_star: "軍師提案を実装して運用品質を向上させつつ、Codex足軽(6・7号)の実戦テストを兼ねる"
+
+purpose: |
+  ダッシュボード(dashboard.md)の🛠️スキル候補セクションから
+  ✅実装済みエントリを削除し、承認待ちのみを残す。
+  実装済みは memory/skill_history.md に既にアーカイブ済みであることを確認する。
+
+acceptance_criteria:
+  - "dashboard.md の🛠️スキル候補セクションから ~~switch-cli-yaml-update-guard~~ の行が削除されている"
+  - "承認待ちの codex-cli-poc-verification と switch_cli-yaml-section-tracking の行は残っている"
+  - "memory/skill_history.md に switch-cli-yaml-update-guard が記載されていることを確認する（既にあるはず）"
+  - "memory/skill_history.md に追記が必要な場合は追記する"
+  - "git commit・push済み（/pub-uc 使用）"
+
+implementation_notes: |
+  【参照ファイル】
+  - dashboard.md: 🛠️スキル候補セクション（L81付近）に ~~switch-cli-yaml-update-guard~~ が残っている
+  - memory/skill_history.md: アーカイブ先。既にswitch-cli-yaml-update-guardが記載されているはず。
+
+  【作業手順】
+  1. dashboard.md を Read して 🛠️スキル候補セクションを確認
+  2. memory/skill_history.md を Read して既にアーカイブ済みか確認
+  3. skill_history.md に未記載ならば追記する
+  4. dashboard.md から ~~switch-cli-yaml-update-guard~~ の行を削除する（Edit使用）
+  5. git commit・push
+
+  【注意】
+  - 承認待ちの行(codex-cli-poc-verification, switch_cli-yaml-section-tracking)は削除しないこと
+  - Read → Edit の順で操作すること
+
+editable_files:
+  - "dashboard.md"
+  - "memory/skill_history.md"
+  - "queue/reports/ashigaru7_report.yaml"
+
+context: shogun
+report_path: queue/reports/ashigaru7_report.yaml
