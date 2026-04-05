@@ -111,7 +111,7 @@ update_settings_yaml() {
     log "Updating settings.yaml: ${agent_id} → type=${new_type:-<unchanged>}, model=${new_model:-<unchanged>}"
 
     "${PROJECT_ROOT}/.venv/bin/python3" << PYEOF
-import yaml, sys, os, datetime
+import datetime
 
 settings_path = "${SETTINGS_FILE}"
 agent_id = "${agent_id}"
@@ -121,69 +121,79 @@ new_model = "${new_model}" or None
 with open(settings_path, 'r', encoding='utf-8') as f:
     content = f.read()
 
-with open(settings_path, 'r', encoding='utf-8') as f:
-    data = yaml.safe_load(f) or {}
-
-cli = data.setdefault('cli', {})
-agents = cli.setdefault('agents', {})
-agent_cfg = agents.get(agent_id)
-if not isinstance(agent_cfg, dict):
-    agent_cfg = {}
-    agents[agent_id] = agent_cfg
-
 timestamp = datetime.datetime.now().strftime('%Y-%m-%d')
 comment = f"# {timestamp}: switch_cli.sh による切替"
 
-if new_type:
-    agent_cfg['type'] = new_type
-if new_model:
-    agent_cfg['model'] = new_model
-
-data['cli']['agents'][agent_id] = agent_cfg
-
-# コメント保持のため、対象エージェント行だけsedで置換する方が安全だが
-# 完全性のためyaml.dumpを使用。コメントは失われる。
-# → 代わりにsed的なアプローチ: 対象ブロックだけ書き換える
-
-# Simple approach: read lines, find agent block, replace
+# コメント保持のためライン単位で書き換える。
+# formations等の他セクションを破壊しないため、
+# in_cli_section / in_cli_agents フラグで cli.agents 配下のみ対象にする。
 lines = content.split('\n')
 new_lines = []
-in_agent_block = False
-agent_indent = None
-skip_until_next = False
+in_cli_section = False
+in_cli_agents = False
 
 i = 0
 while i < len(lines):
     line = lines[i]
     stripped = line.lstrip()
+    current_indent = len(line) - len(stripped) if stripped else -1
 
-    # Detect our agent's block start
-    if stripped.startswith(f'{agent_id}:'):
-        in_agent_block = True
-        agent_indent = len(line) - len(stripped)
+    # トップレベルセクション(indent==0)を追跡
+    if current_indent == 0 and stripped and not stripped.startswith('#'):
+        in_cli_section = stripped.startswith('cli:')
+        if not in_cli_section:
+            in_cli_agents = False
+
+    # cli.agents セクション(indent==2, cli配下)を追跡
+    if in_cli_section and current_indent == 2 and stripped and not stripped.startswith('#'):
+        in_cli_agents = stripped.startswith('agents:')
+
+    # cli.agents 配下のエージェントエントリのみ対象（formations等は無視）
+    if in_cli_agents and stripped.startswith(f'{agent_id}:'):
+        agent_indent = current_indent
         new_lines.append(line)
-        # Write the updated fields
         inner_indent = ' ' * (agent_indent + 2)
-        if new_type:
-            new_lines.append(f'{inner_indent}type: {new_type}')
-        if new_model:
-            new_lines.append(f'{inner_indent}model: {new_model}  {comment}')
-        # Skip old sub-fields
+
+        # 既存サブフィールドを収集（effort等を保持するため）
         i += 1
+        existing_fields = {}
+        field_order = []
         while i < len(lines):
             next_line = lines[i]
             next_stripped = next_line.lstrip()
-            if next_stripped == '' or next_stripped.startswith('#'):
-                # Keep blank lines and comments between blocks
-                if next_stripped.startswith('#') and len(next_line) - len(next_stripped) > agent_indent:
+            if not next_stripped or next_stripped.startswith('#'):
+                # インデントがエージェントより深いコメントは読み飛ばす
+                if next_stripped.startswith('#') and (len(next_line) - len(next_stripped)) > agent_indent:
                     i += 1
                     continue
                 break
             next_indent = len(next_line) - len(next_stripped)
             if next_indent <= agent_indent:
-                break  # Next agent or section
+                break  # 次のエージェントまたはセクション
+            if ':' in next_stripped:
+                key, _, val = next_stripped.partition(':')
+                k = key.strip()
+                existing_fields[k] = val.strip()
+                field_order.append(k)
             i += 1
-        in_agent_block = False
+
+        # type / model を更新（未指定なら既存値を使用）
+        final_type = new_type if new_type else existing_fields.get('type', existing_fields.get('cli_type', ''))
+        final_model = new_model if new_model else existing_fields.get('model', '')
+
+        if final_type:
+            new_lines.append(f'{inner_indent}type: {final_type}')
+        if final_model:
+            if new_model:
+                new_lines.append(f'{inner_indent}model: {final_model}  {comment}')
+            else:
+                new_lines.append(f'{inner_indent}model: {final_model}')
+
+        # type/cli_type/model 以外のフィールド（effort等）を保持
+        for k in field_order:
+            if k not in ('type', 'cli_type', 'model'):
+                new_lines.append(f'{inner_indent}{k}: {existing_fields[k]}')
+
         continue
     else:
         new_lines.append(line)
@@ -191,10 +201,8 @@ while i < len(lines):
 
 with open(settings_path, 'w', encoding='utf-8') as f:
     f.write('\n'.join(new_lines))
-    if not content.endswith('\n'):
-        pass
-    else:
-        f.write('\n') if not '\n'.join(new_lines).endswith('\n') else None
+    if content.endswith('\n') and not '\n'.join(new_lines).endswith('\n'):
+        f.write('\n')
 
 print("OK")
 PYEOF
