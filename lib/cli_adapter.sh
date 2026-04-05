@@ -91,7 +91,7 @@ try:
         sys.exit(0)
     agent_cfg = agents.get('${agent_id}')
     if isinstance(agent_cfg, dict):
-        t = agent_cfg.get('type', '')
+        t = agent_cfg.get('cli_type', agent_cfg.get('type', ''))
         if t in ('claude', 'codex', 'copilot', 'kimi'):
             print(t); sys.exit(0)
     elif isinstance(agent_cfg, str):
