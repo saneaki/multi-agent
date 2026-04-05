@@ -1,7 +1,7 @@
 # Fork Difference Analysis: shogun vs upstream
 
 > **Generated**: 2026-04-06
-> **Base**: `git diff upstream/main...original` (74 files, +10325/−3114 lines)
+> **Base**: `git diff upstream/main...original` (74 files, +10409/−3112 lines)
 > **Upstream**: https://github.com/yohey-w/multi-agent-shogun.git
 > **Fork branch**: original
 
@@ -42,8 +42,10 @@ This fork extends the upstream multi-agent-shogun system with production-grade o
 | `scripts/ntfy.sh` | fork-modified | Supports 3rd argument for extra tags (e.g., `cmd_complete`). Adds `Markdown: yes` header and optional `Title:` header. Tags combine as `outbound,{extra}`. Backward-compatible. | Keep fork — no upstream equivalent |
 | `scripts/ntfy_listener.sh` | fork-modified | Hostname guard (`NTFY_ALLOWED_HOST=srv1121380`): exits if host doesn't match. Recognizes `cmd_complete` tag — instead of skipping outbound, wakes Shogun pane with completion notification. | Keep fork — no upstream equivalent |
 | `scripts/send_test_email.py` | fork-added | Python script: sends test email via Gmail SMTP (TLS) to trigger n8n Gmail WF tests. Reads creds from `.env`. Supports `--subject`/`--body` overrides. | Keep fork — no upstream equivalent |
+| `scripts/shc.sh` | fork-added | 陣形管理コマンド (Shogun Formation Controller): deploy/status/restore/list サブコマンド。`config/settings.yaml` → `formations` セクションから陣形プリセットを読み込み、`switch_cli.sh` でCLI切替を実行。hybrid/all-opus/all-sonnet の一括展開を1コマンドで実現。(cmd_446/448) | Keep fork — no upstream equivalent |
 | `scripts/slim_yaml.py` | fork-modified | Adds `clean_old_snapshots()`: removes `queue/snapshots/*.yaml` older than 24h by mtime. Runs in `slim --all` path. Prevents unbounded snapshot accumulation. | Keep fork — no upstream equivalent |
 | `scripts/stop_hook_daily_log.sh` | fork-added | Stop hook: checks if today's daily log (`logs/daily/YYYY-MM-DD.md`) exists and contains cmd entries. Warns on missing/empty log to enforce daily log generation. Added in cmd_397 as enforcement mechanism after 3-day log gap. | Keep fork — no upstream equivalent |
+| `scripts/switch_cli.sh` | fork-modified | `update_settings_yaml()` を完全書き換え: `in_cli_section`/`in_cli_agents` フラグによるライン単位解析を採用し、`formations` 等の他セクションを破壊しないよう修正。`cli_type` キー書き込みバグ修正 (`type:` → `cli_type:`)。yaml.safe_dump を廃止しコメント保持。(cmd_448) | Keep fork — no upstream equivalent |
 | `scripts/update_dashboard_timestamp.sh` | fork-added | PostToolUse hook / manual script: rewrites `最終更新:` line in dashboard.md to current JST. Skips silently when edited file is not dashboard.md. | Keep fork — no upstream equivalent |
 | `scripts/watcher_supervisor.sh` | fork-modified | Three additions: (1) flock-based PID-lock guard, (2) auto-start `cmd_complete_notifier.sh`, (3) `roll_call_check()` every 5 min detecting agents stuck on welcome screen and reviving them. | Merge upstream, preserve fork sections |
 | `scripts/worktree_cleanup.sh` | fork-added | Safely removes git worktree for agent under `.trees/<agent_id>`: checks uncommitted changes, unlinks symlinks, prunes metadata. | Keep fork — no upstream equivalent |
@@ -54,7 +56,7 @@ This fork extends the upstream multi-agent-shogun system with production-grade o
 | File | Change Type | Intent | Upstream Merge Guidance |
 |------|-------------|--------|------------------------|
 | `lib/agent_status.sh` | fork-modified | Adds `is_cli_running()`: resolves pane's shell PID via `tmux list-panes`, checks for `claude` child process with `pgrep -P`. Used by watcher logic. | Merge upstream, preserve fork sections |
-| `lib/cli_adapter.sh` | fork-modified | Adds `effort` field support to `build_cli_command()`: reads `cli.agents.<id>.effort` from settings YAML, prepends `CLAUDE_CODE_EFFORT_LEVEL=<value>` to command. Non-conflicting additive feature. | Merge upstream, preserve fork sections |
+| `lib/cli_adapter.sh` | fork-modified | Adds `effort` field support to `build_cli_command()`: reads `cli.agents.<id>.effort` from settings YAML, prepends `CLAUDE_CODE_EFFORT_LEVEL=<value>` to command. Non-conflicting additive feature. Also fixes `get_cli_type()` (L94) to read `cli_type` key instead of `type` key. (cmd_449) | Merge upstream, preserve fork sections |
 
 ## Category C: Agent Instructions
 
@@ -69,7 +71,7 @@ This fork extends the upstream multi-agent-shogun system with production-grade o
 | `instructions/gunshi.md` | fork-modified | Adds: context snapshot steps, Autonomous QC Protocol (auto-QC on `report_received`), expanded F006 dashboard permissions, `suggestions.yaml` persistence (step 8.5), Bloom Analysis support, JST rule, Memory MCP write policy, QC checklist reference with auto_check integration, Fork Extensions (n8n QC criteria, Bloom routing docs), daily log append responsibility (moved from karo Step 11.7), monthly karo.md review cycle. | Keep fork — no upstream equivalent |
 | `instructions/karo.md` | fork-modified | Major restructuring: F006 added, workflow expanded with `yaml_slim` (1.5), `bloom_routing` (6.5), dashboard cleanup rules (descending order), SO-19 cmd_complete.sh at Step 11.7, `cmd_complete` tag ntfy, autonomous QC notes, skill suggestions, snapshot recovery, JST enforcement, editable_files mandatory in task YAML, `report_to: gunshi` default rule, Agent() tool usage criteria (F003 expansion: output=deliverable→prohibited, output=analysis→allowed, with cmd_396 violation example). Context optimization (cmd_399): Post-Task Checklist duplicate removed, Task YAML template extracted to `templates/`, streaks format extracted to `config/`, daily log step moved to gunshi, monthly review cycle added. | Keep fork — no upstream equivalent |
 | `templates/karo_task_template.yaml` | fork-added | Extracted from karo.md (S2 optimization): Task YAML template with full field reference. Reduces karo.md inline context by ~400 tokens. | Keep fork — no upstream equivalent |
-| `instructions/shogun.md` | fork-modified | Restructured to 2 core missions (translate intent + proactive detection). F006 blind_clear ban, stall_response_protocol (5-step), Proactive Detection & Reporting (3 triggers: session start, post-ntfy, idle), Memory MCP write policy. 477→331 lines. | Keep fork — no upstream equivalent |
+| `instructions/shogun.md` | fork-modified | Restructured to 2 core missions (translate intent + proactive detection). F006 blind_clear ban, stall_response_protocol (5-step), Proactive Detection & Reporting (3 triggers: session start, post-ntfy, idle), Memory MCP write policy. 477→331 lines. cmd_450で shm/shc コマンド体系を反映（alias shm=Shogun Manager、shc=hybrid出陣）。 | Keep fork — no upstream equivalent |
 | `instructions/skill_candidates.yaml` | fork-added | Registry of 46 skill candidates (SC-001 to SC-046) from cmd_134 to cmd_344. Tracks id, source, occurrences, status (created/merged/hold), evaluation, skill_path. | Keep fork — no upstream equivalent |
 | `instructions/skill_policy.md` | fork-added | Formal skill lifecycle policy: creation criteria (2-occurrence threshold), reusability assessment, integration-vs-new decision matrix, file structure standards, maintenance rules. | Keep fork — no upstream equivalent |
 
@@ -88,7 +90,7 @@ This fork extends the upstream multi-agent-shogun system with production-grade o
 |------|-------------|--------|------------------------|
 | `.claude/settings.json` | fork-modified | Project-level settings: PreCompact hook (pre_compact_snapshot.sh), PostToolUse hooks moved from global (update_dashboard_timestamp.sh, ir1_editable_files_check.sh, log_violation.sh), SessionStart hook (karo_session_start_check.sh). VPS-specific absolute paths. | Keep fork — no upstream equivalent |
 | `config/projects.yaml` | fork-added | Project registry: sample entry with id, name, path, priority, status, current_project fields. Referenced in CLAUDE.md `files:` map. | Keep fork — no upstream equivalent |
-| `config/settings.yaml` | fork-added | Runtime config: language, shell, skill paths, logging, bloom routing mode, ntfy topic, screenshot path (WSL2), per-agent effort levels (max). VPS/WSL2-specific. | Keep fork — no upstream equivalent |
+| `config/settings.yaml` | fork-added | Runtime config: language, shell, skill paths, logging, bloom routing mode, ntfy topic, screenshot path (WSL2), per-agent effort levels (max), `formations` セクション（hybrid/all-opus/all-sonnet プリセット、`shc.sh` が参照）。VPS/WSL2-specific. (cmd_446) | Keep fork — no upstream equivalent |
 | `config/streaks_format.yaml` | fork-added | Extracted from karo.md (S2 optimization): streaks.yaml format specification. Referenced by karo.md to reduce inline context. | Keep fork — no upstream equivalent |
 | `.gitignore` | fork-modified | Allow-lists newly added fork files (config/, scripts/hooks/, memory/skill_history.md, etc.) that would otherwise be git-ignored. | Keep fork — no upstream equivalent |
 
@@ -128,7 +130,7 @@ This fork extends the upstream multi-agent-shogun system with production-grade o
 | `images/screenshots/ntfy_tasklist_final.jpg` | fork-added | Binary screenshot: ntfy tasklist final state. | Keep fork — no upstream equivalent |
 | `images/screenshots/ntfy_tasklist_v1_before.jpg` | fork-added | Binary screenshot: ntfy tasklist v1 before state. | Keep fork — no upstream equivalent |
 | `images/screenshots/ntfy_tasklist_v2_aligned.jpg` | fork-added | Binary screenshot: ntfy tasklist v2 aligned state. | Keep fork — no upstream equivalent |
-| `shutsujin_departure.sh` | fork-modified | Three changes: (1) kessen mode applies Opus to karo with `--effort max`, (2) `tmux set-environment TZ "Asia/Tokyo"` for all panes, (3) model display name fix for kessen startup banner. | Keep fork — no upstream equivalent |
+| `shutsujin_departure.sh` | fork-modified | Six changes: (1) kessen mode applies Opus to karo with `--effort max`, (2) `tmux set-environment TZ "Asia/Tokyo"` for all panes, (3) model display name fix for kessen startup banner, (4) `--hybrid` フラグ追加（kessen/hybridの排他チェック付き）, (5) エージェント起動前に `shc.sh deploy` で陣形事前適用, (6) `update_dashboard_formation()` 関数追加により起動後に 🏯 テーブルを自動更新。(cmd_450) | Keep fork — no upstream equivalent |
 
 ---
 
@@ -136,7 +138,7 @@ This fork extends the upstream multi-agent-shogun system with production-grade o
 
 | Guidance | Count | Files |
 |----------|-------|-------|
-| Keep fork — no upstream equivalent | 57 | All fork-added files + fork-modified files with no upstream counterpart |
+| Keep fork — no upstream equivalent | 59 | All fork-added files + fork-modified files with no upstream counterpart (including `scripts/shc.sh`, `scripts/switch_cli.sh`) |
 | Merge upstream, preserve fork sections | 8 | `inbox_watcher.sh`, `watcher_supervisor.sh`, `lib/agent_status.sh`, `lib/cli_adapter.sh`, `AGENTS.md`, `agents/default/system.md`, `.github/copilot-instructions.md`, `tests/e2e/e2e_bloom_routing.bats`, `tests/unit/test_dynamic_model_routing.bats`, `tests/unit/test_send_wakeup.bats` |
 | Accept upstream changes | 1 | `tests/e2e/e2e_codex_startup.bats` |
 | Manual review required | 1 | `CLAUDE.md` (core config, both sides actively modify) |
