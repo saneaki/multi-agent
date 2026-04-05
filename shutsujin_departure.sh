@@ -724,6 +724,22 @@ if [ "$SETUP_ONLY" = false ]; then
     echo "idle flags cleared"
 
     # ═══════════════════════════════════════════════════════════════════
+    # OPENAI_API_KEY 自動設定（Codex足軽起動前に tmux 環境変数へ設定）
+    # ═══════════════════════════════════════════════════════════════════
+    SHOGUN_ENV_FILE="$(dirname "$0")/.env"
+    if [ -f "$SHOGUN_ENV_FILE" ]; then
+        OPENAI_KEY=$(grep '^OPENAI_API_KEY=' "$SHOGUN_ENV_FILE" | cut -d= -f2- | tr -d '"')
+        if [ -n "$OPENAI_KEY" ]; then
+            tmux set-environment -t multiagent OPENAI_API_KEY "$OPENAI_KEY" 2>/dev/null || true
+            log_info "OPENAI_API_KEY: tmux multiagent環境に設定完了"
+        else
+            log_warn "OPENAI_API_KEY: .envに値なし。Codex足軽は起動失敗の可能性あり"
+        fi
+    else
+        log_warn "OPENAI_API_KEY: .env未検出。Codex足軽は起動失敗の可能性あり"
+    fi
+
+    # ═══════════════════════════════════════════════════════════════════
     # 陣形事前適用（エージェント起動前に settings.yaml を更新）
     # ═══════════════════════════════════════════════════════════════════
     log_info "⚔️  陣形を事前適用中..."

@@ -48,8 +48,8 @@ acceptance_criteria_results:
     met: true
     evidence: "instructions/shogun.md L258: shm status→shc status修正。他ファイル(scripts/*.sh等)にshm参照なし確認"
   - criteria: "git commit・push済み（/pub-uc使用）"
-    met: false
-    evidence: "commit/push待ち"
+    met: true
+    evidence: "commit 0f040a0, git push完了（pre-push hook通過）"
 
 agent_tool_used: false
 skill_candidate:

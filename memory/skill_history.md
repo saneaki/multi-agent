@@ -7,6 +7,10 @@ dashboard.md 🛠️スキル欄から溢れた全エントリ。最新順（上
 
 | スキル名 | 出典 |
 |----------|------|
+| **switch-cli-yaml-update-guard** ✅実装済み | cmd_446→cmd_448: switch_cli.sh update_settings_yaml() formations破壊バグ。in_cli_agentsフラグによるセクションスコープ追跡+cli_typeキー統一。~/.claude/skills/shogun-switch-cli-yaml-update-guard/SKILL.md。commit subtask_448c2(足軽1号)。 |
+| **bypass-permissions-write-fix** ✅実装済み | cmd_423→cmd_440: bypass permissionsモードで.claude/配下Write/Edit/Bash確認プロンプト回避。3-Layer Fix(defaultMode+PermissionRequest hook+hookスクリプト)。230行SKILL.md。commit 5fd85bc(足軽1号)。 |
+| **n8n-gmail-subject-case-sensitivity** ✅実装済み | cmd_427→cmd_440: n8n Gmail node downloadAttachments:true時PascalCase問題。3ソリューション(ORフォールバック/Object.keys()/正規化ノード)+Prevention CL。271行SKILL.md。commit 972178c(足軽2号)。 |
+| **github-release-version-migration** ✅実装済み | cmd_439→cmd_440: GitHub API PATCHリリースメタデータ変更+gitタグ削除→再作成。一括移行スクリプト+Safety+ロールバック+Real Example(v1.0.x→v0.8.x)。326行SKILL.md。commit 5fd85bc(足軽3号)。 |
 | **github-actions-release-artifact** ✅実装済み | cmd_411→cmd_419: GITHUB_TOKEN permissions 403エラー+artifact upload/download方式+ubuntu-latestリリース。8セクション構成SKILL.md。commit 93d22de(足軽3号)。 |
 | **pyinstaller-pymupdf-dll-bundling** ✅実装済み | cmd_413→cmd_419: PyMuPDF DLLバンドル漏れ→サイレントクラッシュ。collect_dynamic_libs('pymupdf')追加+hiddenimports修正+デバッグ手法。commit e40b12f(足軽4号)。 |
 | **github-actions-powershell-continueonerror** ✅実装済み | cmd_413→cmd_419: Windows runner PowerShell互換性問題。continue-on-error:true vs shell:bash判断基準+実例。commit 3f990fe(足軽5号)。 |

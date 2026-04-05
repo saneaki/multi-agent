@@ -1,41 +1,63 @@
 worker_id: ashigaru4
-task_id: subtask_428d
-parent_cmd: cmd_428
-timestamp: "2026-04-03T13:41:52+09:00"
+task_id: subtask_439c
+parent_cmd: cmd_439
+timestamp: "2026-04-03T17:19:33+09:00"
 status: done
 result:
   summary: |
-    墨消し(色選択+出力フォルダ)・ページ番号(出力フォルダ)・分割(出力フォルダ自動作成)の4件修正完了。
-  files_modified:
-    - path: "pdf_tools/pdf_redactor.py"
-      changes:
-        - "redact_text/redact_area/redact_areasにfill_colorパラメータ追加（デフォルト白）"
-        - "add_redact_annotにfill=fill_colorを渡すよう修正"
-    - path: "pdf_tools/tabs/redactor_tab.py"
-      changes:
-        - "墨消し色選択UI追加（白/黒のCombobox）"
-        - "_get_fill_colorヘルパーメソッド追加"
-        - "テキスト/エリア墨消しワーカーにfill_color引数追加"
-        - "保存ダイアログにinitialdir=入力ファイル親フォルダを追加（修正10）"
-    - path: "pdf_tools/tabs/split_tab.py"
-      changes:
-        - "出力フォルダを'split_output'からファイル名stem(拡張子なし)に変更"
-        - "_load_pdf_fileとtoggle_same_folderの2箇所修正"
-    - path: "pdf_tools/tabs/numberer_tab.py"
-      changes:
-        - "保存ダイアログにinitialdir=入力ファイル親フォルダを追加（修正11）"
+    GitHub Releases v1.0.x→v0.8.xへの振替完了。ソースコードにv0.9.0バージョン表記を追加。
+    リリース4件のタグ名・リリース名をAPI PATCHで変更、旧タグ削除・新タグ作成・push済み。
+  release_migration:
+    - old: "v1.0.1 (release ID 304323315)"
+      new: "v0.8.1"
+      status: done
+    - old: "v1.0.2 (release ID 304348175)"
+      new: "v0.8.2"
+      status: done
+    - old: "v1.0.3 (release ID 304363996)"
+      new: "v0.8.3"
+      status: done
+    - old: "v1.0.5 (release ID 304944244)"
+      new: "v0.8.5"
+      status: done
+  tag_migration:
+    old_tags_deleted: ["v1.0.0", "v1.0.1", "v1.0.2", "v1.0.3", "v1.0.5"]
+    new_tags_created: ["v0.8.1", "v0.8.2", "v0.8.3", "v0.8.5"]
+    note: "v1.0.0はリリースなし（タグのみ削除）"
+  source_code_version_update:
+    - file: pdf_tools/pdf_merger_tabbed.py
+      change: "__version__ = '0.9.0' を追加、ウィンドウタイトルにバージョン表示追加"
+    - file: docs/GITHUB_ACTIONS_BUILD.md
+      change: "v1.0.1→v0.8.1 参照を更新"
+    - file: setup.py
+      change: "存在しない（スキップ）"
+    - file: pyproject.toml
+      change: "存在しない（スキップ）"
+    - file: build-exe.yml
+      change: "ハードコードされたバージョン参照なし（v*タグパターンのみ）— 変更不要"
+  git_commit: "be48c87"
+  git_push: "main branch"
   notes: |
-    - 修正8: 白/黒選択はCombobox（readonly）で実装。_get_fill_colorで"黒"→(0,0,0)/"白"→(1,1,1)に変換
-    - 修正9: pdf_splitter.pyのsplit_by_rangesが既にoutput_path.mkdir(parents=True, exist_ok=True)で自動作成するため、フォルダ名変更のみで対応
-    - 修正10/11: filedialog.asksaveasfilenameにinitialdir追加でデフォルト出力先を入力ファイルと同じフォルダに統一
-    - RACE-001: 墨消し・ページ番号・分割タブのファイルのみ編集。共通ファイルの変更なし
+    - GitHub API (curl + token) でリリースのtag_name/nameをPATCH更新
+    - gh CLIが未インストールのためMCPツール+curl APIを使用
+    - TEST_GUIDE.md内のv1.0.5参照は cmd_433管理下のため未変更
+    - リリースアセット（test-kit ZIP）のファイル名にv1.0.x含む（pdfmerged-test-kit-v1.0.3.zip等）
+      → 差し替えはPhase 2で新v0.9.0リリース作成時に対応推奨
   acceptance_criteria_check:
-    - criterion: "墨消しに白/黒の色選択機能が追加されている"
-      result: "PASS（Comboboxで白/黒選択、PDFRedactorにfill_color渡し）"
-    - criterion: "分割の出力先として元ファイル名のフォルダが自動作成される"
-      result: "PASS（split_output→ファイルstem、mkdir自動作成済み）"
-    - criterion: "墨消し・ページ番号の出力フォルダがデフォルトで入力ファイルと同じフォルダに統一されている"
-      result: "PASS（initialdir追加で保存ダイアログが入力ファイルのフォルダで開く）"
-agent_tool_used: false
+    - criterion: "既存GitHub Releasesがv0.8.x系に変更されている"
+      result: "PASS（v1.0.1→v0.8.1, v1.0.2→v0.8.2, v1.0.3→v0.8.3, v1.0.5→v0.8.5）"
+    - criterion: "リリースアセット（EXE, ZIP）のファイル名もv0.8.xに合わせて更新されている"
+      result: "PARTIAL — EXEはPDFMergerTool.exeでバージョン含まず問題なし。test-kit ZIPはv1.0.x名のまま（task説明でPhase2対応と指定）"
+    - criterion: "ソースコード内のバージョン表記がv0.9.0に更新されている"
+      result: "PASS（__version__='0.9.0'追加、タイトルバーにv0.9.0表示）"
+    - criterion: "GitHub Actionsワークフローのバージョン参照が確認・更新されている"
+      result: "PASS（build-exe.ymlはv*パターンのみ、ハードコードなし）"
+    - criterion: "git commit・push済み"
+      result: "PASS（be48c87 → main）"
+agent_tool_used: true
+agent_tool_tokens: 200000
 skill_candidate:
-  found: false
+  found: true
+  name: "github-release-version-migration"
+  description: "GitHub API PATCHでリリースのtag_name/nameを変更し、gitタグを移行するパターン"
+  trigger: "リリースバージョン体系の変更・振替が必要な場合"

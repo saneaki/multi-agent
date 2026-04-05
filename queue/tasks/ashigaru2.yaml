@@ -1,60 +1,103 @@
-task_id: subtask_428b
-cmd_id: cmd_428
-assigned_to: ashigaru2
-project: pdfmerged
-priority: high
-status: done
-report_to: gunshi
-blocked_by: []
-created_at: "2026-04-03T13:35:56+09:00"
-bloom_level: L4
-north_star: "pdfmerged v1.0.5を殿のテスト結果に基づき修正・リリースし、実務で使える品質にする"
-title: "cmd_428-B: スタンプ付与(横向きPDF位置+枝番認識+取消ボタン)"
-purpose: "スタンプ付与タブの3件のバグを修正する"
+task:
+  task_id: subtask_452a
+  parent_cmd: cmd_452
+  bloom_level: L4
+  assigned_to: ashigaru2
+  report_to: gunshi
+  north_star: "出陣コマンド体系が正しく動作し、起動時にダッシュボードが実際の陣形を反映すること"
+  status: assigned
+  timestamp: "2026-04-06T01:50:23+09:00"
 
-editable_files:
-  - "/home/ubuntu/pdfmerged/src/**/*.py"
+  purpose: |
+    cmd_450の不具合2件を修正する:
+    (1) shk起動時にダッシュボード🏯がSonnet表記のまま更新されないバグ修正
+    (2) shcエイリアスを陣形管理ツールに戻し、ハイブリッド出陣を別エイリアス(shx)に変更
 
-instructions: |
-  ■ リポジトリ: /home/ubuntu/pdfmerged (saneaki/pdfmerged)
+  acceptance_criteria:
+    - "shk で起動した際、ダッシュボード🏯の足軽モデル表記がOpusに正しく更新される"
+    - "shu で起動した際、ダッシュボード🏯の足軽モデル表記がSonnet+Tに正しく更新される"
+    - "shc は scripts/shc.sh（陣形管理ツール）のエイリアスに戻っている（~/.bash_aliases）"
+    - "ハイブリッド出陣コマンドは shx に割り当てられている（~/.bashrc）"
+    - "shm エイリアスは廃止（~/.bash_aliasesから削除）"
+    - "~/.bashrc と ~/.bash_aliases が新エイリアス体系で整合している"
+    - "shutsujin_departure.sh の update_dashboard_formation() が全陣形で正しく動作する"
+    - "instructions/shogun.md の shm 参照が shc に修正されている"
+    - "git commit済み（/pub-ucでpushも実施）"
 
-  ■ 修正3: スタンプ — 横向きPDFの位置修正 (HIGH)
-  【症状】横回転したPDFの右上(=実質右下)にスタンプ。縦にした時の右上が正解。
-  【修正】
-  - スタンプ付与のPDF操作コード（PyMuPDF/fitz使用の可能性高）を特定
-  - ページのrotation属性(0/90/180/270)を取得
-  - rotation値に応じてスタンプ座標を回転補正
-    - rotation=0: 通常の右上
-    - rotation=90: 座標変換が必要
-    - rotation=180/270: 同様に変換
-  - mediabox/cropboxのサイズも考慮
+  editable_files:
+    - "/home/ubuntu/shogun/shutsujin_departure.sh"
+    - "/home/ubuntu/.bash_aliases"
+    - "/home/ubuntu/.bashrc"
+    - "/home/ubuntu/shogun/instructions/shogun.md"
+    - "/home/ubuntu/shogun/difference.md"
 
-  ■ 修正4: スタンプ — 枝番認識修正 (HIGH)
-  【症状】「甲4号証の1」「甲4号証の2」がどちらも「甲4」と認識される
-  【修正】
-  - ファイル名からスタンプ番号を抽出する正規表現を特定
-  - 「の1」「の2」等の枝番パターンを認識するよう修正
-  - 期待出力: 「甲4の1」「甲4の2」
-  - テスト: 「甲4号証の1.pdf」→スタンプ「甲4の1」
+  description: |
+    ■ cmd_450不具合修正（2件）
 
-  ■ 修正5: スタンプ — 取消ボタン修正 (MED)
-  【症状】取消ボタンを押しても機能が感じられない
-  【修正】
-  - スタンプタブの取消ボタンのイベントハンドラを確認
-  - 取消時の状態リセットロジック（ファイルリストクリア、プレビュー更新等）を確認
-  - 正しく機能するよう修正
+    【Phase 1: ダッシュボード🏯自動更新バグ修正】
 
-  ■ RACE-001注意
-  他の足軽が結合/変換(428a)、連番/リネーム(428c)、墨消し/分割(428d)を同時修正中。
-  スタンプタブ以外のファイルは編集しないこと。
-  共通ファイル(main_window.py等)を変更する必要がある場合はreportに明記。
+    shutsujin_departure.sh L85-118 の update_dashboard_formation() を調査・修正する。
 
-  ■ 報告
-  - 各修正の内容
-  - rotation対応のテスト結果
-  - 枝番パターンのテストケース
+    症状: shk（決戦の陣）で起動しても、ダッシュボード🏯セクションの足軽モデル表記が
+    Sonnet+Tのまま更新されない。
 
-acceptance_criteria:
-  - "横向きPDFのスタンプが縦表示時の右上に正しく印字される"
-  - "甲4号証の1と甲4号証の2が正しく区別される(枝番認識)"
-  - "取消ボタンが正しく機能する"
+    調査手順:
+    1. CLI_ADAPTER_LOADED の値を確認（L56-61で設定）
+    2. get_model_display_name() の戻り値を確認（lib/cli_adapter.sh）
+       - _cli_adapter_read_yaml() がsettings.yamlを正しく読んでいるか
+       - shc.sh deploy all-opus 実行後の settings.yaml の cli.agents セクションの値
+    3. sed置換パターンが実際のダッシュボード表記（例: 足軽1号(Sonnet+T)）にマッチするか
+    4. 全陣形（all-sonnet/all-opus/hybrid）で動作テスト
+
+    修正後の動作テスト:
+    - `bash scripts/shc.sh deploy all-opus` → settings.yaml確認 → 関数呼出 → dashboard確認
+    - `bash scripts/shc.sh deploy all-sonnet` → 同上
+    - `bash scripts/shc.sh deploy hybrid` → 同上
+
+    ヒント: update_dashboard_formation()内のCLI_ADAPTER_LOADED=trueパスで
+    get_model_display_nameを呼ぶが、この関数がsettings.yamlの「現在値」を
+    読むかどうかが鍵。shc.sh deploy後にsettings.yamlが更新されているか、
+    かつ_cli_adapter_read_yamlがファイルを毎回読み直すか確認せよ。
+
+    【Phase 2: エイリアス競合完全解消】
+
+    現在の状態:
+    - ~/.bash_aliases L4: alias shm='bash /home/ubuntu/shogun/scripts/shc.sh'
+    - ~/.bashrc L121: alias shu='bash ~/shogun/shutsujin_departure.sh'
+    - ~/.bashrc L122: alias shk='bash ~/shogun/shutsujin_departure.sh --kessen'
+    - ~/.bashrc L123: alias shc='bash ~/shogun/shutsujin_departure.sh --hybrid'
+
+    変更内容:
+    1. ~/.bash_aliases: shm → shc に戻す
+       alias shc='bash /home/ubuntu/shogun/scripts/shc.sh'
+       （shm 行は削除）
+
+    2. ~/.bashrc L123: shc → shx に変更
+       alias shx='bash ~/shogun/shutsujin_departure.sh --hybrid'
+       （shu/shk はそのまま）
+
+    3. instructions/shogun.md L258: `shm status` → `shc status` に修正
+
+    4. 他ファイルのshm参照確認:
+       grep -rn "shm" /home/ubuntu/shogun/instructions/ /home/ubuntu/shogun/CLAUDE.md 2>/dev/null
+       ※ queue/tasks/ や queue/reports/ は過去のログなので変更不要
+       ※ difference.md は /pub-uc で更新される
+
+    【Phase 3: 検証・コミット・プッシュ】
+
+    1. source ~/.bash_aliases && source ~/.bashrc で確認
+    2. type shc → scripts/shc.sh を指すこと
+    3. type shx → shutsujin_departure.sh --hybrid を指すこと
+    4. type shu, type shk → 変更なし
+    5. bash -n shutsujin_departure.sh → 構文エラーなし
+    6. git add → git commit
+    7. /pub-uc でpush（difference.md更新含む）
+
+    【新エイリアス体系（変更後）】
+    shu = 平時出陣（all-sonnet）
+    shk = 決戦出陣（all-opus）
+    shx = 混成出陣（hybrid）← NEW
+    shc = 陣形管理ツール（scripts/shc.sh）← 復帰
+
+  context: shogun
+  report_path: queue/reports/ashigaru2_report.yaml
