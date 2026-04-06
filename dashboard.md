@@ -1,5 +1,5 @@
 # 📊 戦況報告
-最終更新: 2026-04-06 03:00 JST
+最終更新: 2026-04-06 08:59 JST
 
 ## 🐸 Frog / ストリーク
 
@@ -8,7 +8,7 @@
 | 今日のFrog | 未設定 |
 | Frog状態 | 🐸 未撃破 |
 | ストリーク | 🔥 29日目継続中 (最長: 29日) |
-| 今日の完了 | 6（cmd: 6 + VF: 0） |
+| 今日の完了 | 9（cmd: 9 + VF: 0） |
 | VFタスク残り | 0件（うち今日期限: 0件） |
 
 ## 🚨 要対応 - 殿のご判断をお待ちしております
@@ -16,29 +16,43 @@
 | タグ | 項目 | 詳細 |
 |------|------|------|
 | [info] | Claude Code .claude/skills パーミッションバグ | v2.1.78以降 .claude/skills がprotected directory exemptionから漏れている(anthropics/claude-code#37157, #38806)。セッション起動時に足軽がskills/操作でprompt停止する。暫定: 選択肢2で手動承認。公式修正待ち。将軍がセッション開始時に修正状況を確認する。 |
+| [proposal] | Codex足軽L3タスク投入拡大 | 軍師提案(cmd_454)。Codex足軽(6・7号)がL2タスクを正常完了。次フェーズではL3(複数ファイル編集・構造理解)タスクへの投入拡大を検討されたし。費用対効果・品質の評価に。 |
+| [action] | gas-mail-manager clasp認証（殿手動） | cmd_455完了。⚠️ 重要: Google OOB OAuth廃止のため `clasp login --no-localhost` は使用不可。回避策: (A)【最確実】ローカルPC(Mac/Win)でclasp loginして ~/.clasprc.jsonをVPSにコピー (B) clasp login+GCPカスタムOAuth設定 (C) サービスアカウント認証(制限あり)。前提: Google Cloud ConsoleでApps Script API有効化要。手順書: /home/ubuntu/shogun/projects/gas-mail-manager/docs/auth-guide.md |
+| [proposal] | gas-mail-manager Phase5 統合テスト | 軍師提案(cmd_455)。コード実装完了。clasp push+実環境テスト(テスト顧客1名でprocessAllCustomers()全フロー実行)を計画されたし。isApproachingTimeLimit閾値の実環境検証も推奨。 |
 
 ## 🔄 進行中 - 只今、戦闘中でござる
 
 | cmd | 内容 | 担当 | 状態 |
 |-----|------|------|------|
-| cmd_454 | 軍師提案実装+Codex足軽実戦テスト | 足軽1(454c)/6(454a)/7(454b) | 実行中 |
+| cmd_457 | Notionログ調査修正+ダッシュボード🚨更新 | 足軽1(457a)/2(457b) | 実行中 |
 
 ## 🏯 待機中の足軽
 
 | 足軽 | 状態 | 最終タスク |
 |------|------|-----------|
-| 足軽1号(Sonnet+T) | 待機 | subtask_453a完了 |
-| 足軽2号(Sonnet+T) | 待機 | — |
-| 足軽3号(Sonnet+T) | 待機 | subtask_452a完了 |
+| 足軽1号(Sonnet+T) | 出陣中 | subtask_457a(Notionログ調査) |
+| 足軽2号(Sonnet+T) | 出陣中 | subtask_457b(ダッシュボード更新) |
+| 足軽3号(Sonnet+T) | 待機 | subtask_456a完了 |
 | 足軽4号(Opus+T) | 待機 | — |
 | 足軽5号(Opus+T) | 待機 | subtask_446e2完了 |
-| 足軽6号(Codex5.3) | 待機 | subtask_446_poc_test完了 |
-| 足軽7号(Codex5.3) | 待機 | subtask_446e_poc完了 |
+| 足軽6号(Codex5.3) | 待機 | subtask_456b完了 |
+| 足軽7号(Codex5.3) | 待機 | subtask_455e完了 |
 
 ## ✅ 本日の戦果（4/6 JST）
 
 | 時刻 | 戦場 | 任務 | 結果 |
 |------|------|------|------|
+| 05:19 | cmd_456 | gas-mail-managerクローン+VSCodeワークスペース追加+shogun-repo-workspace-setupスキル作成完了 — /home/ubuntu/gas-mail-manager clone済み+shogun-workspace.code-workspace追加+.claude/skills/shogun-repo-workspace-setup/SKILL.md作成(commit 04d7a3e)。AC 8/8 PASS(足軽3号/6号)。🏆cmd_456完了 | ✅ AC 8/8 |
+| 05:10 | cmd_455 | 顧客メール管理GASシステム構築完了 — clasp v3.3.0+GitHub(saneaki/gas-mail-manager)+設計書(450行)+全6モジュール実装(config/sheets/gmail/pdf/summary/main)。commit 5本push済み。AC 11/11通過(clasp認証のみ殿手動)。🏆cmd_455完了 | ✅ AC 11/11 |
+| 05:08 | cmd_455 | subtask_455f QC PASS — main.gsメインオーケストレーター実装(processAllCustomers/processCustomer/isApproachingTimeLimit/setupTrigger/removeTrigger)。6分制限管理(saveResumeIndex中断+getResumeIndex再開)+15分間隔トリガー+顧客単位エラーハンドリング。設計書準拠・JSDoc全関数付・約125行。commit 672a28f。AC 7/7 PASS(足軽1号+軍師QC) | ✅ QC PASS |
+| 05:03 | cmd_455 | subtask_455c QC PASS — config.gs(6関数: getConfig/setConfig/getResumeIndex/saveResumeIndex/clearResumeIndex/initializeConfig)+sheets.gs(5関数: getCustomerList/appendEmailRow/updateLastCheckDate/createEmailListSheet/isMessageAlreadyRecorded)+appsscript.json(5スコープ+Drive AS v2)。設計書準拠・JSDoc付・const/let使用。commit c1b5e1d。AC 5/5 PASS(足軽1号+軍師QC) | ✅ QC PASS |
+| 05:01 | cmd_455 | subtask_455d QC PASS — gmail.gs(5関数: searchNewEmails/markAsProcessed/getOrCreateProcessedLabel/getEmailDirection/getEmailBody)+pdf.gs(4関数: convertEmailToPdf/convertHtmlToPdfViaDoc/savePdfToDrive/generatePdfFileName)実装。設計書準拠・JSDoc付。commit 5437734。AC 6/6 PASS(足軽3号+軍師QC) | ✅ QC PASS |
+| 05:01 | cmd_455 | subtask_455e QC PASS — summary.gs実装(generateSummary/callGeminiApi)。Gemini REST API(gemini-2.0-flash)+getConfig+sleep(4s)レート制限+エラーハンドリング。設計書準拠・JSDoc付。commit 884bd85。AC 7/7 PASS(足軽7号+軍師QC) | ✅ QC PASS |
+| 04:56 | cmd_455 | subtask_455a QC PASS — clasp CLI環境構築(v3.3.0)+GitHubリポジトリ(saneaki/gas-mail-manager private)+スキャフォールド(6 .gsファイル+appsscript.json)+認証手順書(docs/auth-guide.md)+README。commit fc876ee push済み。AC 9/9 PASS(足軽6号+軍師QC) | ✅ QC PASS |
+| 03:06 | cmd_454 | 軍師提案3件実装+Codex足軽実戦テスト完了 — (1)codex-ashigaru.md skill_candidate追加(2)dashboard実装済みskill削除(3)karo.md/ashigaru.md editable_fields追記。AC 13/13 PASS(454a:4/4+454b:5/5+454c:4/4)。Codex足軽6・7号のL2実戦テスト成功。🏆cmd_454完了 | ✅ AC 13/13 |
+| 03:04 | cmd_454 | subtask_454c QC PASS — editable_fieldsフィールドをkaro.md(step5 race001_check追加)/ashigaru.md(step2.5 check_editable_files追加)に追記。RACE-001予防強化。commit b819184。AC 4/4 PASS(足軽1号+軍師QC) | ✅ QC PASS |
+| 03:04 | cmd_454 | subtask_454b QC PASS — dashboard🛠️スキル候補から実装済み(switch-cli-yaml-update-guard)行を削除。承認待ち2件(codex-cli-poc-verification/switch_cli-yaml-section-tracking)保持。skill_history確認済み。commit dfe9a23。AC 5/5 PASS(足軽7号+軍師QC) | ✅ QC PASS |
+| 03:04 | cmd_454 | subtask_454a QC PASS — codex-ashigaru.mdレポートYAMLテンプレートにskill_candidate必須フィールド追加。通常足軽と同等ルールへ整合。commit 0ba2753。AC 4/4 PASS(足軽6号+軍師QC) | ✅ QC PASS |
 | 02:57 | cmd_453 | Codex足軽起動修正完了 — shutsujin_departure.sh OPENAI_API_KEY自動設定追加(.envから読込+tmux set-environment)。足軽6・7号 codex/Codex5.3稼働確認。OPENAI_API_KEY tmux設定確認済み。commit 19d6fd0 push済み。AC 5/5 PASS。🏆cmd_453完了 | ✅ AC 5/5 |
 | 02:28 | cmd_452 | cmd_450不具合修正完了 — ダッシュボード🏯自動更新バグ修正(KESSEN_MODE Opus強制+shu Sonnet+Tフォールバック)+shcエイリアス競合解消(shc→陣形管理/shx→hybrid出陣)+shogun.md shm→shc修正。AC 7/7 PASS(足軽3号+軍師QC)。commit 0f040a0 push済み。🏆cmd_452完了 | ✅ AC 7/7 |
 | 02:25 | cmd_452 | subtask_452a QC PASS — ダッシュボード🏯自動更新バグ修正(KESSEN_MODE Opus強制+shu Sonnet+Tフォールバック)+shcエイリアス競合解消(shc→陣形管理/shx→hybrid出陣)。commit 0f040a0。AC 7/7 PASS(足軽3号+軍師QC) | ✅ QC PASS |
