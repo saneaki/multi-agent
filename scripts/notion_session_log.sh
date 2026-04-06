@@ -62,7 +62,7 @@ from datetime import datetime
 dashboard_path = "${DASHBOARD}"
 today_str = "${TODAY}"
 
-with open(dashboard_path, encoding="utf-8") as f:
+with open(dashboard_path, encoding="utf-8", errors="replace") as f:
     content = f.read()
 
 # TODAY を M/D 形式に変換
