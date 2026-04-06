@@ -72,33 +72,21 @@ try:
 except Exception:
     today_md = None
 
-# 「## ✅ 本日の戦果（M/D JST）」セクションを全て探す
+# 「## ✅ ...（M/D JST）...」セクションを全て探す（本日/昨日/一昨日等すべて対象）
 sections = re.findall(
-    r'## ✅ 本日の戦果（(\d+/\d+) JST）\n(.*?)(?=\n## |\Z)',
+    r'## ✅ [^\n（]*（(\d+/\d+) JST）[^\n]*\n(.*?)(?=\n## |\Z)',
     content, re.DOTALL
 )
 
 rows = []
 if sections:
-    # まずTODAYと完全一致するセクションを探す
+    # TODAYと完全一致するセクションを探す
     matched_sections = [(d, b) for d, b in sections if today_md and d == today_md]
 
-    # 一致なし → 1日以内のフォールバック（dashboard更新遅延対応）
+    # 一致なし → 警告のみ（誤データ書込み防止のため空データで返す）
     if not matched_sections and today_md and sections:
-        try:
-            today_dt = datetime.strptime(today_str, "%Y-%m-%d")
-            for date_label, section_body in sections:
-                parts = date_label.split("/")
-                if len(parts) == 2:
-                    # 当年で日付オブジェクト生成
-                    sec_dt = today_dt.replace(month=int(parts[0]), day=int(parts[1]))
-                    diff = abs((today_dt - sec_dt).days)
-                    if diff <= 1:
-                        print(f"[WARN] TODAY({today_md})の戦果セクションなし。フォールバック: {date_label}セクション使用", file=sys.stderr)
-                        matched_sections.append((date_label, section_body))
-                        break  # 最初に見つかった1日以内のセクションを使用
-        except Exception:
-            pass
+        available = [d for d, _ in sections]
+        print(f"[WARN] TODAY({today_md})に一致する戦果セクションが見つかりません。利用可能: {available}。空データで続行。", file=sys.stderr)
 
     for date_label, section_body in matched_sections:
         for line in section_body.split("\n"):
