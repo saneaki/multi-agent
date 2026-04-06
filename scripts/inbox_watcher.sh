@@ -301,7 +301,7 @@ inbox = os.environ.get("INBOX_PATH", "")
 agent_id = os.environ.get("AGENT_ID", "agent")
 
 try:
-    with open(inbox, "r", encoding="utf-8") as f:
+    with open(inbox, "r", encoding="utf-8", errors="replace") as f:
         data = yaml.safe_load(f) or {}
 
     messages = data.get("messages", []) or []
@@ -385,7 +385,7 @@ import yaml
 
 inbox = os.environ.get("INBOX_PATH", "")
 try:
-    with open(inbox, "r", encoding="utf-8") as f:
+    with open(inbox, "r", encoding="utf-8", errors="replace") as f:
         data = yaml.safe_load(f) or {}
     messages = data.get("messages", []) or []
     unread_count = sum(1 for m in messages if not m.get("read", False))
@@ -408,7 +408,7 @@ import yaml
 
 inbox = os.environ.get("INBOX_PATH", "")
 try:
-    with open(inbox, "r", encoding="utf-8") as f:
+    with open(inbox, "r", encoding="utf-8", errors="replace") as f:
         data = yaml.safe_load(f) or {}
 
     messages = data.get("messages", []) or []

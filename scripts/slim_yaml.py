@@ -23,7 +23,7 @@ IDLE_STUB = {'task': {'status': 'idle'}}
 def load_yaml(filepath):
     """Safely load YAML file."""
     try:
-        with open(filepath, 'r', encoding='utf-8') as f:
+        with open(filepath, 'r', encoding='utf-8', errors='replace') as f:
             return yaml.safe_load(f) or {}
     except FileNotFoundError:
         return {}

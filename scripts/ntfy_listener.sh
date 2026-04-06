@@ -93,7 +93,7 @@ parse_error = False
 
 if os.path.exists(path):
     try:
-        with open(path, "r", encoding="utf-8") as f:
+        with open(path, "r", encoding="utf-8", errors="replace") as f:
             loaded = yaml.safe_load(f)
         if isinstance(loaded, dict):
             data = loaded
@@ -212,7 +212,7 @@ entry = {
 data = {}
 if os.path.exists(path):
     try:
-        with open(path, "r", encoding="utf-8") as f:
+        with open(path, "r", encoding="utf-8", errors="replace") as f:
             loaded = yaml.safe_load(f)
         if isinstance(loaded, dict):
             data = loaded
