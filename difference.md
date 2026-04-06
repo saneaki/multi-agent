@@ -1,6 +1,6 @@
 # Fork Difference Analysis: shogun vs upstream
 
-> **Generated**: 2026-04-06
+> **Generated**: 2026-04-07
 > **Base**: `git diff upstream/main...original` (74 files, +10409/−3112 lines)
 > **Upstream**: https://github.com/yohey-w/multi-agent-shogun.git
 > **Fork branch**: original
@@ -103,6 +103,7 @@ This fork extends the upstream multi-agent-shogun system with production-grade o
 | `memory/skill_history.md` | fork-added | Skill candidate archive: tracks creation/integration status and source cmd references. Managed by dashboard_rotate.sh and cmd_390 stocktake. | Keep fork — no upstream equivalent |
 | `output/cmd_307_upstream_merge_plan.md` | fork-added | Planning doc for upstream v4.4.x merge. Now superseded by commit 7573f2c. | Keep fork — no upstream equivalent |
 | `output/スキル/cmd_320_skills_evaluation_update.md` | fork-added | Skills stocktake: evaluates skill files for compression/consolidation. 530-line evaluation artifact. | Keep fork — no upstream equivalent |
+| `output/cmd_462_feedback_system_research.md` | fork-added | 構成員フィードバック収集システム方法論調査レポート(336行): 9選択肢比較表(評価軸7項目×選択肢)、主推奨=Notion Forms+n8nハイブリッド/補助=GitHub Issue Forms、実装ロードマップ(MVP→拡張フェーズ)。URL引用30件超。cmd_462成果物。 | Keep fork — no upstream equivalent |
 | `queue/reports/ashigaru3_report.yaml` | fork-added | Live task report. Active operational state. | Keep fork — no upstream equivalent |
 | `queue/reports/ashigaru4_report.yaml` | fork-added | Live task report. Active operational state. | Keep fork — no upstream equivalent |
 | `queue/reports/phase1_cleanup_broken_slugs.txt` | fork-added | File list output from SEO content batch job. Runtime artifact. | Keep fork — no upstream equivalent |
@@ -138,7 +139,7 @@ This fork extends the upstream multi-agent-shogun system with production-grade o
 
 | Guidance | Count | Files |
 |----------|-------|-------|
-| Keep fork — no upstream equivalent | 59 | All fork-added files + fork-modified files with no upstream counterpart (including `scripts/shc.sh`, `scripts/switch_cli.sh`) |
+| Keep fork — no upstream equivalent | 60 | All fork-added files + fork-modified files with no upstream counterpart (including `scripts/shc.sh`, `scripts/switch_cli.sh`) |
 | Merge upstream, preserve fork sections | 8 | `inbox_watcher.sh`, `watcher_supervisor.sh`, `lib/agent_status.sh`, `lib/cli_adapter.sh`, `AGENTS.md`, `agents/default/system.md`, `.github/copilot-instructions.md`, `tests/e2e/e2e_bloom_routing.bats`, `tests/unit/test_dynamic_model_routing.bats`, `tests/unit/test_send_wakeup.bats` |
 | Accept upstream changes | 1 | `tests/e2e/e2e_codex_startup.bats` |
 | Manual review required | 1 | `CLAUDE.md` (core config, both sides actively modify) |
