@@ -122,11 +122,16 @@
 !scripts/hooks/karo_session_start_check.sh
 !scripts/log_violation.sh
 !scripts/stop_hook_daily_log.sh
+!scripts/n8n_feedback_append.py
 
 
 # SayTask (sample template only, not actual data)
 !saytask/
 !saytask/streaks.yaml.sample
+
+# n8n workflow definitions (OSS — workflow JSON only, no secrets)
+!queue/n8n/
+!queue/n8n/feedback-system.json
 
 # Reports (private — not tracked)
 
