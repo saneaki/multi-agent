@@ -115,12 +115,17 @@ update_dashboard_formation() {
         sed -i "s/足軽${i}号([^)]*)/足軽${i}号(${model})/g" "$dashboard"
     done
 
+    # 軍師のモデル表記も更新
+    local gunshi_model
+    gunshi_model=$(get_model_display_name "gunshi" 2>/dev/null || echo "Opus+T")
+    sed -i "s/軍師([^)]*)/軍師(${gunshi_model})/g" "$dashboard"
+
     local updated_time
     updated_time=$(bash scripts/jst_now.sh 2>/dev/null || echo "")
     if [ -n "$updated_time" ]; then
-        log_info "🏯 ダッシュボード足軽テーブル更新完了（陣形: ${formation_label} / ${updated_time}）"
+        log_info "🏯 ダッシュボード構成員テーブル更新完了（陣形: ${formation_label} / ${updated_time}）"
     else
-        log_info "🏯 ダッシュボード足軽テーブル更新完了（陣形: ${formation_label}）"
+        log_info "🏯 ダッシュボード構成員テーブル更新完了（陣形: ${formation_label}）"
     fi
 }
 

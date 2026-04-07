@@ -13,7 +13,7 @@ TASKS_DIR="$REPO_DIR/queue/tasks"
 # JST timestamp
 TIMESTAMP=$(bash "$SCRIPT_DIR/jst_now.sh" 2>/dev/null | grep -oP '\d{4}-\d{2}-\d{2} \d{2}:\d{2}' || date "+%Y-%m-%d %H:%M")
 
-# 足軽名変換
+# 構成員名変換
 ashigaru_name() {
   case "$1" in
     ashigaru1) echo "足軽1号(Sonnet)" ;;
@@ -23,6 +23,7 @@ ashigaru_name() {
     ashigaru5) echo "足軽5号(Sonnet)" ;;
     ashigaru6) echo "足軽6号(Sonnet)" ;;
     ashigaru7) echo "足軽7号(Sonnet)" ;;
+    gunshi)    echo "軍師(Opus+T)" ;;
     *) echo "$1" ;;
   esac
 }
@@ -32,8 +33,8 @@ TMP_IN_PROG=$(mktemp)
 TMP_STANDBY=$(mktemp)
 trap 'rm -f "$TMP_IN_PROG" "$TMP_STANDBY"' EXIT
 
-# 各ashigaru*.yamlを処理
-for yaml_file in "$TASKS_DIR"/ashigaru*.yaml; do
+# 各ashigaru*.yaml + gunshi.yamlを処理
+for yaml_file in "$TASKS_DIR"/ashigaru*.yaml "$TASKS_DIR"/gunshi.yaml; do
   [ -f "$yaml_file" ] || continue
 
   task_id=$(grep "^task_id:" "$yaml_file" 2>/dev/null | awk '{print $2}' | tr -d '"' | tr -d "'" || echo "")
@@ -92,7 +93,7 @@ LANG=en_US.UTF-8 awk \
     print ""
     print
     print ""
-    print "| 足軽 | 状態 | 最終タスク |"
+    print "| 構成員 | 状態 | 最終タスク |"
     print "|------|------|-----------|"
     while ((getline line < standby_file) > 0) print line
     close(standby_file)
