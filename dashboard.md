@@ -1,5 +1,5 @@
 # 📊 戦況報告
-最終更新: 2026-04-07 21:02 JST
+最終更新: 2026-04-07 21:09 JST
 
 ## 🐸 Frog / ストリーク
 
@@ -25,13 +25,13 @@
 | cmd | 内容 | 担当 | 状態 |
 |-----|------|------|------|
 | cmd_466 |  | 足軽2号(Sonnet)作業中 | assigned |
-| cmd_467 |  | 足軽3号(Sonnet)作業中 | assigned |
 
 ## 🏯 待機中の構成員
 
 | 構成員 | 状態 | 最終タスク |
 |------|------|-----------|
 | 足軽1号(Sonnet) | 待機 | subtask_466_d1_sonnet完了:  |
+| 足軽3号(Sonnet) | 待機 | subtask_467a完了:  |
 | 足軽4号(Opus+T) | 待機 | subtask_466_d1_opus完了:  |
 | 足軽5号(Opus+T) | 待機 | subtask_466_d2_opus完了:  |
 | 足軽6号(Codex) | 待機 | subtask_466_d1_codex完了:  |
@@ -42,6 +42,7 @@
 
 | 時刻 | 戦場 | 任務 | 結果 |
 |------|------|------|------|
+| 21:08 | cmd_467 | subtask_467a QC PASS — 足軽3号 n8n WF「RSSから情報取得し続けーる」(WF id=d7Dvt9sup1nA2B4j)の「AI・Claude判定」ノードに retry 設定追加(retryOnFail=true/maxTries=3/waitBetweenTries=5000ms)。Anthropic API Service unavailable エラー(実行ID 12757, 12:00 JST)への恒久対策。軍師 QC: n8n API 直接照会(GET /api/v1/workflows/d7Dvt9sup1nA2B4j)で全 9 ノード retry 設定を実測検証。AI・Claude判定ノードのみ retry=3/wait=5000 反映、他 8 ノード未変更(全て retryOnFail=False)、WF active=True 維持を確認。報告と実測完全一致(自己検証精度 100%)。AC 6/6 PASS。**ashigaru3 特性: API 直接操作精度+他ノード非干渉+report 記録精度** | ✅ QC PASS |
 | 14:31 | cmd_466 | cmd_466完了 — C1/C2/D1/D2全12タスク実証+フェーズ3 synthesis完了。output/cmd_466_hybrid_routing_baseline_extended.md(734行)作成、docs/agent-routing-baseline.md v2.0更新(282→423行、8タスク種別×3モデル フルマトリクス完成)。3経験則再確認+注意点追加: Sonnet=自己申告行数に乖離傾向(実測検証推奨)、Opus=2要素以上該当時に選択。Codex特性逆転を「情報圧縮 vs 拡張」軸で整理。🛠️スキル候補: n8n-daily-guard-pattern。commit 193ab5d。🏆cmd_466完了 | ✅ 完了 |
 | 14:07 | cmd_466 | cmd_466フェーズ2バッチ2完了+フェーズ3配備 — D1/D2全6件QC PASS確認。D1サマリ: Sonnet=167行/6ノード feedback踏襲, Opus=540行/9ノード "Daily Frog Guard"命名+FMEA+状態機械図, Codex=202行/3ノード関数分離5関数+WEBHOOK環境変数化。D2サマリ: Sonnet=283行bats-core推奨(shogun.gitignore整合発見), Opus=646行9評価軸+8用途マトリクス+5件一次情報訂正, Codex=141行curl直取得簡潔推奨。3モデル全てbats-core推奨で一致。🛠️スキル候補: n8n-daily-guard-pattern(4号)。軍師フェーズ3 synthesis着手: docs/agent-routing-baseline.md 8タスク種別×3モデル フルマトリクス更新。 | ⚔️ フェーズ3着手 |
 | 14:03 | cmd_466 | subtask_466_d2_opus QC PASS — 足軽5号(Opus+T) bashテストFW比較調査(Opus版)。output/cmd_466_d2_opus.md(646行/12セクション/9評価軸/8用途マトリクス/22URL/3ツール+5除外)。bats-core/shunit2/shellspecを一次情報精度で比較。GitHub API直取得で**5件の二次情報訂正**(LICENSE NOASSERTION→MIT/shunit2 5年停滞(2020-03-29停止)/shellspec最終commit 2024-09-12/kcov≥38制約/TAP version 13)。重みづけスコア(shogun親和性×1.5): **bats-core 39.5 > shellspec 33.0 > shunit2 22.0**。推奨1案(bats-core主推奨)+代替2案(shellspec BDD限定/shunit2 POSIX必須限定)の3案体系比較。8用途別マトリクス(単発/マルチエージェント/並列/CI/学習/BDD/最小依存/長期保守×3ツール=24セル)。shogun連携サンプル: priority機能テストを3ツール全てで各60-100行実装。公平性: 優れた点8+懸念点5(P0×1/P1×2/P2×2)併記。cmd_463 a1_opus調査スタイル(LICENSE訂正/用途別マトリクス/重みづけスコア)を構造的再現。agent_tool_used=false, main_estimate≈130K。AC 12/12 PASS。**Opus特性: 評価軸網羅性(9軸)+一次情報精度(5訂正)+用途別マトリクス(8用途)+代替推奨2案体系比較+フェーズ間知見転送** | ✅ QC PASS |
