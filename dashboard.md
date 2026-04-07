@@ -1,5 +1,5 @@
 # 📊 戦況報告
-最終更新: 2026-04-07 12:28 JST
+最終更新: 2026-04-07 13:24 JST
 
 ## 🐸 Frog / ストリーク
 
@@ -18,12 +18,13 @@
 | [info] | Claude Code .claude/skills パーミッションバグ | v2.1.78以降 .claude/skills がprotected directory exemptionから漏れている(anthropics/claude-code#37157, #38806)。セッション起動時に足軽がskills/操作でprompt停止する。暫定: 選択肢2で手動承認。公式修正待ち。将軍がセッション開始時に修正状況を確認する。 |
 | [action] | gas-mail-manager 統合テスト実行(cmd_461) | コード修正完了後、殿の手動操作が必要: (1)ScriptPropertiesにSPREADSHEET_ID・DRIVE_ROOT_FOLDER_ID・GEMINI_API_KEYを設定 (2)テスト用スプレッドシートに元帳シート作成+テスト顧客1行追加 (3)GASエディタでprocessAllCustomers()実行→結果確認。GEMINI_API_KEYはGoogle AI Studio(aistudio.google.com)で無料取得可。 |
 | [action] | Notion shogun-feedback FormsビューをUIから手動追加(cmd_464) | n8nが動作確認後に実施。Notion DBページ(https://www.notion.so/01d9f2b401e442e685ecf4b2feb5bfb8)を開き「ビューを追加」→「フォーム」を選択。詳細はdocs/feedback-system-guide.md参照。API制約により自動設定不可。 |
+| [info] | ダッシュボード構成員配置改善(保留中) | 軍師がタスク実行中(status:assigned)時、🏯待機中の構成員テーブルから消える設計上の制限あり。cmd_465で表示は対応済みだが、進行中状態時の常時表示化は保留中。優先度低。 |
 
 ## 🔄 進行中 - 只今、戦闘中でござる
 
 | cmd | 内容 | 担当 | 状態 |
 |-----|------|------|------|
-| — | 進行中なし | — | — |
+| cmd_466 |  | 軍師(Opus+T)作業中 | assigned |
 
 ## 🏯 待機中の構成員
 
@@ -36,7 +37,6 @@
 | 足軽5号(Opus+T) | 待機 | subtask_463_b2_opus完了:  |
 | 足軽6号(Codex) | 待機 | subtask_463_b1_codex完了:  |
 | 足軽7号(Codex) | 待機 | subtask_463_b2_codex完了:  |
-| 軍師(Opus+T) | 待機 | subtask_463_phase3_synthesis完了:  |
 
 ## ✅ 本日の戦果（4/7 JST）
 
