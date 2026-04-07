@@ -1,5 +1,5 @@
 # 📊 戦況報告
-最終更新: 2026-04-07 14:07 JST
+最終更新: 2026-04-07 14:31 JST
 
 ## 🐸 Frog / ストリーク
 
@@ -8,7 +8,7 @@
 | 今日のFrog | 未設定 |
 | Frog状態 | 🐸 未撃破 |
 | ストリーク | 🔥 29日目継続中 (最長: 29日) |
-| 今日の完了 | 6（cmd: 6 + VF: 0） |
+| 今日の完了 | 7（cmd: 7 + VF: 0） |
 | VFタスク残り | 0件（うち今日期限: 0件） |
 
 ## 🚨 要対応 - 殿のご判断をお待ちしております
@@ -25,7 +25,6 @@
 | cmd | 内容 | 担当 | 状態 |
 |-----|------|------|------|
 | cmd_466 |  | 足軽2号(Sonnet)作業中 | assigned |
-| cmd_466 |  | 軍師(Opus+T)作業中 | assigned |
 
 ## 🏯 待機中の構成員
 
@@ -37,11 +36,13 @@
 | 足軽5号(Opus+T) | 待機 | subtask_466_d2_opus完了:  |
 | 足軽6号(Codex) | 待機 | subtask_466_d1_codex完了:  |
 | 足軽7号(Codex) | 待機 | subtask_466_d2_codex完了: 'cmd_466 (cmd_463 routing baseline の継続検証) フェーズ1 D2 |
+| 軍師(Opus+T) | 待機 | subtask_466_phase3_synthesis完了:  |
 
 ## ✅ 本日の戦果（4/7 JST）
 
 | 時刻 | 戦場 | 任務 | 結果 |
 |------|------|------|------|
+| 14:31 | cmd_466 | cmd_466完了 — C1/C2/D1/D2全12タスク実証+フェーズ3 synthesis完了。output/cmd_466_hybrid_routing_baseline_extended.md(734行)作成、docs/agent-routing-baseline.md v2.0更新(282→423行、8タスク種別×3モデル フルマトリクス完成)。3経験則再確認+注意点追加: Sonnet=自己申告行数に乖離傾向(実測検証推奨)、Opus=2要素以上該当時に選択。Codex特性逆転を「情報圧縮 vs 拡張」軸で整理。🛠️スキル候補: n8n-daily-guard-pattern。commit 193ab5d。🏆cmd_466完了 | ✅ 完了 |
 | 14:07 | cmd_466 | cmd_466フェーズ2バッチ2完了+フェーズ3配備 — D1/D2全6件QC PASS確認。D1サマリ: Sonnet=167行/6ノード feedback踏襲, Opus=540行/9ノード "Daily Frog Guard"命名+FMEA+状態機械図, Codex=202行/3ノード関数分離5関数+WEBHOOK環境変数化。D2サマリ: Sonnet=283行bats-core推奨(shogun.gitignore整合発見), Opus=646行9評価軸+8用途マトリクス+5件一次情報訂正, Codex=141行curl直取得簡潔推奨。3モデル全てbats-core推奨で一致。🛠️スキル候補: n8n-daily-guard-pattern(4号)。軍師フェーズ3 synthesis着手: docs/agent-routing-baseline.md 8タスク種別×3モデル フルマトリクス更新。 | ⚔️ フェーズ3着手 |
 | 14:03 | cmd_466 | subtask_466_d2_opus QC PASS — 足軽5号(Opus+T) bashテストFW比較調査(Opus版)。output/cmd_466_d2_opus.md(646行/12セクション/9評価軸/8用途マトリクス/22URL/3ツール+5除外)。bats-core/shunit2/shellspecを一次情報精度で比較。GitHub API直取得で**5件の二次情報訂正**(LICENSE NOASSERTION→MIT/shunit2 5年停滞(2020-03-29停止)/shellspec最終commit 2024-09-12/kcov≥38制約/TAP version 13)。重みづけスコア(shogun親和性×1.5): **bats-core 39.5 > shellspec 33.0 > shunit2 22.0**。推奨1案(bats-core主推奨)+代替2案(shellspec BDD限定/shunit2 POSIX必須限定)の3案体系比較。8用途別マトリクス(単発/マルチエージェント/並列/CI/学習/BDD/最小依存/長期保守×3ツール=24セル)。shogun連携サンプル: priority機能テストを3ツール全てで各60-100行実装。公平性: 優れた点8+懸念点5(P0×1/P1×2/P2×2)併記。cmd_463 a1_opus調査スタイル(LICENSE訂正/用途別マトリクス/重みづけスコア)を構造的再現。agent_tool_used=false, main_estimate≈130K。AC 12/12 PASS。**Opus特性: 評価軸網羅性(9軸)+一次情報精度(5訂正)+用途別マトリクス(8用途)+代替推奨2案体系比較+フェーズ間知見転送** | ✅ QC PASS |
 | 14:03 | cmd_466 | subtask_466_d2_codex QC PASS — 足軽7号(Codex) bashテストFW比較調査(Codex版)。output/cmd_466_d2_codex.md(141行/8セクション)。bats-core/shunit2/shellspecを2026-04時点の一次情報(curl+GitHub API)で比較。5評価軸(機能性/学習コスト/アサーション/shogun親和性/メンテナンス活発度)+9URL引用。推奨=bats-core(shogun既存.gitignoreとの完全一致+活発開発+TAP/JUnit XML CI統合)。公平性: 優れた点3(一次情報ベース/利点明記/shogun直結)+懸念点P0(APIレート対策)/P1(star指標の限界)/P2(定期再測定必要)。sonnetと比較して最コンパクトだが要件全充足。agent_tool_used=false, main_estimate≈36K(最低コスト)。AC 10/10 PASS。**Codex特性: 一次情報直接取得(curl GitHub API)+トークン効率(141行で必要十分)+推奨案明確性+特性逆転観察(D2でも簡潔寄り構造維持)** | ✅ QC PASS |
