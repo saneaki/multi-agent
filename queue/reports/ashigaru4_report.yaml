@@ -1,63 +1,121 @@
 worker_id: ashigaru4
-task_id: subtask_439c
-parent_cmd: cmd_439
-timestamp: "2026-04-03T17:19:33+09:00"
+task_id: subtask_463_b1_opus
+parent_cmd: cmd_463
+timestamp: "2026-04-07T11:28:37+09:00"
 status: done
 result:
   summary: |
-    GitHub Releases v1.0.x→v0.8.xへの振替完了。ソースコードにv0.9.0バージョン表記を追加。
-    リリース4件のタグ名・リリース名をAPI PATCHで変更、旧タグ削除・新タグ作成・push済み。
-  release_migration:
-    - old: "v1.0.1 (release ID 304323315)"
-      new: "v0.8.1"
-      status: done
-    - old: "v1.0.2 (release ID 304348175)"
-      new: "v0.8.2"
-      status: done
-    - old: "v1.0.3 (release ID 304363996)"
-      new: "v0.8.3"
-      status: done
-    - old: "v1.0.5 (release ID 304944244)"
-      new: "v0.8.5"
-      status: done
-  tag_migration:
-    old_tags_deleted: ["v1.0.0", "v1.0.1", "v1.0.2", "v1.0.3", "v1.0.5"]
-    new_tags_created: ["v0.8.1", "v0.8.2", "v0.8.3", "v0.8.5"]
-    note: "v1.0.0はリリースなし（タグのみ削除）"
-  source_code_version_update:
-    - file: pdf_tools/pdf_merger_tabbed.py
-      change: "__version__ = '0.9.0' を追加、ウィンドウタイトルにバージョン表示追加"
-    - file: docs/GITHUB_ACTIONS_BUILD.md
-      change: "v1.0.1→v0.8.1 参照を更新"
-    - file: setup.py
-      change: "存在しない（スキップ）"
-    - file: pyproject.toml
-      change: "存在しない（スキップ）"
-    - file: build-exe.yml
-      change: "ハードコードされたバージョン参照なし（v*タグパターンのみ）— 変更不要"
-  git_commit: "be48c87"
-  git_push: "main branch"
-  notes: |
-    - GitHub API (curl + token) でリリースのtag_name/nameをPATCH更新
-    - gh CLIが未インストールのためMCPツール+curl APIを使用
-    - TEST_GUIDE.md内のv1.0.5参照は cmd_433管理下のため未変更
-    - リリースアセット（test-kit ZIP）のファイル名にv1.0.x含む（pdfmerged-test-kit-v1.0.3.zip等）
-      → 差し替えはPhase 2で新v0.9.0リリース作成時に対応推奨
+    scripts/jst_now.sh に --week オプション(ISO 8601 月曜始まり)を追加した改修版を
+    output/cmd_463_b1_opus.sh に書き出し。GNU/BSD date 両対応、エッジケース堅牢、
+    明示的エラーハンドリング、関数化、set -u 採用。元ファイルは read-only 遵守 (未編集)。
+    全動作テスト(引数なし/--yaml/--date/--week/-h/--help/不正引数)+曜日全網羅+年またぎ+
+    うるう年でPASS。設計書に公平性(優れた点9項目+P0/P1/P2懸念点)・代替案検討・将来拡張余地を記載。
+  files_modified:
+    - "output/cmd_463_b1_opus.sh"  # 52行、改修版スクリプト (新規作成)
+    - "output/cmd_463_b1_opus.md"  # 257行、設計書+テスト手順 (新規作成)
+    - "queue/tasks/ashigaru4.yaml"  # status更新
+    - "queue/inbox/ashigaru4.yaml"  # 既読化
+  files_NOT_modified:
+    - "scripts/jst_now.sh"  # read-only 遵守、未編集を確認
+  deliverables:
+    script:
+      path: "output/cmd_463_b1_opus.sh"
+      lines: 52
+      added_features: ["--week (ISO 8601 Monday)", "-h/--help (usage)", "unknown option error+exit 1"]
+      preserved_features: ["(no arg) dashboard format", "--yaml ISO 8601 timestamp", "--date YYYY-MM-DD"]
+    design_doc:
+      path: "output/cmd_463_b1_opus.md"
+      lines: 257
+      sections:
+        - "1. 変更内容サマリ"
+        - "2. 実装方針 (アルゴリズム選定+両OS対応+ロジック検証7曜日+エッジケース)"
+        - "3. テスト手順 (8ケース動作+5ケース --week 単体)"
+        - "4. 公平性: 優れた点9項目 + 懸念点 P0(なし)/P1(2件)/P2(4件)"
+        - "5. 代替案の検討メモ (Opus特有の深い思考)"
+        - "6. ファイル構成"
+        - "7. 結論"
+  test_results:
+    runtime_tests:  # 実環境 WSL2/Linux 2026-04-07 (Tue) JST
+      - id: T-001
+        case: "引数なし"
+        expected: "YYYY-MM-DD HH:MM JST"
+        actual: "2026-04-07 11:26 JST"
+        result: PASS
+      - id: T-002
+        case: "--yaml"
+        actual: "2026-04-07T11:26:34+09:00"
+        result: PASS
+      - id: T-003
+        case: "--date"
+        actual: "2026-04-07"
+        result: PASS
+      - id: T-004
+        case: "--week (新規) 火曜実行"
+        expected: "2026-04-06 (今週月曜)"
+        actual: "2026-04-06"
+        result: PASS
+      - id: T-005
+        case: "-h"
+        actual: "Usage: ... (stderr)"
+        result: PASS
+      - id: T-006
+        case: "--help"
+        actual: "Usage: ... (stderr)"
+        result: PASS
+      - id: T-007
+        case: "不正引数 --bogus"
+        actual: "Error: unknown option: --bogus + usage + exit 1"
+        result: PASS
+    logic_verification:  # date -d で全7曜日+エッジケース論理検算
+      seven_weekdays_all_PASS: true
+      edge_cases:
+        - "2025-12-31 (Wed) → 2025-12-29 PASS"
+        - "2026-01-01 (Thu) → 2025-12-29 PASS (年またぎ)"
+        - "2026-01-04 (Sun) → 2025-12-29 PASS"
+        - "2026-01-05 (Mon) → 2026-01-05 PASS"
+        - "2024-02-29 (Thu) → 2024-02-26 PASS (うるう年)"
+    syntax_check: "bash -n PASS"
   acceptance_criteria_check:
-    - criterion: "既存GitHub Releasesがv0.8.x系に変更されている"
-      result: "PASS（v1.0.1→v0.8.1, v1.0.2→v0.8.2, v1.0.3→v0.8.3, v1.0.5→v0.8.5）"
-    - criterion: "リリースアセット（EXE, ZIP）のファイル名もv0.8.xに合わせて更新されている"
-      result: "PARTIAL — EXEはPDFMergerTool.exeでバージョン含まず問題なし。test-kit ZIPはv1.0.x名のまま（task説明でPhase2対応と指定）"
-    - criterion: "ソースコード内のバージョン表記がv0.9.0に更新されている"
-      result: "PASS（__version__='0.9.0'追加、タイトルバーにv0.9.0表示）"
-    - criterion: "GitHub Actionsワークフローのバージョン参照が確認・更新されている"
-      result: "PASS（build-exe.ymlはv*パターンのみ、ハードコードなし）"
-    - criterion: "git commit・push済み"
-      result: "PASS（be48c87 → main）"
-agent_tool_used: true
-agent_tool_tokens: 200000
+    - criterion: "scripts/jst_now.sh の修正版を output/cmd_463_b1_opus.sh に書き出す(元ファイルは触らない)"
+      result: "PASS (52行新規作成、scripts/jst_now.sh は git diff 0行)"
+    - criterion: "--week オプション動作確認"
+      result: "PASS (T-004: 2026-04-07(Tue)→2026-04-06(Mon))"
+    - criterion: "既存オプション(--yaml/--date/引数なし)との後方互換性が維持されている"
+      result: "PASS (T-001/T-002/T-003 全PASS)"
+      note: "ただし無効引数の挙動は厳密化(エラー化)。設計書 P1-1 で言及"
+    - criterion: "bash互換(POSIX準拠 or bash推奨記述)で実装"
+      result: "PASS (#!/usr/bin/env bash + GNU/BSD date 両対応)"
+    - criterion: "無効引数等のエラーハンドリングを含む"
+      result: "PASS (T-007: --bogus → Error+usage+exit 1)"
+    - criterion: "インラインテスト or テスト手順を output/cmd_463_b1_opus.md に記載 (--week 単体テスト最低3ケース)"
+      result: "PASS (5ケース記載: T-WEEK-1〜T-WEEK-5)"
+    - criterion: "設計書 output/cmd_463_b1_opus.md に変更内容・実装方針・トレードオフを記載"
+      result: "PASS (257行、7セクション)"
+    - criterion: "report YAML に agent_tool_used + agent_tool_tokens を記録"
+      result: "PASS (下記参照)"
+    - criterion: "公平性のため、自分の実装の優れた点と懸念点(P0/P1/P2形式)を両方記載"
+      result: "PASS (優れた点9項目 + 懸念点P0:0件/P1:2件/P2:4件)"
+agent_tool_used: false
+agent_tool_tokens: 0
+agent_tool_note: |
+  Task(Agent) は使用せず。Bash×8 + Read×3 + Write×3 + Edit×3 のみ使用。
+  Opus 4.6 + Extended Thinking のメインモデル単独で完結。
+  WebSearch/WebFetch も今回は不使用 (date仕様が標準的なため)。
+main_model_tokens_estimate: "推定 25K-40K (Extended Thinking含む)"
+purpose_gap: null
 skill_candidate:
-  found: true
-  name: "github-release-version-migration"
-  description: "GitHub API PATCHでリリースのtag_name/nameを変更し、gitタグを移行するパターン"
-  trigger: "リリースバージョン体系の変更・振替が必要な場合"
+  found: false
+  name: null
+  description: null
+  reason: null
+fairness_summary:
+  strengths_count: 9
+  concerns:
+    P0: 0
+    P1: 2
+    P2: 4
+  notes: |
+    優れた点 (9): ISO8601準拠/OS両対応/エッジ堅牢/明示エラー/set -u/関数化/コメント充実/構造維持/-h--help両対応
+    P0 (0): 該当なし (read-only制約下のため)
+    P1 (2): 後方互換厳密化の副作用 / BSD-GNU検出オーバーヘッド
+    P2 (4): locale依存可能性 / TZ汚染なし(良) / usage→stderr(良) / 関数定義位置の統一性

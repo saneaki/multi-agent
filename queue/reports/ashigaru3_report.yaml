@@ -1,55 +1,63 @@
 worker_id: ashigaru3
-task_id: subtask_452a
-parent_cmd: cmd_452
-timestamp: "2026-04-06T02:19:19+09:00"
-status: done
+task_id: subtask_465a
+parent_cmd: cmd_465
+timestamp: "2026-04-07T11:30:00+09:00"
+status: completed
 result:
   summary: |
-    cmd_450の2つのバグを修正完了。
-    バグ1: update_dashboard_formation()にKESSEN_MODE Opus強制+shu Sonnet+Tフォールバック追加。
-    バグ2: shcエイリアスを陣形管理ツール(scripts/shc.sh)に戻し、ハイブリッド出陣をshxに変更。
+    ダッシュボード構成員化 + update_dashboard.sh / shutsujin_departure.sh 軍師対応完了。
+    3ファイル横断修正・構文チェック通過・E2E確認(update_dashboard.sh実行)・git push済み。
 
   files_modified:
+    - "dashboard.md"
+    - "scripts/update_dashboard.sh"
     - "shutsujin_departure.sh"
-    - "~/.bash_aliases"
-    - "~/.bashrc"
-    - "instructions/shogun.md"
 
   changes_made:
-    - "shutsujin_departure.sh L98-115: update_dashboard_formation()修正 — KESSEN_MODE時Opus強制(settings.yaml deploy失敗でも正しく表示)、shu時Opus系→Sonnet+Tフォールバック(deploy失敗時保護)"
-    - "~/.bash_aliases L4: shm→shc に変更（陣形管理ツールのエイリアスを元に戻す）"
-    - "~/.bashrc L123: shc→shx に変更（ハイブリッド出陣の新エイリアス）"
-    - "instructions/shogun.md L258: shm status→shc status に修正"
-
-  root_cause: |
-    バグ1: update_dashboard_formation()がCLI_ADAPTER_LOADED=true時に常にget_model_display_name()に委譲していた。
-    この関数はsettings.yamlを読むが、shc.sh deploy all-opus失敗時はsettings.yamlが旧値のまま→
-    Sonnet+Tを返す→ダッシュボード未更新。L663-671では同条件でKESSEN_MODE時にOpusハードコードしていたが、
-    update_dashboard_formation()にはこのオーバーライドがなかった。
-    バグ2: cmd_450でshcエイリアスをhybrid出陣に流用したため、shcが陣形管理ツールとhybrid出陣の両方を指す競合状態。
+    - "dashboard.md: 「🏯 待機中の足軽」→「🏯 待機中の構成員」セクション名変更"
+    - "dashboard.md: テーブルヘッダ「| 足軽 |」→「| 構成員 |」変更"
+    - "scripts/update_dashboard.sh: ループに gunshi.yaml 追加"
+    - "scripts/update_dashboard.sh: ashigaru_name() に gunshi→軍師(Opus+T) ケース追加"
+    - "scripts/update_dashboard.sh: awkテーブルヘッダ「足軽」→「構成員」変更"
+    - "shutsujin_departure.sh: update_dashboard_formation() に軍師sed処理追加"
+    - "commit b78cc84 push済み"
 
 acceptance_criteria_results:
-  - criteria: "shk起動時、ダッシュボード🏯の足軽モデル表記がOpusに正しく更新される"
+  - criteria: "dashboard.md セクション名「🏯 待機中の足軽」→「🏯 待機中の構成員」"
     met: true
-    evidence: "KESSEN_MODE時Opus強制ロジック追加。テスト: 足軽1-7号すべてOpusに更新確認"
-  - criteria: "shu起動時、ダッシュボード🏯の足軽モデル表記がSonnet+Tに正しく更新される"
+    evidence: "dashboard.md L31 変更確認済み"
+  - criteria: "dashboard.md テーブルヘッダ「| 足軽 |」→「| 構成員 |」"
     met: true
-    evidence: "shu時Opus系→Sonnet+Tフォールバック追加。テスト: settings.yaml=opus状態でもSonnet+T表示確認"
-  - criteria: "shcはscripts/shc.sh（陣形管理ツール）に戻す。~/.bash_aliasesを修正"
+    evidence: "dashboard.md L33 変更確認済み"
+  - criteria: "dashboard.md 待機中テーブルに軍師行が追加されている"
     met: true
-    evidence: "~/.bash_aliases L4: alias shc='bash /home/ubuntu/shogun/scripts/shc.sh'"
-  - criteria: "ハイブリッド出陣コマンドはshc以外の新エイリアス（例: shx）に割り当て。~/.bashrcを修正"
+    evidence: "既存軍師行あり。update_dashboard.sh実行で軍師(Opus+T)行が正しく生成される"
+  - criteria: "scripts/update_dashboard.sh が gunshi.yaml も走査対象とし軍師行を自動生成"
     met: true
-    evidence: "~/.bashrc L123: alias shx='bash ~/shogun/shutsujin_departure.sh --hybrid'"
-  - criteria: "shutsujin_departure.shのupdate_dashboard_formation()が全陣形で正しく動作する"
+    evidence: "L36: for yaml_file in ... gunshi.yaml 追加済み"
+  - criteria: "scripts/update_dashboard.sh の名前変換関数が gunshi→軍師(Opus+T) を返す"
     met: true
-    evidence: "shk(Opus)、shu(Sonnet+T)、hybrid(get_model_display_name)の3パターンテスト通過"
-  - criteria: "instructions/shogun.md等でshm参照があれば新エイリアスに修正"
+    evidence: "ashigaru_name() に gunshi) echo 軍師(Opus+T) ;; 追加済み"
+  - criteria: "scripts/update_dashboard.sh のテーブルヘッダが「構成員」に更新"
     met: true
-    evidence: "instructions/shogun.md L258: shm status→shc status修正。他ファイル(scripts/*.sh等)にshm参照なし確認"
-  - criteria: "git commit・push済み（/pub-uc使用）"
+    evidence: "awk内 print \"| 構成員 | 状態 | 最終タスク |\" 変更済み"
+  - criteria: "shutsujin_departure.sh update_dashboard_formation() が軍師行モデル表記も更新"
     met: true
-    evidence: "commit 0f040a0, git push完了（pre-push hook通過）"
+    evidence: "L114-116: gunshi_model取得+sed置換追加済み"
+  - criteria: "bash -n 構文チェック通過"
+    met: true
+    evidence: "bash -n scripts/update_dashboard.sh && bash -n shutsujin_departure.sh → 両方OK"
+  - criteria: "bash scripts/update_dashboard.sh 実行で8行が🏯セクションに正しく出力"
+    met: true
+    evidence: "実行結果: 足軽1-7+軍師の出陣中/待機が正しく生成。セクション名・ヘッダ確認済み"
+  - criteria: "git commit + push 済み"
+    met: true
+    evidence: "commit b78cc84 push OK"
+
+ac_summary:
+  total: 10
+  met: 10
+  rate: "100%"
 
 agent_tool_used: false
 skill_candidate:

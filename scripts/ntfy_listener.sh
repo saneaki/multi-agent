@@ -163,8 +163,13 @@ while true; do
                 CMD_MSG=$(echo "$line" | parse_json message)
                 [ -z "$CMD_MSG" ] && continue
                 echo "[$(date)] cmd_complete received: $CMD_MSG" >&2
+                # Extract cmd_id for clean, short notification
+                CMD_ID=$(echo "$CMD_MSG" | grep -oP 'cmd_\d+' | head -1)
                 SHOGUN_PANE=$(tmux list-panes -t multiagent -a -F '#{pane_id} #{@agent_id}' 2>/dev/null | grep shogun | awk '{print $1}')
                 if [ -n "$SHOGUN_PANE" ]; then
+                    # Clear partial input, then send short cmd_complete notification
+                    tmux send-keys -t "$SHOGUN_PANE" ""
+                    sleep 0.2
                     tmux send-keys -t "$SHOGUN_PANE" "cmd_complete: ${CMD_MSG:0:80}" Enter
                 fi
             fi

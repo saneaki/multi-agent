@@ -1,41 +1,86 @@
 worker_id: ashigaru7
-task_id: subtask_454b
-parent_cmd: cmd_454
-timestamp: "2026-04-06T03:01:12+09:00"
+task_id: subtask_463_b2_codex
+parent_cmd: cmd_463
+timestamp: "2026-04-07T11:27:52+09:00"
 status: done
 report_to: gunshi
 result:
   summary: |
-    dashboard.md の🛠️スキル候補セクションから、実装済みの
-    switch-cli-yaml-update-guard 行を削除した。
-    承認待ち2件（codex-cli-poc-verification / switch_cli-yaml-section-tracking）は保持。
-    memory/skill_history.md に switch-cli-yaml-update-guard のアーカイブ記載を確認し、追記は不要と判断した。
+    L3横断改修として、read-only原本から output/ 配下へ priority対応版を実装した。
+    inbox_write 側は priority第5引数(既定normal)とYAML priority出力を追加。
+    inbox_watcher 側は priority:high 検知時に2回ナッジ化し、priority欠落時はnormal扱いで後方互換を維持。
+    設計書に変更箇所・差分抜粋・リスク・公平性評価を記録した。
   files_modified:
-    - path: "dashboard.md"
+    - path: "output/cmd_463_b2_codex_inbox_write.sh"
       changes:
-        - "🛠️スキル候補テーブルから ~~switch-cli-yaml-update-guard~~ 行を削除"
+        - "priority引数追加（第5引数、default normal）"
+        - "priority値検証（high/normal/low、不正値はnormalへフォールバック）"
+        - "YAML messageへ priority フィールドを追加"
+    - path: "output/cmd_463_b2_codex_inbox_watcher.sh"
+      changes:
+        - "get_unread_infoで high_count を算出（priority欠落はnormal扱い）"
+        - "send_priority_nudge ラッパーを追加（high時2回ナッジ）"
+        - "process_unread内の送信分岐をpriority対応へ置換"
+        - "HIGH_PRIORITY_NUDGE_GAP_SEC 追加"
+    - path: "output/cmd_463_b2_codex_design.md"
+      changes:
+        - "変更箇所一覧・リスク・差分抜粋を記載"
+        - "公平性評価（優れた点/懸念点 P0/P1/P2）を記載"
     - path: "queue/inbox/ashigaru7.yaml"
       changes:
-        - "未読 task_assigned メッセージを read: true に更新"
-    - path: "queue/reports/ashigaru7_report.yaml"
-      changes:
-        - "subtask_454b の完了報告へ更新"
+        - "msg_20260407_022505_6c57bd99 を read:true に更新"
     - path: "queue/tasks/ashigaru7.yaml"
       changes:
         - "status を assigned から done に更新"
+    - path: "queue/reports/ashigaru7_report.yaml"
+      changes:
+        - "subtask_463_b2_codex 完了報告へ更新"
   acceptance_criteria_check:
-    - criterion: "dashboard.md の🛠️スキル候補セクションから ~~switch-cli-yaml-update-guard~~ の行が削除されている"
+    - criterion: "scripts/inbox_write.sh の修正版を output/cmd_463_b2_codex_inbox_write.sh に書き出す(元ファイル read-only)"
       result: "PASS"
-    - criterion: "承認待ちの codex-cli-poc-verification と switch_cli-yaml-section-tracking の行は残っている"
+    - criterion: "scripts/inbox_watcher.sh の修正版を output/cmd_463_b2_codex_inbox_watcher.sh に書き出す(元ファイル read-only)"
       result: "PASS"
-    - criterion: "memory/skill_history.md に switch-cli-yaml-update-guard が記載されていることを確認する（既にあるはず）"
+    - criterion: "inbox_write.sh が priority 引数 (high/normal/low) を受け付ける(第5引数想定、デフォルト normal)"
       result: "PASS"
-    - criterion: "memory/skill_history.md に追記が必要な場合は追記する"
-      result: "PASS（追記不要）"
-    - criterion: "git commit・push済み（/pub-uc 使用）"
-      result: "PENDING"
+    - criterion: "YAML出力されるメッセージに priority: <値> フィールドが含まれる"
+      result: "PASS"
+    - criterion: "inbox_watcher.sh が priority: high のメッセージで通常2回ナッジを行う(通常priorityは1回)"
+      result: "PASS"
+    - criterion: "既存の priority フィールドなしメッセージを読み込んでもエラーにならない(後方互換性)"
+      result: "PASS"
+    - criterion: "設計書 output/cmd_463_b2_codex_design.md に変更箇所一覧+リスク+両ファイルの差分箇所を記載"
+      result: "PASS"
+    - criterion: "report YAML に agent_tool_used + agent_tool_tokens を記録(両方とも必須)"
+      result: "PASS"
+    - criterion: "公平性のため、自分の実装の優れた点と懸念点(P0/P1/P2形式)を両方記載"
+      result: "PASS"
+  fairness_evaluation:
+    strengths:
+      - "後方互換優先（priority欠落時normal）で既存YAML資産を壊さない"
+      - "変更の局所化（send_priority_nudge追加）で既存フローを大きく改変しない"
+      - "高優先度ナッジ間隔を環境変数化し運用調整可能"
+    concerns:
+      - priority: "P0"
+        item: "致命的破壊変更は未検出"
+      - priority: "P1"
+        item: "LAST_NUDGE状態リセットにより高優先度連投時に通知過多となる可能性"
+      - priority: "P2"
+        item: "現状はhighが1件でも全unreadに2回ナッジ。将来は重み付け制御が望ましい"
+  verification:
+    syntax_check: "PASS (bash -n on both output shell files)"
+    line_counts:
+      inbox_write: 185
+      inbox_watcher: 1267
+      design_doc: 93
   notes: |
-    task YAML に context_files フィールドは存在しなかった。
-agent_tool_used: true
+    context_files フィールドは task YAML に存在しなかったため、追加読込対象はなし。
+    元ファイル scripts/inbox_write.sh / scripts/inbox_watcher.sh は未編集（read-only順守）。
+agent_tool_used: false
+agent_tool_tokens:
+  estimated_total: 0
+  method: "Agent系ツール未使用のため0"
+main_model_tokens_estimate:
+  estimated_total: 78000
+  method: "実行コマンド出力トークン＋編集生成量ベースの概算"
 skill_candidate:
   found: false

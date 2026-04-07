@@ -1,44 +1,96 @@
-task_id: subtask_454b
-cmd_id: cmd_454
+task_id: subtask_463_b2_codex
+cmd_id: cmd_463
 assigned_to: ashigaru7
-assigned_at: '2026-04-06T02:59:00+09:00'
+assigned_at: "2026-04-07T11:09:00+09:00"
 status: done
 priority: medium
-bloom_level: L2
+bloom_level: L3
 report_to: gunshi
-north_star: "軍師提案を実装して運用品質を向上させつつ、Codex足軽(6・7号)の実戦テストを兼ねる"
+north_star: "Codex 5.3 モデルが実装系タスク(B2: 複数ファイル横断改修)で発揮する品質・速度・コスト・自律性・出力品質を実証データとして残す"
 
 purpose: |
-  ダッシュボード(dashboard.md)の🛠️スキル候補セクションから
-  ✅実装済みエントリを削除し、承認待ちのみを残す。
-  実装済みは memory/skill_history.md に既にアーカイブ済みであることを確認する。
+  cmd_463(ハイブリッド陣モデル割当基準実証)のフェーズ2タスクB2のCodex版。
+  scripts/inbox_write.sh と scripts/inbox_watcher.sh の2ファイルに priority フィールドを
+  横断追加する複数ファイル改修タスク (L3)。
+  既存のpriorityなしメッセージは normal 扱い (後方互換性維持)。
+  同タスクをSonnet(足軽2号)・Opus(足軽5号)が並列実行するため、
+  軍師がモデル横断比較に使用する。
 
 acceptance_criteria:
-  - "dashboard.md の🛠️スキル候補セクションから ~~switch-cli-yaml-update-guard~~ の行が削除されている"
-  - "承認待ちの codex-cli-poc-verification と switch_cli-yaml-section-tracking の行は残っている"
-  - "memory/skill_history.md に switch-cli-yaml-update-guard が記載されていることを確認する（既にあるはず）"
-  - "memory/skill_history.md に追記が必要な場合は追記する"
-  - "git commit・push済み（/pub-uc 使用）"
+  - "scripts/inbox_write.sh の修正版を output/cmd_463_b2_codex_inbox_write.sh に書き出す(元ファイル read-only)"
+  - "scripts/inbox_watcher.sh の修正版を output/cmd_463_b2_codex_inbox_watcher.sh に書き出す(元ファイル read-only)"
+  - "inbox_write.sh が priority 引数 (high/normal/low) を受け付ける(第5引数想定、デフォルト normal)"
+  - "YAML出力されるメッセージに priority: <値> フィールドが含まれる"
+  - "inbox_watcher.sh が priority: high のメッセージで通常2回ナッジを行う(通常priorityは1回)"
+  - "既存の priority フィールドなしメッセージを読み込んでもエラーにならない(後方互換性)"
+  - "設計書 output/cmd_463_b2_codex_design.md に変更箇所一覧+リスク+両ファイルの差分箇所を記載"
+  - "report YAML に agent_tool_used + agent_tool_tokens を記録(両方とも必須)"
+  - "公平性のため、自分の実装の優れた点と懸念点(P0/P1/P2形式)を両方記載"
 
 implementation_notes: |
-  【参照ファイル】
-  - dashboard.md: 🛠️スキル候補セクション（L81付近）に ~~switch-cli-yaml-update-guard~~ が残っている
-  - memory/skill_history.md: アーカイブ先。既にswitch-cli-yaml-update-guardが記載されているはず。
+  【Codex足軽固有の制約】
+  - MCP未使用環境のため、ファイル操作は cat/grep/awk/sed等のシェルツール中心で実施
+  - cat scripts/inbox_write.sh で全行確認 (175行、一括取得可能)
+  - inbox_watcher.sh は1232行と長大 → grep で関連箇所 (process_unread / send_wakeup / specials parser等) を絞り込んで cat -n で行範囲指定読込推奨
+  - cat > output/cmd_463_b2_codex_*.sh << 'EOF' ... EOF 形式で書き出し
+  - フェーズ1 a2_codex では mermaid + .venv/python3 固定パス脆弱性指摘で品質を出した
+  - フェーズ2 (実装系) では Codex の Agent 系ツールも積極活用してよい (差別化機会)
 
-  【作業手順】
-  1. dashboard.md を Read して 🛠️スキル候補セクションを確認
-  2. memory/skill_history.md を Read して既にアーカイブ済みか確認
-  3. skill_history.md に未記載ならば追記する
-  4. dashboard.md から ~~switch-cli-yaml-update-guard~~ の行を削除する（Edit使用）
-  5. git commit・push
+  【B2 タスク仕様 (L3: 2ファイル横断)】
+  - 元ファイル(read-only):
+    * scripts/inbox_write.sh (175行)
+    * scripts/inbox_watcher.sh (1232行)
+  - 機能要件:
+    1. inbox_write.sh: 第5引数に priority (high/normal/low) を追加、デフォルト normal
+       * Usage 例: bash scripts/inbox_write.sh karo "急ぎ報告" report_received gunshi high
+       * YAML 出力時にメッセージに priority: <値> フィールドを追加
+    2. inbox_watcher.sh: メッセージから priority を読み取り、high なら 2 回ナッジ
+       * 既存メッセージ (priority フィールドなし) は normal 扱い
+       * ナッジ間隔は適切なクールダウンを保つ (連続 send-keys 衝突回避)
 
-  【注意】
-  - 承認待ちの行(codex-cli-poc-verification, switch_cli-yaml-section-tracking)は削除しないこと
-  - Read → Edit の順で操作すること
+  【実装ステップ (Codex流)】
+  1. cat scripts/inbox_write.sh で全行確認
+  2. grep -n "send_wakeup\|process_unread\|specials" scripts/inbox_watcher.sh で関連行特定
+  3. sed -n '<start>,<end>p' scripts/inbox_watcher.sh で関連箇所のみ抽出
+  4. cat > output/cmd_463_b2_codex_inbox_write.sh << 'EOF' で修正版1書き出し
+  5. cat > output/cmd_463_b2_codex_inbox_watcher.sh << 'EOF' で修正版2書き出し
+  6. bash -n output/cmd_463_b2_codex_*.sh で構文チェック
+  7. cat > output/cmd_463_b2_codex_design.md << 'EOF' で設計書書き出し
+
+  【出力ファイル】
+  - output/cmd_463_b2_codex_inbox_write.sh (修正版1)
+  - output/cmd_463_b2_codex_inbox_watcher.sh (修正版2)
+  - output/cmd_463_b2_codex_design.md (設計書)
+
+  【cmd_463 実証研究としての注意点】
+  - **agent_tool_tokens 記録基準 (フェーズ1の教訓)**:
+    * agent_tool_used: true/false (Codex の Agent 系ツール使用有無)
+    * agent_tool_tokens: 推定値で良い
+    * main_model_tokens_estimate: メインモデル(Codex 5.3)消費トークンの推定値も併記必須
+    * フェーズ1 a2_codex では 52K と記録 (Agent 経由分)
+      → フェーズ2 では Agent 経由 vs メイン消費を区別して記録
+  - **公平性 AC (フェーズ1 a2_opus 5号の知見)**: 自分の実装の優れた点 (3項目以上) と
+    懸念点 (P0/P1/P2 形式) を両論併記。片側評価を避ける。
+  - **Codex への期待**: フェーズ1 では curl + 一次情報で品質を出した。フェーズ2 (実装系) では
+    Codex の Agent 系ツールも積極活用してよい (差別化機会)。
+    また a2_codex で .venv/python3 固定パス脆弱性を指摘した鋭さを priority 機能の
+    後方互換性チェックでも発揮することを期待。
+  - 想定トークン: 50K-100K
+  - 想定時間: 40-90分 (1232 行の inbox_watcher.sh + シェルツール解析中心のため)
+
+  【RACE-001 考慮】
+  各モデルが独立した output/cmd_463_b2_{model}_*.{sh,md} に書き出すため競合なし。
+  元ファイル (scripts/inbox_write.sh と scripts/inbox_watcher.sh) は絶対に編集しない (read-only)。
+
+  【後方互換性チェック観点】
+  - 既存 inbox/*.yaml に priority フィールドがないメッセージが大量に存在
+  - YAML パース時に priority キーが KeyError を起こさないこと (.get('priority', 'normal') 等)
+  - inbox_write.sh の旧 4 引数呼び出し (priority なし) も成功すること
 
 editable_files:
-  - "dashboard.md"
-  - "memory/skill_history.md"
+  - "output/cmd_463_b2_codex_inbox_write.sh"
+  - "output/cmd_463_b2_codex_inbox_watcher.sh"
+  - "output/cmd_463_b2_codex_design.md"
   - "queue/reports/ashigaru7_report.yaml"
 
 context: shogun
