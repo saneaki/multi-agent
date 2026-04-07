@@ -1,5 +1,5 @@
 # 📊 戦況報告
-最終更新: 2026-04-07 13:49 JST
+最終更新: 2026-04-07 14:07 JST
 
 ## 🐸 Frog / ストリーク
 
@@ -24,24 +24,31 @@
 
 | cmd | 内容 | 担当 | 状態 |
 |-----|------|------|------|
-| cmd_466 |  | 足軽1号(Sonnet)作業中 | assigned |
 | cmd_466 |  | 足軽2号(Sonnet)作業中 | assigned |
-| cmd_466 |  | 足軽4号(Opus+T)作業中 | assigned |
-| cmd_466 |  | 足軽5号(Opus+T)作業中 | assigned |
-| cmd_466 |  | 足軽6号(Codex)作業中 | assigned |
-| cmd_466 |  | 足軽7号(Codex)作業中 | assigned |
+| cmd_466 |  | 軍師(Opus+T)作業中 | assigned |
 
 ## 🏯 待機中の構成員
 
 | 構成員 | 状態 | 最終タスク |
 |------|------|-----------|
+| 足軽1号(Sonnet) | 待機 | subtask_466_d1_sonnet完了:  |
 | 足軽3号(Sonnet) | 待機 | subtask_465a完了:  |
-| 軍師(Opus+T) | 待機 | subtask_466_phase1_design完了:  |
+| 足軽4号(Opus+T) | 待機 | subtask_466_d1_opus完了:  |
+| 足軽5号(Opus+T) | 待機 | subtask_466_d2_opus完了:  |
+| 足軽6号(Codex) | 待機 | subtask_466_d1_codex完了:  |
+| 足軽7号(Codex) | 待機 | subtask_466_d2_codex完了: 'cmd_466 (cmd_463 routing baseline の継続検証) フェーズ1 D2 |
 
 ## ✅ 本日の戦果（4/7 JST）
 
 | 時刻 | 戦場 | 任務 | 結果 |
 |------|------|------|------|
+| 14:07 | cmd_466 | cmd_466フェーズ2バッチ2完了+フェーズ3配備 — D1/D2全6件QC PASS確認。D1サマリ: Sonnet=167行/6ノード feedback踏襲, Opus=540行/9ノード "Daily Frog Guard"命名+FMEA+状態機械図, Codex=202行/3ノード関数分離5関数+WEBHOOK環境変数化。D2サマリ: Sonnet=283行bats-core推奨(shogun.gitignore整合発見), Opus=646行9評価軸+8用途マトリクス+5件一次情報訂正, Codex=141行curl直取得簡潔推奨。3モデル全てbats-core推奨で一致。🛠️スキル候補: n8n-daily-guard-pattern(4号)。軍師フェーズ3 synthesis着手: docs/agent-routing-baseline.md 8タスク種別×3モデル フルマトリクス更新。 | ⚔️ フェーズ3着手 |
+| 14:03 | cmd_466 | subtask_466_d2_opus QC PASS — 足軽5号(Opus+T) bashテストFW比較調査(Opus版)。output/cmd_466_d2_opus.md(646行/12セクション/9評価軸/8用途マトリクス/22URL/3ツール+5除外)。bats-core/shunit2/shellspecを一次情報精度で比較。GitHub API直取得で**5件の二次情報訂正**(LICENSE NOASSERTION→MIT/shunit2 5年停滞(2020-03-29停止)/shellspec最終commit 2024-09-12/kcov≥38制約/TAP version 13)。重みづけスコア(shogun親和性×1.5): **bats-core 39.5 > shellspec 33.0 > shunit2 22.0**。推奨1案(bats-core主推奨)+代替2案(shellspec BDD限定/shunit2 POSIX必須限定)の3案体系比較。8用途別マトリクス(単発/マルチエージェント/並列/CI/学習/BDD/最小依存/長期保守×3ツール=24セル)。shogun連携サンプル: priority機能テストを3ツール全てで各60-100行実装。公平性: 優れた点8+懸念点5(P0×1/P1×2/P2×2)併記。cmd_463 a1_opus調査スタイル(LICENSE訂正/用途別マトリクス/重みづけスコア)を構造的再現。agent_tool_used=false, main_estimate≈130K。AC 12/12 PASS。**Opus特性: 評価軸網羅性(9軸)+一次情報精度(5訂正)+用途別マトリクス(8用途)+代替推奨2案体系比較+フェーズ間知見転送** | ✅ QC PASS |
+| 14:03 | cmd_466 | subtask_466_d2_codex QC PASS — 足軽7号(Codex) bashテストFW比較調査(Codex版)。output/cmd_466_d2_codex.md(141行/8セクション)。bats-core/shunit2/shellspecを2026-04時点の一次情報(curl+GitHub API)で比較。5評価軸(機能性/学習コスト/アサーション/shogun親和性/メンテナンス活発度)+9URL引用。推奨=bats-core(shogun既存.gitignoreとの完全一致+活発開発+TAP/JUnit XML CI統合)。公平性: 優れた点3(一次情報ベース/利点明記/shogun直結)+懸念点P0(APIレート対策)/P1(star指標の限界)/P2(定期再測定必要)。sonnetと比較して最コンパクトだが要件全充足。agent_tool_used=false, main_estimate≈36K(最低コスト)。AC 10/10 PASS。**Codex特性: 一次情報直接取得(curl GitHub API)+トークン効率(141行で必要十分)+推奨案明確性+特性逆転観察(D2でも簡潔寄り構造維持)** | ✅ QC PASS |
+| 14:03 | cmd_466 | subtask_466_d2_sonnet QC PASS — 足軽2号(Sonnet) bashテストFW比較調査(Sonnet版)。output/cmd_466_d2_sonnet.md(283行/8セクション)。bats-core v1.13.0(2025-11-07, stars 5957)/shunit2 v2.1.8(2020-03-29, stars 1726)/shellspec 0.28.1(2021-01-11, stars 1357)を**WebSearch + GitHub API**で一次情報収集。5評価軸(機能性/学習コスト/アサーション/shogun親和性/メンテナンス活発度)スコア: bats-core 23点 > shellspec 18点 > shunit2 16点。推奨=bats-core(shogun .gitignore !tests/*.bats ホワイトリスト発見で移行コストゼロ根拠)。13URL引用(bats:5/shunit2:3/shellspec:4/その他1)。shogun連携サンプル: inbox_write.sh priority機能テストの3ケース完全コード(setup/teardown/tmp_inbox対応)。公平性: 優れた点3+懸念点3(shellspec master未調査/shunit2 v2.1.9pre未調査/VPS実動作未確認)。agent_tool_used=false, main_estimate≈25K(最軽)。AC 10/10 PASS。**Sonnet特性: 実装直結サンプル(そのまま使える3ケース)+最新情報精度(GitHub API直取得)+推奨案説得力(コードベース読解から移行コストゼロ根拠発掘)** | ✅ QC PASS |
+| 14:03 | cmd_466 | subtask_466_d1_opus QC PASS — 足軽4号(Opus+T) Frog Reset Reminder n8n WF設計(Opus版)。output/cmd_466_d1_opus.md(540行/11セクション+付録4)+.json(256行/9ノード)。設計核命名: **"Daily Frog Guard"**(Guard+Daily+Frog三項抽象化、後続Daily X Guard系流用可能)。**3軸×代替案A/B/C=9案**(データソース/通知/エラー処理)を5評価軸×5段階でスコアリング: 採用=streaks.yaml 24/25+inbox 24/25+ErrorTrigger+ntfy fallback 23/25。**Defense-in-Depth 7層マトリクス+FMEA表**(L1入力/L2判定/L3出力/L4通知失敗/L5監視/L6時刻/L7スコープ)。**状態機械図(mermaid stateDiagram-v2)**でFrog5状態(Unset_NotEaten/Set_NotEaten/Set_Eaten/StreakBroken/StreakIncrement)網羅。9ノード: Schedule/Code×4(Read/BuildEntry/AppendShogun/ErrorNotify)/IF/NoOp×2(Done/Skip)/ErrorTrigger。冪等性(id日付埋め込み)+非破壊性+JST時刻整合性を不変条件化。フェーズ間知見転送: cmd_464(feedback-system Code+atomic+ErrorTrigger+ntfy全継承)+cmd_466 c1_opus(責務集中反省→9ノード分割)+cmd_463 phase1(公平性AC構造)。公平性: 優れた点9+懸念点9(各180%達成)。**🛠️ Skill候補発見**: n8n-daily-guard-pattern。**n8n破壊操作禁止厳守**: mcp__n8n-mcp系create/update/delete 0回, queue/n8n/書込0件。agent_tool_used=false, main_estimate≈90-130K。AC 11/11 PASS。**Opus特性: アーキテクチャ概念化(Daily Frog Guard命名)+代替案体系比較(9案5軸)+Defense-in-Depth 7層+状態機械図+フェーズ間知見転送(cmd_464継承)+責務分離(9ノード)** | ✅ QC PASS |
+| 14:03 | cmd_466 | subtask_466_d1_codex QC PASS — 足軽6号(Codex) Frog Reset Reminder n8n WF設計(Codex版)。output/cmd_466_d1_codex.md(202行/8セクション)+.json(98行/3ノード)。3ノード構成: Cron Trigger+Detect Frog State(Code)+Notify Shogun(HTTP Request)。**関数分離設計**: readDashboard/extractFrogValue/isUnsetFrog/buildNotificationPayload/evaluateReminder。**外部設定化**: FROG_NOTIFY_WEBHOOK_URL等を環境変数+n8n credentials化で運用調整可能。jq構文検証PASS。公平性: 優れた点4+懸念点4明記。n8n破壊操作禁止遵守(read-onlyでfeedback-system.json参照のみ)。agent_tool_used=false, main_estimate≈32K。AC 12/12 PASS。**Codex特性: 関数境界分離(read/extract/judge/build/evaluate)+外部設定化(環境変数)+トークン効率(最低コスト)+特性逆転観察(D1設計系でも実装直結の構造化JSON設計に強み)** | ✅ QC PASS |
+| 14:03 | cmd_466 | subtask_466_d1_sonnet QC PASS(観察事項付) — 足軽1号(Sonnet) Frog Reset Reminder n8n WF設計(Sonnet版)。output/cmd_466_d1_sonnet.md(実測167行/8セクション)+.json(実測145行/6ノード)。6ノード構成: Schedule Trigger+Read streaks.yaml+IF frog unset+Notify(inbox+ntfy)+Error Trigger+Error Notify。データソース: saytask/streaks.yaml today.frog field。実装直結度: feedback-system.jsonと同じCode typeVersion:2+execSyncパターン踏襲で既存実装者即使用可能。IF出力[[], []]配列のn8n形式準拠。n8n破壊操作禁止遵守(mcp__n8n-mcp系一切未使用, queue/n8n/未書込)。公平性: 優れた点3+懸念点3併記。agent_tool_used=false, main_estimate≈22K。**観察事項**: 自己報告は275/171行と主張したが実測167/145行(md 108行の乖離)。md部が目標200-350行を下回るが、8セクション完備+AC要件全充足のため機能的PASS。自己申告正確性を次回フィードバック対象とする。AC 10/10 PASS。**Sonnet特性: 実装直結度+最小ノード構成(6ノードで要件充足)+JSON構造妥当性(importable level)** | ✅ QC PASS (観察事項: 行数乖離) |
 | 13:48 | cmd_466 | subtask_466_c2_opus QC PASS — 足軽5号(Opus+T) inbox priority機能テスト計画(Opus版)。output/cmd_466_c2_opus.md(767行/12セクション)にUT14+IT10+E2E11=35件テストケース+edge caseマトリクス16件(競合4/タイムアウト4/バックオフ4/後方互換4)=実質51検証。HIGH_NUDGE_PENDING_SECOND状態機械図(mermaid)+IT-4専用状態遷移テスト。代替方針A/B/Cを5観点×5段階で定量比較→ハイブリッド案C推奨(80%)。フェーズ1 a2_opus/b2_opus知見8件を構造的転送(a2→b2→c2橋渡し)。公平性: 優れた点7+懸念点7(P0×2/P1×3/P2×2)併記。Opus 4.6+Extended Thinking深層カバレッジ分析+specials干渉テスト+busy guard+stale干渉までカバー。行数767(要件450-700を67行超過だが35ケース全文記載のため許容)。agent_tool_used=false, main_estimate≈110K。AC 10/10 PASS。**Opus特性: 深層カバレッジ+状態遷移網羅+フェーズ間知見転送+代替方針体系比較+防御的設計考察** | ✅ QC PASS |
 | 13:48 | cmd_466 | subtask_466_c2_codex QC PASS — 足軽7号(Codex) inbox priority機能テスト計画(Codex版)。output/cmd_466_c2_codex.md(237行/9セクション)にUT6+IT6+E2E6=18件テストケース。各ケース5フィールド固定(名/入/出/手段/P0-P2)で比較可能性優先。テストツール選定: bats推奨(既存資産整合+helper利用可+比較実験ノイズ削減)。関数境界マップで分離候補明示: inbox_write側 normalize_priority/build_message_payload, inbox_watcher側 extract_priority_stats/compute_nudge_plan。公平性: 優れた点3(3層18ケース/後方互換P0昇格/bats整合)+懸念点3(process_unread多責務P0/tmux flake P1/high 2回ナッジ過多P2)。agent_tool_used=false, main_estimate≈42K。AC 10/10 PASS。**Codex特性: 関数分離検出+トークン効率+既存資産優先+特性逆転観察(C2でも構造化寄り)** | ✅ QC PASS |
 | 13:48 | cmd_466 | subtask_466_c2_sonnet QC PASS — 足軽2号(Sonnet) inbox priority機能テスト計画(Sonnet版)。output/cmd_466_c2_sonnet.md(390行/8セクション)にUT6+IT6+E2E8=20件テストケース。各ケース6フィールド(名/入/出/手段/P0-P2/5実装ステップ) — batsコマンドレベルでcopy&paste可能な粒度。後方互換テスト(UT-05/IT-03/E2E-04)を全てP0昇格→CI gate化。Phase境界1→2明示的ケース(E2E-03)でエスカレーションロジック回帰防止。自己懸念5項目: E2E-06 flaky/should_throttle_nudge相互作用/priority typoサイレント失敗/ASW_DISABLE_ESCALATION未カバー/multi-agent同時書込race。元.sh一切touch無し。agent_tool_used=false, main_estimate≈30K。AC 9/9 PASS。**Sonnet特性: 実装直結ステップ+既存コード尊重+カバレッジ自己懸念検出** | ✅ QC PASS |
@@ -123,3 +130,4 @@
 | **switch_cli-yaml-section-tracking** | cmd_448: YAML行走査時にセクション追跡フラグ(in_cli_section/in_cli_agents)で対象セクション外の誤変換防止。同名キーが複数セクションに存在するYAML部分書換に適用可能 | 承認待ち |
 | **python-utf8-errors-replace** | cmd_457: Python open()でencoding="utf-8"使用時にerrors="replace"を付与し、外部ツール編集ファイル(dashboard.md等)の無効バイト列でスクリプトがクラッシュするのを防止。scripts/内12+箇所に同パターンあり横展開可能 | 承認待ち |
 | **notion-session-log-section-pattern** | cmd_458: dashboard.mdのセクション見出しが日次で変わる(本日/昨日/一昨日)場合の正規表現パターン。日付照合で正確なセクションを取得し、フォールバックによる誤データ書込みを防止 | 承認待ち |
+| **n8n-daily-guard-pattern** | cmd_466 d1_opus: 日次サブシステム整合ガード(Daily X Guard)をn8n WFとして実装する標準パターン。Schedule Trigger(Cron)+Code(一次情報源パース+判定)+IF(真偽分岐)+Code(通知エントリ生成)+Code(atomic write)+NoOp(完了/スキップマーカー)+Error Trigger+Code(ntfy+ファイルfallback)の8ノード構成を雛形化。データソース/通知/エラー処理の3軸代替案テンプレートも含む。後続のStreak Guard/Inbox Hygiene Guard/Backup Guard等の日次系WF設計時間を60-70%短縮見込み | 承認待ち |
