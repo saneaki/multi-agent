@@ -1,5 +1,5 @@
 # 📊 戦況報告
-最終更新: 2026-04-07 11:48 JST
+最終更新: 2026-04-07 11:59 JST
 
 ## 🐸 Frog / ストリーク
 
@@ -8,7 +8,7 @@
 | 今日のFrog | 未設定 |
 | Frog状態 | 🐸 未撃破 |
 | ストリーク | 🔥 29日目継続中 (最長: 29日) |
-| 今日の完了 | 4（cmd: 4 + VF: 0） |
+| 今日の完了 | 5（cmd: 5 + VF: 0） |
 | VFタスク残り | 0件（うち今日期限: 0件） |
 
 ## 🚨 要対応 - 殿のご判断をお待ちしております
@@ -23,7 +23,7 @@
 
 | cmd | 内容 | 担当 | 状態 |
 |-----|------|------|------|
-| cmd_464 |  | 軍師(Opus+T)作業中 | assigned |
+| cmd_463 |  | 軍師(Opus+T)作業中 | assigned |
 
 ## 🏯 待機中の構成員
 
@@ -41,6 +41,7 @@
 
 | 時刻 | 戦場 | 任務 | 結果 |
 |------|------|------|------|
+| 11:57 | cmd_464 | cmd_464完了 — Notion Forms+n8n feedbackシステムMVP完成。subtask_464a(Notion DB作成: 01d9f2b4)+464b(n8n WF:HzzVDzt7oFjnDfP4 active)+464c(E2E QC PASS: Notion投入→n8n→shogun.yaml 9→10件)。AC 9/9 PASS。docs/feedback-system-guide.md永続化。残: Notion FormsビューUI追加(殿手動)。🏆cmd_464完了 | ✅ 完了 |
 | 11:47 | cmd_463 | subtask_463_b2_sonnet QC PASS — 足軽2号(Sonnet) inbox_write/inbox_watcher priority対応(L3横断)。output/cmd_463_b2_sonnet_inbox_write.sh(177行/第5引数PRIORITY="${5:-normal}"+new_msg dictへpriority追加)+output/cmd_463_b2_sonnet_inbox_watcher.sh(1256行/get_unread_info()でhas_high_priority算出+process_unread()でbash変数抽出+Phase1 sleep2+2回目send_wakeup)+設計書(8セクション/差分dump付き)。bash -n両PASS。後方互換: .get('priority','normal')でKeyError回避。公平性: 優れた点3項目(後方互換徹底/変更局所性6箇所/[HIGH-PRIORITY]ログ充実)+P0なし/P1×2(2回目nudgeのshould_throttle_nudge skip可能性自己指摘/バリデーション未実装)+P2×2(YAMLフィールド順/既存テスト互換)。agent_tool_used=false, main_estimate≈80K。AC 9/9 PASS。**Sonnet特性: 6箇所最小変更+自己懸念明示+ログプレフィックス充実** | ✅ QC PASS |
 | 11:47 | cmd_463 | subtask_463_b2_opus QC PASS — 足軽5号(Opus+T) inbox_write/inbox_watcher priority対応(L3横断)。output/cmd_463_b2_opus_inbox_write.sh(203行/+28: case文priority検証fail-fast/ntfyタイトル🔥prefix/Python heredoc priority追加)+output/cmd_463_b2_opus_inbox_watcher.sh(1296行/+64: HIGH_NUDGE_PENDING_SECOND/HIGH_NUDGE_SECOND_DELAY_SEC状態変数追加+specials除外でhigh_priority_count算出+Phase1ブロックでsleep+LAST_NUDGE_COUNT bypass+2回目send_wakeup+fast/full両pathでreset)+output/cmd_463_b2_opus_design.md(528行/10セクション/26.3KB)。specials高優先度から構造的除外(a2_opus P0-1干渉回避)。(m.get('priority') or 'normal')で欠損/None/空文字3ケース吸収。defense-in-depth: HIGH_NUDGE_PENDING_SECOND reset 2箇所配置。Python Exception fallbackにもhigh_priority_count: 0追加。bash -n両PASS。公平性: 優れた点14項目(構造3+実装4+ドキュメント4+opus特性3)+P0×2(HIGH_NUDGE_PENDING_SECOND非永続/sleep3秒中inotifyブロック)+P1×3+P2×4(計9項目)。a2_opus知見活用7件。agent_tool_used=false, main_estimate≈95K。AC 8/8 PASS。**Opus特性: 深層設計+specials干渉回避+フェーズ1知見活用+fail-fast検証+responsive design** | ✅ QC PASS |
 | 11:35 | cmd_465 | subtask_465a QC PASS — 足軽3号(Sonnet) ダッシュボード構成員化完了。dashboard.md(セクション「🏯 待機中の足軽」→「🏯 待機中の構成員」、ヘッダ「足軽」→「構成員」)+scripts/update_dashboard.sh(gunshi.yaml走査追加+ashigaru_name() gunshi→軍師(Opus+T)分岐追加+awkヘッダ更新)+shutsujin_departure.sh(update_dashboard_formation()軍師sed処理追加)の3ファイル横断修正。bash -n両通過、bash scripts/update_dashboard.sh実行で軍師(Opus+T)行が正しく生成。commit b78cc84 push済。AC 10/10 PASS。 | ✅ QC PASS |
