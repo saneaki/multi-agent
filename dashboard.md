@@ -1,5 +1,5 @@
 # 📊 戦況報告
-最終更新: 2026-04-07 13:24 JST
+最終更新: 2026-04-07 13:36 JST
 
 ## 🐸 Frog / ストリーク
 
@@ -24,24 +24,25 @@
 
 | cmd | 内容 | 担当 | 状態 |
 |-----|------|------|------|
-| cmd_466 |  | 軍師(Opus+T)作業中 | assigned |
+| cmd_466 |  | 足軽1号(Sonnet)作業中 | assigned |
+| cmd_466 |  | 足軽2号(Sonnet)作業中 | assigned |
+| cmd_466 |  | 足軽4号(Opus+T)作業中 | assigned |
+| cmd_466 |  | 足軽5号(Opus+T)作業中 | assigned |
+| cmd_466 |  | 足軽6号(Codex)作業中 | assigned |
+| cmd_466 |  | 足軽7号(Codex)作業中 | assigned |
 
 ## 🏯 待機中の構成員
 
 | 構成員 | 状態 | 最終タスク |
 |------|------|-----------|
-| 足軽1号(Sonnet) | 待機 | subtask_463_b1_sonnet完了:  |
-| 足軽2号(Sonnet) | 待機 | subtask_463_b2_sonnet完了:  |
 | 足軽3号(Sonnet) | 待機 | subtask_465a完了:  |
-| 足軽4号(Opus+T) | 待機 | subtask_463_b1_opus完了:  |
-| 足軽5号(Opus+T) | 待機 | subtask_463_b2_opus完了:  |
-| 足軽6号(Codex) | 待機 | subtask_463_b1_codex完了:  |
-| 足軽7号(Codex) | 待機 | subtask_463_b2_codex完了:  |
+| 軍師(Opus+T) | 待機 | subtask_466_phase1_design完了:  |
 
 ## ✅ 本日の戦果（4/7 JST）
 
 | 時刻 | 戦場 | 任務 | 結果 |
 |------|------|------|------|
+| 13:36 | cmd_466 | cmd_466フェーズ1完了+フェーズ2バッチ1配備 — 軍師(Opus+T) C1/C2/D1/D2×3モデル=12件ドラフト作成(output/cmd_466_drafts/955行)。選定: C1=dashboard_rotate.sh(253行)コードレビュー / C2=inbox priority機能テスト計画 / D1=Frog Reset Reminder WF設計 / D2=bash testFW比較(bats/shunit2/shellspec)。cmd_463 phase1教訓4点反映。バッチ1(C1+C2): 足軽1(c1_sonnet)/4(c1_opus)/6(c1_codex)/2(c2_sonnet)/5(c2_opus)/7(c2_codex) 6体同時稼働中。バッチ2(D1+D2)はバッチ1完了後配備。 | ⚔️ バッチ1稼働中 |
 | 12:21 | cmd_463 | cmd_463 フェーズ3 synthesis 完了 — 軍師(Opus+T) routing baseline 策定。output/cmd_463_hybrid_routing_baseline.md(514行/9セクション: 背景・実験設計・フェーズ1比較・フェーズ2比較・モデル特性・Routing Matrix・Decision Tree・運用方針・付録)+docs/agent-routing-baseline.md(282行/家老の常時参照用)永続化。**3つの経験則確立**: (1)Opus=思考の深さの王(設計概念化+フェーズ間知見転送+防御的設計), (2)Sonnet=自己レビューの王(最小差分+精密自己懸念検出+改善diff), (3)Codex=構造化の隠れた王(関数分離+環境変数+トークン効率最良/特性逆転に注意)。Routing Matrix(タスク種別×モデル ◎○△✕)+Decision Tree+デフォルト割当ルール完備。家老の即日適用ガイドとして家老が cmd を書く前に参照可能。.gitignore に docs/agent-routing-baseline.md 追加(whitelist)。commit c9ae4e6 push済。**北極星達成: ハイブリッド陣のモデル割当基準を実証データから策定し、家老が即日運用に適用できるガイドを永続化**。🏆cmd_463完了 | ✅ 完了 |
 | 11:57 | cmd_464 | cmd_464完了 — Notion Forms+n8n feedbackシステムMVP完成。subtask_464a(Notion DB作成: 01d9f2b4)+464b(n8n WF:HzzVDzt7oFjnDfP4 active)+464c(E2E QC PASS: Notion投入→n8n→shogun.yaml 9→10件)。AC 9/9 PASS。docs/feedback-system-guide.md永続化。残: Notion FormsビューUI追加(殿手動)。🏆cmd_464完了 | ✅ 完了 |
 | 11:47 | cmd_463 | subtask_463_b2_sonnet QC PASS — 足軽2号(Sonnet) inbox_write/inbox_watcher priority対応(L3横断)。output/cmd_463_b2_sonnet_inbox_write.sh(177行/第5引数PRIORITY="${5:-normal}"+new_msg dictへpriority追加)+output/cmd_463_b2_sonnet_inbox_watcher.sh(1256行/get_unread_info()でhas_high_priority算出+process_unread()でbash変数抽出+Phase1 sleep2+2回目send_wakeup)+設計書(8セクション/差分dump付き)。bash -n両PASS。後方互換: .get('priority','normal')でKeyError回避。公平性: 優れた点3項目(後方互換徹底/変更局所性6箇所/[HIGH-PRIORITY]ログ充実)+P0なし/P1×2(2回目nudgeのshould_throttle_nudge skip可能性自己指摘/バリデーション未実装)+P2×2(YAMLフィールド順/既存テスト互換)。agent_tool_used=false, main_estimate≈80K。AC 9/9 PASS。**Sonnet特性: 6箇所最小変更+自己懸念明示+ログプレフィックス充実** | ✅ QC PASS |
