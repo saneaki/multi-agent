@@ -19,10 +19,10 @@ ashigaru_name() {
     ashigaru1) echo "足軽1号(Sonnet)" ;;
     ashigaru2) echo "足軽2号(Sonnet)" ;;
     ashigaru3) echo "足軽3号(Sonnet)" ;;
-    ashigaru4) echo "足軽4号(Sonnet)" ;;
-    ashigaru5) echo "足軽5号(Sonnet)" ;;
-    ashigaru6) echo "足軽6号(Sonnet)" ;;
-    ashigaru7) echo "足軽7号(Sonnet)" ;;
+    ashigaru4) echo "足軽4号(Opus+T)" ;;
+    ashigaru5) echo "足軽5号(Opus+T)" ;;
+    ashigaru6) echo "足軽6号(Codex)" ;;
+    ashigaru7) echo "足軽7号(Codex)" ;;
     gunshi)    echo "軍師(Opus+T)" ;;
     *) echo "$1" ;;
   esac
@@ -42,9 +42,9 @@ for yaml_file in "$TASKS_DIR"/ashigaru*.yaml "$TASKS_DIR"/gunshi.yaml; do
   status=$(grep "^status:" "$yaml_file" 2>/dev/null   | awk '{print $2}' | tr -d '"' | tr -d "'" || echo "")
   assigned_to=$(grep "^assigned_to:" "$yaml_file" 2>/dev/null | awk '{print $2}' | tr -d '"' | tr -d "'" || echo "")
   # title: フィールドを優先、なければ purpose: を使用（Python使用でUnicode安全切り捨て）
-  title=$(grep "^title:" "$yaml_file" 2>/dev/null | sed 's/^title:[[:space:]]*//' | tr -d '"' | python3 -c "import sys; s=sys.stdin.read().strip(); print(s[:50])" 2>/dev/null || true)
+  title=$(grep "^title:" "$yaml_file" 2>/dev/null | sed 's/^title:[[:space:]]*//' | tr -d '"' | sed 's/^[|>]//' | python3 -c "import sys; s=sys.stdin.read().strip(); print(s[:50])" 2>/dev/null || true)
   if [ -z "$title" ]; then
-    title=$(grep "^purpose:" "$yaml_file" 2>/dev/null | sed 's/^purpose:[[:space:]]*//' | tr -d '"' | python3 -c "import sys; s=sys.stdin.read().strip(); print(s[:50])" 2>/dev/null || true)
+    title=$(grep "^purpose:" "$yaml_file" 2>/dev/null | sed 's/^purpose:[[:space:]]*//' | tr -d '"' | sed 's/^[|>]//' | python3 -c "import sys; s=sys.stdin.read().strip(); print(s[:50])" 2>/dev/null || true)
   fi
 
   agent_name=$(ashigaru_name "$assigned_to")

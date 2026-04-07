@@ -1,103 +1,84 @@
-task:
-  task_id: subtask_452a
-  parent_cmd: cmd_452
-  bloom_level: L4
-  assigned_to: ashigaru2
-  report_to: gunshi
-  north_star: "出陣コマンド体系が正しく動作し、起動時にダッシュボードが実際の陣形を反映すること"
-  status: assigned
-  timestamp: "2026-04-06T01:50:23+09:00"
+task_id: subtask_463_b2_sonnet
+cmd_id: cmd_463
+assigned_to: ashigaru2
+assigned_at: "2026-04-07T11:09:00+09:00"
+status: done
+priority: medium
+bloom_level: L3
+report_to: gunshi
+north_star: "Sonnet 4.6 + Thinkingモデルが実装系タスク(B2: 複数ファイル横断改修)で発揮する品質・速度・コスト・自律性・出力品質を実証データとして残す"
 
-  purpose: |
-    cmd_450の不具合2件を修正する:
-    (1) shk起動時にダッシュボード🏯がSonnet表記のまま更新されないバグ修正
-    (2) shcエイリアスを陣形管理ツールに戻し、ハイブリッド出陣を別エイリアス(shx)に変更
+purpose: |
+  cmd_463(ハイブリッド陣モデル割当基準実証)のフェーズ2タスクB2のSonnet版。
+  scripts/inbox_write.sh と scripts/inbox_watcher.sh の2ファイルに priority フィールドを
+  横断追加する複数ファイル改修タスク (L3)。
+  既存のpriorityなしメッセージは normal 扱い (後方互換性維持)。
+  同タスクをOpus(足軽5号)・Codex(足軽7号)が並列実行するため、
+  軍師がモデル横断比較に使用する。
 
-  acceptance_criteria:
-    - "shk で起動した際、ダッシュボード🏯の足軽モデル表記がOpusに正しく更新される"
-    - "shu で起動した際、ダッシュボード🏯の足軽モデル表記がSonnet+Tに正しく更新される"
-    - "shc は scripts/shc.sh（陣形管理ツール）のエイリアスに戻っている（~/.bash_aliases）"
-    - "ハイブリッド出陣コマンドは shx に割り当てられている（~/.bashrc）"
-    - "shm エイリアスは廃止（~/.bash_aliasesから削除）"
-    - "~/.bashrc と ~/.bash_aliases が新エイリアス体系で整合している"
-    - "shutsujin_departure.sh の update_dashboard_formation() が全陣形で正しく動作する"
-    - "instructions/shogun.md の shm 参照が shc に修正されている"
-    - "git commit済み（/pub-ucでpushも実施）"
+acceptance_criteria:
+  - "scripts/inbox_write.sh の修正版を output/cmd_463_b2_sonnet_inbox_write.sh に書き出す(元ファイル read-only)"
+  - "scripts/inbox_watcher.sh の修正版を output/cmd_463_b2_sonnet_inbox_watcher.sh に書き出す(元ファイル read-only)"
+  - "inbox_write.sh が priority 引数 (high/normal/low) を受け付ける(第5引数想定、デフォルト normal)"
+  - "YAML出力されるメッセージに priority: <値> フィールドが含まれる"
+  - "inbox_watcher.sh が priority: high のメッセージで通常2回ナッジを行う(通常priorityは1回)"
+  - "既存の priority フィールドなしメッセージを読み込んでもエラーにならない(後方互換性)"
+  - "設計書 output/cmd_463_b2_sonnet_design.md に変更箇所一覧+リスク+両ファイルの差分箇所を記載"
+  - "report YAML に agent_tool_used + agent_tool_tokens を記録(両方とも必須)"
+  - "公平性のため、自分の実装の優れた点と懸念点(P0/P1/P2形式)を両方記載"
 
-  editable_files:
-    - "/home/ubuntu/shogun/shutsujin_departure.sh"
-    - "/home/ubuntu/.bash_aliases"
-    - "/home/ubuntu/.bashrc"
-    - "/home/ubuntu/shogun/instructions/shogun.md"
-    - "/home/ubuntu/shogun/difference.md"
+implementation_notes: |
+  【B2 タスク仕様 (L3: 2ファイル横断)】
+  - 元ファイル(read-only):
+    * scripts/inbox_write.sh (175行)
+    * scripts/inbox_watcher.sh (1232行)
+  - 機能要件:
+    1. inbox_write.sh: 第5引数に priority (high/normal/low) を追加、デフォルト normal
+       * Usage 例: bash scripts/inbox_write.sh karo "急ぎ報告" report_received gunshi high
+       * YAML 出力時にメッセージに priority: <値> フィールドを追加
+    2. inbox_watcher.sh: メッセージから priority を読み取り、high なら 2 回ナッジ
+       * 既存メッセージ (priority フィールドなし) は normal 扱い
+       * ナッジ間隔は適切なクールダウンを保つ (連続 send-keys 衝突回避)
 
-  description: |
-    ■ cmd_450不具合修正（2件）
+  【実装ステップ】
+  1. Read で scripts/inbox_write.sh を全行確認 (175行)
+  2. Read で scripts/inbox_watcher.sh の関連箇所を確認 (1232行 → grep で関連箇所特定推奨)
+     * Grep で "send-keys" "process_unread" "send_wakeup" 等の関連箇所を絞り込む
+  3. 修正版を output/cmd_463_b2_sonnet_inbox_write.sh と output/cmd_463_b2_sonnet_inbox_watcher.sh に書き出す
+  4. 設計書 output/cmd_463_b2_sonnet_design.md に変更箇所・リスク・後方互換性検証手順を記載
+  5. 可能ならインラインテスト(bash -n syntax check 等)も記載
 
-    【Phase 1: ダッシュボード🏯自動更新バグ修正】
+  【出力ファイル】
+  - output/cmd_463_b2_sonnet_inbox_write.sh (修正版1)
+  - output/cmd_463_b2_sonnet_inbox_watcher.sh (修正版2)
+  - output/cmd_463_b2_sonnet_design.md (設計書)
 
-    shutsujin_departure.sh L85-118 の update_dashboard_formation() を調査・修正する。
+  【cmd_463 実証研究としての注意点】
+  - フェーズ1 a2_sonnet で Sonnet は最詳細(295行)・コード例付きの強みを実証
+  - フェーズ2 (実装系) では Sonnet の効率性 (Explore 並列) と品質バランスがどう出るかが見どころ
+  - **agent_tool_tokens 記録基準 (フェーズ1の教訓)**:
+    * agent_tool_used: true/false (Task tool 使用有無)
+    * agent_tool_tokens: Task tool 経由の消費トークン (Task 未使用なら 0)
+    * main_model_tokens_estimate: メインモデル(Sonnet)消費トークンの推定値も併記
+  - **公平性 AC (フェーズ1 a2_opus 5号の知見)**: 自分の実装の優れた点 (3項目以上) と
+    懸念点 (P0/P1/P2 形式) を両論併記。片側評価を避ける。
+  - 想定トークン: 50K-120K (1232 行の inbox_watcher.sh を読むため)
+  - 想定時間: 30-90分
 
-    症状: shk（決戦の陣）で起動しても、ダッシュボード🏯セクションの足軽モデル表記が
-    Sonnet+Tのまま更新されない。
+  【RACE-001 考慮】
+  各モデルが独立した output/cmd_463_b2_{model}_*.{sh,md} に書き出すため競合なし。
+  元ファイル (scripts/inbox_write.sh と scripts/inbox_watcher.sh) は絶対に編集しない (read-only)。
 
-    調査手順:
-    1. CLI_ADAPTER_LOADED の値を確認（L56-61で設定）
-    2. get_model_display_name() の戻り値を確認（lib/cli_adapter.sh）
-       - _cli_adapter_read_yaml() がsettings.yamlを正しく読んでいるか
-       - shc.sh deploy all-opus 実行後の settings.yaml の cli.agents セクションの値
-    3. sed置換パターンが実際のダッシュボード表記（例: 足軽1号(Sonnet+T)）にマッチするか
-    4. 全陣形（all-sonnet/all-opus/hybrid）で動作テスト
+  【後方互換性チェック観点】
+  - 既存 inbox/*.yaml に priority フィールドがないメッセージが大量に存在
+  - YAML パース時に priority キーが KeyError を起こさないこと (.get('priority', 'normal') 等)
+  - inbox_write.sh の旧 4 引数呼び出し (priority なし) も成功すること
 
-    修正後の動作テスト:
-    - `bash scripts/shc.sh deploy all-opus` → settings.yaml確認 → 関数呼出 → dashboard確認
-    - `bash scripts/shc.sh deploy all-sonnet` → 同上
-    - `bash scripts/shc.sh deploy hybrid` → 同上
+editable_files:
+  - "output/cmd_463_b2_sonnet_inbox_write.sh"
+  - "output/cmd_463_b2_sonnet_inbox_watcher.sh"
+  - "output/cmd_463_b2_sonnet_design.md"
+  - "queue/reports/ashigaru2_report.yaml"
 
-    ヒント: update_dashboard_formation()内のCLI_ADAPTER_LOADED=trueパスで
-    get_model_display_nameを呼ぶが、この関数がsettings.yamlの「現在値」を
-    読むかどうかが鍵。shc.sh deploy後にsettings.yamlが更新されているか、
-    かつ_cli_adapter_read_yamlがファイルを毎回読み直すか確認せよ。
-
-    【Phase 2: エイリアス競合完全解消】
-
-    現在の状態:
-    - ~/.bash_aliases L4: alias shm='bash /home/ubuntu/shogun/scripts/shc.sh'
-    - ~/.bashrc L121: alias shu='bash ~/shogun/shutsujin_departure.sh'
-    - ~/.bashrc L122: alias shk='bash ~/shogun/shutsujin_departure.sh --kessen'
-    - ~/.bashrc L123: alias shc='bash ~/shogun/shutsujin_departure.sh --hybrid'
-
-    変更内容:
-    1. ~/.bash_aliases: shm → shc に戻す
-       alias shc='bash /home/ubuntu/shogun/scripts/shc.sh'
-       （shm 行は削除）
-
-    2. ~/.bashrc L123: shc → shx に変更
-       alias shx='bash ~/shogun/shutsujin_departure.sh --hybrid'
-       （shu/shk はそのまま）
-
-    3. instructions/shogun.md L258: `shm status` → `shc status` に修正
-
-    4. 他ファイルのshm参照確認:
-       grep -rn "shm" /home/ubuntu/shogun/instructions/ /home/ubuntu/shogun/CLAUDE.md 2>/dev/null
-       ※ queue/tasks/ や queue/reports/ は過去のログなので変更不要
-       ※ difference.md は /pub-uc で更新される
-
-    【Phase 3: 検証・コミット・プッシュ】
-
-    1. source ~/.bash_aliases && source ~/.bashrc で確認
-    2. type shc → scripts/shc.sh を指すこと
-    3. type shx → shutsujin_departure.sh --hybrid を指すこと
-    4. type shu, type shk → 変更なし
-    5. bash -n shutsujin_departure.sh → 構文エラーなし
-    6. git add → git commit
-    7. /pub-uc でpush（difference.md更新含む）
-
-    【新エイリアス体系（変更後）】
-    shu = 平時出陣（all-sonnet）
-    shk = 決戦出陣（all-opus）
-    shx = 混成出陣（hybrid）← NEW
-    shc = 陣形管理ツール（scripts/shc.sh）← 復帰
-
-  context: shogun
-  report_path: queue/reports/ashigaru2_report.yaml
+context: shogun
+report_path: queue/reports/ashigaru2_report.yaml

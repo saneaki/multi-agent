@@ -1,5 +1,5 @@
 # 📊 戦況報告
-最終更新: 2026-04-07 11:29 JST
+最終更新: 2026-04-07 11:45 JST
 
 ## 🐸 Frog / ストリーク
 
@@ -8,7 +8,7 @@
 | 今日のFrog | 未設定 |
 | Frog状態 | 🐸 未撃破 |
 | ストリーク | 🔥 29日目継続中 (最長: 29日) |
-| 今日の完了 | 3（cmd: 3 + VF: 0） |
+| 今日の完了 | 4（cmd: 4 + VF: 0） |
 | VFタスク残り | 0件（うち今日期限: 0件） |
 
 ## 🚨 要対応 - 殿のご判断をお待ちしております
@@ -23,24 +23,32 @@
 
 | cmd | 内容 | 担当 | 状態 |
 |-----|------|------|------|
-| cmd_464 | | | 足軽2号(Sonnet)作業中 | assigned |
-| cmd_465 | | | 足軽3号(Sonnet)作業中 | assigned |
-| cmd_463 | | | 足軽4号(Sonnet)作業中 | in_progress |
-| cmd_463 | | | 足軽5号(Sonnet)作業中 | in_progress |
-| cmd_464 | | | 軍師(Opus+T)作業中 | assigned |
+| cmd_464 |  | 軍師(Opus+T)作業中 | assigned |
 
 ## 🏯 待機中の構成員
 
 | 構成員 | 状態 | 最終タスク |
 |------|------|-----------|
-| 足軽1号(Sonnet) | 待機 | subtask_463_b1_sonnet完了: | |
-| 足軽6号(Sonnet) | 待機 | subtask_463_b1_codex完了: | |
-| 足軽7号(Sonnet) | 待機 | subtask_463_b2_codex完了: | |
+| 足軽1号(Sonnet) | 待機 | subtask_463_b1_sonnet完了:  |
+| 足軽2号(Sonnet) | 待機 | subtask_463_b2_sonnet完了:  |
+| 足軽3号(Sonnet) | 待機 | subtask_465a完了:  |
+| 足軽4号(Opus+T) | 待機 | subtask_463_b1_opus完了:  |
+| 足軽5号(Opus+T) | 待機 | subtask_463_b2_opus完了:  |
+| 足軽6号(Codex) | 待機 | subtask_463_b1_codex完了:  |
+| 足軽7号(Codex) | 待機 | subtask_463_b2_codex完了:  |
 
 ## ✅ 本日の戦果（4/7 JST）
 
 | 時刻 | 戦場 | 任務 | 結果 |
 |------|------|------|------|
+| 11:42 | cmd_463 | subtask_463_b2_sonnet 完了 — 足軽2号(Sonnet) inbox_write/inbox_watcher priority対応(L3横断)。output/cmd_463_b2_sonnet_inbox_write.sh(175行/第5引数PRIORITY追加+defaultnormal)+output/cmd_463_b2_sonnet_inbox_watcher.sh(1246行/has_high_priority抽出+Phase1 sleep2+2回目send_wakeup)+設計書。bash -n両PASS。後方互換: .get('priority','normal')。懸念点: P1×2(cooldown skippable/バリデーション未実装)+P2×1(Phase2/3 priority非考慮)。agent_tool_used=false, main_estimate≈80K。AC 9/9 PASS。軍師QC待ち。**Sonnet特性: 6箇所最小変更+ログ充実** | ⚙️ gunshi QC待ち |
+| 11:40 | cmd_463 | subtask_463_b2_opus 完了 — 足軽5号(Opus+T) inbox_write/inbox_watcher priority対応(L3横断)。output/cmd_463_b2_opus_inbox_write.sh(203行/+28)+output/cmd_463_b2_opus_inbox_watcher.sh(1296行/+64)+output/cmd_463_b2_opus_design.md(528行/10セクション)。specials高優先度除外(P0-1干渉回避)。(m.get('priority')or'normal')で欠損/None/空文字吸収。defense-in-depth: HIGH_NUDGE_PENDING reset 2箇所。bash -n両PASS。懸念点: P0×2/P1×3/P2×4(計9項目)。優れた点14項目。a2_opus知見活用7件。agent_tool_used=false, main_estimate≈95K。AC 9/9 PASS。軍師QC待ち。**Opus特性: 深層設計+specials干渉回避+フェーズ1知見活用** | ⚙️ gunshi QC待ち |
+| 11:35 | cmd_465 | subtask_465a QC PASS — 足軽3号(Sonnet) ダッシュボード構成員化完了。dashboard.md(セクション「🏯 待機中の足軽」→「🏯 待機中の構成員」、ヘッダ「足軽」→「構成員」)+scripts/update_dashboard.sh(gunshi.yaml走査追加+ashigaru_name() gunshi→軍師(Opus+T)分岐追加+awkヘッダ更新)+shutsujin_departure.sh(update_dashboard_formation()軍師sed処理追加)の3ファイル横断修正。bash -n両通過、bash scripts/update_dashboard.sh実行で軍師(Opus+T)行が正しく生成。commit b78cc84 push済。AC 10/10 PASS。 | ✅ QC PASS |
+| 11:35 | cmd_463 | subtask_463_b2_codex QC PASS — 足軽7号(Codex) inbox_write/inbox_watcher priority対応(L3横断改修)。output/cmd_463_b2_codex_inbox_write.sh(185行/第5引数priority追加+high\|normal\|low検証+YAML出力にpriority追加)+output/cmd_463_b2_codex_inbox_watcher.sh(1267行/get_unread_info() high_count算出+send_priority_nudge()ラッパー追加+priority欠落はnormal扱いで後方互換)+output/cmd_463_b2_codex_design.md(93行/差分抜粋+リスク+公平性)。HIGH_PRIORITY_NUDGE_GAP_SEC環境変数化で運用調整可能。bash -n両通過。元scripts/inbox_*無変更。公平性: 優れた点4項目(後方互換・変更局所化・運用調整可能・read-only順守)+P0なし/P1×1(LAST_NUDGE_*リセット連投時過剰通知可能性)/P2×1(weight制御未実装)。agent_tool_used=false, main_estimate≈78K。AC 9/9 PASS。**Codex特性: 局所化変更+環境変数化+後方互換最重視** | ✅ QC PASS |
+| 11:35 | cmd_463 | subtask_463_b1_opus QC PASS — 足軽4号(Opus+Thinking) jst_now.sh --week追加(Opus版)。output/cmd_463_b1_opus.sh(53行/set -u+monday_of_week_jst()関数化+GNU/BSD date両対応+不明引数Error+exit 1+-h/--help両受理)+output/cmd_463_b1_opus.md(257行/7セクション/代替案検討4種A-D+将来拡張余地+優れた点9項目+P0:0/P1:2/P2:4)。実証テスト: 引数なし/--yaml/--date/--week→2026-04-06/-h/--help/--bogus→Error+exit 1すべてPASS+全7曜日網羅+年またぎ(2025-12-31→2025-12-29, 2026-01-01→2025-12-29)+うるう年(2024-02-29→2024-02-26)論理検算PASS。元scripts/jst_now.sh git diff 0行(read-only順守)。agent_tool_used=false, main_estimate≈25K-40K(Extended Thinking含む)。AC 9/9 PASS。**Opus特性: 最深設計(代替案4種比較・将来拡張余地・エッジケース論理検算)+優れた点9項目で最多自己評価** | ✅ QC PASS |
+| 11:30 | cmd_463 | subtask_463_b1_codex QC PASS — 足軽6号(Codex) jst_now.sh --week追加(Codex版)。output/cmd_463_b1_codex.sh に **関数分離設計**(usage()+week_monday_jst())+**GNU/BSD date 両対応**(Linux/macOS両環境動作)を実装。実証テスト5/5 PASS(--week→2026-04-06/--date/--yaml/引数なし/--bad→exit1)。元scripts/jst_now.sh無変更(read-only)。公平性: 優れた点3項目(非破壊・関数分離・移植性)+P0なし/P1×1(BSD古環境差分)/P2×1(usage例示)。agent_tool_used=false, main_estimate≈26K。AC 9/9 PASS。**重要発見: Codex特性逆転 — フェーズ1で「最簡素」だったCodexがフェーズ2(実装系)では「最も移植性高い構造的設計」を産出** | ✅ QC PASS |
+| 11:30 | cmd_463 | subtask_463_b1_sonnet QC PASS — 足軽1号(Sonnet) jst_now.sh --week追加(Sonnet版)。output/cmd_463_b1_sonnet.sh に **最小差分実装**(7行追加のみ、case文内インライン)。アルゴリズム: ISO 8601曜日番号利用 (date +%u → 1-7)。実証テスト5/5 PASS(--week→2026-04-06/--date/--yaml/引数なし/--invalid→exit1)。元scripts/jst_now.sh無変更(read-only)。公平性: 優れた点3項目(最小差分・TZ一貫性・新規エラー処理)+P1×1(date -d Linux固定)+P2×2(秒境界・グローバル変数)。agent_tool_used=false, main_estimate≈12K。AC 8/8 PASS。**Sonnet特性: 最小差分・効率重視** | ✅ QC PASS |
+| 11:28 | cmd_464 | subtask_464b 完了 — 足軽2号(Sonnet) n8n feedback-systemワークフロー作成(WF:HzzVDzt7oFjnDfP4, active:true)。5ノード構成: NotionTrigger→Code(整形)→Code(shogun.yaml追記)→ErrorTrigger→ntfy。n8n v2.7.5でn8n-nodes-base.executeCommand廃止→Code node+child_process.execSync()で代替。queue/n8n/feedback-system.json+scripts/n8n_feedback_append.py(atomic write)作成。commit dfe3eaa push済み。AC 9/9 PASS。E2E(Notion投入→shogun.yaml確認)は軍師(subtask_464c)が実施予定。 | ⚙️ E2E QC待ち |
 | 11:25 | cmd_463 | cmd_463フェーズ2配備完了 — 軍師ドラフト6件(B1×3/B2×3)レビューOK。フェーズ1教訓(agent_tool_tokens統一+公平性AC+Codex差別化)反映済み。B1(jst_now.sh --week): 足軽1(Sonnet)/4(Opus)/6(Codex)。B2(inbox priority L3): 足軽5(Opus)/7(Codex)。B2_sonnet=足軽2号(464b完了後)。cmd_465(dashboard構成員化)=足軽3号同時配備。合計6エージェント稼働中。 | ⚔️ フェーズ2開始 |
 | 11:20 | cmd_464 | subtask_464a QC PASS — 足軽1号(Sonnet) Notion "shogun-feedback" DB作成完了。DB ID: 01d9f2b4-01e4-42e6-85ec-f4b2feb5bfb8。フィールド8種(タイトル/種別/詳細/送信者/緊急度/対象プロジェクト/ステータス/作成日時)+全Select設定完了。Forms URL取得(手動設定手順あり: API制約)。docs/feedback-system-guide.md作成。ashigaru2にDB ID通知済み。AC 9/10(1 PARTIAL: Forms自動化API制約 → 許容)。🛠️スキル候補: notion-db-creation-with-schema | ✅ QC PASS |
 | 11:20 | cmd_463 | subtask_463_phase2_design完了 — 軍師がcmd_463フェーズ2ドラフト6件作成(output/cmd_463_drafts/)。フェーズ1教訓4点を全タスクに反映。B2_opus版にP0-1 specials自動既読化との干渉検討追加(Opusならではの深掘り)。 | ✅ 設計完了 |
