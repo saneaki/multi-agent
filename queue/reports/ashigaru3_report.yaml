@@ -1,60 +1,119 @@
 worker_id: ashigaru3
-task_id: subtask_475a2_snapshot_tz_unification
-parent_cmd: cmd_475
-timestamp: "2026-04-08T16:40:00+09:00"
+task_id: subtask_478_notion_feedback_sync
+parent_cmd: cmd_478
+timestamp: "2026-04-08T17:30:00+09:00"
 status: completed
 
 result:
   summary: |
-    snapshot_at タイムスタンプのTZ統一(UTC→JST +09:00)完了。
-    context_snapshot.sh / pre_compact_snapshot.sh の TIMESTAMP 生成を
-    date -u から bash scripts/jst_now.sh --yaml に変更。
-    既存5ファイルをUTC→JSTにマイグレーション済み。全AC PASS。
+    Notion shogun-feedback DB スキーマ調査完了。3者(Notion/n8n/docs)差分解消。
+    n8n WF修正+Docker volume mount追加+process.pid対応+Trigger flat構造対応。
+    E2E成功確認(execution 12951: success, shogun.yaml正常書込)。
+    副産物: Docker n8nコンテナの shogun/queue/inbox mount不足バグを発見・修正。
+
+  schema_investigation:
+    notion_db:
+      db_name: フィードバックフォーム
+      db_id: 01d9f2b4-01e4-42e6-85ec-f4b2feb5bfb8
+      properties:
+        - "タイトル (title)"
+        - "種別 (multi_select: バグ/要望/質問/感想/その他)"
+        - "詳細 (rich_text)"
+        - "緊急度 (select: high/medium/low)"
+        - "対象プロジェクト (select: pdf総合ソフト/その他)"
+        - "送信者メールアドレス (email)"
+        - "スクリーンショット等 (files)"
+        - "作成日時 (created_time)"
+        - "対応 (checkbox)"
+        - "要約 (rich_text)"
+
+  diff_table:
+    - property: "種別"
+      notion: "multi_select"
+      n8n_before: "select (バグ)"
+      n8n_after: "multi_select array join"
+      docs_before: "select (感想なし)"
+      docs_after: "multi_select 感想追加"
+    - property: "送信者/送信者メールアドレス"
+      notion: "email"
+      n8n_before: "rich_text (存在しないプロパティ)"
+      n8n_after: "email"
+      docs_before: "送信者(text型)"
+      docs_after: "送信者メールアドレス(email型)"
+    - property: "対象プロジェクト options"
+      notion: "pdf総合ソフト/その他"
+      n8n_before: "fallback='shogun'"
+      n8n_after: "fallback='その他'"
+      docs_before: "shogun/gas-mail-manager/pdfmerged/その他"
+      docs_after: "pdf総合ソフト/その他"
+    - property: "DB名"
+      notion: "フィードバックフォーム"
+      docs_before: "shogun-feedback"
+      docs_after: "フィードバックフォーム"
 
   changes:
-    - file: scripts/context_snapshot.sh
-      line: 17
-      before: 'TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%S+00:00")'
-      after: 'TIMESTAMP=$(bash "${SHOGUN_ROOT}/scripts/jst_now.sh" --yaml)'
+    - type: "n8n WF code-yaml-fb修正"
+      detail: "Notion Trigger v1 flat構造対応: page['プロパティ名'] 直接アクセスに変更"
+    - type: "n8n WF code-append-fb修正"
+      detail: "process.pid → Date.now()+random (task-runner内 process未定義対応)"
+    - type: "Docker volume mount追加"
+      file: "/home/ubuntu/.n8n-mcp/n8n/docker-compose.yml"
+      detail: "/home/ubuntu/shogun/queue/inbox をコンテナにマウント(ENOENT解消)"
+    - type: "N8N_RESTRICT_FILE_ACCESS_TO更新"
+      detail: "shogun/queue/inbox をアクセス許可パスに追加"
+    - type: "docs/feedback-system-guide.md更新"
+      detail: "現行DBスキーマ(multi_select/email/新プロパティ)に整合"
 
-    - file: scripts/hooks/pre_compact_snapshot.sh
-      line: 12
-      before: 'TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%S+00:00")'
-      after: 'TIMESTAMP=$(bash "${SHOGUN_ROOT}/scripts/jst_now.sh" --yaml)'
+  e2e_result:
+    execution_id: "12951"
+    status: success
+    page_id: "33ce8d62-e4aa-8180-a03c-ffff96f4d556"
+    shogun_inbox_entry:
+      id: "feedback_202604080827581_ccytebnw"
+      sender: "ashigaru3@test.shogun"
+      feedbackType: "バグ"
+      title: "[E2Eテスト2] cmd_478 動作確認"
+      urgency: "medium"
+      written: true
 
-  migration:
-    existing_snapshots_tz_before: "UTC (+00:00)"
-    files_migrated: 5
-    method: "Python datetime変換: UTC時刻 + 9時間 → JST +09:00表示"
-    details:
-      - "shogun_snapshot.yaml: 2026-04-08T07:37:31+00:00 → 2026-04-08T16:37:31+09:00"
-      - "ashigaru4_snapshot.yaml: 2026-04-08T06:12:59+00:00 → 2026-04-08T15:12:59+09:00"
-      - "ashigaru1_snapshot.yaml: 2026-04-07T23:55:22+00:00 → 2026-04-08T08:55:22+09:00"
-      - "gunshi_snapshot.yaml: 2026-04-08T06:51:20+00:00 → 2026-04-08T15:51:20+09:00"
-      - "karo_snapshot.yaml: 2026-04-08T06:17:47+00:00 → 2026-04-08T15:17:47+09:00"
+  bugs_fixed:
+    - id: "BUG-478-1"
+      description: "n8n DockerコンテナにshogunのQueueディレクトリがマウントされていなかった(ENOENT)"
+    - id: "BUG-478-2"
+      description: "n8n task-runner内でprocess.pidが未定義(ReferenceError)"
+    - id: "BUG-478-3"
+      description: "n8n Notion Trigger v1のflat構造を考慮せず旧APIアクセスパターンを使用"
 
 acceptance_criteria_results:
-  - criteria: "context_snapshot.sh が snapshot_at を JST +09:00 形式で書き出す"
+  - criteria: "Notion shogun-feedback DB の現行スキーマが取得されレポート化"
     met: true
-    evidence: "テスト出力: snapshot_at: '2026-04-08T16:39:50+09:00'"
-  - criteria: "pre_compact_snapshot.sh が snapshot_at を JST +09:00 形式で書き出す"
+    evidence: "10プロパティ全て確認・差分表作成済み"
+  - criteria: "3者(Notion/n8n/docs)の差分表が作成されている"
     met: true
-    evidence: "jst_now.sh --yaml に変更確認済み"
-  - criteria: "既存 snapshot YAML の TZ 状況が report に記載されている"
+    evidence: "diff_tableに4項目記載"
+  - criteria: "n8n ワークフローの Notion プロパティマッピングが現行 DB に整合"
     met: true
-    evidence: "migration.details に5ファイル全ての変換前後を記載"
-  - criteria: "必要なマイグレーションが完了(または不要と判断)"
+    evidence: "種別multi_select・送信者メールアドレスemail・Trigger flat構造対応完了"
+  - criteria: "docs/feedback-system-guide.md が現行スキーマに整合"
     met: true
-    evidence: "5ファイル全てをUTC→JSTに変換完了"
-  - criteria: "bash -n 構文チェック PASS"
+    evidence: "スキーマ一覧追加・multi_select/email型・新プロパティ記載"
+  - criteria: "E2E テスト投稿が成功(n8n success + Notion page 作成)"
     met: true
-    evidence: "context_snapshot.sh / pre_compact_snapshot.sh 両方 bash -n PASS"
+    evidence: "execution 12951 status=success, shogun.yaml に正確な feedback エントリ確認"
+  - criteria: "軍師QC PASS"
+    met: pending
+    evidence: "gunshi QC待ち"
 
 ac_summary:
-  total: 5
+  total: 6
   met: 5
-  rate: "100%"
+  pending: 1
+  rate: "5/5 (QC除く)"
 
 agent_tool_used: false
 skill_candidate:
-  found: false
+  found: true
+  description: >
+    n8n Notion Trigger v1 は properties をトップレベルにフラット展開する。
+    page.properties?.['X']?.select?.name ではなく page['X'] で直接アクセス。
+    既存コードパターンとの差異に注意。
