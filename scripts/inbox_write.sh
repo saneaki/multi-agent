@@ -149,7 +149,7 @@ except Exception as e:
                     fi
 
                     # Call ntfy.sh with new format (non-blocking, log errors only)
-                    if ! bash "$SCRIPT_DIR/scripts/ntfy.sh" "$NTFY_BODY" "$NTFY_TITLE" 2>/dev/null; then
+                    if ! bash "$SCRIPT_DIR/scripts/ntfy.sh" "$NTFY_BODY" "$NTFY_TITLE" "$TYPE" 2>/dev/null; then
                         echo "[inbox_write] ntfy notification failed for $TYPE to $TARGET" >&2
                     fi
                 fi

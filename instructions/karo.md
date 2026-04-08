@@ -61,10 +61,13 @@ workflow:
     editable_files_rule: "【必須】editable_filesフィールド必須。足軽が変更するファイルパスまたはglobパターンをリストせよ。自身のreport/task YAMLは暗黙許可のため記載不要。例: editable_files: [\"scripts/log_violation.sh\", \"tests/unit/test_*.bats\"]"
     editable_files_completeness: "【SO-20完全性】instructionsで足軽に編集・作成・更新・再生成を指示する全ファイルをeditable_filesに列挙すること。参照(Read)のみのファイルは不要。不足はQC NGの原因となる。"
     echo_message_rule: "OPTIONAL。特別な場合のみ指定。通常は省略（足軽が自動生成）。DISPLAY_MODE=silentなら省略必須。"
+    gui_review_required_rule: "【GUI検証フィールド】tkinter/GUI関連タスクには gui_review_required: true を設定すること(default: false)。軍師による親子frame設計の事前レビューが必須となる。RACE-001回避も兼ねる。"
+    manual_verification_required_rule: "【実機確認フィールド】殿の実機確認が必要なタスクには manual_verification_required: true を設定すること(default: false)。完了時ダッシュボードに[action]登録が必須。このフィールドがtrueのタスクは完了処理時に自動削除せず、殿確認後に手動削除する(SO-19例外)。"
   - step: 6.5
     action: bloom_routing
     condition: "bloom_routing != 'off' in config/settings.yaml"
     note: "Dynamic Model Routing: bloom_level読取→get_recommended_model→find_agent_for_model→ルーティング。ビジーペイン不可。"
+    gui_rule: "tkinter/GUI 関連タスクでは原則 gui_review_required: true を設定し、軍師事前レビューを経由すること(RACE-001回避も兼ねる)。"
   - step: 7
     action: inbox_write
     target: "ashigaru{N}"
@@ -93,6 +96,8 @@ workflow:
     target: dashboard.md
     timestamp: "bash scripts/jst_now.sh (NEVER raw date command)"
     cleanup_rule: "完了cmd→🔄進行中から削除→✅戦果に1-3行サマリ追加。戦果追加は先頭行に挿入（降順維持）。最新cmdが常にテーブル最上段に来ること。50行超→2週超古いエントリ削除。ステータスボードとして簡潔に。"
+    result_column_rule: "結果列(第4列)は60-80文字以内の1行サマリに統一。詳細(担当/commit hash/AC件数/run ID等の重要数値)はdaily log / report YAMLに残す。例: '🏆 スキル5件並列実装+軍師QC PASS AC各4-5/5 | ✅'"
+    so19_supplement: "【SO-19例外】manual_verification_required: true のtaskは完了処理時にダッシュボードから自動削除しない。殿実機確認後の手動削除を待つ。"
   - step: 11.3
     action: context_snapshot_write
     command: 'bash scripts/context_snapshot.sh write karo "<approach>" "<progress>" "<decisions>" "<blockers>"'
@@ -626,6 +631,12 @@ Update on every dashboard.md update. Frog section at **top** (after title, befor
 bash scripts/ntfy.sh "❌ {subtask} 失敗 — {reason}"
 bash scripts/ntfy.sh "🚨 要対応 — {content}"
 ```
+
+⚠️ 手動送信時は必ず cmd_complete タグを 3rd 引数に付与せよ:
+```bash
+bash scripts/ntfy.sh "🏆 cmd_XXX完了 — {summary}" "" "cmd_complete"
+```
+(cmd_474で欠落事例あり。daemon との重複を避けるため原則 daemon 任せ)
 
 **⚠️ L004: ntfy timestamp is UTC — always convert to JST before processing.**
 `ntfy_inbox.yaml` timestamps are UTC (+00:00). Dashboard is JST-based.

@@ -27,6 +27,15 @@ MESSAGE="[vps] $1"
 TITLE="${2:-}"
 EXTRA_TAGS="${3:-}"
 
+# Auto-detect cmd_complete tag from message (cmd_NNN完了/完遂 パターン)
+# EXTRA_TAGS が既に指定されている場合は override しない（後方互換維持）
+if [[ -z "$EXTRA_TAGS" ]]; then
+  if { [[ "$1" =~ cmd_[0-9]+(完了|完遂) ]] && ! [[ "$1" =~ cmd_[0-9]+(完了|完遂)(予定|見込) ]]; } || \
+     [[ "$1" =~ 🏆.*cmd_[0-9]+ ]]; then
+    EXTRA_TAGS="cmd_complete"
+  fi
+fi
+
 # curlヘッダー構築
 CURL_HEADERS=()
 if [[ -n "$EXTRA_TAGS" ]]; then
