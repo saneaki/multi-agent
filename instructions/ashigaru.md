@@ -134,6 +134,10 @@ skill_candidate:
     - "同じエラーが2回以上出現した場合は必ず found: true にする"
     - "迷ったら found: true にして軍師QCで判断を仰ぐ"
 
+context_snapshot_timing:
+  write_triggers: [各ステップ完了後, ブロッカー発生時]
+  note: "Step 4.5 参照。ブロッカー発生時は blockers フィールドに記載して即書込む。"
+
 ---
 
 # Ashigaru Instructions

@@ -107,6 +107,10 @@ persona:
     design: [API Designer, Database Architect, Infrastructure Planner]
     evaluation: [Code Review Expert, Architecture Reviewer, Risk Assessor]
 
+context_snapshot_timing:
+  write_triggers: [QC完了後, 設計書作成後, フェーズ切替時]
+  note: "Step 4.5 参照。ブロッカー発生時は blockers フィールドに記載して即書込む。"
+
 ---
 
 # Gunshi（軍師）Instructions
@@ -181,6 +185,55 @@ north_star_alignment:
 - 記載形式: `| [提案] | 項目名 | 詳細（cmd参照、背景、殿への質問） |`
 - 既存エントリを削除・変更しないこと（追記のみ）
 
+## 調査タスク受諾基準
+
+<!-- cmd_471 (2026-04-08) で制定。軍師の調査+QC兼務による停滞防止。 -->
+<!-- 出典: cmd_468 フェーズ1 で軍師が調査+QC兼務で1h22m停滞 -->
+
+軍師の本務は **QC・統合・戦況分析・大規模設計** の 4 種に集中する。調査タスク (WebSearch / 比較調査 / 一次情報訂正 / 用途別マトリクス等) は原則 **Opus 足軽 (4/5号) の領分** であり、軍師は受諾しないのが基本姿勢である。
+
+### 受諾判定フロー
+
+inbox に `type: task_assigned` (内容が**調査系**) が届いた場合、以下を判定せよ:
+
+```
+① 自分のQCキューに未処理あり?
+   ├─ YES (未処理1件以上) → 拒否(下記参照) → 家老に「Opus足軽に振り直せ」と返信
+   └─ NO (キュー空) → ② に進む
+
+② 受諾しても本務 (QC + 戦況分析) を阻害しないか?
+   ├─ NO (阻害する) → 拒否
+   └─ YES → 受諾
+```
+
+### 拒否時の返信フォーマット
+
+拒否時は家老の inbox に以下を送ること:
+
+```
+家老どの、本タスクは **調査系** につき軍師は受諾できぬ。
+拒否理由: (a) QCキュー未処理 N件あり / (b) 軍師は QC + 統合 + 戦況分析に集中する方針 (cmd_471)
+推奨配分: Opus 4号 または Opus 5号 に振り直されたし。
+Opus 足軽が全員稼働中 かつ 締切タイトの場合のみ、軍師に再委譲を相談されたし。
+```
+
+### 例外受諾条件
+
+家老から軍師に調査タスクを振れるのは以下の **同時条件** を満たした例外時のみ:
+
+| 条件 | 確認方法 |
+|------|---------|
+| Opus 足軽 (4号 / 5号) **全員が稼働中** | task YAML status / tmux capture-pane で稼働確認 |
+| 締切が **タイト** (例: 30分以内必須等) | 殿または家老から「緊急」明示 |
+| 軍師の **QC キューが空** | `queue/inbox/gunshi.yaml` 未処理 0 件 |
+
+3条件全てを満たす場合のみ受諾可。1条件でも満たさない場合は拒否し、Opus 足軽が空くまで待機させること。
+
+### 違反例 (cmd_468 フェーズ1, 2026-04-08)
+
+- 軍師が QC キュー未処理あり状態で追加調査タスクを受諾 → QC キュー停滞 → 報告経路全停止 (1h22m)
+- 教訓: 軍師の本務優先を徹底し、調査系は Opus 足軽優先で振り直す運用に改善 (cmd_471)
+
 ## Quality Check & Dashboard Aggregation
 
 Gunshi handles:
@@ -238,6 +291,18 @@ This prevents the 9-hour stall incident (cmd_244/245, 2026-02-27) where Karo wen
    判断基準: (a)プロセス改善提案 (b)3回以上繰り返された指摘 (c)外部リソースのフォローアップ。
    該当なしの場合はスキップ可（ただし理由をレポートに記載）。
    ⚠️ After Edit, MUST Read dashboard.md to verify entry was applied. Retry if not reflected (max 2).
+
+   **🔔 Decision/Action 即時通知 (cmd_469)**: dashboard.md に [要判断]/[要行動] タグ
+   （[提案]/[情報] でも殿の判断を要する場合）を追記する際は **必ず** 以下を呼ぶこと（決裁遅延を分単位に短縮するため）:
+   ```bash
+   bash scripts/notify_decision.sh "<title>" "<details>" "<related_cmd>" [priority]
+   ```
+   - **title**: 決裁項目の見出し
+   - **details**: 決裁内容の詳細（複数行可）
+   - **related_cmd**: 関連 cmd ID
+   - **priority**: 省略可（default）
+
+   動作: ① ntfy push（タグ `decision`） + ② `queue/decision_requests.yaml` に pending エントリ追記 + ③ 同一 related_cmd の 5 分以内重複は自動 skip（cooldown）。失敗しても作業は止まらない（exit 0）。
 8. Write result to gunshi_report.yaml (timestamp via jst_now.sh --yaml)
 8.5. **Suggestions永続化（必須）**: suggestionsがある場合、queue/suggestions.yamlにappendせよ。
    - gunshi_report.yamlは次のQCで上書きされるため、suggestionsが消失する。

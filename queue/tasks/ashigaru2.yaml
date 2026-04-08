@@ -1,84 +1,82 @@
-task_id: subtask_463_b2_sonnet
-cmd_id: cmd_463
+task_id: subtask_472a2_python_utf8
+cmd_id: cmd_472
 assigned_to: ashigaru2
-assigned_at: "2026-04-07T11:09:00+09:00"
-status: done
-priority: medium
-bloom_level: L3
+assigned_at: "2026-04-08T14:51:00+09:00"
+status: assigned
+bloom_level: L2
 report_to: gunshi
-north_star: "Sonnet 4.6 + Thinkingモデルが実装系タスク(B2: 複数ファイル横断改修)で発揮する品質・速度・コスト・自律性・出力品質を実証データとして残す"
+language: ja
+model_note: "Sonnet — L012適用。L2ドキュメント作成はSonnet適正。"
+
+north_star: |
+  ~/.claude/skills/python-utf8-errors-replace/SKILL.md を新設し、
+  外部ツール編集ファイルの無効バイト列エラー対策を再利用可能な形で記録する。
 
 purpose: |
-  cmd_463(ハイブリッド陣モデル割当基準実証)のフェーズ2タスクB2のSonnet版。
-  scripts/inbox_write.sh と scripts/inbox_watcher.sh の2ファイルに priority フィールドを
-  横断追加する複数ファイル改修タスク (L3)。
-  既存のpriorityなしメッセージは normal 扱い (後方互換性維持)。
-  同タスクをOpus(足軽5号)・Codex(足軽7号)が並列実行するため、
-  軍師がモデル横断比較に使用する。
+  cmd_457 で発見した Python open() encoding="utf-8" errors="replace" パターンを
+  SKILL.md として永続化する。
 
-acceptance_criteria:
-  - "scripts/inbox_write.sh の修正版を output/cmd_463_b2_sonnet_inbox_write.sh に書き出す(元ファイル read-only)"
-  - "scripts/inbox_watcher.sh の修正版を output/cmd_463_b2_sonnet_inbox_watcher.sh に書き出す(元ファイル read-only)"
-  - "inbox_write.sh が priority 引数 (high/normal/low) を受け付ける(第5引数想定、デフォルト normal)"
-  - "YAML出力されるメッセージに priority: <値> フィールドが含まれる"
-  - "inbox_watcher.sh が priority: high のメッセージで通常2回ナッジを行う(通常priorityは1回)"
-  - "既存の priority フィールドなしメッセージを読み込んでもエラーにならない(後方互換性)"
-  - "設計書 output/cmd_463_b2_sonnet_design.md に変更箇所一覧+リスク+両ファイルの差分箇所を記載"
-  - "report YAML に agent_tool_used + agent_tool_tokens を記録(両方とも必須)"
-  - "公平性のため、自分の実装の優れた点と懸念点(P0/P1/P2形式)を両方記載"
+source_context: |
+  出典: cmd_457
+  問題: dashboard.md など外部ツールが編集するファイルを Python で open() すると
+        無効バイト列(UnicodeDecodeError)が発生する。
+  解決: open(path, encoding="utf-8", errors="replace") で代替文字(U+FFFD)に置換。
+  横展開対象: scripts/ 配下の Python スクリプト(inbox_watcher.sh, ntfy_listener.sh,
+              slim_yaml.py 等の Python 呼出箇所)
 
-implementation_notes: |
-  【B2 タスク仕様 (L3: 2ファイル横断)】
-  - 元ファイル(read-only):
-    * scripts/inbox_write.sh (175行)
-    * scripts/inbox_watcher.sh (1232行)
-  - 機能要件:
-    1. inbox_write.sh: 第5引数に priority (high/normal/low) を追加、デフォルト normal
-       * Usage 例: bash scripts/inbox_write.sh karo "急ぎ報告" report_received gunshi high
-       * YAML 出力時にメッセージに priority: <値> フィールドを追加
-    2. inbox_watcher.sh: メッセージから priority を読み取り、high なら 2 回ナッジ
-       * 既存メッセージ (priority フィールドなし) は normal 扱い
-       * ナッジ間隔は適切なクールダウンを保つ (連続 send-keys 衝突回避)
+steps:
+  - step: 1
+    action: read_existing_skill_example
+    detail: |
+      既存スキルの構造を参考にする:
+      cat ~/.claude/skills/shogun-docker-volume-recovery/SKILL.md | head -80
+      → フロントマターとセクション構成を把握する。
 
-  【実装ステップ】
-  1. Read で scripts/inbox_write.sh を全行確認 (175行)
-  2. Read で scripts/inbox_watcher.sh の関連箇所を確認 (1232行 → grep で関連箇所特定推奨)
-     * Grep で "send-keys" "process_unread" "send_wakeup" 等の関連箇所を絞り込む
-  3. 修正版を output/cmd_463_b2_sonnet_inbox_write.sh と output/cmd_463_b2_sonnet_inbox_watcher.sh に書き出す
-  4. 設計書 output/cmd_463_b2_sonnet_design.md に変更箇所・リスク・後方互換性検証手順を記載
-  5. 可能ならインラインテスト(bash -n syntax check 等)も記載
+  - step: 2
+    action: survey_scripts
+    detail: |
+      shogun プロジェクトの Python スクリプトを確認:
+      grep -rn "open(" /home/ubuntu/shogun/scripts/ | grep -v "errors=" | head -20
+      → 横展開対象の具体例を把握する。
 
-  【出力ファイル】
-  - output/cmd_463_b2_sonnet_inbox_write.sh (修正版1)
-  - output/cmd_463_b2_sonnet_inbox_watcher.sh (修正版2)
-  - output/cmd_463_b2_sonnet_design.md (設計書)
+  - step: 3
+    action: create_skill_md
+    detail: |
+      ~/.claude/skills/python-utf8-errors-replace/SKILL.md を新設:
 
-  【cmd_463 実証研究としての注意点】
-  - フェーズ1 a2_sonnet で Sonnet は最詳細(295行)・コード例付きの強みを実証
-  - フェーズ2 (実装系) では Sonnet の効率性 (Explore 並列) と品質バランスがどう出るかが見どころ
-  - **agent_tool_tokens 記録基準 (フェーズ1の教訓)**:
-    * agent_tool_used: true/false (Task tool 使用有無)
-    * agent_tool_tokens: Task tool 経由の消費トークン (Task 未使用なら 0)
-    * main_model_tokens_estimate: メインモデル(Sonnet)消費トークンの推定値も併記
-  - **公平性 AC (フェーズ1 a2_opus 5号の知見)**: 自分の実装の優れた点 (3項目以上) と
-    懸念点 (P0/P1/P2 形式) を両論併記。片側評価を避ける。
-  - 想定トークン: 50K-120K (1232 行の inbox_watcher.sh を読むため)
-  - 想定時間: 30-90分
+      フロントマター:
+        name: python-utf8-errors-replace
+        description: Python open() で外部ツール編集ファイルの無効バイト列を errors="replace" で安全に読む
+        tags: [python, encoding, utf-8, unicode, file-io, shogun]
 
-  【RACE-001 考慮】
-  各モデルが独立した output/cmd_463_b2_{model}_*.{sh,md} に書き出すため競合なし。
-  元ファイル (scripts/inbox_write.sh と scripts/inbox_watcher.sh) は絶対に編集しない (read-only)。
+      セクション構成:
+        ## 問題
+        - 外部ツール(Claude Code, Notion など)が編集したファイルに SJIS/Latin-1 バイトが混入
+        - Python open(path) が UnicodeDecodeError で落ちる
 
-  【後方互換性チェック観点】
-  - 既存 inbox/*.yaml に priority フィールドがないメッセージが大量に存在
-  - YAML パース時に priority キーが KeyError を起こさないこと (.get('priority', 'normal') 等)
-  - inbox_write.sh の旧 4 引数呼び出し (priority なし) も成功すること
+        ## 解決パターン
+        - Before/After コード例
+        - errors="replace" vs errors="ignore" の違いと使い分け
+
+        ## 横展開チェックリスト
+        - 対象スクリプトの種別(dashboard 読込/YAML 処理/log 解析)
+        - 検出 grep パターン: grep -rn 'open(' scripts/ | grep -v 'errors='
+
+        ## 注意事項
+        - errors="replace" は U+FFFD に置換(元データは失われないがバイト列は読めない)
+        - バイナリデータ混入が疑われる場合は別途バリデーション推奨
+
+  - step: 4
+    action: write_report
+    detail: |
+      queue/reports/ashigaru2_report.yaml に報告書作成。
 
 editable_files:
-  - "output/cmd_463_b2_sonnet_inbox_write.sh"
-  - "output/cmd_463_b2_sonnet_inbox_watcher.sh"
-  - "output/cmd_463_b2_sonnet_design.md"
-  - "queue/reports/ashigaru2_report.yaml"
+  - ~/.claire/skills/python-utf8-errors-replace/SKILL.md
+  - queue/reports/ashigaru2_report.yaml
 
-context: shogun
-report_path: queue/reports/ashigaru2_report.yaml
+acceptance_criteria:
+  - "~/.claude/skills/python-utf8-errors-replace/SKILL.md が新規作成されている"
+  - "フロントマター(name/description/tags)が含まれている"
+  - "Before/After コード例が含まれている"
+  - "横展開チェックリストが含まれている"

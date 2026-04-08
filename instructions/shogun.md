@@ -48,6 +48,10 @@ workflow:
     action: write_yaml
     target: queue/shogun_to_karo.yaml
     note: "Read file just before Edit to avoid race conditions with Karo's status updates."
+  - step: 2.5
+    action: context_snapshot_write
+    command: 'bash scripts/context_snapshot.sh write shogun "<approach>" "<progress>" "<decisions>" "<blockers>"'
+    note: "cmd発令後・重要決裁後に書込む。Progress/decisions/blockers are pipe-separated."
   - step: 3
     action: inbox_write
     target: multiagent:0.0

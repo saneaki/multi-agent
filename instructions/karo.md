@@ -69,6 +69,10 @@ workflow:
     action: inbox_write
     target: "ashigaru{N}"
     method: "bash scripts/inbox_write.sh"
+  - step: 7.5
+    action: context_snapshot_write
+    command: 'bash scripts/context_snapshot.sh write karo "<approach>" "<progress>" "<decisions>" "<blockers>"'
+    note: "タスク割当後・長期作業の節目に書込む。Progress/decisions/blockers are pipe-separated."
   - step: 8
     action: check_pending
     note: "If pending cmds remain in shogun_to_karo.yaml → loop to step 2. Otherwise stop."
@@ -89,6 +93,10 @@ workflow:
     target: dashboard.md
     timestamp: "bash scripts/jst_now.sh (NEVER raw date command)"
     cleanup_rule: "完了cmd→🔄進行中から削除→✅戦果に1-3行サマリ追加。戦果追加は先頭行に挿入（降順維持）。最新cmdが常にテーブル最上段に来ること。50行超→2週超古いエントリ削除。ステータスボードとして簡潔に。"
+  - step: 11.3
+    action: context_snapshot_write
+    command: 'bash scripts/context_snapshot.sh write karo "<approach>" "<progress>" "<decisions>" "<blockers>"'
+    note: "報告受信後に書込む。Progress/decisions/blockers are pipe-separated."
   - step: 11.5
     action: unblock_dependent_tasks
     note: "blocked_by に完了task_idがあれば削除。リスト空→blocked→assigned→send-keys。"
@@ -345,7 +353,70 @@ Cross-reference with dashboard.md — process any reports not yet reflected.
     - RACE-001: 同一ファイル競合リスクあり → parallel削減
     - 足軽空き不足: 待機足軽がhint数未満 → 可能な範囲で並列化
     - 技術的依存関係: タスク間に順序依存あり → parallel削減
+    - **ロードバランシング**: 下記「足軽ロードバランシングルール」優先（routing baseline より優先する）
 - **オーバーライド時**: ダッシュボード🔄欄またはレポートに理由を記載
+
+## 足軽ロードバランシングルール
+
+<!-- cmd_471 (2026-04-08) で制定。Sonnet偏重防止+Opus/Codex足軽稼働率向上。 -->
+<!-- 出典: 殿問題提起 cmd_468 フェーズ1で家老が3調査タスクを全て Sonnet 1〜3号に割当 -->
+<!-- → Opus 4/5号と Codex 6/7号が13〜31分アイドル、軍師は調査+QC兼務で1h22m停滞 -->
+
+家老の足軽割当は **「タスク種別ごとの理論最適 (routing baseline)」だけでなく、「現状の負荷分布」も加味すること**。タスク種別だけで決めると Sonnet 1〜3号に集中し、Opus 4/5号と Codex 6/7号がアイドル化する。
+
+### 必須手順
+
+タスク割当前に **必ず** 以下を確認せよ:
+
+1. **全足軽のアイドル時間取得**: `tmux capture-pane` または `stat -c '%y' queue/tasks/ashigaru{N}.yaml` 等で各足軽の現アイドル時間を確認
+2. **負荷分布の評価**: 5分以上アイドルの足軽 (特に Opus 4/5号 / Codex 6/7号) が居るか
+3. **配分決定**: 下記ルールを適用
+
+### 配分ルール (4 原則)
+
+| ID | ルール | 詳細 |
+|----|--------|------|
+| **(a)** | アイドル時間の事前確認必須 | タスク割当前に全足軽の現アイドル時間を確認すること。アイドル時間チェックなしで割当する行為は禁止。 |
+| **(b)** | アイドル足軽優先割当 | **5分以上アイドル**の Opus/Codex 足軽が居れば、Sonnet 最適タスクでも **Opus/Codex に優先的に振る** (品質80%超担保できる範囲で)。長時間アイドルしている高性能足軽を遊兵化させない。 |
+| **(c)** | Sonnet 例外選択ルール | Sonnet 最適度 ≥4 (5段階) **かつ** Opus/Codex で品質劣化リスク高い場合のみ例外的に Sonnet を選択可。例外選択時は task YAML の `notes` に **「Sonnet選定理由」を明記** すること。 |
+| **(d)** | モデル多様化必須 | 並列タスクは **モデル多様化必須** (全員 Sonnet は禁止)。3並列なら最低 **Sonnet1 + Opus1 + Codex1** または **Sonnet1 + Opus2** 等。同一モデル偏重は cmd_468 型停滞の主因。 |
+
+### 違反例 (cmd_468 フェーズ1, 2026-04-08)
+
+- 家老が3調査タスクを全て Sonnet 1〜3号に割当
+- 結果: Opus 4/5号と Codex 6/7号が **13〜31分アイドル化**、軍師は調査+QC兼務で **1h22m 停滞**
+- 教訓: 「タスク種別ベースの最適化」だけでは並列度が出ない。負荷分布の二軸判断が必須。
+
+### routing baseline との優先関係
+
+- 既存の `docs/agent-routing-baseline.md` は「タスク種別ごとの**理論最適**」を示すマトリクス
+- 本ロードバランシングルールは「**現実の負荷分布**」を加味する補正レイヤー
+- **本ルールが routing baseline より優先する** (= 理論最適でも待機足軽が多い場合は再分配せよ)
+- 実例: cmd_470 フェーズ1 Sonnet1+Opus1+Codex1 の3並列配分が本ルール初適用例
+
+## 調査系の軍師シフト回避
+
+<!-- cmd_471 (2026-04-08) で制定。軍師の調査+QC兼務による停滞防止。 -->
+
+調査・分析系 cmd の **第一候補は Opus 4/5号** である。軍師に調査タスクを直接振るのは原則禁止。
+
+### 配分ルール
+
+| ID | ルール | 詳細 |
+|----|--------|------|
+| **(a)** | 調査系の第一候補は Opus 足軽 | 調査系 cmd (WebSearch / 分析 / 比較 / 設計検討 / 一次情報訂正 / 用途別マトリクス等) は **第一候補=Opus 4/5号** (Extended Thinking 活用)。Opus 特性 (網羅性 / 一次情報精度 / フェーズ間知見転送) が最大限発揮される。 |
+| **(b)** | 軍師は QC + 統合 + 戦況分析に集中 | 軍師の本務は QC・統合・戦況分析・大規模設計の 4 種に集中させる。調査タスクで軍師を兼務させると QC キューが滞留し、足軽全員の報告が滞る。 |
+| **(c)** | 軍師への調査タスクは例外時のみ | 軍師に調査タスクを振れるのは「**Opus 足軽が全員稼働中** かつ **締切タイト**」の同時条件を満たした例外時のみ。それ以外は Opus 足軽待ちでも軍師に振らない。 |
+
+### 軍師受諾の制約 (gunshi.md と連携)
+
+軍師は QC キューに未処理がある状態で調査タスクを受諾してはならない (拒否して家老に「Opus 足軽に振り直せ」と返信)。詳細は `instructions/gunshi.md` の「調査タスク受諾基準」セクション参照。
+
+### 違反例 (cmd_468 フェーズ1)
+
+- 家老が調査系3タスクを Sonnet 足軽に割当 → Opus 足軽がアイドル化
+- 同時に追加調査タスクを軍師に割当 → QC キュー停滞 → 報告経路全停止 (1h22m)
+- 教訓: 調査系を「Opus 足軽 → Opus 足軽満員時のみ軍師」の優先順で振り直せば停滞回避できた。
 
 ## Task Dependencies (blocked_by)
 
@@ -458,6 +529,21 @@ After judging a cmd complete, execute ALL steps before moving to next cmd:
 ### Action Needed Notification
 
 When updating dashboard.md's 🚨 section: if line count increased → `bash scripts/ntfy.sh "🚨 要対応: {heading}"`
+
+### Decision/Action Immediate Push (cmd_469)
+
+dashboard.md に [要判断]/[要行動] タグを追記する際は **必ず** 以下を呼ぶこと（決裁遅延を分単位に短縮するため）:
+
+```bash
+bash scripts/notify_decision.sh "<title>" "<details>" "<related_cmd>" [priority]
+```
+
+- **title**: 決裁項目の見出し（例: "Notion DB ID 確認"）
+- **details**: 決裁内容の詳細（複数行可）
+- **related_cmd**: 関連 cmd ID（例: cmd_469）
+- **priority**: 省略可（default）
+
+動作: ① ntfy push（タグ `decision`） + ② `queue/decision_requests.yaml` に pending エントリ追記 + ③ 同一 related_cmd の 5 分以内重複は自動 skip（cooldown）。失敗しても作業は止まらない（exit 0）。
 
 ### ntfy Not Configured
 

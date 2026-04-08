@@ -97,7 +97,11 @@ Lightweight recovery using only CLAUDE.md (auto-loaded). Do NOT read instruction
 ```
 Step 1: tmux display-message -t "$TMUX_PANE" -p '#{@agent_id}' → ashigaru{N} or gunshi
 Step 2: (gunshi only) mcp__memory__read_graph (skip on failure). Ashigaru skip — task YAML is sufficient.
-Step 3: Read queue/snapshots/{your_id}_snapshot.yaml (if exists → restore approach/progress)
+Step 3: Read queue/snapshots/{your_id}_snapshot.yaml (if exists)
+    → agent_context から approach / progress / decisions / blockers を復元
+    → task.task_id と queue/tasks/{your_id}.yaml の task_id を照合
+    → 一致 → snapshot の文脈を信頼して再開
+    → 不一致 → snapshot 破棄、task YAML から再構築
 Step 4: Read queue/tasks/{your_id}.yaml → assigned=work, idle=wait
         Verify snapshot task_id matches. If mismatch → discard snapshot.
 Step 5: If task has "project:" field → read context/{project}.md
@@ -130,11 +134,17 @@ After compaction, the system instructs "Continue the conversation from where it 
 
 1. Read your instructions file (shogun→`instructions/shogun.md`, etc.)
 2. Restore persona and speech style (戦国口調 for shogun/karo)
-3. Read `queue/snapshots/{your_id}_snapshot.yaml` (if exists)
-   - Restore approach, progress, decisions from `agent_context`
-   - Verify `task.task_id` matches current task YAML (if mismatch, discard snapshot)
+3. Read `queue/snapshots/{your_id}_snapshot.yaml` — **これは PreCompact hook で自動更新されている**
+   - `agent_context.approach` から作業方針を復元
+   - `agent_context.progress` から進捗を復元
+   - `agent_context.decisions` から決定事項を復元
+   - `agent_context.blockers` から障害状況を復元
+   - `task.task_id` と `queue/tasks/{your_id}.yaml` の task_id を照合
+   - 一致 → snapshot の文脈を信頼して再開
+   - 不一致 → snapshot 破棄、task YAML から再構築
 4. Read task YAML to confirm current assignment
-5. Resume work from where the snapshot indicates
+5. **作業再開時に `scripts/context_snapshot.sh write` で新しい agent_context を書込む**
+6. Resume work from where the snapshot indicates
 
 # Communication Protocol
 
@@ -228,6 +238,63 @@ Race condition is eliminated: `/clear` wipes old context. Agent re-reads YAML wi
 | Karo → Shogun/Lord | dashboard.md update only | **inbox to shogun FORBIDDEN** — prevents interrupting Lord's input |
 | Karo → Gunshi | YAML + inbox_write | Strategic tasks only. Standard QC auto-triggered, no assignment needed |
 | Top → Down | YAML + inbox_write | Standard wake-up |
+
+## Context Snapshot
+
+all agents
+
+### 目的
+
+auto-compact は予告なく発動する。compaction を跨いでも「何を考えていたか」が失われないよう、エージェントは作業の節目で `context_snapshot.sh` を呼び出して agent_context を snapshot ファイルに書き出す。
+
+### タイミング(推奨)
+
+| 契機 | 書込む内容 |
+|------|----------|
+| **タスク開始直後** | approach(作業方針) + 最初の progress 項目 |
+| **重要な判断を下した時** | decisions に追加 |
+| **ブロッカーに遭遇した時** | blockers に追加 |
+| **サブステップ完了時** | progress に追加 |
+| **長時間作業(10分以上)** | 節目ごとに approach 更新 |
+
+### 使い方
+
+```bash
+bash scripts/context_snapshot.sh write <agent_id> \
+    "<approach>" \
+    "<progress_item1>|<progress_item2>|<progress_item3>" \
+    "<decision1>|<decision2>" \
+    "<blocker1>|<blocker2>"
+```
+
+- `progress` / `decisions` / `blockers` は **`|` 区切り** で複数項目を渡す
+- 空文字列を渡すと該当フィールドは更新されない
+- 既存の task metadata は保持される
+- 上限: approach 200 文字 / progress 10 件 / decisions 5 件 / blockers 3 件
+
+### 例
+
+```bash
+# タスク開始時
+bash scripts/context_snapshot.sh write gunshi \
+    "cmd_468 フェーズ2設計書作成" \
+    "既存スクリプト2件精読済" \
+    "案A+B 統合採用" \
+    ""
+
+# 進捗追加時
+bash scripts/context_snapshot.sh write gunshi \
+    "cmd_468 フェーズ2設計書作成" \
+    "既存スクリプト2件精読済|設計書ドラフト作成中" \
+    "" \
+    ""
+```
+
+### 禁忌
+
+- **戦国口調は使わない**: シェル引数は技術文字列として扱う
+- **頻繁すぎる書込みは不要**: 5-10 分に1回程度で十分
+- **polling 禁止**: wait ループで書込むことは F004 違反
 
 # Context Layers
 

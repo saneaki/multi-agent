@@ -1,1 +1,350 @@
-{"updatedAt":"2026-04-07T02:26:35.675Z","createdAt":"2026-04-07T02:26:35.675Z","id":"HzzVDzt7oFjnDfP4","name":"feedback-system","description":null,"active":true,"isArchived":false,"nodes":[{"id":"notion-trigger-fb","name":"Notion Trigger","type":"n8n-nodes-base.notionTrigger","typeVersion":1,"position":[100,300],"credentials":{"notionApi":{"id":"2TgNXCxOf366ZWZh","name":"Notion account"}},"parameters":{"pollTimes":{"item":[{"mode":"everyX","value":5,"unit":"minutes"}]},"event":"pageAddedToDatabase","databaseId":{"__rl":true,"mode":"id","value":"01d9f2b4-01e4-42e6-85ec-f4b2feb5bfb8"}}},{"id":"code-yaml-fb","name":"Notion→YAML整形","type":"n8n-nodes-base.code","typeVersion":2,"position":[400,300],"parameters":{"jsCode":"const page = $input.first().json;\nconst title = page.properties?.['タイトル']?.title?.[0]?.text?.content || 'No Title';\nconst type = page.properties?.['種別']?.select?.name || 'その他';\nconst detail = page.properties?.['詳細']?.rich_text?.[0]?.text?.content || '';\nconst sender = page.properties?.['送信者']?.rich_text?.[0]?.text?.content || 'anonymous';\nconst urgency = page.properties?.['緊急度']?.select?.name || 'medium';\nconst project = page.properties?.['対象プロジェクト']?.select?.name || 'shogun';\nconst ts = new Date().toISOString();\nconst shortId = Math.random().toString(36).substr(2, 8);\nconst id = `feedback_${ts.replace(/[-:T.Z]/g,'').substr(0,15)}_${shortId}`;\nreturn [{ json: { id, timestamp: ts, sender, feedbackType: type, title, detail, urgency, project, pageId: page.id } }];"}},{"id":"code-append-fb","name":"shogun.yaml追記","type":"n8n-nodes-base.code","typeVersion":2,"position":[700,300],"parameters":{"jsCode":"const { execSync } = require('child_process');\nconst os = require('os');\nconst path = require('path');\nconst fs = require('fs');\n\nconst data = $input.first().json;\nconst dataStr = JSON.stringify(data);\n\n// Write to temp file to avoid shell injection\nconst tmpFile = path.join(os.tmpdir(), `feedback_${Date.now()}_${Math.random().toString(36).substr(2,6)}.json`);\nfs.writeFileSync(tmpFile, dataStr, 'utf8');\n\ntry {\n  const result = execSync(`python3 /home/ubuntu/shogun/scripts/n8n_feedback_append.py < \"${tmpFile}\"`, {\n    encoding: 'utf-8',\n    timeout: 15000\n  });\n  return [{ json: { success: true, output: result.trim(), id: data.id } }];\n} finally {\n  try { fs.unlinkSync(tmpFile); } catch(e) {}\n}"}},{"id":"error-trigger-fb","name":"Error Trigger","type":"n8n-nodes-base.errorTrigger","typeVersion":1,"position":[400,580],"parameters":{}},{"id":"code-ntfy-fb","name":"エラー通知(ntfy)","type":"n8n-nodes-base.code","typeVersion":2,"position":[700,580],"parameters":{"jsCode":"const { execSync } = require('child_process');\nconst errMsg = ($json.execution?.error?.message || $json.error || 'unknown error').replace(/'/g, '');\ntry {\n  execSync(`bash /home/ubuntu/shogun/scripts/ntfy.sh \"[vps] feedback-system error: ${errMsg.substr(0,80)}\" \"n8n\" \"error\"`, {\n    encoding: 'utf-8',\n    timeout: 10000\n  });\n} catch(e) {\n  // best effort\n}\nreturn [{ json: $input.first().json }];"}}],"connections":{"Notion Trigger":{"main":[[{"node":"Notion→YAML整形","type":"main","index":0}]]},"Notion→YAML整形":{"main":[[{"node":"shogun.yaml追記","type":"main","index":0}]]},"Error Trigger":{"main":[[{"node":"エラー通知(ntfy)","type":"main","index":0}]]}},"settings":{"executionOrder":"v1","callerPolicy":"workflowsFromSameOwner","availableInMCP":false},"staticData":{"node:Notion Trigger":{"lastTimeChecked":"2026-04-07T02:26:00.000Z"}},"meta":null,"pinData":null,"versionId":"f7242e27-5699-4746-9d55-3880cf5d1fea","activeVersionId":"f7242e27-5699-4746-9d55-3880cf5d1fea","versionCounter":4,"triggerCount":1,"shared":[{"updatedAt":"2026-04-07T02:26:35.677Z","createdAt":"2026-04-07T02:26:35.677Z","role":"workflow:owner","workflowId":"HzzVDzt7oFjnDfP4","projectId":"XO345JNGa4VDkzsW","project":{"updatedAt":"2025-11-11T22:29:33.486Z","createdAt":"2025-11-11T14:46:09.483Z","id":"XO345JNGa4VDkzsW","name":"Saneaki En <s.en@hananoen-law.com>","type":"personal","icon":null,"description":null,"creatorId":"435b5ee2-0398-4fb7-a81d-e4c5e0753e5a","projectRelations":[{"updatedAt":"2025-11-11T14:46:09.484Z","createdAt":"2025-11-11T14:46:09.484Z","userId":"435b5ee2-0398-4fb7-a81d-e4c5e0753e5a","projectId":"XO345JNGa4VDkzsW","user":{"updatedAt":"2026-04-06T18:30:44.000Z","createdAt":"2025-11-11T14:39:16.605Z","id":"435b5ee2-0398-4fb7-a81d-e4c5e0753e5a","email":"s.en@hananoen-law.com","firstName":"Saneaki","lastName":"En","personalizationAnswers":{"version":"v4","personalization_survey_submitted_at":"2025-11-11T22:30:10.163Z","personalization_survey_n8n_version":"1.119.1","companyIndustryExtended":["legal-industry"],"companySize":"<20","companyType":"other","role":"business-owner","reportedSource":"google"},"settings":{"userActivated":true,"firstSuccessfulWorkflowId":"AFeF2LK9R9vgNdwe","userActivatedAt":1763567537133,"npsSurvey":{"responded":true,"lastShownAt":1764494418667},"easyAIWorkflowOnboarded":true},"disabled":false,"mfaEnabled":false,"lastActiveAt":"2026-04-06","isPending":false}}]}}],"tags":[],"activeVersion":{"updatedAt":"2026-04-07T02:26:35.682Z","createdAt":"2026-04-07T02:26:35.682Z","versionId":"f7242e27-5699-4746-9d55-3880cf5d1fea","workflowId":"HzzVDzt7oFjnDfP4","nodes":[{"id":"notion-trigger-fb","name":"Notion Trigger","type":"n8n-nodes-base.notionTrigger","typeVersion":1,"position":[100,300],"credentials":{"notionApi":{"id":"2TgNXCxOf366ZWZh","name":"Notion account"}},"parameters":{"pollTimes":{"item":[{"mode":"everyX","value":5,"unit":"minutes"}]},"event":"pageAddedToDatabase","databaseId":{"__rl":true,"mode":"id","value":"01d9f2b4-01e4-42e6-85ec-f4b2feb5bfb8"}}},{"id":"code-yaml-fb","name":"Notion→YAML整形","type":"n8n-nodes-base.code","typeVersion":2,"position":[400,300],"parameters":{"jsCode":"const page = $input.first().json;\nconst title = page.properties?.['タイトル']?.title?.[0]?.text?.content || 'No Title';\nconst type = page.properties?.['種別']?.select?.name || 'その他';\nconst detail = page.properties?.['詳細']?.rich_text?.[0]?.text?.content || '';\nconst sender = page.properties?.['送信者']?.rich_text?.[0]?.text?.content || 'anonymous';\nconst urgency = page.properties?.['緊急度']?.select?.name || 'medium';\nconst project = page.properties?.['対象プロジェクト']?.select?.name || 'shogun';\nconst ts = new Date().toISOString();\nconst shortId = Math.random().toString(36).substr(2, 8);\nconst id = `feedback_${ts.replace(/[-:T.Z]/g,'').substr(0,15)}_${shortId}`;\nreturn [{ json: { id, timestamp: ts, sender, feedbackType: type, title, detail, urgency, project, pageId: page.id } }];"}},{"id":"code-append-fb","name":"shogun.yaml追記","type":"n8n-nodes-base.code","typeVersion":2,"position":[700,300],"parameters":{"jsCode":"const { execSync } = require('child_process');\nconst os = require('os');\nconst path = require('path');\nconst fs = require('fs');\n\nconst data = $input.first().json;\nconst dataStr = JSON.stringify(data);\n\n// Write to temp file to avoid shell injection\nconst tmpFile = path.join(os.tmpdir(), `feedback_${Date.now()}_${Math.random().toString(36).substr(2,6)}.json`);\nfs.writeFileSync(tmpFile, dataStr, 'utf8');\n\ntry {\n  const result = execSync(`python3 /home/ubuntu/shogun/scripts/n8n_feedback_append.py < \"${tmpFile}\"`, {\n    encoding: 'utf-8',\n    timeout: 15000\n  });\n  return [{ json: { success: true, output: result.trim(), id: data.id } }];\n} finally {\n  try { fs.unlinkSync(tmpFile); } catch(e) {}\n}"}},{"id":"error-trigger-fb","name":"Error Trigger","type":"n8n-nodes-base.errorTrigger","typeVersion":1,"position":[400,580],"parameters":{}},{"id":"code-ntfy-fb","name":"エラー通知(ntfy)","type":"n8n-nodes-base.code","typeVersion":2,"position":[700,580],"parameters":{"jsCode":"const { execSync } = require('child_process');\nconst errMsg = ($json.execution?.error?.message || $json.error || 'unknown error').replace(/'/g, '');\ntry {\n  execSync(`bash /home/ubuntu/shogun/scripts/ntfy.sh \"[vps] feedback-system error: ${errMsg.substr(0,80)}\" \"n8n\" \"error\"`, {\n    encoding: 'utf-8',\n    timeout: 10000\n  });\n} catch(e) {\n  // best effort\n}\nreturn [{ json: $input.first().json }];"}}],"connections":{"Notion Trigger":{"main":[[{"node":"Notion→YAML整形","type":"main","index":0}]]},"Notion→YAML整形":{"main":[[{"node":"shogun.yaml追記","type":"main","index":0}]]},"Error Trigger":{"main":[[{"node":"エラー通知(ntfy)","type":"main","index":0}]]}},"authors":"Saneaki En","name":null,"description":null,"autosaved":false,"workflowPublishHistory":[{"createdAt":"2026-04-07T02:26:36.230Z","id":375,"workflowId":"HzzVDzt7oFjnDfP4","versionId":"f7242e27-5699-4746-9d55-3880cf5d1fea","event":"activated","userId":"435b5ee2-0398-4fb7-a81d-e4c5e0753e5a"}]}}
+{
+  "updatedAt": "2026-04-07T03:02:28.398Z",
+  "createdAt": "2026-04-07T02:26:35.675Z",
+  "id": "HzzVDzt7oFjnDfP4",
+  "name": "feedback-system",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "id": "notion-trigger-fb",
+      "name": "Notion Trigger",
+      "type": "n8n-nodes-base.notionTrigger",
+      "typeVersion": 1,
+      "position": [
+        100,
+        300
+      ],
+      "credentials": {
+        "notionApi": {
+          "id": "2TgNXCxOf366ZWZh",
+          "name": "Notion account"
+        }
+      },
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyX",
+              "value": 5,
+              "unit": "minutes"
+            }
+          ]
+        },
+        "event": "pageAddedToDatabase",
+        "databaseId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "01d9f2b4-01e4-42e6-85ec-f4b2feb5bfb8"
+        }
+      }
+    },
+    {
+      "id": "code-yaml-fb",
+      "name": "Notion→YAML整形",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        400,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const page = $input.first().json;\nconst title = page.properties?.['タイトル']?.title?.[0]?.text?.content || 'No Title';\nconst type = page.properties?.['種別']?.select?.name || 'その他';\nconst detail = page.properties?.['詳細']?.rich_text?.[0]?.text?.content || '';\nconst sender = page.properties?.['送信者']?.rich_text?.[0]?.text?.content || 'anonymous';\nconst urgency = page.properties?.['緊急度']?.select?.name || 'medium';\nconst project = page.properties?.['対象プロジェクト']?.select?.name || 'shogun';\nconst ts = new Date().toISOString();\nconst shortId = Math.random().toString(36).substr(2, 8);\nconst id = `feedback_${ts.replace(/[-:T.Z]/g,'').substr(0,15)}_${shortId}`;\nreturn [{ json: { id, timestamp: ts, sender, feedbackType: type, title, detail, urgency, project, pageId: page.id } }];"
+      }
+    },
+    {
+      "id": "code-append-fb",
+      "name": "shogun.yaml追記",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        700,
+        300
+      ],
+      "parameters": {
+        "jsCode": "// pure Node.js implementation — atomic append to shogun.yaml without python\nconst fs = require('fs');\nconst path = require('path');\nconst os = require('os');\n\nconst SHOGUN_INBOX = '/home/ubuntu/shogun/queue/inbox/shogun.yaml';\n\nfunction escapeYamlString(s) {\n  // Wrap in single quotes, escape single quotes by doubling them\n  return \"'\" + String(s).replace(/'/g, \"''\") + \"'\";\n}\n\nfunction buildContent(data) {\n  // Multi-line content: render as YAML literal block scalar\n  const lines = [\n    '【種別】' + (data.feedbackType || ''),\n    '【緊急度】' + (data.urgency || ''),\n    '【対象】' + (data.project || ''),\n    '【タイトル】' + (data.title || ''),\n    '【詳細】' + (data.detail || ''),\n  ];\n  return lines.join('\\n');\n}\n\nfunction buildYamlEntry(data) {\n  const id = data.id || 'unknown';\n  const timestamp = data.timestamp || '';\n  const sender = data.sender || 'anonymous';\n  const content = buildContent(data);\n  // YAML entry as flow-block hybrid using single-quoted strings + literal block for content\n  let entry = '- id: ' + escapeYamlString(id) + '\\n';\n  entry += '  timestamp: ' + escapeYamlString(timestamp) + '\\n';\n  entry += '  from: ' + escapeYamlString(sender) + '\\n';\n  entry += '  type: feedback\\n';\n  entry += '  read: false\\n';\n  entry += '  content: ' + escapeYamlString(content) + '\\n';\n  return entry;\n}\n\nconst data = $input.first().json;\nconst entryYaml = buildYamlEntry(data);\n\n// Atomic append: read current, append new entry at end, write to tmp, rename\nconst current = fs.readFileSync(SHOGUN_INBOX, 'utf8');\nlet newContent;\nif (current.trim() === '' || current.trim() === 'messages:' || current.trim() === 'messages: []') {\n  newContent = 'messages:\\n' + entryYaml;\n} else {\n  // Append to existing messages list — ensure newline before new entry\n  newContent = current.endsWith('\\n') ? current + entryYaml : current + '\\n' + entryYaml;\n}\n\nconst tmpFile = SHOGUN_INBOX + '.tmp.' + process.pid + '.' + Date.now();\nfs.writeFileSync(tmpFile, newContent, 'utf8');\nfs.renameSync(tmpFile, SHOGUN_INBOX);\n\nreturn [{ json: { success: true, id: data.id, message: 'feedback appended (pure Node.js)' } }];\n"
+      }
+    },
+    {
+      "id": "error-trigger-fb",
+      "name": "Error Trigger",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        400,
+        580
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "code-ntfy-fb",
+      "name": "エラー通知(ntfy)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        700,
+        580
+      ],
+      "parameters": {
+        "jsCode": "// best-effort error notify — try /usr/bin/bash, fallback to silent\nconst { execSync } = require('child_process');\nlet errMsg = ($json.execution && $json.execution.error && $json.execution.error.message) || $json.error || 'unknown error';\nerrMsg = String(errMsg).replace(/'/g, '').substr(0, 80);\ntry {\n  execSync(`/usr/bin/bash /home/ubuntu/shogun/scripts/ntfy.sh \"[vps] feedback-system error: ${errMsg}\" \"n8n\" \"error\"`, {\n    encoding: 'utf-8',\n    timeout: 10000\n  });\n} catch(e) {\n  try {\n    // fallback: append to a log file directly\n    require('fs').appendFileSync('/home/ubuntu/shogun/logs/n8n_feedback_errors.log', `[${new Date().toISOString()}] ${errMsg}\\n`, 'utf8');\n  } catch(e2) {}\n}\nreturn [{ json: $input.first().json }];\n"
+      }
+    }
+  ],
+  "connections": {
+    "Notion Trigger": {
+      "main": [
+        [
+          {
+            "node": "Notion→YAML整形",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notion→YAML整形": {
+      "main": [
+        [
+          {
+            "node": "shogun.yaml追記",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "エラー通知(ntfy)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "staticData": {
+    "node:Notion Trigger": {
+      "lastTimeChecked": "2026-04-07T03:02:00.000Z",
+      "possibleDuplicates": [
+        "33be8d62-e4aa-811a-9e56-d7905e28d782"
+      ]
+    }
+  },
+  "meta": null,
+  "pinData": null,
+  "versionId": "4ae6b96f-3866-4979-9c74-e7e4c82d6b57",
+  "activeVersionId": "4ae6b96f-3866-4979-9c74-e7e4c82d6b57",
+  "versionCounter": 14,
+  "triggerCount": 1,
+  "shared": [
+    {
+      "updatedAt": "2026-04-07T02:26:35.677Z",
+      "createdAt": "2026-04-07T02:26:35.677Z",
+      "role": "workflow:owner",
+      "workflowId": "HzzVDzt7oFjnDfP4",
+      "projectId": "XO345JNGa4VDkzsW",
+      "project": {
+        "updatedAt": "2025-11-11T22:29:33.486Z",
+        "createdAt": "2025-11-11T14:46:09.483Z",
+        "id": "XO345JNGa4VDkzsW",
+        "name": "Saneaki En <s.en@hananoen-law.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "creatorId": "435b5ee2-0398-4fb7-a81d-e4c5e0753e5a",
+        "projectRelations": [
+          {
+            "updatedAt": "2025-11-11T14:46:09.484Z",
+            "createdAt": "2025-11-11T14:46:09.484Z",
+            "userId": "435b5ee2-0398-4fb7-a81d-e4c5e0753e5a",
+            "projectId": "XO345JNGa4VDkzsW",
+            "user": {
+              "updatedAt": "2026-04-06T18:30:44.000Z",
+              "createdAt": "2025-11-11T14:39:16.605Z",
+              "id": "435b5ee2-0398-4fb7-a81d-e4c5e0753e5a",
+              "email": "s.en@hananoen-law.com",
+              "firstName": "Saneaki",
+              "lastName": "En",
+              "personalizationAnswers": {
+                "version": "v4",
+                "personalization_survey_submitted_at": "2025-11-11T22:30:10.163Z",
+                "personalization_survey_n8n_version": "1.119.1",
+                "companyIndustryExtended": [
+                  "legal-industry"
+                ],
+                "companySize": "<20",
+                "companyType": "other",
+                "role": "business-owner",
+                "reportedSource": "google"
+              },
+              "settings": {
+                "userActivated": true,
+                "firstSuccessfulWorkflowId": "AFeF2LK9R9vgNdwe",
+                "userActivatedAt": 1763567537133,
+                "npsSurvey": {
+                  "responded": true,
+                  "lastShownAt": 1764494418667
+                },
+                "easyAIWorkflowOnboarded": true
+              },
+              "disabled": false,
+              "mfaEnabled": false,
+              "lastActiveAt": "2026-04-06",
+              "isPending": false
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "tags": [],
+  "activeVersion": {
+    "updatedAt": "2026-04-07T03:02:28.399Z",
+    "createdAt": "2026-04-07T03:02:28.399Z",
+    "versionId": "4ae6b96f-3866-4979-9c74-e7e4c82d6b57",
+    "workflowId": "HzzVDzt7oFjnDfP4",
+    "nodes": [
+      {
+        "id": "notion-trigger-fb",
+        "name": "Notion Trigger",
+        "type": "n8n-nodes-base.notionTrigger",
+        "typeVersion": 1,
+        "position": [
+          100,
+          300
+        ],
+        "credentials": {
+          "notionApi": {
+            "id": "2TgNXCxOf366ZWZh",
+            "name": "Notion account"
+          }
+        },
+        "parameters": {
+          "pollTimes": {
+            "item": [
+              {
+                "mode": "everyX",
+                "value": 5,
+                "unit": "minutes"
+              }
+            ]
+          },
+          "event": "pageAddedToDatabase",
+          "databaseId": {
+            "__rl": true,
+            "mode": "id",
+            "value": "01d9f2b4-01e4-42e6-85ec-f4b2feb5bfb8"
+          }
+        }
+      },
+      {
+        "id": "code-yaml-fb",
+        "name": "Notion→YAML整形",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          400,
+          300
+        ],
+        "parameters": {
+          "jsCode": "const page = $input.first().json;\nconst title = page.properties?.['タイトル']?.title?.[0]?.text?.content || 'No Title';\nconst type = page.properties?.['種別']?.select?.name || 'その他';\nconst detail = page.properties?.['詳細']?.rich_text?.[0]?.text?.content || '';\nconst sender = page.properties?.['送信者']?.rich_text?.[0]?.text?.content || 'anonymous';\nconst urgency = page.properties?.['緊急度']?.select?.name || 'medium';\nconst project = page.properties?.['対象プロジェクト']?.select?.name || 'shogun';\nconst ts = new Date().toISOString();\nconst shortId = Math.random().toString(36).substr(2, 8);\nconst id = `feedback_${ts.replace(/[-:T.Z]/g,'').substr(0,15)}_${shortId}`;\nreturn [{ json: { id, timestamp: ts, sender, feedbackType: type, title, detail, urgency, project, pageId: page.id } }];"
+        }
+      },
+      {
+        "id": "code-append-fb",
+        "name": "shogun.yaml追記",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          700,
+          300
+        ],
+        "parameters": {
+          "jsCode": "// pure Node.js implementation — atomic append to shogun.yaml without python\nconst fs = require('fs');\nconst path = require('path');\nconst os = require('os');\n\nconst SHOGUN_INBOX = '/home/ubuntu/shogun/queue/inbox/shogun.yaml';\n\nfunction escapeYamlString(s) {\n  // Wrap in single quotes, escape single quotes by doubling them\n  return \"'\" + String(s).replace(/'/g, \"''\") + \"'\";\n}\n\nfunction buildContent(data) {\n  // Multi-line content: render as YAML literal block scalar\n  const lines = [\n    '【種別】' + (data.feedbackType || ''),\n    '【緊急度】' + (data.urgency || ''),\n    '【対象】' + (data.project || ''),\n    '【タイトル】' + (data.title || ''),\n    '【詳細】' + (data.detail || ''),\n  ];\n  return lines.join('\\n');\n}\n\nfunction buildYamlEntry(data) {\n  const id = data.id || 'unknown';\n  const timestamp = data.timestamp || '';\n  const sender = data.sender || 'anonymous';\n  const content = buildContent(data);\n  // YAML entry as flow-block hybrid using single-quoted strings + literal block for content\n  let entry = '- id: ' + escapeYamlString(id) + '\\n';\n  entry += '  timestamp: ' + escapeYamlString(timestamp) + '\\n';\n  entry += '  from: ' + escapeYamlString(sender) + '\\n';\n  entry += '  type: feedback\\n';\n  entry += '  read: false\\n';\n  entry += '  content: ' + escapeYamlString(content) + '\\n';\n  return entry;\n}\n\nconst data = $input.first().json;\nconst entryYaml = buildYamlEntry(data);\n\n// Atomic append: read current, append new entry at end, write to tmp, rename\nconst current = fs.readFileSync(SHOGUN_INBOX, 'utf8');\nlet newContent;\nif (current.trim() === '' || current.trim() === 'messages:' || current.trim() === 'messages: []') {\n  newContent = 'messages:\\n' + entryYaml;\n} else {\n  // Append to existing messages list — ensure newline before new entry\n  newContent = current.endsWith('\\n') ? current + entryYaml : current + '\\n' + entryYaml;\n}\n\nconst tmpFile = SHOGUN_INBOX + '.tmp.' + process.pid + '.' + Date.now();\nfs.writeFileSync(tmpFile, newContent, 'utf8');\nfs.renameSync(tmpFile, SHOGUN_INBOX);\n\nreturn [{ json: { success: true, id: data.id, message: 'feedback appended (pure Node.js)' } }];\n"
+        }
+      },
+      {
+        "id": "error-trigger-fb",
+        "name": "Error Trigger",
+        "type": "n8n-nodes-base.errorTrigger",
+        "typeVersion": 1,
+        "position": [
+          400,
+          580
+        ],
+        "parameters": {}
+      },
+      {
+        "id": "code-ntfy-fb",
+        "name": "エラー通知(ntfy)",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          700,
+          580
+        ],
+        "parameters": {
+          "jsCode": "// best-effort error notify — try /usr/bin/bash, fallback to silent\nconst { execSync } = require('child_process');\nlet errMsg = ($json.execution && $json.execution.error && $json.execution.error.message) || $json.error || 'unknown error';\nerrMsg = String(errMsg).replace(/'/g, '').substr(0, 80);\ntry {\n  execSync(`/usr/bin/bash /home/ubuntu/shogun/scripts/ntfy.sh \"[vps] feedback-system error: ${errMsg}\" \"n8n\" \"error\"`, {\n    encoding: 'utf-8',\n    timeout: 10000\n  });\n} catch(e) {\n  try {\n    // fallback: append to a log file directly\n    require('fs').appendFileSync('/home/ubuntu/shogun/logs/n8n_feedback_errors.log', `[${new Date().toISOString()}] ${errMsg}\\n`, 'utf8');\n  } catch(e2) {}\n}\nreturn [{ json: $input.first().json }];\n"
+        }
+      }
+    ],
+    "connections": {
+      "Notion Trigger": {
+        "main": [
+          [
+            {
+              "node": "Notion→YAML整形",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Notion→YAML整形": {
+        "main": [
+          [
+            {
+              "node": "shogun.yaml追記",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Error Trigger": {
+        "main": [
+          [
+            {
+              "node": "エラー通知(ntfy)",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "authors": "Saneaki En",
+    "name": null,
+    "description": null,
+    "autosaved": false,
+    "workflowPublishHistory": [
+      {
+        "createdAt": "2026-04-07T03:02:28.766Z",
+        "id": 377,
+        "workflowId": "HzzVDzt7oFjnDfP4",
+        "versionId": "4ae6b96f-3866-4979-9c74-e7e4c82d6b57",
+        "event": "activated",
+        "userId": "435b5ee2-0398-4fb7-a81d-e4c5e0753e5a"
+      }
+    ]
+  }
+}

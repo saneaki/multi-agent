@@ -1,62 +1,58 @@
 worker_id: ashigaru3
-task_id: subtask_465a
-parent_cmd: cmd_465
-timestamp: "2026-04-07T11:30:00+09:00"
+task_id: subtask_475a2_snapshot_tz_unification
+parent_cmd: cmd_475
+timestamp: "2026-04-08T16:40:00+09:00"
 status: completed
+
 result:
   summary: |
-    ダッシュボード構成員化 + update_dashboard.sh / shutsujin_departure.sh 軍師対応完了。
-    3ファイル横断修正・構文チェック通過・E2E確認(update_dashboard.sh実行)・git push済み。
+    snapshot_at タイムスタンプのTZ統一(UTC→JST +09:00)完了。
+    context_snapshot.sh / pre_compact_snapshot.sh の TIMESTAMP 生成を
+    date -u から bash scripts/jst_now.sh --yaml に変更。
+    既存5ファイルをUTC→JSTにマイグレーション済み。全AC PASS。
 
-  files_modified:
-    - "dashboard.md"
-    - "scripts/update_dashboard.sh"
-    - "shutsujin_departure.sh"
+  changes:
+    - file: scripts/context_snapshot.sh
+      line: 17
+      before: 'TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%S+00:00")'
+      after: 'TIMESTAMP=$(bash "${SHOGUN_ROOT}/scripts/jst_now.sh" --yaml)'
 
-  changes_made:
-    - "dashboard.md: 「🏯 待機中の足軽」→「🏯 待機中の構成員」セクション名変更"
-    - "dashboard.md: テーブルヘッダ「| 足軽 |」→「| 構成員 |」変更"
-    - "scripts/update_dashboard.sh: ループに gunshi.yaml 追加"
-    - "scripts/update_dashboard.sh: ashigaru_name() に gunshi→軍師(Opus+T) ケース追加"
-    - "scripts/update_dashboard.sh: awkテーブルヘッダ「足軽」→「構成員」変更"
-    - "shutsujin_departure.sh: update_dashboard_formation() に軍師sed処理追加"
-    - "commit b78cc84 push済み"
+    - file: scripts/hooks/pre_compact_snapshot.sh
+      line: 12
+      before: 'TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%S+00:00")'
+      after: 'TIMESTAMP=$(bash "${SHOGUN_ROOT}/scripts/jst_now.sh" --yaml)'
+
+  migration:
+    existing_snapshots_tz_before: "UTC (+00:00)"
+    files_migrated: 5
+    method: "Python datetime変換: UTC時刻 + 9時間 → JST +09:00表示"
+    details:
+      - "shogun_snapshot.yaml: 2026-04-08T07:37:31+00:00 → 2026-04-08T16:37:31+09:00"
+      - "ashigaru4_snapshot.yaml: 2026-04-08T06:12:59+00:00 → 2026-04-08T15:12:59+09:00"
+      - "ashigaru1_snapshot.yaml: 2026-04-07T23:55:22+00:00 → 2026-04-08T08:55:22+09:00"
+      - "gunshi_snapshot.yaml: 2026-04-08T06:51:20+00:00 → 2026-04-08T15:51:20+09:00"
+      - "karo_snapshot.yaml: 2026-04-08T06:17:47+00:00 → 2026-04-08T15:17:47+09:00"
 
 acceptance_criteria_results:
-  - criteria: "dashboard.md セクション名「🏯 待機中の足軽」→「🏯 待機中の構成員」"
+  - criteria: "context_snapshot.sh が snapshot_at を JST +09:00 形式で書き出す"
     met: true
-    evidence: "dashboard.md L31 変更確認済み"
-  - criteria: "dashboard.md テーブルヘッダ「| 足軽 |」→「| 構成員 |」"
+    evidence: "テスト出力: snapshot_at: '2026-04-08T16:39:50+09:00'"
+  - criteria: "pre_compact_snapshot.sh が snapshot_at を JST +09:00 形式で書き出す"
     met: true
-    evidence: "dashboard.md L33 変更確認済み"
-  - criteria: "dashboard.md 待機中テーブルに軍師行が追加されている"
+    evidence: "jst_now.sh --yaml に変更確認済み"
+  - criteria: "既存 snapshot YAML の TZ 状況が report に記載されている"
     met: true
-    evidence: "既存軍師行あり。update_dashboard.sh実行で軍師(Opus+T)行が正しく生成される"
-  - criteria: "scripts/update_dashboard.sh が gunshi.yaml も走査対象とし軍師行を自動生成"
+    evidence: "migration.details に5ファイル全ての変換前後を記載"
+  - criteria: "必要なマイグレーションが完了(または不要と判断)"
     met: true
-    evidence: "L36: for yaml_file in ... gunshi.yaml 追加済み"
-  - criteria: "scripts/update_dashboard.sh の名前変換関数が gunshi→軍師(Opus+T) を返す"
+    evidence: "5ファイル全てをUTC→JSTに変換完了"
+  - criteria: "bash -n 構文チェック PASS"
     met: true
-    evidence: "ashigaru_name() に gunshi) echo 軍師(Opus+T) ;; 追加済み"
-  - criteria: "scripts/update_dashboard.sh のテーブルヘッダが「構成員」に更新"
-    met: true
-    evidence: "awk内 print \"| 構成員 | 状態 | 最終タスク |\" 変更済み"
-  - criteria: "shutsujin_departure.sh update_dashboard_formation() が軍師行モデル表記も更新"
-    met: true
-    evidence: "L114-116: gunshi_model取得+sed置換追加済み"
-  - criteria: "bash -n 構文チェック通過"
-    met: true
-    evidence: "bash -n scripts/update_dashboard.sh && bash -n shutsujin_departure.sh → 両方OK"
-  - criteria: "bash scripts/update_dashboard.sh 実行で8行が🏯セクションに正しく出力"
-    met: true
-    evidence: "実行結果: 足軽1-7+軍師の出陣中/待機が正しく生成。セクション名・ヘッダ確認済み"
-  - criteria: "git commit + push 済み"
-    met: true
-    evidence: "commit b78cc84 push OK"
+    evidence: "context_snapshot.sh / pre_compact_snapshot.sh 両方 bash -n PASS"
 
 ac_summary:
-  total: 10
-  met: 10
+  total: 5
+  met: 5
   rate: "100%"
 
 agent_tool_used: false

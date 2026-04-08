@@ -1,97 +1,114 @@
-task_id: subtask_463_b2_codex
-cmd_id: cmd_463
+task_id: subtask_473_qc_auto_check_fix
+cmd_id: cmd_473
 assigned_to: ashigaru7
-assigned_at: "2026-04-07T11:09:00+09:00"
+assigned_at: "2026-04-08T15:02:00+09:00"
 status: done
-priority: medium
 bloom_level: L3
 report_to: gunshi
-north_star: "Codex 5.3 モデルが実装系タスク(B2: 複数ファイル横断改修)で発揮する品質・速度・コスト・自律性・出力品質を実証データとして残す"
+language: ja
+model_note: "Opus — L012適用(Sonnet禁止)。シェルスクリプトフォールバック設計はOpus適正。"
+
+north_star: |
+  qc_auto_check.sh の PARENT_CMD 抽出を多段階フォールバック化し、
+  task YAML が上書きされた状況でも軍師が自動QCを実行できるようにする。
 
 purpose: |
-  cmd_463(ハイブリッド陣モデル割当基準実証)のフェーズ2タスクB2のCodex版。
-  scripts/inbox_write.sh と scripts/inbox_watcher.sh の2ファイルに priority フィールドを
-  横断追加する複数ファイル改修タスク (L3)。
-  既存のpriorityなしメッセージは normal 扱い (後方互換性維持)。
-  同タスクをSonnet(足軽2号)・Opus(足軽5号)が並列実行するため、
-  軍師がモデル横断比較に使用する。
+  scripts/qc_auto_check.sh の SO-19 チェックで PARENT_CMD が
+  task YAML 上書き時に失敗する問題を修正する。
+  多段階フォールバックと明示的エラーを実装し、silent fail を禁止する。
 
-acceptance_criteria:
-  - "scripts/inbox_write.sh の修正版を output/cmd_463_b2_codex_inbox_write.sh に書き出す(元ファイル read-only)"
-  - "scripts/inbox_watcher.sh の修正版を output/cmd_463_b2_codex_inbox_watcher.sh に書き出す(元ファイル read-only)"
-  - "inbox_write.sh が priority 引数 (high/normal/low) を受け付ける(第5引数想定、デフォルト normal)"
-  - "YAML出力されるメッセージに priority: <値> フィールドが含まれる"
-  - "inbox_watcher.sh が priority: high のメッセージで通常2回ナッジを行う(通常priorityは1回)"
-  - "既存の priority フィールドなしメッセージを読み込んでもエラーにならない(後方互換性)"
-  - "設計書 output/cmd_463_b2_codex_design.md に変更箇所一覧+リスク+両ファイルの差分箇所を記載"
-  - "report YAML に agent_tool_used + agent_tool_tokens を記録(両方とも必須)"
-  - "公平性のため、自分の実装の優れた点と懸念点(P0/P1/P2形式)を両方記載"
+background: |
+  cmd_472 配備時に ashigaru{N}.yaml が新タスクで上書きされた結果、
+  qc_auto_check.sh が参照する parent_cmd フィールドが変わり、
+  軍師が5件のQCを手動検証に切り替えざるを得なくなった。
 
-implementation_notes: |
-  【Codex足軽固有の制約】
-  - MCP未使用環境のため、ファイル操作は cat/grep/awk/sed等のシェルツール中心で実施
-  - cat scripts/inbox_write.sh で全行確認 (175行、一括取得可能)
-  - inbox_watcher.sh は1232行と長大 → grep で関連箇所 (process_unread / send_wakeup / specials parser等) を絞り込んで cat -n で行範囲指定読込推奨
-  - cat > output/cmd_463_b2_codex_*.sh << 'EOF' ... EOF 形式で書き出し
-  - フェーズ1 a2_codex では mermaid + .venv/python3 固定パス脆弱性指摘で品質を出した
-  - フェーズ2 (実装系) では Codex の Agent 系ツールも積極活用してよい (差別化機会)
+  問題箇所: scripts/qc_auto_check.sh L104-130 (SO-19チェック)
+    PARENT_CMD=$(grep "parent_cmd:" "$TASK_FILE" ...)
+  task YAML 上書き後は parent_cmd が元のcmd_idではなく新しいcmd_idになる。
 
-  【B2 タスク仕様 (L3: 2ファイル横断)】
-  - 元ファイル(read-only):
-    * scripts/inbox_write.sh (175行)
-    * scripts/inbox_watcher.sh (1232行)
-  - 機能要件:
-    1. inbox_write.sh: 第5引数に priority (high/normal/low) を追加、デフォルト normal
-       * Usage 例: bash scripts/inbox_write.sh karo "急ぎ報告" report_received gunshi high
-       * YAML 出力時にメッセージに priority: <値> フィールドを追加
-    2. inbox_watcher.sh: メッセージから priority を読み取り、high なら 2 回ナッジ
-       * 既存メッセージ (priority フィールドなし) は normal 扱い
-       * ナッジ間隔は適切なクールダウンを保つ (連続 send-keys 衝突回避)
+fix_strategy: |
+  多段階フォールバック(殿指示より):
+    a) task YAML の parent_cmd フィールド (現行)
+    b) report YAML の parent_cmd フィールド (最重要フォールバック)
+    c) task ID プレフィックスから推定 (subtask_473_xxx → cmd_473)
+    d) いずれにもマッチしない場合は warn で明示(silent fail禁止)
 
-  【実装ステップ (Codex流)】
-  1. cat scripts/inbox_write.sh で全行確認
-  2. grep -n "send_wakeup\|process_unread\|specials" scripts/inbox_watcher.sh で関連行特定
-  3. sed -n '<start>,<end>p' scripts/inbox_watcher.sh で関連箇所のみ抽出
-  4. cat > output/cmd_463_b2_codex_inbox_write.sh << 'EOF' で修正版1書き出し
-  5. cat > output/cmd_463_b2_codex_inbox_watcher.sh << 'EOF' で修正版2書き出し
-  6. bash -n output/cmd_463_b2_codex_*.sh で構文チェック
-  7. cat > output/cmd_463_b2_codex_design.md << 'EOF' で設計書書き出し
+steps:
+  - step: 1
+    action: analyze_current_code
+    detail: |
+      scripts/qc_auto_check.sh を精読し、問題を特定:
+      - L14: set -euo pipefail の影響範囲を確認
+      - L103-131: SO-19 の PARENT_CMD 抽出ロジックを確認
+      - L91-101: SO-06 の TASK_FILE 参照も確認(上書き後でも動作するか)
 
-  【出力ファイル】
-  - output/cmd_463_b2_codex_inbox_write.sh (修正版1)
-  - output/cmd_463_b2_codex_inbox_watcher.sh (修正版2)
-  - output/cmd_463_b2_codex_design.md (設計書)
+      現在の cmd_472 関連 task YAML を確認:
+      grep "^parent_cmd:\|^cmd_id:" queue/tasks/ashigaru{4,6,7}.yaml
 
-  【cmd_463 実証研究としての注意点】
-  - **agent_tool_tokens 記録基準 (フェーズ1の教訓)**:
-    * agent_tool_used: true/false (Codex の Agent 系ツール使用有無)
-    * agent_tool_tokens: 推定値で良い
-    * main_model_tokens_estimate: メインモデル(Codex 5.3)消費トークンの推定値も併記必須
-    * フェーズ1 a2_codex では 52K と記録 (Agent 経由分)
-      → フェーズ2 では Agent 経由 vs メイン消費を区別して記録
-  - **公平性 AC (フェーズ1 a2_opus 5号の知見)**: 自分の実装の優れた点 (3項目以上) と
-    懸念点 (P0/P1/P2 形式) を両論併記。片側評価を避ける。
-  - **Codex への期待**: フェーズ1 では curl + 一次情報で品質を出した。フェーズ2 (実装系) では
-    Codex の Agent 系ツールも積極活用してよい (差別化機会)。
-    また a2_codex で .venv/python3 固定パス脆弱性を指摘した鋭さを priority 機能の
-    後方互換性チェックでも発揮することを期待。
-  - 想定トークン: 50K-100K
-  - 想定時間: 40-90分 (1232 行の inbox_watcher.sh + シェルツール解析中心のため)
+  - step: 2
+    action: implement_fix
+    detail: |
+      scripts/qc_auto_check.sh を修正:
 
-  【RACE-001 考慮】
-  各モデルが独立した output/cmd_463_b2_{model}_*.{sh,md} に書き出すため競合なし。
-  元ファイル (scripts/inbox_write.sh と scripts/inbox_watcher.sh) は絶対に編集しない (read-only)。
+      SO-19 の PARENT_CMD 抽出を以下の多段階フォールバックに変更:
 
-  【後方互換性チェック観点】
-  - 既存 inbox/*.yaml に priority フィールドがないメッセージが大量に存在
-  - YAML パース時に priority キーが KeyError を起こさないこと (.get('priority', 'normal') 等)
-  - inbox_write.sh の旧 4 引数呼び出し (priority なし) も成功すること
+      PARENT_CMD=""
+      # a) task YAML の parent_cmd (現行)
+      if [ -f "$TASK_FILE" ]; then
+          PARENT_CMD=$(grep "^parent_cmd:" "$TASK_FILE" 2>/dev/null | head -1 | ...)
+      fi
+      # b) report YAML の parent_cmd (最重要フォールバック)
+      if [ -z "$PARENT_CMD" ] && [ -f "$REPORT_FILE" ]; then
+          PARENT_CMD=$(grep "^parent_cmd:" "$REPORT_FILE" 2>/dev/null | head -1 | ...)
+      fi
+      # c) task ID プレフィックスから推定 subtask_473_xxx → cmd_473
+      if [ -z "$PARENT_CMD" ]; then
+          PARENT_CMD=$(echo "$TASK_ID" | grep -oP 'subtask_\K[0-9]+' | sed 's/^/cmd_/')
+      fi
+      # d) 推定失敗: warn で明示(silent fail禁止)
+      if [ -z "$PARENT_CMD" ]; then
+          add_result "SO-19" "warn" \
+              "PARENT_CMD could not be determined from task/report YAML or task_id — SO-19 skipped"
+      fi
+
+      修正前後の挙動をコメントで明示すること。
+
+  - step: 3
+    action: e2e_verification
+    detail: |
+      修正後の動作確認:
+
+      1. cmd_472 関連の task YAML 5件(ashigaru4/6/7 + 他)で検証:
+         bash scripts/qc_auto_check.sh ashigaru4 subtask_472a5_compaction_log_analysis
+         bash scripts/qc_auto_check.sh ashigaru6 subtask_472a1_codex_cli_poc
+         bash scripts/qc_auto_check.sh ashigaru7 subtask_472a4_n8n_daily_guard
+         → PARENT_CMD が report YAML から正しく抽出されることを確認
+
+      2. 正常系 task YAML (上書きなし) での回帰確認:
+         bash scripts/qc_auto_check.sh ashigaru1 subtask_468c3_instructions_update
+         → task YAML の parent_cmd が正常に取得されることを確認
+
+      3. bash -n で構文チェック
+
+      注意: qc_auto_check.sh を実行すると stdout に YAML が出力される。
+            set -euo pipefail なのでエラーがあればexitする。
+
+  - step: 4
+    action: write_report
+    detail: |
+      queue/reports/ashigaru7_report.yaml に報告書作成:
+      - 修正内容(diff相当の説明)
+      - E2E検証結果(5件 + 回帰確認)
+      - 影響範囲
 
 editable_files:
-  - "output/cmd_463_b2_codex_inbox_write.sh"
-  - "output/cmd_463_b2_codex_inbox_watcher.sh"
-  - "output/cmd_463_b2_codex_design.md"
-  - "queue/reports/ashigaru7_report.yaml"
+  - scripts/qc_auto_check.sh
+  - queue/reports/ashigaru7_report.yaml
 
-context: shogun
-report_path: queue/reports/ashigaru7_report.yaml
+acceptance_criteria:
+  - "scripts/qc_auto_check.sh の PARENT_CMD 抽出ロジックが多段階フォールバック化"
+  - "PARENT_CMD 抽出失敗時は silent fail せず warn で明示"
+  - "cmd_472 関連 task YAML 5件で PARENT_CMD が正しく抽出される"
+  - "既存 cmd(cmd_469/470/471 等)の task YAML で回帰なし"
+  - "修正前後の挙動がコメントで明示されている"
+  - "queue/reports/ashigaru7_report.yaml に修正点+E2E結果+影響範囲が記録"

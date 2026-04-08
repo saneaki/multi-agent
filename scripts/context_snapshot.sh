@@ -14,7 +14,7 @@ set -euo pipefail
 
 SHOGUN_ROOT="/home/ubuntu/shogun"
 SNAPSHOT_DIR="${SHOGUN_ROOT}/queue/snapshots"
-TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%S+00:00")
+TIMESTAMP=$(bash "${SHOGUN_ROOT}/scripts/jst_now.sh" --yaml)
 
 mkdir -p "$SNAPSHOT_DIR"
 

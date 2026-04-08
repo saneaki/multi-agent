@@ -7,6 +7,12 @@ dashboard.md 🛠️スキル欄から溢れた全エントリ。最新順（上
 
 | スキル名 | 出典 |
 |----------|------|
+| **codex-cli-poc-verification** ✅実装済み | cmd_446→cmd_472a1(2026-04-08): 足軽6号(Codex) `~/.claude/skills/codex-cli-poc-verification/SKILL.md`(75行/フロントマター完備/検証手順+典型エラー対処)。AC3/3 PASS。 |
+| **python-utf8-errors-replace** ✅実装済み | cmd_457→cmd_472a2(2026-04-08): 足軽2号(Sonnet) `~/.claude/skills/python-utf8-errors-replace/SKILL.md`(6377bytes/Before&After例+横展開対象3ファイル特定)。AC 4/4 PASS。 |
+| **notion-session-log-section-pattern** ✅実装済み | cmd_458→cmd_472a3(2026-04-08): 足軽3号(Sonnet) `~/.claude/skills/notion-session-log-section-pattern/SKILL.md`(159行/正規表現パターン+アンチパターン+errors=replace注意事項)。AC 4/4 PASS。 |
+| **n8n-daily-guard-pattern** ✅実装済み | cmd_466 d1_opus→cmd_472a4(2026-04-08): 足軽7号(Opus) `~/.claude/skills/n8n-daily-guard-pattern/SKILL.md`(237行/8ノード雛形 L26-+3軸代替案テンプレ L175+feedback-system.json参照 L219)。AC 5/5 PASS。 |
+| **shogun-compaction-log-analysis** ✅実装済み | cmd_468→cmd_472a5(2026-04-08): 足軽4号(Opus+T) `~/.claude/skills/shogun-compaction-log-analysis/SKILL.md`(11829bytes/336行/解析6コマンド+agent識別3手法+精度マトリクス/200行ログで実機検証済)。AC 4/4 PASS。 |
+| **switch_cli-yaml-section-tracking** ✅統合(重複解消) | cmd_448→cmd_472(2026-04-08): 既存 shogun-switch-cli-yaml-update-guard スキルと実質重複のため新規作成せず削除。重複解消はcmd_472配備時に将軍が判断。 |
 | **switch-cli-yaml-update-guard** ✅実装済み | cmd_446→cmd_448: switch_cli.sh update_settings_yaml() formations破壊バグ。in_cli_agentsフラグによるセクションスコープ追跡+cli_typeキー統一。~/.claude/skills/shogun-switch-cli-yaml-update-guard/SKILL.md。commit subtask_448c2(足軽1号)。 |
 | **bypass-permissions-write-fix** ✅実装済み | cmd_423→cmd_440: bypass permissionsモードで.claude/配下Write/Edit/Bash確認プロンプト回避。3-Layer Fix(defaultMode+PermissionRequest hook+hookスクリプト)。230行SKILL.md。commit 5fd85bc(足軽1号)。 |
 | **n8n-gmail-subject-case-sensitivity** ✅実装済み | cmd_427→cmd_440: n8n Gmail node downloadAttachments:true時PascalCase問題。3ソリューション(ORフォールバック/Object.keys()/正規化ノード)+Prevention CL。271行SKILL.md。commit 972178c(足軽2号)。 |
