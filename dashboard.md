@@ -1,5 +1,5 @@
 # 📊 戦況報告
-最終更新: 2026-04-08 08:52 JST
+最終更新: 2026-04-08 09:02 JST
 
 ## 🐸 Frog / ストリーク
 
@@ -18,26 +18,26 @@
 | [info] | Claude Code .claude/skills パーミッションバグ | v2.1.78以降 .claude/skills がprotected directory exemptionから漏れている(anthropics/claude-code#37157, #38806)。セッション起動時に足軽がskills/操作でprompt停止する。暫定: 選択肢2で手動承認。公式修正待ち。将軍がセッション開始時に修正状況を確認する。 |
 | [action] | gas-mail-manager 統合テスト実行(cmd_461) | コード修正完了後、殿の手動操作が必要: (1)ScriptPropertiesにSPREADSHEET_ID・DRIVE_ROOT_FOLDER_ID・GEMINI_API_KEYを設定 (2)テスト用スプレッドシートに元帳シート作成+テスト顧客1行追加 (3)GASエディタでprocessAllCustomers()実行→結果確認。GEMINI_API_KEYはGoogle AI Studio(aistudio.google.com)で無料取得可。 |
 | [action] | Notion shogun-feedback FormsビューをUIから手動追加(cmd_464) | n8nが動作確認後に実施。Notion DBページ(https://www.notion.so/01d9f2b401e442e685ecf4b2feb5bfb8)を開き「ビューを追加」→「フォーム」を選択。詳細はdocs/feedback-system-guide.md参照。API制約により自動設定不可。 |
-| [decision] | cmd_467 D&D視覚化案選択(軍師案出し後に追記予定) | 軍師がD&Dドロップ可能エリア視覚化案3〜5案を作成中。案が届き次第ここに詳細を掲示。殿に案を選択いただきフェーズ2(実装)へ移行。 |
+| [decision] | cmd_467 D&D視覚化案 殿の選択待ち | 軍師が5案作成。詳細: output/cmd_467_dnd_visualization_proposals.md。**軍師推奨=案B**。概要: 案A=常時赤枠(Easy/★4/赤は警告色コン) / 案B=常時破線ボーダー+大型アイコン(Medium/★4/業界標準Slack等採用/美観○) / 案C=ホバー時背景色変化(Easy/★3/常時は変化なし) / 案D=パルスアニメーション(Medium/★4/動的演出) / 案E=DragEnterハイライト(Easy/★3/ドラッグ中のみ)。いずれかの案番号(A〜E)をお伝えください。選択後フェーズ2(足軽3号 D&D実装)を即時配備します。 |
 | [info] | ダッシュボード構成員配置改善(保留中) | 軍師がタスク実行中(status:assigned)時、🏯待機中の構成員テーブルから消える設計上の制限あり。cmd_465で表示は対応済みだが、進行中状態時の常時表示化は保留中。優先度低。 |
 
 ## 🔄 進行中 - 只今、戦闘中でござる
 
 | cmd | 内容 | 担当 | 状態 |
 |-----|------|------|------|
-| cmd_467 |  | 足軽1号(Sonnet)作業中 | assigned |
 | cmd_466 |  | 足軽2号(Sonnet)作業中 | assigned |
-| cmd_467 |  | 軍師(Opus+T)作業中 | assigned |
 
 ## 🏯 待機中の構成員
 
 | 構成員 | 状態 | 最終タスク |
 |------|------|-----------|
+| 足軽1号(Sonnet) | 待機 | subtask_467a_testkit完了:  |
 | 足軽3号(Sonnet) | 待機 | subtask_467a完了:  |
 | 足軽4号(Opus+T) | 待機 | subtask_466_d1_opus完了:  |
 | 足軽5号(Opus+T) | 待機 | subtask_466_d2_opus完了:  |
 | 足軽6号(Codex) | 待機 | subtask_466_d1_codex完了:  |
 | 足軽7号(Codex) | 待機 | subtask_466_d2_codex完了: 'cmd_466 (cmd_463 routing baseline の継続検証) フェーズ1 D2 |
+| 軍師(Opus+T) | 待機 | subtask_467_phase1_dnd_proposals完了:  |
 
 ## ✅ 本日の戦果（4/8 JST）
 
