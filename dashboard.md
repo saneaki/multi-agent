@@ -1,5 +1,5 @@
 # 📊 戦況報告
-最終更新: 2026-04-10 08:17 JST
+最終更新: 2026-04-10 08:22 JST
 
 ## 🐸 Frog / ストリーク
 
@@ -40,7 +40,7 @@
 | 足軽6号(Codex5.3) | ✅完了(QC PASS) | subtask_487a: geometry画面検出+button_frame fill AC5/5 qc5/5 |
 | 足軽7号(Codex5.3) | ✅完了(QC PASS) | subtask_487b: pdfmetrics.stringWidth改行修正 AC3/3 qc5/5 |
 | 軍師(Opus+T) | ✅完了 | cmd_487全3subtask+cmd_472全5subtask QC PASS(4件バッチ+487c) |
-| 家老(Sonnet) | 🔄処理中 | cmd_472/cmd_487完了処理(スキルアーカイブ+dashboard更新) |
+| 家老(Sonnet) | 待機 | cmd_472/cmd_487完了処理済み |
 
 ## ✅ 本日の戦果（4/10 JST）
 
