@@ -1,5 +1,5 @@
 # 📊 戦況報告
-最終更新: 2026-04-10 08:22 JST
+最終更新: 2026-04-10 08:27 JST
 
 ## 🐸 Frog / ストリーク
 
@@ -26,21 +26,21 @@
 
 | cmd | 内容 | 担当 | 状態 |
 |-----|------|------|------|
-| — | 待機中 | — | — |
+| cmd_488 | 構造的改善3件: SO-20/F007新設+schema違反対策+GHAリリースノート固定化 | 足軽1,3,4号 | 実行中 |
 
 ## 🏯 待機中の構成員
 
 | 構成員 | 状態 | 最終タスク |
 |------|------|-----------|
-| 足軽1号(Sonnet+T) | ✅完了(QC PASS) | subtask_472a2: python-utf8-errors-replace SKILL.md AC4/4 qc2/5(schema soft fail) |
+| 足軽1号(Sonnet+T) | 🔄実行中 | subtask_488b: ashigaru.md必須フィールド明記+qc_auto_check.sh schema validation追加 |
 | 足軽2号(Sonnet+T) | ✅完了(QC PASS) | subtask_487c: v0.9.4 CHANGELOG+commit(12cf69c)+push+release AC3/3 qc4/5 |
-| 足軽3号(Sonnet+T) | ✅完了(QC PASS) | subtask_472a3: notion-session-log-section-pattern SKILL.md AC4/4 qc2/5 |
-| 足軽4号(Opus+T) | ✅完了(QC PASS) | subtask_472a4: n8n-daily-guard-pattern SKILL.md 560行拡充 AC4/4 qc4/5 |
+| 足軽3号(Sonnet+T) | 🔄実行中 | subtask_488c: pdfmerged build-exe.yml リリースノート固定化 |
+| 足軽4号(Opus+T) | 🔄実行中 | subtask_488a: CLAUDE.md SO-20+instructions/shogun.md F007追加 |
 | 足軽5号(Opus+T) | ✅完了(QC PASS) | subtask_472a5: shogun-compaction-log-analysis SKILL.md AC4/4 qc4/5 |
 | 足軽6号(Codex5.3) | ✅完了(QC PASS) | subtask_487a: geometry画面検出+button_frame fill AC5/5 qc5/5 |
 | 足軽7号(Codex5.3) | ✅完了(QC PASS) | subtask_487b: pdfmetrics.stringWidth改行修正 AC3/3 qc5/5 |
 | 軍師(Opus+T) | ✅完了 | cmd_487全3subtask+cmd_472全5subtask QC PASS(4件バッチ+487c) |
-| 家老(Sonnet) | 待機 | cmd_472/cmd_487完了処理済み |
+| 家老(Sonnet) | 🔄実行中 | cmd_488配備(足軽1,3,4号に3並列割当完了) |
 
 ## ✅ 本日の戦果（4/10 JST）
 
