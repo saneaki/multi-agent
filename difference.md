@@ -1,6 +1,6 @@
 # Fork Difference Analysis: shogun vs upstream
 
-> **Generated**: 2026-04-08
+> **Generated**: 2026-04-10
 > **Base**: `git diff upstream/main...original` (74 files, +10409/−3112 lines)
 > **Upstream**: https://github.com/yohey-w/multi-agent-shogun.git
 > **Fork branch**: original
