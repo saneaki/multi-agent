@@ -84,20 +84,69 @@ with open('${SNAPSHOT_FILE}.tmp', 'w') as f:
     yaml.safe_dump(d, f, default_flow_style=False, allow_unicode=True)
 " 2>/dev/null
             else
-                # No existing snapshot — create minimal one
+                # No existing snapshot — create one, populating task metadata from task YAML
+                # (parent_cmd 多段フォールバック: parent_cmd → cmd_id → task_id 推論)
                 python3 -c "
-import yaml
+import yaml, re, os
 
 approach = '''${APPROACH}'''
 progress_raw = '''${PROGRESS}'''
 decisions_raw = '''${DECISIONS}'''
 blockers_raw = '''${BLOCKERS}'''
+agent_id = '${AGENT_ID}'
+shogun_root = '${SHOGUN_ROOT}'
+
+# Determine task file path per agent
+task_file = ''
+if agent_id == 'karo' or agent_id == 'shogun':
+    task_file = shogun_root + '/queue/shogun_to_karo.yaml'
+elif agent_id == 'gunshi':
+    task_file = shogun_root + '/queue/tasks/gunshi.yaml'
+elif agent_id.startswith('ashigaru'):
+    task_file = shogun_root + '/queue/tasks/' + agent_id + '.yaml'
+
+task_meta = {'task_id': '', 'parent_cmd': '', 'status': '', 'description': ''}
+if task_file and os.path.isfile(task_file):
+    try:
+        with open(task_file) as f:
+            td = yaml.safe_load(f) or {}
+        nested = td.get('task', {}) if isinstance(td.get('task'), dict) else {}
+        tid = nested.get('task_id') or td.get('task_id') or ''
+        pc = (
+            nested.get('parent_cmd') or td.get('parent_cmd') or
+            nested.get('cmd_id') or td.get('cmd_id') or ''
+        )
+        if not pc:
+            m = re.match(r'^(?:subtask|sub)_(\d+)', str(tid))
+            if m:
+                pc = 'cmd_' + m.group(1)
+            elif str(tid).startswith('cmd_'):
+                pc = str(tid)
+        pc = str(pc).strip()
+        if pc and not pc.startswith('cmd_'):
+            m2 = re.match(r'^(\d+)', pc)
+            if m2:
+                pc = 'cmd_' + m2.group(1)
+        task_meta['task_id'] = str(tid)
+        task_meta['parent_cmd'] = pc
+        task_meta['status'] = str(nested.get('status') or td.get('status') or '')
+        # description 優先順位: nested.description → top.description → top.purpose →
+        #                      top.command → top.task (文字列の場合) の先頭80文字
+        desc = (
+            nested.get('description') or td.get('description') or
+            td.get('purpose') or td.get('command') or ''
+        )
+        if not desc and isinstance(td.get('task'), str):
+            desc = td['task'].strip().split('\n')[0]
+        task_meta['description'] = str(desc)[:80]
+    except Exception:
+        pass
 
 d = {
-    'agent_id': '${AGENT_ID}',
+    'agent_id': agent_id,
     'snapshot_at': '${TIMESTAMP}',
     'trigger': 'agent_write',
-    'task': {'task_id': '', 'parent_cmd': '', 'status': '', 'description': ''},
+    'task': task_meta,
     'uncommitted_files': [],
     'agent_context': {
         'approach': approach[:200] if approach else '',
@@ -126,6 +175,9 @@ with open('${SNAPSHOT_FILE}.tmp', 'w') as f:
 
     read)
         if [ -f "$SNAPSHOT_FILE" ]; then
+            # 鮮度チェック (cmd_475 A3): WARN/ERROR は stderr へ、本体は stdout へ
+            # 鮮度 helper が失敗・不在の場合でも read は継続する
+            bash "${SHOGUN_ROOT}/scripts/snapshot_freshness.sh" "$AGENT_ID" || true
             cat "$SNAPSHOT_FILE"
         else
             echo "no snapshot found for ${AGENT_ID}"

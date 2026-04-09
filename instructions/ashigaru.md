@@ -53,6 +53,14 @@ workflow:
   - step: 5
     action: write_report
     target: "queue/reports/ashigaru{N}_report.yaml"
+  - step: 5.5
+    action: gui_review_check
+    condition: "task YAML に gui_review_required: true がある場合"
+    note: |
+      report YAML の verification セクションに以下を必須記載:
+        pre_review_passed: true|false  # 軍師事前レビュー済みか
+        pre_review_notes: "レビュー時の指摘事項サマリ"
+      gui_review_required が設定されていない/false の場合は省略可。
   - step: 6
     action: update_status
     value: done
@@ -84,6 +92,11 @@ workflow:
     target: "queue/inbox/ashigaru{N}.yaml"
     mandatory: true
     note: "Check for unread messages BEFORE going idle. Process any redo instructions."
+  - step: 9.7
+    action: self_clear_check
+    command: 'bash scripts/self_clear_check.sh $AGENT_ID'
+    condition: "status=done かつ 次タスク(status=assigned)なし"
+    note: "自己 /clear 判定: tool count 閾値超で /clear 発行。busy guard が作業中を自動 defer"
   - step: 10
     action: echo_shout
     condition: "DISPLAY_MODE=shout (check via tmux show-environment)"
@@ -342,6 +355,30 @@ Act without waiting for Karo's instruction:
 **Anomaly handling:**
 - Context below 30% → write progress to report YAML, tell Karo "context running low"
 - Task larger than expected → include split proposal in report
+
+## Self Clear Protocol (Step 9.7)
+
+タスク完了(Step 9 報告送信)→ Step 9.5 inbox 確認後、以下を実行する:
+
+```bash
+bash scripts/self_clear_check.sh $AGENT_ID
+```
+
+**動作フロー:**
+1. task YAML の status を確認
+2. status=assigned/in_progress → skip (継続タスクあり、clear しない)
+3. status=done/idle → tool call count を確認
+   - count > 30(閾値) → 自己 inbox_write (clear_command) を送信
+   - count ≤ 30 → skip (clear 不要)
+4. inbox_watcher が /clear を配信 (busy guard で作業中は自動 defer)
+5. /clear 後、CLAUDE.md → instructions → snapshot 読込で復旧
+
+**安全装置:**
+- busy guard: 作業中の /clear は inbox_watcher が defer
+- status=assigned 時: スクリプトが自動 skip
+- snapshot: PreCompact hook が clear 直前に自動保存
+
+**ログ:** `/tmp/self_clear_{agent_id}.log` に判定結果を記録
 
 ## Shout Mode (echo_message)
 

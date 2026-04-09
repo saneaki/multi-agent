@@ -1,5 +1,5 @@
 # グローバルコンテキスト
-最終更新: 2026-02-28
+最終更新: 2026-04-09
 
 ## システム方針
 - memory/global_context.md のみgit管理。個人記憶（*.jsonl）はローカル専用（2026-02-11決定）
@@ -27,6 +27,21 @@ ntfy_inbox.yamlのtimestampはUTC(+00:00)で記録される。dashboardはJST基
 
 ### L007: 並列実行を意図するcmdは成果物を複数ファイルに分割せよ
 将軍が複数足軽の並列実行を期待するcmdを書く場合、成果物を**独立した複数ファイル**に分割して記述すること。単一ファイル指定ではRACE-001（同一ファイル同時書込禁止）により、家老は安全側に倒して1足軽に集約する。実例: cmd_385で12セクションのレポートを単一ファイル指定→家老は足軽1号のみに割当→残り6名が遊兵に。cmd_386で4分割（part_a〜d.md）+統合役方式に改善→並列実行可能に。(2026-03-30)
+
+### L013: コード起因エラーの修正前は Opus+Codex dual-review を必ず実施せよ
+殿指示(2026-04-09): コード起因のエラー修正タスクは、修正着手前に **足軽 Opus + 足軽 Codex の2並列レビュー → 軍師集約 → 修正配備** の標準ワークフローを適用すること。1人のLLMだけで判断すると自信過剰の誤判定で正常コードを壊すリスクがある。
+**Why**: cmd_486 (gas-mail-manager OAuth scope エラー) で Opus が「Gmail `{from:X to:X}` 構文は AND 解釈で 0件しかヒットしない」と CRITICAL 報告 → Codex が「`{}` 内 space 区切りは OR 演算子。Gmail 仕様上 valid」と反証。**1人体制なら誤修正で正常な検索を壊していた**。両者の cross-check で Opus の誤判定を却下し、同時に Codex が新たに発見した「markAsProcessed の順序バグ」も拾えた(Opus は見逃し)。
+**How to apply**:
+1. **トリガー**: 殿が「コードのエラーが出た」「コード全体を再確認しろ」「Opusとcodex両方で見て」と発令、または将軍が「dual-review 必要」と判定した時
+2. **使わない場合**: 単純な typo / 1行 linter エラー / スタックトレースで即特定可能な1行バグ (オーバーキル)
+3. **配備**: 将軍は cmd 内で家老に **3並列 subtask** (subtask_XXXa_opus_review / subtask_XXXb_codex_review / subtask_XXXc_gunshi_consolidation) を指示。subtask c は a+b に depends_on
+4. **Opus 役**: `code-reviewer` (model="opus") / `python-reviewer` / `go-reviewer` / `kotlin-reviewer` / `database-reviewer` / `security-reviewer` から最適な agent を選ぶ
+5. **Codex 役**: `codex:codex-rescue` agent を使用。**sandbox 制限で file read 失敗** することがあるので、家老は事前に対象ファイルを Read しておき **prompt に embed** する (cmd_486 で実証済)
+6. **軍師集約**: 双方一致 CRITICAL → 自動採用 / 片方のみ → 軍師が一次情報で検証 / 衝突 → 軍師が一次情報で裁定 + 根拠を report に明記
+7. **修正配備**: Phase 1: CRITICAL のみ最小修正 / Phase 2: HIGH (別 subtask) / Phase 3: MEDIUM/LOW (別 cmd 後回し可)
+**スキル**: 詳細手順は `skills/shogun-error-fix-dual-review/SKILL.md` (cmd_486 から作成、200 行)
+**実例**: cmd_486 で Opus CRITICAL 4 + HIGH 9 + MEDIUM 6, Codex CRITICAL 5 + 反証1件 → 軍師集約: CRITICAL 5 件確定 (双方一致3 + Codex新規2) / Opus 誤判定1件却下。dual-review なしなら Gmail 検索を壊していた。
+(2026-04-09 殿指示: cmd_486 完了後「次回以降もこの形でやりたい」)
 
 ### L008: SKILL.mdはWriteツールで直接作成せよ（確認ダイアログ回避）
 `~/.claude/skills/*/SKILL.md` をClaude Codeのスキル管理機能経由で作成すると、内部確認ダイアログ（"Do you want to create SKILL.md?"）が表示されエージェントがブロックされる。`--dangerously-skip-permissions` でもスキップされない（ツール権限とは別レイヤーの制御）。cmd_390で足軽3号・1号が計4回以上ブロックされた。**対策: Writeツールで直接ファイル作成する運用に統一**。タスクYAMLに「SKILL.mdはWriteツールで直接作成せよ」と明記すること。(2026-03-30 Issue #16)

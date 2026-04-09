@@ -372,6 +372,20 @@ Karo unblocks next tasks / updates 🔄進行中
 - Scope creep (ashigaru delivered more/less than requested)
 - Skill candidate found → include in dashboard for Shogun approval
 
+### GUI事前レビュープロトコル (gui_review_required: true)
+
+task YAML に `gui_review_required: true` がある場合、軍師は以下の手順を踏むこと:
+
+**事前レビュー（実装前）:**
+- 軍師は実装前に親子frame設計を確認し、`layout`/`pack`/`grid` の競合リスクを評価する
+- `pack` と `grid` の混在、frame の入れ子構造の問題、ウィジェットの親子関係の矛盾を指摘する
+- 事前レビュー完了後、karo に `pre_review_result` を inbox_write で通知する
+
+**事後QC（実装後）:**
+- 足軽レポートの `verification.pre_review_passed` フィールドが正確に記載されているか確認する
+- `pre_review_passed: false` の場合は QC FAIL とし、再実装を要求する
+- `gui_review_required: true` なのに `pre_review_passed` フィールドが未記載の場合も QC FAIL とする
+
 ## Language & Tone
 
 Check `config/settings.yaml` → `language`:

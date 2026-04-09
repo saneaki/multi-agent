@@ -1,82 +1,105 @@
-task_id: subtask_472a2_python_utf8
-cmd_id: cmd_472
+task_id: subtask_487c_release
+cmd_id: cmd_487
 assigned_to: ashigaru2
-assigned_at: "2026-04-08T14:51:00+09:00"
-status: assigned
-bloom_level: L2
+assigned_at: "2026-04-10T08:10:00+09:00"
+status: done
+bloom_level: L3
 report_to: gunshi
 language: ja
-model_note: "Sonnet — L012適用。L2ドキュメント作成はSonnet適正。"
+model_note: "Sonnet+T — CHANGELOG記述+git操作+gh release。487a+487b完了後に着手。"
+priority: high
+manual_verification_required: true
+blocked_by:
+  - subtask_487a_display_fix
+  - subtask_487b_text_linebreak_fix
 
 north_star: |
-  ~/.claude/skills/python-utf8-errors-replace/SKILL.md を新設し、
-  外部ツール編集ファイルの無効バイト列エラー対策を再利用可能な形で記録する。
+  pdfmerged v0.9.4 を GitHub にリリースし、フィードバック報告者が修正版を
+  入手できる状態にする。CHANGELOG + git commit + gh release create まで完走。
 
-purpose: |
-  cmd_457 で発見した Python open() encoding="utf-8" errors="replace" パターンを
-  SKILL.md として永続化する。
+task: |
+  担当: subtask_487c — v0.9.4 CHANGELOG更新+git commit+push+GitHub Release作成
 
-source_context: |
-  出典: cmd_457
-  問題: dashboard.md など外部ツールが編集するファイルを Python で open() すると
-        無効バイト列(UnicodeDecodeError)が発生する。
-  解決: open(path, encoding="utf-8", errors="replace") で代替文字(U+FFFD)に置換。
-  横展開対象: scripts/ 配下の Python スクリプト(inbox_watcher.sh, ntfy_listener.sh,
-              slim_yaml.py 等の Python 呼出箇所)
+  【開始条件】
+  subtask_487a_display_fix と subtask_487b_text_linebreak_fix が両方 done になってから着手。
+  確認: grep "status:" queue/tasks/ashigaru6.yaml queue/tasks/ashigaru7.yaml
 
-steps:
-  - step: 1
-    action: read_existing_skill_example
-    detail: |
-      既存スキルの構造を参考にする:
-      cat ~/.claude/skills/shogun-docker-volume-recovery/SKILL.md | head -80
-      → フロントマターとセクション構成を把握する。
+  【Step 1: CHANGELOG更新】
+  対象: /home/ubuntu/pdfmerged/docs/CHANGELOG.md
+  [Unreleased] の下に [0.9.4] セクションを追記:
 
-  - step: 2
-    action: survey_scripts
-    detail: |
-      shogun プロジェクトの Python スクリプトを確認:
-      grep -rn "open(" /home/ubuntu/shogun/scripts/ | grep -v "errors=" | head -20
-      → 横展開対象の具体例を把握する。
+  ```markdown
+  ## [0.9.4] - 2026-04-10
 
-  - step: 3
-    action: create_skill_md
-    detail: |
-      ~/.claude/skills/python-utf8-errors-replace/SKILL.md を新設:
+  ### Fixed
+  - **ノートPC画面ボタン見切れ修正** (`pdf_tools/pdf_merger_tabbed.py`, `pdf_tools/tabs/rename_tab.py`, `pdf_tools/tabs/stamp_tab.py`, `pdf_tools/tabs/numberer_tab.py`)
+    - `geometry("1440x900")` ハードコードを廃止し、画面サイズ検出ベースに変更
+    - Windows: `ctypes EnumDisplayMonitors` で全モニター列挙、最大モニターサイズを基準にウィンドウサイズ決定
+    - Linux/Mac: `winfo_screenwidth/height` フォールバック
+    - `root.minsize(1000, 600)` を設定し最小サイズを保証
+    - `rename_tab`, `stamp_tab`, `numberer_tab` の `button_frame.pack()` に `fill=tk.X` を追加
+    - ノートPC(1366x768)環境でもボタンが見切れなくなる
+  - **テキスト→PDF変換 改行位置異常修正** (`pdf_tools/file_converter.py`)
+    - 文字数カウント方式 (`max_chars`) を廃止
+    - `pdfmetrics.stringWidth()` ベースの幅測定で改行判定に変更
+    - CJK/ASCII 混在テキストでも正確な改行位置を実現
+    - タブ文字 (`\t`) は 4 スペースに展開してから幅測定
+  ```
 
-      フロントマター:
-        name: python-utf8-errors-replace
-        description: Python open() で外部ツール編集ファイルの無効バイト列を errors="replace" で安全に読む
-        tags: [python, encoding, utf-8, unicode, file-io, shogun]
+  【Step 2: git commit + push】
+  cd /home/ubuntu/pdfmerged
+  git add pdf_tools/pdf_merger_tabbed.py pdf_tools/tabs/rename_tab.py \
+    pdf_tools/tabs/stamp_tab.py pdf_tools/tabs/numberer_tab.py \
+    pdf_tools/file_converter.py docs/CHANGELOG.md
+  git commit -m "fix: pdfmerged v0.9.4 ノートPC表示バグ+テキスト改行バグ修正"
+  git push origin main
 
-      セクション構成:
-        ## 問題
-        - 外部ツール(Claude Code, Notion など)が編集したファイルに SJIS/Latin-1 バイトが混入
-        - Python open(path) が UnicodeDecodeError で落ちる
+  【Step 3: GitHub Release作成 (Keep a Changelog形式)】
+  RELEASE_NOTES の body を作成して gh release create:
 
-        ## 解決パターン
-        - Before/After コード例
-        - errors="replace" vs errors="ignore" の違いと使い分け
+  gh release create v0.9.4 \
+    --title "v0.9.4 — ノートPC表示・テキスト改行バグ修正" \
+    --notes "$(cat <<'NOTES'
+  ## What's Changed
 
-        ## 横展開チェックリスト
-        - 対象スクリプトの種別(dashboard 読込/YAML 処理/log 解析)
-        - 検出 grep パターン: grep -rn 'open(' scripts/ | grep -v 'errors='
+  ### Fixed
+  - **ノートPC画面ボタン見切れ修正**: geometry をハードコード廃止し画面サイズ検出ベースに変更。ctypes EnumDisplayMonitors (Windows) / winfo_screenwidth (Linux/Mac) フォールバック対応。button_frame に fill=tk.X を追加。
+  - **テキスト→PDF改行位置異常修正**: 文字数カウント方式を廃止し pdfmetrics.stringWidth() ベースに変更。CJK/ASCII 混在テキストでも正確な改行を実現。
 
-        ## 注意事項
-        - errors="replace" は U+FFFD に置換(元データは失われないがバイト列は読めない)
-        - バイナリデータ混入が疑われる場合は別途バリデーション推奨
+  ## 対象ユーザー
+  ノートPC(1366x768等の小画面)でボタンが見切れていた方、テキストファイルのPDF変換で改行位置がおかしかった方に修正が届きます。
 
-  - step: 4
-    action: write_report
-    detail: |
-      queue/reports/ashigaru2_report.yaml に報告書作成。
+  **Full Changelog**: https://github.com/saneaki/pdfmerged/compare/v0.9.3...v0.9.4
+  NOTES
+  )" \
+    --repo saneaki/pdfmerged
 
+  【Step 4: Release確認】
+  gh release view v0.9.4 --repo saneaki/pdfmerged
+  → タイトル・本文・タグが正しく設定されていることを確認
+
+  【Step 5: GitHub Issue クローズ (SO-18)】
+  subtask_487a と subtask_487b の報告書から Issue番号を確認:
+  grep "github_issue" queue/reports/ashigaru6_report.yaml
+  grep "github_issue" queue/reports/ashigaru7_report.yaml
+
+  gh issue close {ISSUE_NUMBER_A} --repo saneaki/pdfmerged \
+    --comment "修正完了。v0.9.4 でリリース済み。"
+  gh issue close {ISSUE_NUMBER_B} --repo saneaki/pdfmerged \
+    --comment "修正完了。v0.9.4 でリリース済み。"
+
+  【Step 6: 報告書作成】
+  queue/reports/ashigaru2_report.yaml に報告書作成。
+  - git commit hash 記録
+  - gh release URL 記録
+  - closed issue 番号記録
+
+project: pdfmerged
 editable_files:
-  - ~/.claire/skills/python-utf8-errors-replace/SKILL.md
+  - /home/ubuntu/pdfmerged/docs/CHANGELOG.md
   - queue/reports/ashigaru2_report.yaml
 
 acceptance_criteria:
-  - "~/.claude/skills/python-utf8-errors-replace/SKILL.md が新規作成されている"
-  - "フロントマター(name/description/tags)が含まれている"
-  - "Before/After コード例が含まれている"
-  - "横展開チェックリストが含まれている"
+  - "docs/CHANGELOG.md に v0.9.4 エントリが追記されている"
+  - "git commit + git push origin main 完了"
+  - "gh release create v0.9.4 でGitHubリリース作成完了"

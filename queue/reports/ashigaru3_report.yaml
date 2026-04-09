@@ -1,119 +1,37 @@
-worker_id: ashigaru3
-task_id: subtask_478_notion_feedback_sync
-parent_cmd: cmd_478
-timestamp: "2026-04-08T17:30:00+09:00"
+task_id: subtask_472a3_notion_session_log_section_pattern
+cmd_id: cmd_472
+agent_id: ashigaru3
 status: completed
+completed_at: "2026-04-10T08:03:41+09:00"
+report_to: gunshi
 
-result:
-  summary: |
-    Notion shogun-feedback DB スキーマ調査完了。3者(Notion/n8n/docs)差分解消。
-    n8n WF修正+Docker volume mount追加+process.pid対応+Trigger flat構造対応。
-    E2E成功確認(execution 12951: success, shogun.yaml正常書込)。
-    副産物: Docker n8nコンテナの shogun/queue/inbox mount不足バグを発見・修正。
+summary: |
+  ~/.claude/skills/notion-session-log-section-pattern/SKILL.md を新設。
+  dashboard.md の日次変化セクション見出し(本日/昨日/一昨日)を
+  正規表現+日付照合フォールバックで検出するパターンを記録した。
 
-  schema_investigation:
-    notion_db:
-      db_name: フィードバックフォーム
-      db_id: 01d9f2b4-01e4-42e6-85ec-f4b2feb5bfb8
-      properties:
-        - "タイトル (title)"
-        - "種別 (multi_select: バグ/要望/質問/感想/その他)"
-        - "詳細 (rich_text)"
-        - "緊急度 (select: high/medium/low)"
-        - "対象プロジェクト (select: pdf総合ソフト/その他)"
-        - "送信者メールアドレス (email)"
-        - "スクリーンショット等 (files)"
-        - "作成日時 (created_time)"
-        - "対応 (checkbox)"
-        - "要約 (rich_text)"
+acceptance_criteria_result:
+  - criterion: "~/.claude/skills/notion-session-log-section-pattern/SKILL.md が新規作成されている"
+    result: PASS
+    note: "作成確認済み"
+  - criterion: "フロントマター(name/description/tags)が含まれている"
+    result: PASS
+    note: "name/description/tags[bash,regex,dashboard,notion,section,date-handling]を記載"
+  - criterion: "正規表現パターン例が含まれている"
+    result: PASS
+    note: "re.findall パターン: r'## ✅ [^\\n（]*（(\\d+/\\d+) JST）[^\\n]*\\n(.*?)(?=\\n## |\\Z)'"
+  - criterion: "日付照合フォールバックの説明が含まれている"
+    result: PASS
+    note: "M/D形式変換ロジック + WARN時の空データ続行挙動を記載"
 
-  diff_table:
-    - property: "種別"
-      notion: "multi_select"
-      n8n_before: "select (バグ)"
-      n8n_after: "multi_select array join"
-      docs_before: "select (感想なし)"
-      docs_after: "multi_select 感想追加"
-    - property: "送信者/送信者メールアドレス"
-      notion: "email"
-      n8n_before: "rich_text (存在しないプロパティ)"
-      n8n_after: "email"
-      docs_before: "送信者(text型)"
-      docs_after: "送信者メールアドレス(email型)"
-    - property: "対象プロジェクト options"
-      notion: "pdf総合ソフト/その他"
-      n8n_before: "fallback='shogun'"
-      n8n_after: "fallback='その他'"
-      docs_before: "shogun/gas-mail-manager/pdfmerged/その他"
-      docs_after: "pdf総合ソフト/その他"
-    - property: "DB名"
-      notion: "フィードバックフォーム"
-      docs_before: "shogun-feedback"
-      docs_after: "フィードバックフォーム"
+changes:
+  - file: "~/.claude/skills/notion-session-log-section-pattern/SKILL.md"
+    diff_summary: |
+      新規作成。フロントマター + 問題/解決パターン/セクション本文処理/適用場面/注意事項/関連ファイル の各セクションを記載。
+      実装元 scripts/notion_session_log.sh (lines 57-98) のコード断片を引用。
 
-  changes:
-    - type: "n8n WF code-yaml-fb修正"
-      detail: "Notion Trigger v1 flat構造対応: page['プロパティ名'] 直接アクセスに変更"
-    - type: "n8n WF code-append-fb修正"
-      detail: "process.pid → Date.now()+random (task-runner内 process未定義対応)"
-    - type: "Docker volume mount追加"
-      file: "/home/ubuntu/.n8n-mcp/n8n/docker-compose.yml"
-      detail: "/home/ubuntu/shogun/queue/inbox をコンテナにマウント(ENOENT解消)"
-    - type: "N8N_RESTRICT_FILE_ACCESS_TO更新"
-      detail: "shogun/queue/inbox をアクセス許可パスに追加"
-    - type: "docs/feedback-system-guide.md更新"
-      detail: "現行DBスキーマ(multi_select/email/新プロパティ)に整合"
-
-  e2e_result:
-    execution_id: "12951"
-    status: success
-    page_id: "33ce8d62-e4aa-8180-a03c-ffff96f4d556"
-    shogun_inbox_entry:
-      id: "feedback_202604080827581_ccytebnw"
-      sender: "ashigaru3@test.shogun"
-      feedbackType: "バグ"
-      title: "[E2Eテスト2] cmd_478 動作確認"
-      urgency: "medium"
-      written: true
-
-  bugs_fixed:
-    - id: "BUG-478-1"
-      description: "n8n DockerコンテナにshogunのQueueディレクトリがマウントされていなかった(ENOENT)"
-    - id: "BUG-478-2"
-      description: "n8n task-runner内でprocess.pidが未定義(ReferenceError)"
-    - id: "BUG-478-3"
-      description: "n8n Notion Trigger v1のflat構造を考慮せず旧APIアクセスパターンを使用"
-
-acceptance_criteria_results:
-  - criteria: "Notion shogun-feedback DB の現行スキーマが取得されレポート化"
-    met: true
-    evidence: "10プロパティ全て確認・差分表作成済み"
-  - criteria: "3者(Notion/n8n/docs)の差分表が作成されている"
-    met: true
-    evidence: "diff_tableに4項目記載"
-  - criteria: "n8n ワークフローの Notion プロパティマッピングが現行 DB に整合"
-    met: true
-    evidence: "種別multi_select・送信者メールアドレスemail・Trigger flat構造対応完了"
-  - criteria: "docs/feedback-system-guide.md が現行スキーマに整合"
-    met: true
-    evidence: "スキーマ一覧追加・multi_select/email型・新プロパティ記載"
-  - criteria: "E2E テスト投稿が成功(n8n success + Notion page 作成)"
-    met: true
-    evidence: "execution 12951 status=success, shogun.yaml に正確な feedback エントリ確認"
-  - criteria: "軍師QC PASS"
-    met: pending
-    evidence: "gunshi QC待ち"
-
-ac_summary:
-  total: 6
-  met: 5
-  pending: 1
-  rate: "5/5 (QC除く)"
-
-agent_tool_used: false
-skill_candidate:
-  found: true
-  description: >
-    n8n Notion Trigger v1 は properties をトップレベルにフラット展開する。
-    page.properties?.['X']?.select?.name ではなく page['X'] で直接アクセス。
-    既存コードパターンとの差異に注意。
+skill_candidate: ~
+notes: |
+  notion_session_log.sh の実装を読んで正規表現・日付照合ロジックを確認。
+  固定文字列(本日/昨日/一昨日)マッチングではなく日付照合フォールバックで安定化する
+  アプローチが核心。日付フォーマット M/D (ゼロパディングなし) の注意点も記録した。

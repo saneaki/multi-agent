@@ -24,6 +24,13 @@ logging:
   level: info  # debug | info | warn | error
   path: "/home/ubuntu/shogun/logs/"
 
+# Snapshot鮮度検出設定 (cmd_475 A3)
+# auto-compact復旧時、snapshotが古過ぎる場合に警告・復旧スキップを行う
+snapshot:
+  freshness:
+    warn_threshold_minutes: 30    # この値を超えるとWARN (復旧は継続)
+    error_threshold_minutes: 360  # この値を超えるとERROR (復旧スキップ推奨) = 6時間
+
 # Bloomルーティング設定
 # off: 全タスクを足軽に直送（軍師QCなし）
 # manual: 家老がbloom_levelを判定しルーティング（L1-L3→足軽、L4-L6→軍師）

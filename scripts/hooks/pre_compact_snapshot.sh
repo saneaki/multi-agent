@@ -76,13 +76,34 @@ except Exception:
     pass
 " 2>/dev/null || echo "")
 
+    # parent_cmd 多段フォールバック:
+    #  (1) nested.parent_cmd → (2) top.parent_cmd → (3) nested.cmd_id → (4) top.cmd_id
+    #  → (5) task_id prefix 推論 (subtask_XXX → cmd_XXX)
+    #  必ず cmd_XXX 文字列で出力。見つからなければ空文字列。
     PARENT_CMD=$(python3 -c "
-import yaml
+import yaml, re
 try:
     with open('$TASK_FILE') as f:
         d = yaml.safe_load(f) or {}
     nested = d.get('task', {}) if isinstance(d.get('task'), dict) else {}
-    print(nested.get('parent_cmd', d.get('parent_cmd', '')))
+    pc = (
+        nested.get('parent_cmd') or d.get('parent_cmd') or
+        nested.get('cmd_id') or d.get('cmd_id') or ''
+    )
+    if not pc:
+        tid = nested.get('task_id') or d.get('task_id') or ''
+        m = re.match(r'^(?:subtask|sub)_(\d+)', str(tid))
+        if m:
+            pc = 'cmd_' + m.group(1)
+        elif str(tid).startswith('cmd_'):
+            pc = str(tid)
+    # 必ず cmd_XXX 文字列として正規化
+    pc = str(pc).strip()
+    if pc and not pc.startswith('cmd_'):
+        m2 = re.match(r'^(\d+)', pc)
+        if m2:
+            pc = 'cmd_' + m2.group(1)
+    print(pc)
 except Exception:
     pass
 " 2>/dev/null || echo "")
@@ -104,7 +125,13 @@ try:
     with open('$TASK_FILE') as f:
         d = yaml.safe_load(f) or {}
     nested = d.get('task', {}) if isinstance(d.get('task'), dict) else {}
-    desc = nested.get('description', d.get('description', d.get('purpose', d.get('command', ''))))
+    desc = (
+        nested.get('description') or d.get('description') or
+        d.get('purpose') or d.get('command') or ''
+    )
+    # task YAML が task: (multiline string) で持つ場合、先頭行を抽出
+    if not desc and isinstance(d.get('task'), str):
+        desc = d['task'].strip().split('\n')[0]
     print(str(desc)[:80])
 except Exception:
     pass

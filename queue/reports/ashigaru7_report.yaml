@@ -1,69 +1,52 @@
 worker_id: ashigaru7
-task_id: subtask_473_qc_auto_check_fix
-parent_cmd: cmd_473
-timestamp: "2026-04-08T15:03:58+09:00"
+task_id: subtask_487b_text_linebreak_fix
+parent_cmd: cmd_487
+timestamp: "2026-04-10T08:10:09+09:00"
 status: done
 report_to: gunshi
 result:
   summary: |
-    scripts/qc_auto_check.sh の SO-19 判定を多段階フォールバック化した。
-    旧実装の task YAML 単独参照を廃し、task/report/task_id 推定の順で parent_cmd を決定するように修正。
-    判定不能時は warn を返して明示スキップし、silent fail を防止した。
+    テキスト→PDF変換の改行処理を文字数カウント方式から
+    `pdfmetrics.stringWidth()` ベースの実幅測定方式へ刷新した。
+    タブ文字を4スペース展開してから幅測定するよう実装し、
+    `python3 -m py_compile` で静的検証PASSを確認した。
+    併せて SO-18 に従い GitHub Issue #7 を起票した。
   files_modified:
-    - path: "scripts/qc_auto_check.sh"
+    - path: "/home/ubuntu/pdfmerged/pdf_tools/file_converter.py"
       changes:
-        - "SO-19 に多段フォールバック実装: task_yaml -> report_yaml -> task_id_inference"
-        - "判定元を示す PARENT_CMD_SOURCE を追加"
-        - "PARENT_CMD 未解決時を pass ではなく warn 明示へ変更"
-        - "修正前後の挙動コメントを追加 (cmd_473 fix context)"
+        - "_wrap_text_by_width() を追加し、stringWidthベース改行処理を実装"
+        - "_convert_text_to_pdf() から max_chars 方式を撤去し、幅測定ベースへ置換"
+        - "タブ文字(\\t)を4スペース展開してから折り返し判定"
     - path: "queue/inbox/ashigaru7.yaml"
       changes:
-        - "msg_20260408_060232_1c1534db を read:true に更新"
-    - path: "queue/reports/ashigaru7_report.yaml"
-      changes:
-        - "subtask_473_qc_auto_check_fix 完了報告へ更新"
+        - "msg_20260409_230852_9de63695 を read:true に更新"
     - path: "queue/tasks/ashigaru7.yaml"
       changes:
         - "status を assigned から done に更新"
+    - path: "queue/reports/ashigaru7_report.yaml"
+      changes:
+        - "subtask_487b の完了報告へ更新"
+  remote_operations:
+    - command: "gh issue create --repo saneaki/pdfmerged --title \"バグ: テキスト→PDF変換で改行位置が異常\" ..."
+      result: "created: https://github.com/saneaki/pdfmerged/issues/7"
+    - command: "python3 -m py_compile /home/ubuntu/pdfmerged/pdf_tools/file_converter.py"
+      result: "PASS"
   verification:
-    syntax:
-      - "bash -n scripts/qc_auto_check.sh: OK"
-    e2e_cmd472_related:
-      - command: "bash scripts/qc_auto_check.sh ashigaru4 subtask_472a5_compaction_log_analysis"
-        so19: "pass: cmd_469 (source: report_yaml)"
-      - command: "bash scripts/qc_auto_check.sh ashigaru6 subtask_472a1_codex_cli_poc"
-        so19: "pass: cmd_472 (source: report_yaml)"
-      - command: "bash scripts/qc_auto_check.sh ashigaru7 subtask_472a4_n8n_daily_guard"
-        so19: "pass: cmd_472 (source: report_yaml)"
-      - command: "bash scripts/qc_auto_check.sh ashigaru2 subtask_472a2_python_utf8"
-        so19: "pass: cmd_468 (source: report_yaml)"
-      - command: "bash scripts/qc_auto_check.sh ashigaru3 subtask_472a3_notion_section_pattern"
-        so19: "pass: cmd_472 (source: report_yaml)"
-    regression_cmd469_470_471:
-      - command: "bash scripts/qc_auto_check.sh ashigaru4 subtask_469_impl"
-        so19: "pass: cmd_469 (source: report_yaml)"
-      - command: "bash scripts/qc_auto_check.sh ashigaru1 subtask_470a1_kitakyushu"
-        so19: "pass: cmd_470 (source: task_id_inference)"
-      - command: "bash scripts/qc_auto_check.sh ashigaru5 subtask_471_phase1_loadbalance_rules"
-        so19: "pass: cmd_471 (source: report_yaml)"
-    explicit_warn_check:
-      - command: "bash scripts/qc_auto_check.sh ashigaru1 invalid_task_id_no_prefix"
-        so19: "warn: PARENT_CMD could not be determined ... SO-19 skipped"
+    - check: "改行ロジック方式"
+      result: "PASS"
+      detail: "_convert_text_to_pdf() が _wrap_text_by_width() を使用し、max_chars/固定除数(10,6)を撤去"
+    - check: "タブ文字処理"
+      result: "PASS"
+      detail: "_wrap_text_by_width() 内で text.replace('\\t', '    ') を実施"
+    - check: "静的検証"
+      result: "PASS"
+      detail: "python3 -m py_compile /home/ubuntu/pdfmerged/pdf_tools/file_converter.py"
   acceptance_criteria_check:
-    - criterion: "scripts/qc_auto_check.sh の PARENT_CMD 抽出ロジックが多段階フォールバック化"
+    - criterion: "file_converter.py の _convert_text_to_pdf() が pdfmetrics.stringWidth() ベースの幅測定で改行判定している(文字数カウント方式の廃止)"
       result: "PASS"
-    - criterion: "PARENT_CMD 抽出失敗時は silent fail せず warn で明示"
+    - criterion: "タブ文字(\\t)はスペース展開してから幅測定される"
       result: "PASS"
-    - criterion: "cmd_472 関連 task YAML 5件で PARENT_CMD が正しく抽出される"
+    - criterion: "py_compile による静的検証が PASS"
       result: "PASS"
-    - criterion: "既存 cmd(cmd_469/470/471 等)の task YAML で回帰なし"
-      result: "PASS"
-    - criterion: "修正前後の挙動がコメントで明示されている"
-      result: "PASS"
-    - criterion: "queue/reports/ashigaru7_report.yaml に修正点+E2E結果+影響範囲が記録"
-      result: "PASS"
-  impact_scope:
-    - "影響は scripts/qc_auto_check.sh の SO-19 判定ロジック限定"
-    - "SO-01/SO-03/SO-06/SO-12 判定ロジックに変更なし"
 skill_candidate:
   found: false

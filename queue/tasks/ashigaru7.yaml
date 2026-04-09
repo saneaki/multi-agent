@@ -1,114 +1,95 @@
-task_id: subtask_473_qc_auto_check_fix
-cmd_id: cmd_473
+task_id: subtask_487b_text_linebreak_fix
+cmd_id: cmd_487
 assigned_to: ashigaru7
-assigned_at: "2026-04-08T15:02:00+09:00"
+assigned_at: "2026-04-10T08:10:00+09:00"
 status: done
-bloom_level: L3
+bloom_level: L4
 report_to: gunshi
 language: ja
-model_note: "Opus — L012適用(Sonnet禁止)。シェルスクリプトフォールバック設計はOpus適正。"
+model_note: "Codex5.3 — pdfmetrics.stringWidth()ベース改行ロジック実装。1ファイル変更。"
+priority: high
 
 north_star: |
-  qc_auto_check.sh の PARENT_CMD 抽出を多段階フォールバック化し、
-  task YAML が上書きされた状況でも軍師が自動QCを実行できるようにする。
+  テキスト→PDF変換で改行位置が正確になる pdfmerged を実現する。
+  文字数カウント方式を廃止し pdfmetrics.stringWidth() で実際の文字幅を測定して
+  改行を判定することで、CJK/ASCII混在テキストでも正確な改行を実現する。
 
-purpose: |
-  scripts/qc_auto_check.sh の SO-19 チェックで PARENT_CMD が
-  task YAML 上書き時に失敗する問題を修正する。
-  多段階フォールバックと明示的エラーを実装し、silent fail を禁止する。
+task: |
+  担当: subtask_487b — バグ2 テキスト→PDF改行位置異常修正
 
-background: |
-  cmd_472 配備時に ashigaru{N}.yaml が新タスクで上書きされた結果、
-  qc_auto_check.sh が参照する parent_cmd フィールドが変わり、
-  軍師が5件のQCを手動検証に切り替えざるを得なくなった。
+  【Step 0: GitHub Issue作成 (SO-18)】
+  gh issue create --repo saneaki/pdfmerged \
+    --title "バグ: テキスト→PDF変換で改行位置が異常" \
+    --body "## 症状\nテキストファイルのPDF変換で改行が意図しない位置に入る。\n\n## 根本原因\nfile_converter.py L185-188: max_chars = int((A4_WIDTH - 2*margin) / font_size) で文字数カウント改行\nCJK=10pt/字, ASCII=6pt/字のハードコード → 混在テキストで破綻\n\n## 修正方針\npdfmetrics.stringWidth() ベースの幅測定で改行判定"
+  → Issue番号を記録しておくこと。
 
-  問題箇所: scripts/qc_auto_check.sh L104-130 (SO-19チェック)
-    PARENT_CMD=$(grep "parent_cmd:" "$TASK_FILE" ...)
-  task YAML 上書き後は parent_cmd が元のcmd_idではなく新しいcmd_idになる。
+  【Step 1: 現状確認】
+  cat /home/ubuntu/pdfmerged/pdf_tools/file_converter.py | head -220 | tail -80
+  → L150-200付近の _convert_text_to_pdf() 実装を把握する
 
-fix_strategy: |
-  多段階フォールバック(殿指示より):
-    a) task YAML の parent_cmd フィールド (現行)
-    b) report YAML の parent_cmd フィールド (最重要フォールバック)
-    c) task ID プレフィックスから推定 (subtask_473_xxx → cmd_473)
-    d) いずれにもマッチしない場合は warn で明示(silent fail禁止)
+  【Step 2: _convert_text_to_pdf() 改行ロジック刷新】
+  対象: /home/ubuntu/pdfmerged/pdf_tools/file_converter.py
 
-steps:
-  - step: 1
-    action: analyze_current_code
-    detail: |
-      scripts/qc_auto_check.sh を精読し、問題を特定:
-      - L14: set -euo pipefail の影響範囲を確認
-      - L103-131: SO-19 の PARENT_CMD 抽出ロジックを確認
-      - L91-101: SO-06 の TASK_FILE 参照も確認(上書き後でも動作するか)
+  現状の問題箇所(L185-188):
+  ```python
+  max_chars = int((A4_WIDTH - 2 * margin) / font_size)
+  ...
+  max_chars = int((A4_WIDTH - 2 * margin) / 6)
+  ...
+  if len(line) > max_chars:
+      for chunk_start in range(0, len(line), max_chars):
+          chunk = line[chunk_start:chunk_start + max_chars]
+  ```
 
-      現在の cmd_472 関連 task YAML を確認:
-      grep "^parent_cmd:\|^cmd_id:" queue/tasks/ashigaru{4,6,7}.yaml
+  修正方針:
+  - pdfmetrics.stringWidth() ベースに刷新
+  - 1文字ずつ幅を加算し、available_width 超過で改行
+  - タブ文字(\t)は4スペースに展開してから測定
+  - max_chars 変数とハードコード除数(10, 6)は削除
 
-  - step: 2
-    action: implement_fix
-    detail: |
-      scripts/qc_auto_check.sh を修正:
+  実装例:
+  ```python
+  from reportlab.pdfbase import pdfmetrics
 
-      SO-19 の PARENT_CMD 抽出を以下の多段階フォールバックに変更:
+  def _wrap_text(self, text, font_name, font_size, available_width):
+      """pdfmetrics.stringWidth ベースのテキスト折り返し"""
+      # タブ展開
+      text = text.replace('\t', '    ')
+      lines = []
+      current_line = []
+      current_width = 0.0
+      for char in text:
+          char_width = pdfmetrics.stringWidth(char, font_name, font_size)
+          if current_width + char_width > available_width and current_line:
+              lines.append(''.join(current_line))
+              current_line = [char]
+              current_width = char_width
+          else:
+              current_line.append(char)
+              current_width += char_width
+      if current_line:
+          lines.append(''.join(current_line))
+      return lines if lines else ['']
+  ```
 
-      PARENT_CMD=""
-      # a) task YAML の parent_cmd (現行)
-      if [ -f "$TASK_FILE" ]; then
-          PARENT_CMD=$(grep "^parent_cmd:" "$TASK_FILE" 2>/dev/null | head -1 | ...)
-      fi
-      # b) report YAML の parent_cmd (最重要フォールバック)
-      if [ -z "$PARENT_CMD" ] && [ -f "$REPORT_FILE" ]; then
-          PARENT_CMD=$(grep "^parent_cmd:" "$REPORT_FILE" 2>/dev/null | head -1 | ...)
-      fi
-      # c) task ID プレフィックスから推定 subtask_473_xxx → cmd_473
-      if [ -z "$PARENT_CMD" ]; then
-          PARENT_CMD=$(echo "$TASK_ID" | grep -oP 'subtask_\K[0-9]+' | sed 's/^/cmd_/')
-      fi
-      # d) 推定失敗: warn で明示(silent fail禁止)
-      if [ -z "$PARENT_CMD" ]; then
-          add_result "SO-19" "warn" \
-              "PARENT_CMD could not be determined from task/report YAML or task_id — SO-19 skipped"
-      fi
+  _convert_text_to_pdf() 内でこの _wrap_text を使用するよう変更:
+  - available_width = A4_WIDTH - 2 * margin
+  - 各行を _wrap_text で折り返してから描画
 
-      修正前後の挙動をコメントで明示すること。
+  【Step 3: py_compile 静的検証】
+  python3 -m py_compile /home/ubuntu/pdfmerged/pdf_tools/file_converter.py
+  → エラーなし確認
 
-  - step: 3
-    action: e2e_verification
-    detail: |
-      修正後の動作確認:
+  【Step 4: 報告書作成】
+  queue/reports/ashigaru7_report.yaml に報告書作成。
+  Issue番号を記録すること。
 
-      1. cmd_472 関連の task YAML 5件(ashigaru4/6/7 + 他)で検証:
-         bash scripts/qc_auto_check.sh ashigaru4 subtask_472a5_compaction_log_analysis
-         bash scripts/qc_auto_check.sh ashigaru6 subtask_472a1_codex_cli_poc
-         bash scripts/qc_auto_check.sh ashigaru7 subtask_472a4_n8n_daily_guard
-         → PARENT_CMD が report YAML から正しく抽出されることを確認
-
-      2. 正常系 task YAML (上書きなし) での回帰確認:
-         bash scripts/qc_auto_check.sh ashigaru1 subtask_468c3_instructions_update
-         → task YAML の parent_cmd が正常に取得されることを確認
-
-      3. bash -n で構文チェック
-
-      注意: qc_auto_check.sh を実行すると stdout に YAML が出力される。
-            set -euo pipefail なのでエラーがあればexitする。
-
-  - step: 4
-    action: write_report
-    detail: |
-      queue/reports/ashigaru7_report.yaml に報告書作成:
-      - 修正内容(diff相当の説明)
-      - E2E検証結果(5件 + 回帰確認)
-      - 影響範囲
-
+project: pdfmerged
 editable_files:
-  - scripts/qc_auto_check.sh
+  - /home/ubuntu/pdfmerged/pdf_tools/file_converter.py
   - queue/reports/ashigaru7_report.yaml
 
 acceptance_criteria:
-  - "scripts/qc_auto_check.sh の PARENT_CMD 抽出ロジックが多段階フォールバック化"
-  - "PARENT_CMD 抽出失敗時は silent fail せず warn で明示"
-  - "cmd_472 関連 task YAML 5件で PARENT_CMD が正しく抽出される"
-  - "既存 cmd(cmd_469/470/471 等)の task YAML で回帰なし"
-  - "修正前後の挙動がコメントで明示されている"
-  - "queue/reports/ashigaru7_report.yaml に修正点+E2E結果+影響範囲が記録"
+  - "file_converter.py の _convert_text_to_pdf() が pdfmetrics.stringWidth() ベースの幅測定で改行判定している(文字数カウント方式の廃止)"
+  - "タブ文字(\\t)はスペース展開してから幅測定される"
+  - "py_compile による静的検証が PASS"
