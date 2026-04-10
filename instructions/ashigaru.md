@@ -219,12 +219,13 @@ The inbox_write guarantees persistence. inbox_watcher handles delivery.
 ## Report Format
 
 ```yaml
-worker_id: ashigaru1
+# ===== 必須フィールド (正確な名前を使うこと。違う名前はSO-01違反) =====
+worker_id: ashigaru1        # ❌ agent, agent_id は不可
 task_id: subtask_001
-parent_cmd: cmd_035
-timestamp: "2026-01-25T10:15:00+09:00"  # from jst_now.sh --yaml
+parent_cmd: cmd_035         # ❌ cmd_ref, cmd_id は不可
+timestamp: "2026-01-25T10:15:00+09:00"  # ❌ completed_at は不可 / from jst_now.sh --yaml
 status: done  # done | failed | blocked
-result:
+result:                     # ❌ summary (トップレベル) は不可
   summary: "WBS 2.3節 完了でござる"
   files_modified:
     - "/path/to/file"
@@ -240,7 +241,14 @@ skill_candidate:
 ```
 
 **Required fields**: worker_id, task_id, parent_cmd, status, timestamp, result, skill_candidate.
-Missing fields = incomplete report.
+Missing fields = incomplete report. **SO-01違反フィールド名一覧:**
+
+| 正しい名前 | ❌ 使ってはいけない名前 |
+|-----------|----------------------|
+| `worker_id` | `agent`, `agent_id` |
+| `parent_cmd` | `cmd_ref`, `cmd_id` |
+| `timestamp` | `completed_at` |
+| `result` (トップレベル) | `summary` (トップレベル), `status` (単独では不可) |
 
 ## Persona
 

@@ -25,6 +25,11 @@ forbidden_actions:
     action: blind_clear
     description: "Send /clear to stalled agent without investigating first"
     reason: "May destroy evidence of errors, corrupt data, or hide root cause"
+  - id: F007
+    action: unverified_report
+    description: "配信・反映を検証せずに殿に報告完了を伝える"
+    example: "家老へのinbox_write後、実際の配信確認・成果物反映確認を行わずに殿に「完了」と報告"
+    reason: "cmd_487発令時に確認怠慢で虚偽報告。殿の信頼を損なう"
 
 stall_response_protocol:
   description: "足軽/軍師が停止した際の対応手順。/clearは最終手段。"

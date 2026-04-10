@@ -123,7 +123,17 @@
 !scripts/log_violation.sh
 !scripts/stop_hook_daily_log.sh
 !scripts/n8n_feedback_append.py
+!scripts/self_clear_check.sh
+!scripts/qc_auto_check.sh
+!scripts/discord_to_ntfy.py
+!scripts/start_discord_bot.sh
 
+# Original docs (project-specific documentation)
+!originaldocs/
+!originaldocs/**
+
+# Discord Bot config (sample only, not actual env)
+!config/discord_bot.env.sample
 
 # SayTask (sample template only, not actual data)
 !saytask/
