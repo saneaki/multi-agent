@@ -1,5 +1,5 @@
 # 📊 戦況報告
-最終更新: 2026-04-10 08:35 JST
+最終更新: 2026-04-10 09:08 JST
 
 ## 🐸 Frog / ストリーク
 
@@ -24,21 +24,21 @@
 
 | cmd | 内容 | 担当 | 状態 |
 |-----|------|------|------|
-| — | 待機中 | — | — |
+| cmd_489 | Discord Bot→ntfy中継スクリプト作成(discord_to_ntfy.py) | 足軽2号 | 実行中 |
 
 ## 🏯 待機中の構成員
 
 | 構成員 | 状態 | 最終タスク |
 |------|------|-----------|
 | 足軽1号(Sonnet+T) | ✅完了(QC PASS) | subtask_488b: ashigaru.md必須フィールド明記+qc_auto_check.sh schema validation追加 AC4/4 qc4/5 |
-| 足軽2号(Sonnet+T) | ✅完了(QC PASS) | subtask_487c: v0.9.4 CHANGELOG+commit(12cf69c)+push+release AC3/3 qc4/5 |
+| 足軽2号(Sonnet+T) | 🔄実行中 | subtask_489: Discord Bot→ntfy中継スクリプト作成 |
 | 足軽3号(Sonnet+T) | ✅完了(QC PASS) | subtask_488c: GHA build-exe.yml release notes固定化 AC4/4 qc2/5 |
 | 足軽4号(Opus+T) | ✅完了(QC PASS) | subtask_488a: CLAUDE.md SO-20+shogun.md F007追加 AC3/3 qc4/5 |
 | 足軽5号(Opus+T) | ✅完了(QC PASS) | subtask_472a5: shogun-compaction-log-analysis SKILL.md AC4/4 qc4/5 |
 | 足軽6号(Codex5.3) | ✅完了(QC PASS) | subtask_487a: geometry画面検出+button_frame fill AC5/5 qc5/5 |
 | 足軽7号(Codex5.3) | ✅完了(QC PASS) | subtask_487b: pdfmetrics.stringWidth改行修正 AC3/3 qc5/5 |
 | 軍師(Opus+T) | ✅完了 | cmd_488全3subtask QC PASS(3件バッチ) |
-| 家老(Sonnet) | 待機 | cmd_488完了処理済み |
+| 家老(Sonnet) | 🔄実行中 | cmd_489配備(足軽2号割当完了) |
 
 ## ✅ 本日の戦果（4/10 JST）
 
