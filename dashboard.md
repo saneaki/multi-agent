@@ -1,5 +1,5 @@
 # 📊 戦況報告
-最終更新: 2026-04-10 09:08 JST
+最終更新: 2026-04-10 09:17 JST
 
 ## 🐸 Frog / ストリーク
 
@@ -8,7 +8,7 @@
 | 今日のFrog | 未設定 |
 | Frog状態 | 🐸 未撃破 |
 | ストリーク | 🔥 29日目継続中 (最長: 29日) |
-| 今日の完了 | 3 |
+| 今日の完了 | 4 |
 | VFタスク残り | 0件（うち今日期限: 0件） |
 
 ## 🚨 要対応 - 殿のご判断をお待ちしております
@@ -19,31 +19,34 @@
 | [action] | gas-mail-manager processAllCustomers 実行+OAuth承認(cmd_486) | clasp push成功(7ファイル)。GASエディタで: (1)関数選択→processAllCustomers (2)実行→OAuth権限再承認ダイアログを承認 (3)処理結果確認。動作確認後、git commit済かどうか確認。 |
 | [action] | gas-mail-manager appsscript.json OAuth scope拡大承認(OBS-486-001) | spreadsheets.currentonly→spreadsheets への変更が必要。殿の承認後、appsscript.json更新→clasp push→OAuth再承認が必要。 |
 | [action] | pdfmerged v0.9.4 Windows実機確認(cmd_487) | subtask_487a(geometry検出化)はWSL2では実機確認不可。Windows環境でpdfmergedを起動し: (1)ノートPC(1366x768)相当の解像度でボタンが見切れないこと (2)テキストファイルのPDF変換で改行位置が正確なこと を確認。v0.9.4 release: https://github.com/saneaki/pdfmerged/releases/tag/v0.9.4 |
+| [action] | Discord Bot Token取得+設定(cmd_489) | (1) Discord Developer Portal(https://discord.com/developers/applications)でBotを新規作成 (2) Bot→Token→Reset Tokenでトークン取得 (3) /home/ubuntu/shogun/config/discord_bot.env の DISCORD_BOT_TOKEN に設定 (4) 殿のDiscord User IDを DISCORD_ALLOWED_USER_IDS に設定 (5) pip install discord.py (6) bash scripts/start_discord_bot.sh で起動 |
 
 ## 🔄 進行中 - 只今、戦闘中でござる
 
 | cmd | 内容 | 担当 | 状態 |
 |-----|------|------|------|
-| cmd_489 | Discord Bot→ntfy中継スクリプト作成(discord_to_ntfy.py) | 足軽2号 | 実行中 |
+| — | 待機中 | — | — |
 
 ## 🏯 待機中の構成員
 
 | 構成員 | 状態 | 最終タスク |
 |------|------|-----------|
 | 足軽1号(Sonnet+T) | ✅完了(QC PASS) | subtask_488b: ashigaru.md必須フィールド明記+qc_auto_check.sh schema validation追加 AC4/4 qc4/5 |
-| 足軽2号(Sonnet+T) | 🔄実行中 | subtask_489: Discord Bot→ntfy中継スクリプト作成 |
+| 足軽2号(Sonnet+T) | ✅完了(QC PASS) | subtask_489: Discord Bot→ntfy中継スクリプト AC8/8 qc4/5 |
 | 足軽3号(Sonnet+T) | ✅完了(QC PASS) | subtask_488c: GHA build-exe.yml release notes固定化 AC4/4 qc2/5 |
 | 足軽4号(Opus+T) | ✅完了(QC PASS) | subtask_488a: CLAUDE.md SO-20+shogun.md F007追加 AC3/3 qc4/5 |
 | 足軽5号(Opus+T) | ✅完了(QC PASS) | subtask_472a5: shogun-compaction-log-analysis SKILL.md AC4/4 qc4/5 |
 | 足軽6号(Codex5.3) | ✅完了(QC PASS) | subtask_487a: geometry画面検出+button_frame fill AC5/5 qc5/5 |
 | 足軽7号(Codex5.3) | ✅完了(QC PASS) | subtask_487b: pdfmetrics.stringWidth改行修正 AC3/3 qc5/5 |
-| 軍師(Opus+T) | ✅完了 | cmd_488全3subtask QC PASS(3件バッチ) |
-| 家老(Sonnet) | 🔄実行中 | cmd_489配備(足軽2号割当完了) |
+| 軍師(Opus+T) | ✅完了 | cmd_489 Discord Bot QC PASS(AC8/8 qc4/5) |
+| 家老(Sonnet) | 待機 | cmd_489完了処理済み |
 
 ## ✅ 本日の戦果（4/10 JST）
 
 | 時刻 | 戦場 | 任務 | 結果 |
 |------|------|------|------|
+| 09:14 | cmd_489 | 🏆 Discord Bot→ntfy中継完了 discord_to_ntfy.py+start_discord_bot.sh AC8/8 QC PASS 殿のBot Token設定[action]登録済 | ✅ |
+| 09:12 | cmd_489 | subtask_489: Discord Bot→ntfy中継スクリプト(discord_to_ntfy.py+start_discord_bot.sh) AC8/8 qc4/5 | ✅ |
 | 08:34 | cmd_488 | 🏆 構造的改善3件完了 SO-20/F007新設+schema違反対策(ashigaru.md+qc_auto_check)+GHAリリースノート固定化 AC全件QC PASS | ✅ |
 | 08:31 | cmd_488 | subtask_488a: CLAUDE.md SO-20将軍確認プロトコル+shogun.md F007(unverified_report)追加 AC3/3 qc4/5 | ✅ |
 | 08:31 | cmd_488 | subtask_488b: ashigaru.md必須フィールド明記+qc_auto_check.sh schema validation追加 AC4/4 qc4/5 | ✅ |
