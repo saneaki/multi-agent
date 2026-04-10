@@ -1,5 +1,5 @@
 # 📊 戦況報告
-最終更新: 2026-04-10 09:17 JST
+最終更新: 2026-04-10 09:37 JST
 
 ## 🐸 Frog / ストリーク
 
@@ -19,7 +19,7 @@
 | [action] | gas-mail-manager processAllCustomers 実行+OAuth承認(cmd_486) | clasp push成功(7ファイル)。GASエディタで: (1)関数選択→processAllCustomers (2)実行→OAuth権限再承認ダイアログを承認 (3)処理結果確認。動作確認後、git commit済かどうか確認。 |
 | [action] | gas-mail-manager appsscript.json OAuth scope拡大承認(OBS-486-001) | spreadsheets.currentonly→spreadsheets への変更が必要。殿の承認後、appsscript.json更新→clasp push→OAuth再承認が必要。 |
 | [action] | pdfmerged v0.9.4 Windows実機確認(cmd_487) | subtask_487a(geometry検出化)はWSL2では実機確認不可。Windows環境でpdfmergedを起動し: (1)ノートPC(1366x768)相当の解像度でボタンが見切れないこと (2)テキストファイルのPDF変換で改行位置が正確なこと を確認。v0.9.4 release: https://github.com/saneaki/pdfmerged/releases/tag/v0.9.4 |
-| [action] | Discord Bot Token取得+設定(cmd_489) | (1) Discord Developer Portal(https://discord.com/developers/applications)でBotを新規作成 (2) Bot→Token→Reset Tokenでトークン取得 (3) /home/ubuntu/shogun/config/discord_bot.env の DISCORD_BOT_TOKEN に設定 (4) 殿のDiscord User IDを DISCORD_ALLOWED_USER_IDS に設定 (5) pip install discord.py (6) bash scripts/start_discord_bot.sh で起動 |
+| [info] | Discord Bot→ntfy連携テスト成功(cmd_489) | ✅ Bot起動済み・DM→ntfy連携テスト成功(shogun#7465)。現状は一方通行(Discord→Shogunのみ)。双方向化は将来対応。設定: /home/ubuntu/shogun/config/discord_bot.env 参照。 |
 
 ## 🔄 進行中 - 只今、戦闘中でござる
 
@@ -45,6 +45,7 @@
 
 | 時刻 | 戦場 | 任務 | 結果 |
 |------|------|------|------|
+| 09:37 | cmd_489 | ✅ Discord DM→ntfy連携テスト成功(shogun#7465) Bot起動済み・一方通行確認 双方向化は将来対応 | ✅ |
 | 09:14 | cmd_489 | 🏆 Discord Bot→ntfy中継完了 discord_to_ntfy.py+start_discord_bot.sh AC8/8 QC PASS 殿のBot Token設定[action]登録済 | ✅ |
 | 09:12 | cmd_489 | subtask_489: Discord Bot→ntfy中継スクリプト(discord_to_ntfy.py+start_discord_bot.sh) AC8/8 qc4/5 | ✅ |
 | 08:34 | cmd_488 | 🏆 構造的改善3件完了 SO-20/F007新設+schema違反対策(ashigaru.md+qc_auto_check)+GHAリリースノート固定化 AC全件QC PASS | ✅ |
