@@ -1,7 +1,7 @@
 # Fork Difference Analysis: shogun vs upstream
 
-> **Generated**: 2026-04-15
-> **Base**: `git diff upstream/main...original` (82 files, +14054/−3121 lines)
+> **Generated**: 2026-04-16
+> **Base**: `git diff upstream/main...original` (87 files, +14672/−3120 lines)
 > **Upstream**: https://github.com/yohey-w/multi-agent-shogun.git
 > **Fork branch**: original
 
@@ -121,6 +121,7 @@ This fork extends the upstream multi-agent-shogun system with production-grade o
 | `queue/n8n/feedback-system.json` | fork-added | n8n workflow definition (JSON export) for feedback collection system. Configures webhook trigger, data transformation, Notion API integration. (cmd_478) | Keep fork — no upstream equivalent |
 | `queue/reports/ashigaru3_report.yaml` | fork-added | Live task report. Active operational state. | Keep fork — no upstream equivalent |
 | `queue/reports/ashigaru4_report.yaml` | fork-added | Live task report. Active operational state. | Keep fork — no upstream equivalent |
+| `skills/pdfmerged-feature-release-workflow/SKILL.md` | fork-added | pdfmerged リリース工程の体系化スキル(386行): cmd_495c (docs/TEST_GUIDE.md更新漏れ)事故の再発防止。A/B/C/D 4区分チェックリスト、変更種別×成果物の同期対象マトリクス、家老タスクYAMLテンプレート、軍師QC grep チェックポイント、足軽レポート必須項目、参考URL26件(PyInstaller/CHANGELOG自動化/GitHub Actions/tag差し替え/pytest-tkinter/docs lint/release-please)を含む。(cmd_501d) | Keep fork — no upstream equivalent |
 
 ## Category G: Tests
 
