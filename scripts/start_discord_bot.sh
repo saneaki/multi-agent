@@ -67,7 +67,7 @@ if [ ! -x "$VENV_PYTHON" ]; then
     VENV_PYTHON="python3"
 fi
 
-tmux new-window -t "$TMUX_SESSION" -n "$TMUX_WINDOW" \
+tmux new-window -d -t "$TMUX_SESSION" -n "$TMUX_WINDOW" \
     "$VENV_PYTHON $BOT_SCRIPT ${BOT_ARGS[*]:-}; echo '[Bot terminated] Press Enter to close'; read"
 
 echo "[INFO] Discord Bot 起動完了。"
