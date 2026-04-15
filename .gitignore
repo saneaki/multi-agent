@@ -115,6 +115,8 @@
 !scripts/dashboard_rotate.sh
 !scripts/watch_gmail_trigger.sh
 !scripts/context_snapshot.sh
+!scripts/shogun-discord.service.template
+!scripts/install-shogun-discord-service.sh
 !scripts/hooks/
 !scripts/hooks/pre_compact_snapshot.sh
 !scripts/hooks/ir1_editable_files_check.sh

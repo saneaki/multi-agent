@@ -1,0 +1,20 @@
+[Unit]
+Description=Shogun Discord Bot (Discord DM -> ntfy relay)
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=600
+StartLimitBurst=5
+
+[Service]
+Type=simple
+WorkingDirectory=/home/ubuntu/shogun
+EnvironmentFile=/home/ubuntu/shogun/config/discord_bot.env
+ExecStart=/home/ubuntu/shogun/.venv/discord-bot/bin/python3 /home/ubuntu/shogun/scripts/discord_to_ntfy.py
+Restart=on-failure
+RestartSec=10s
+StandardOutput=append:/home/ubuntu/shogun/logs/discord_bot.log
+StandardError=append:/home/ubuntu/shogun/logs/discord_bot_error.log
+SyslogIdentifier=shogun-discord
+
+[Install]
+WantedBy=default.target
