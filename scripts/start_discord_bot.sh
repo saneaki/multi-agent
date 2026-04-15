@@ -1,4 +1,13 @@
 #!/usr/bin/env bash
+# ─────────────────────────────────────────────────────────────────
+# DEPRECATED: このスクリプトは cmd_497 (2026-04-15) より非推奨。
+# 通常運用は systemd user service (shogun-discord.service) を使用すること:
+#   systemctl --user status shogun-discord   # 状態確認
+#   systemctl --user restart shogun-discord  # 再起動
+#   systemctl --user stop shogun-discord     # 停止
+# このスクリプトは緊急時手動デバッグ用として残す。
+# 再インストール: bash scripts/install-shogun-discord-service.sh
+# ─────────────────────────────────────────────────────────────────
 # start_discord_bot.sh — Discord Bot → ntfy 中継スクリプト起動
 #
 # [使い方]

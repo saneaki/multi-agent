@@ -127,6 +127,7 @@
 !scripts/qc_auto_check.sh
 !scripts/discord_to_ntfy.py
 !scripts/start_discord_bot.sh
+!scripts/discord_bot_healthcheck.sh
 
 # Original docs (project-specific documentation)
 !originaldocs/
@@ -156,6 +157,7 @@
 !docs/philosophy.md
 !docs/agent-routing-baseline.md
 !docs/feedback-system-guide.md
+!docs/DISCORD_BOT_SETUP.md
 
 # Screenshots (masked — no secrets)
 !images/
