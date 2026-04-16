@@ -25,7 +25,7 @@ DIARY_DS_ID="${NOTION_DIARY_DS_ID}"
 DASHBOARD="/home/ubuntu/shogun/dashboard.md"
 TODAY=$(TZ=Asia/Tokyo date +%Y-%m-%d)
 NOTION_API="https://api.notion.com/v1"
-NOTION_VERSION="2025-09-03"
+NOTION_VERSION="2022-06-28"
 
 VOICE_REVIEW_BLOCK_ID=""  # 動的検索で設定（機能C）
 
