@@ -54,6 +54,28 @@ run_test "test_required_params_missing" 1 \
         --cmd-id cmd_test
 
 # ============================================================
+# TC-4: --help で Usage を表示し exit 0
+# ============================================================
+run_test "test_help_flag_long"  0 bash "${SCRIPT}" --help
+run_test "test_help_flag_short" 0 bash "${SCRIPT}" -h
+
+# ============================================================
+# TC-5: --help 出力に主要オプションが含まれる
+# ============================================================
+help_output=$(bash "${SCRIPT}" --help 2>&1)
+if echo "${help_output}" | grep -q -- "--cmd-id" \
+    && echo "${help_output}" | grep -q -- "--project" \
+    && echo "${help_output}" | grep -q -- "--date" \
+    && echo "${help_output}" | grep -q -- "--files" \
+    && echo "${help_output}" | grep -q -- "--dry-run"; then
+    echo "[PASS] test_help_contents"
+    PASS=$((PASS + 1))
+else
+    echo "[FAIL] test_help_contents: missing expected options"
+    FAIL=$((FAIL + 1))
+fi
+
+# ============================================================
 # 結果
 # ============================================================
 echo ""

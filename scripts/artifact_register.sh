@@ -38,6 +38,34 @@ DATE=""
 FILES_CSV=""
 DRY_RUN=false
 
+print_usage() {
+    cat <<USAGE
+artifact_register.sh — cmd 完了時の成果物 Drive アップロード + Notion 成果物DB 登録
+
+Usage:
+  $0 --cmd-id <id> --project <proj> --date <YYYY-MM-DD> --files <csv> [--dry-run]
+  $0 --help
+
+Options:
+  --cmd-id <id>          cmd 番号 (例: cmd_511)
+  --project <proj>       プロジェクト名 (例: shogun)
+  --date <YYYY-MM-DD>    登録日付 (JST; 例: 2026-04-17)
+  --files <csv>          登録対象ファイル (リポジトリ相対パス, カンマ区切り)
+  --dry-run              実際の API 呼び出しをせずパラメータのみ表示
+  -h, --help             この Usage を表示
+
+環境変数 (.env 経由で読込):
+  NOTION_INTEGRATION_TOKEN      Notion API トークン
+  NOTION_ARTIFACTS_DB_ID        成果物 DB ID
+  N8N_DRIVE_UPLOAD_WEBHOOK_URL  Drive アップロード用 n8n Webhook URL
+  GOOGLE_DRIVE_OUTPUT_FOLDER_ID Drive 出力ルートフォルダ ID
+
+Example:
+  $0 --cmd-id cmd_511 --project shogun --date 2026-04-17 \\
+     --files "scripts/artifact_register.sh,tests/test_artifact_register.sh"
+USAGE
+}
+
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --cmd-id)   CMD_ID="$2";   shift 2 ;;
@@ -45,9 +73,10 @@ while [[ $# -gt 0 ]]; do
         --date)     DATE="$2";     shift 2 ;;
         --files)    FILES_CSV="$2"; shift 2 ;;
         --dry-run)  DRY_RUN=true;  shift ;;
+        -h|--help)  print_usage; exit 0 ;;
         *)
             echo "[ERROR] 不明な引数: $1" >&2
-            echo "使い方: $0 --cmd-id <id> --project <proj> --date <YYYY-MM-DD> --files <csv> [--dry-run]" >&2
+            print_usage >&2
             exit 1
             ;;
     esac
@@ -224,11 +253,13 @@ files_csv = """${FILES_CSV}"""
 files_list = [f.strip() for f in files_csv.split(',') if f.strip()]
 
 uploaded   = 0
+drive_idem = 0
 skipped    = 0
 error      = 0
 n_created  = 0
 n_skipped  = 0
 n_error    = 0
+file_results = []  # list of dicts: {filename, drive_url, notion_url, drive_action, notion_action}
 
 def notion_request(method, url, data=None, retries=3):
     headers = {
@@ -271,9 +302,11 @@ for rel_path in files_list:
 
     # ---- Drive アップロード ----
     web_view_link = ""
+    drive_action = ""
     if dry_run:
         print(f"[DRY-RUN] Drive アップロードをスキップ: {filename}", flush=True)
         uploaded += 1
+        drive_action = "dry-run"
     elif not webhook_url:
         print(f"[WARN] webhook URL未設定。Drive アップロードをスキップ: {filename}", flush=True)
         skipped += 1
@@ -310,9 +343,13 @@ for rel_path in files_list:
                 result = json.loads(resp.read().decode('utf-8'))
             file_id = result.get('file_id', result.get('id', ''))
             web_view_link = result.get('web_view_link', result.get('webViewLink', ''))
+            drive_action = result.get('action', '?')
             if file_id:
-                print(f"[INFO] Drive アップロード完了: {filename} (action: {result.get('action', '?')})", flush=True)
-                uploaded += 1
+                print(f"[INFO] Drive アップロード完了: {filename} (action: {drive_action})", flush=True)
+                if drive_action == "skipped":
+                    drive_idem += 1
+                else:
+                    uploaded += 1
             else:
                 print(f"[ERROR] Drive アップロード失敗 (file_id未取得): {filename}", flush=True)
                 error += 1
@@ -323,14 +360,25 @@ for rel_path in files_list:
             continue
 
     # ---- Notion 登録 (冪等) ----
+    notion_url = ""
+    notion_action = ""
     if dry_run:
         print(f"[DRY-RUN] Notion 登録をスキップ: {filename}", flush=True)
         n_created += 1
+        notion_action = "dry-run"
+        file_results.append({
+            "filename": filename, "drive_url": web_view_link, "notion_url": "",
+            "drive_action": drive_action, "notion_action": notion_action
+        })
         continue
 
     if not notion_token or not db_id:
         print(f"[WARN] Notion 設定未完了。登録スキップ: {filename}", flush=True)
         n_skipped += 1
+        file_results.append({
+            "filename": filename, "drive_url": web_view_link, "notion_url": "",
+            "drive_action": drive_action, "notion_action": "unconfigured"
+        })
         continue
 
     # 冪等性チェック
@@ -338,8 +386,14 @@ for rel_path in files_list:
         "filter": {"property": "ファイル名", "title": {"equals": filename}}
     })
     if query_resp.get("results"):
+        existing = query_resp["results"][0]
+        notion_url = existing.get("url", "")
         print(f"[INFO] Notion 既存レコードあり、スキップ: {filename}", flush=True)
         n_skipped += 1
+        file_results.append({
+            "filename": filename, "drive_url": web_view_link, "notion_url": notion_url,
+            "drive_action": drive_action, "notion_action": "existing"
+        })
         continue
 
     # ファイル種別
@@ -361,14 +415,31 @@ for rel_path in files_list:
         "properties": properties
     })
     if create_resp.get("object") == "page":
+        notion_url = create_resp.get("url", "")
         print(f"[INFO] Notion 成果物DBレコード作成: {filename}", flush=True)
         n_created += 1
+        file_results.append({
+            "filename": filename, "drive_url": web_view_link, "notion_url": notion_url,
+            "drive_action": drive_action, "notion_action": "created"
+        })
     else:
         print(f"[ERROR] Notion レコード作成失敗: {filename}: {create_resp.get('message', create_resp)}", flush=True)
         n_error += 1
+        file_results.append({
+            "filename": filename, "drive_url": web_view_link, "notion_url": "",
+            "drive_action": drive_action, "notion_action": "error"
+        })
 
-print(f"[SUMMARY] Drive: {uploaded}件アップロード, {skipped}件スキップ, {error}件エラー", flush=True)
+print(f"[SUMMARY] Drive: {uploaded}件アップロード, {drive_idem}件既存(冪等), {skipped}件スキップ, {error}件エラー", flush=True)
 print(f"[SUMMARY] Notion: {n_created}件作成, {n_skipped}件スキップ, {n_error}件エラー", flush=True)
+if file_results:
+    print("[URLS] 登録済み成果物:", flush=True)
+    for fr in file_results:
+        drv = fr["drive_url"] or "-"
+        ntn = fr["notion_url"] or "-"
+        print(f"  - {fr['filename']} [drive:{fr['drive_action']}/notion:{fr['notion_action']}]", flush=True)
+        print(f"      drive : {drv}", flush=True)
+        print(f"      notion: {ntn}", flush=True)
 PYEOF
 }
 
