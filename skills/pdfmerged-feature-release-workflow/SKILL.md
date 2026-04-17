@@ -77,7 +77,15 @@ pdfmerged で新バージョンをリリースする際、**A/B/C/D の 4 区分
   - `## What's Changed` ヘッダ存在
   - `## 対象ユーザー` セクション存在
   - `**Full Changelog**: ...` リンク存在
-- [ ] D6. Windows 実機で `PDFMergerTool.exe` をダウンロードし、タイトルバーが `vX.Y.Z` 表示されることを殿が確認 (dashboard [action] 項目)
+- [ ] D6. **リリース後の docs差替 retag要否判定**:
+      既に release 済みの version に対して以下の commit が後追いで入った場合、retag必須:
+        - `docs/TEST_GUIDE.md` (test-kit.zip 同梱)
+        - `docs/TEST_GUIDE.html` (build-exe.yml で md→html 変換)
+        - `create_test_pdfs.py` または `test_kit_files/` 配下
+        - `pdf_tools/__version__` (タグと commit のドリフト防止)
+      判定コマンド: `git log <tag>..HEAD -- docs/TEST_GUIDE.md create_test_pdfs.py test_kit_files/`
+      ヒットがあれば retag(release/tag削除→新HEADにtag再作成→push→CI待ち)
+- [ ] D7. Windows 実機で `PDFMergerTool.exe` をダウンロードし、タイトルバーが `vX.Y.Z` 表示されることを殿が確認 (dashboard [action] 項目)
 
 ---
 
@@ -221,6 +229,21 @@ grep -A3 "<new_sample_name>" create_test_pdfs.py
 ls test_kit_files/ | grep "<new_sample_name>"
 ```
 
+### QC-6: test-kit.zip 内容 vs HEAD TEST_GUIDE 同期確認 (cmd_526事故対応)
+
+```bash
+# docs/TEST_GUIDE.md と同梱 TEST_GUIDE.html を diff
+TMPDIR=$(mktemp -d)
+gh release download v${VER} -R saneaki/pdfmerged \
+    --pattern 'pdfmerged-test-kit-v*.zip' -D $TMPDIR
+python3 -c "import zipfile; zipfile.ZipFile('$TMPDIR/pdfmerged-test-kit-v${VER}.zip').extractall('$TMPDIR')"
+# 期待: HEAD の docs/TEST_GUIDE.md の主要キーワードが同梱HTML内にも存在
+for kw in "使用ファイル" "A.pdf"; do
+  grep -c "$kw" $TMPDIR/pdfmerged-test-kit/TEST_GUIDE.html
+done
+# 期待値: 全て 1 以上 (ヒット 0 = retag 必要)
+```
+
 ---
 
 ## §4 足軽レポート必須項目
@@ -272,8 +295,9 @@ skill_candidate:
 | 5 | CHANGELOG `### 対象ユーザー` 節を書き忘れ → Release body が貧弱 | リリース公開後 `gh release view` で気付く | §1 B1 + §3 QC-2 |
 | 6 | EXE タイトルバーが旧バージョン表示 (v0.9.1~v0.9.4 全滅) | 殿が実機確認で指摘 (cmd_500) | §1 A1 + CI validation step (既に導入済) |
 | 7 | create_test_pdfs.py を拡張せず新機能の検証ができない | 殿が実機テスト時に気付く | §1 C2 + §3 QC-5 |
+| 8 | docs差替commitを push 後 retag を忘れ、release の test-kit.zip が古い改訂前内容のまま残る | 殿が test-kit.zip 解凍時に旧版docsを発見 | §1 D6 + §3 QC-6 (cmd_526 事故) |
 
-**これら 7 パターンはすべて「足軽レポート」の `result.*` フィールドで証跡化 → 軍師 QC で grep 検証する**ことで再発を防ぐ。
+**これら 8 パターンはすべて「足軽レポート」の `result.*` フィールドで証跡化 → 軍師 QC で grep 検証する**ことで再発を防ぐ。
 
 ---
 
@@ -374,6 +398,7 @@ git status --short
 | バージョン | 日付 | 変更内容 | 作成者 |
 |-----------|------|---------|--------|
 | v1.0.0 | 2026-04-16 | 初版。cmd_495c 事故 (TEST_GUIDE 3 箇所の更新漏れ) の再発防止を目的として新設。cmd_501d (足軽5号) | 足軽5号 |
+| v1.1.0 | 2026-04-17 | cmd_526 事故(TEST_GUIDE改訂後 retag漏れ)再発防止: §1 D6/§3 QC-6/§5 行8追加 | 将軍 cmd_527 |
 
 ---
 
