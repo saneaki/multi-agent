@@ -1,0 +1,68 @@
+worker_id: gunshi
+task_id: subtask_519a
+cmd_id: cmd_519
+parent_cmd: cmd_519
+timestamp: "2026-04-17T10:55:00+09:00"
+task_type: research_and_report
+report_to: karo
+
+review_file: projects/artifact-standardization/review_cmd519.md
+sug_restored: "001/002/003いずれも復元不能(suggestions.yaml未記録+gunshi_report.yaml非git追跡)"
+unresolved_count: 2
+skill_candidate_judgment: "不要(利用頻度低、design.md+CLAUDE.md+karo.md Step11.8で十分カバー)"
+dashboard_info3_delete: true
+commit_hash: pending
+
+summary: |
+  cmd_519 subtask_519a 振り返りレビュー完了。
+  sug_cmd_509_001/002/003 は全情報源(git log/suggestions.yaml/gunshi_report.yaml履歴/
+  dashboard.md git履歴/grep全文検索)を調査したが復元不能。
+  原因: suggestions.yaml への追記フローが cmd_509 QC 時に未実行。
+  代替として cmd_511 imp_001-004(対処済)と sug_cmd_511_001(未対応/low)を整理。
+  未対応2件: (1)Drive サブフォルダ分離 low (2)suggestions.yaml追記フロー改善 medium。
+  skill化判断: artifact-registration-pattern は不要(利用頻度低・既存手順で充足)。
+  dashboard [info-3] 削除推奨。
+
+acceptance_criteria_check:
+  AC1:
+    check: "sug_cmd_509_001/002/003 の具体内容が復元(または復元不能と明記)されている"
+    result: PASS
+    evidence: "review_cmd519.md §1 に復元不能と明記。調査6情報源の結果を個別記載"
+  AC2:
+    check: "cmd_511で対処済/未対応 の採否が明記されている"
+    result: PASS
+    evidence: "§3 採否一覧表: imp_001-004 対処済、sug_cmd_511_001 未対応"
+  AC3:
+    check: "未対応の提案に優先度付き推奨cmd案が添えられている"
+    result: PASS
+    evidence: "§4: Drive サブフォルダ分離(low)+suggestions.yaml改善(medium) 各推奨cmd案付き"
+  AC4:
+    check: "skill化判断(artifact-registration-pattern)が明記されている"
+    result: PASS
+    evidence: "§5: skill化は時期尚早(不要)。理由4点+代替策記載"
+  AC5:
+    check: "dashboard [info-3] 削除提案が報告に含まれる"
+    result: PASS
+    evidence: "§6.1: cmd_519完了をもって削除推奨"
+
+north_star_check:
+  north_star: "cmd_509完成後のsug_cmd_509_001/002/003を3cmd運用実績に照らして振り返り、採否と優先度を確定してartifact_register.sh改善サイクルを閉じる"
+  result: ALIGNED_WITH_CAVEAT
+  evidence: |
+    - sug_cmd_509_001/002/003 の内容復元は不能だが、調査過程と不能理由を明記
+    - cmd_511 の改善4件(対処済)+未対応1件を整理し、代替的に改善サイクルを評価
+    - artifact_register.sh の運用定着度を客観的に評価(利用2回/登録対象cmd少)
+    - skill化判断+info-3削除で改善サイクル閉鎖の道筋を提示
+  caveat: "sug復元不能のため『sug内容に照らした採否判定』は実施できず、代替分析で補完"
+
+karo_action_required:
+  - "dashboard [info-3] 削除 (cmd_519完了時)"
+  - "dashboard 🛠️ skill候補 artifact-registration-pattern 削除 (skill化不要判断)"
+  - "suggestions.yaml 追記フロー強化の検討 (medium priority)"
+
+files_modified:
+  - "projects/artifact-standardization/review_cmd519.md (new)"
+  - "queue/reports/gunshi_report.yaml (this file)"
+
+agent_tool_used: false
+agent_tool_tokens: 0
