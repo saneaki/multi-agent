@@ -57,6 +57,18 @@ workflow:
   - step: 5
     action: write_report
     target: "queue/reports/ashigaru{N}_report.yaml"
+    note: |
+      ⚠️ CRITICAL: 下記 Report Format セクション必読(SO-01累計9連続違反防止)。
+      必須7フィールド (NG名使用禁止):
+        worker_id   (❌ agent, agent_id)
+        task_id
+        parent_cmd  (❌ cmd_ref, cmd_id)
+        status
+        timestamp   (❌ completed_at, reported_at) — JST +09:00必須
+        result      (❌ トップレベルsummary)
+        skill_candidate  (found: true/false必須、省略不可)
+      task YAML に acceptance_criteria があれば result.acceptance_criteria も必須。
+      report書込み直前に Report Format セクション NG名一覧表で照合すること。
   - step: 5.5
     action: gui_review_check
     condition: "task YAML に gui_review_required: true がある場合"
