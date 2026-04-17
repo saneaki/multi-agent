@@ -703,6 +703,11 @@ tmux set-option -t multiagent -w pane-border-status top
 tmux set-option -t multiagent -w pane-border-format '#{?pane_active,#[reverse],}#[bold]#{@agent_id}#[default] (#{@model_name}) #{@current_task}'
 
 log_success "  └─ 家老・足軽・軍師の陣、構築完了"
+
+# 軍師ペイン高さ確保（最低17行 — Opus+Tの verbose 思考出力が10行以上見えるように）
+_GUNSHI_PANE=$((PANE_BASE + _ASHIGARU_COUNT + 1))
+tmux resize-pane -t "multiagent:agents.${_GUNSHI_PANE}" -y 17 2>/dev/null || true
+log_info "  └─ 軍師ペイン: 17行に拡張（Opus+T thinking対応）"
 echo ""
 
 # ═══════════════════════════════════════════════════════════════════════════════
