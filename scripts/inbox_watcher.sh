@@ -40,6 +40,15 @@ if [ "${__INBOX_WATCHER_TESTING__:-}" != "1" ]; then
         exit 1
     fi
 
+    # ─── Singleton guard (BUG-B: prevent duplicate inbox_watcher processes) ───
+    PID_FILE="/tmp/inbox_watcher_${AGENT_ID}.pid"
+    if [ -f "$PID_FILE" ] && kill -0 "$(cat "$PID_FILE")" 2>/dev/null; then
+        echo "[WARN] inbox_watcher already running for $AGENT_ID (PID $(cat "$PID_FILE")). Exiting." >&2
+        exit 0
+    fi
+    echo $$ > "$PID_FILE"
+    trap "rm -f '$PID_FILE'" EXIT
+
     # Initialize inbox if not exists
     if [ ! -f "$INBOX" ]; then
         mkdir -p "$(dirname "$INBOX")"
@@ -666,6 +675,29 @@ send_codex_startup_prompt() {
     STARTUP_PROMPT_SENT=1
 }
 
+# ─── ACK guard for context reset (BUG-A fix) ───
+# Returns 0 (ACK complete) if NO task_assigned entries have read:false.
+# Returns 1 (ACK pending) if ANY task_assigned entry has read:false.
+# Used to prevent CONTEXT-RESET from firing before agent reads the task.
+agent_has_acked_latest_task() {
+    local agent_id_ack="${1:-${AGENT_ID:-}}"
+    local inbox_ack="$SCRIPT_DIR/queue/inbox/${agent_id_ack}.yaml"
+    [ -f "$inbox_ack" ] || return 0  # no inbox → ACK complete
+    INBOX_PATH="$inbox_ack" "$SCRIPT_DIR/.venv/bin/python3" - << 'PY'
+import sys, os, yaml
+inbox = os.environ.get("INBOX_PATH", "")
+try:
+    with open(inbox, "r", encoding="utf-8", errors="replace") as f:
+        data = yaml.safe_load(f) or {}
+    for m in (data.get("messages") or []):
+        if m.get("type") == "task_assigned" and not m.get("read", False):
+            sys.exit(1)  # ACK pending
+    sys.exit(0)  # ACK complete
+except Exception:
+    sys.exit(0)  # safe default: assume ACK complete on error
+PY
+}
+
 # ─── Send context reset before new task ───
 # Called when task_assigned is detected in unread messages.
 # Sends the appropriate "new conversation" command per CLI type to clear
@@ -1129,8 +1161,12 @@ for s in data.get('specials', []):
         # Skip if: (1) already sent this batch, (2) clear_command already handled above,
         #          (3) agent is shogun (human-controlled).
         if [ "$has_task_assigned" = "1" ] && [ "$NEW_CONTEXT_SENT" -eq 0 ] && [ "$clear_seen" -eq 0 ]; then
-            send_context_reset
-            NEW_CONTEXT_SENT=1
+            if agent_has_acked_latest_task "$AGENT_ID"; then
+                send_context_reset
+                NEW_CONTEXT_SENT=1
+            else
+                echo "[$(date)] [SKIP] CONTEXT-RESET skipped: task_assigned ACK pending for $AGENT_ID" >&2
+            fi
         fi
 
         # If startup prompt was just sent (Codex), skip follow-up nudge this cycle.
