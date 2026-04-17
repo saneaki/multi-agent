@@ -445,6 +445,19 @@ Skipping this leaves redo messages unprocessed, causing ~4 min stall until escal
    - n8n WF general: verify exec results via n8n API (`GET /api/v1/executions/{id}?includeData=true`)
    - See `scripts/` for available test tools
 
+## Hook E2E Testing Checklist
+
+Hook (PreCompact/PostToolUse等) の E2E 検証手順:
+1. テスト前: 対象ファイル(snapshot等)をバックアップ (cp -a)
+2. 環境設定: TMUX_PANE で対象エージェント切替
+3. 4シナリオ実行:
+   (a) 能動書込み (context_snapshot.sh write)
+   (b) Hook 発動 (対象操作トリガー)
+   (c) 復旧確認 (snapshot 内容照合)
+   (d) ロールバック (diff -q でバックアップ復元)
+4. 各シナリオで PASS/FAIL 記録
+5. テスト後: バックアップから復元 (READ-ONLY 原則)
+
 ## Batch Processing Protocol
 
 When processing large datasets (30+ items requiring individual web search, API calls, or LLM generation), follow this protocol. Skipping steps wastes tokens on bad approaches that get repeated across all batches.
