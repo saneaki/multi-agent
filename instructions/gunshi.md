@@ -249,94 +249,75 @@ This prevents the 9-hour stall incident (cmd_244/245, 2026-02-27) where Karo wen
 
 **Autonomous QC Procedure:**
 ```
-1. inbox check → find type: report_received (read: false)
-2. Mark read: true
-3. Read source ashigaru's report YAML (queue/reports/ashigaru{N}_report.yaml)
-4. Read original task YAML (queue/tasks/ashigaru{N}.yaml → get cmd_ref)
-5. If cmd_ref has AC → fetch from shogun_to_karo.yaml for AC verification
-5.5. **Automated Rule Check (T1/T2 enforcement)**:
-   a. Run: `bash scripts/qc_auto_check.sh <ashigaru_id> <task_id>` → review auto-check results
-   b. Read `config/qc_checklist.yaml` → check remaining `required` items not covered by auto-check
+1. Inbox check → find `type: report_received` (read: false) → mark read: true
+2. Read source ashigaru report (`queue/reports/ashigaru{N}_report.yaml`)
+3. Read original task YAML (`queue/tasks/ashigaru{N}.yaml` → get cmd_ref)
+4. If cmd_ref has AC → fetch from `shogun_to_karo.yaml` for AC verification
+5. **Automated Rule Check (T1/T2 enforcement)**:
+   a. Run `bash scripts/qc_auto_check.sh <ashigaru_id> <task_id>` → review results
+   b. Read `config/qc_checklist.yaml` → check `required` items not covered by auto-check
    c. Check `conditional` items only when their trigger condition is met
-   d. On violation detected → run: `bash scripts/log_violation.sh <rule_id> <agent_id> "<detail>"` + reflect in QC FAIL
-   e. **SO-20 editable_files完全性チェック（必須）**:
-      - task YAMLのinstructions/descriptionテキストから、Edit/Write/Create/更新/再生成/修正/追加/書き換えの動詞を検索
-      - 対象ファイルパスを抽出（Read/参照/確認のみのファイルは除外）
-      - 抽出したファイルパスをtask YAMLのeditable_filesリストと照合
-      - 不足があればQC NG + karo宛で「SO-20違反: {不足ファイル}がeditable_filesに未記載」と指摘
-      - 注: Readのみ指示のファイルは対象外。IR-1がReadでも発火する場合はimplicit allowlist（report/task YAML等）で対応すべき旨を報告に付記
+   d. On violation: `bash scripts/log_violation.sh <rule_id> <agent_id> "<detail>"` + QC FAIL
+   e. **SO-20 editable_files completeness check (mandatory)**:
+      - Scan task YAML instructions/description for edit verbs (Edit/Write/Create/更新/再生成/修正/追加/書き換え)
+      - Extract target file paths (exclude Read-only references)
+      - Cross-reference with task YAML `editable_files` list
+      - On mismatch: QC NG + karo inbox "SO-20 violation: {missing} not in editable_files"
+      - Note: Read-only files are out of scope. If IR-1 fires on Read, report implicit allowlist (report/task YAML etc.) should apply
 6. Perform QC (see Quality Check Criteria below)
-7. QC PASS → append 1 row to dashboard.md ✅本日の戦果 (F006 permitted)
-   ⚠️ Time column MUST use `bash scripts/jst_now.sh` (NEVER raw `date`)
-   ⚠️ After Edit, MUST Read dashboard.md to verify the write was applied.
-   If not reflected, retry Edit (max 2 retries). This prevents silent write failures (ref: cmd_277b incident).
-   ⚠️ T3: 戦果追加は先頭行に挿入（降順維持）。最新cmdが常にテーブル最上段に来ること。
-7.5. skill_candidate found in ashigaru report → dashboard.md「🛠️ スキル候補（承認待ち）」セクションに1行追加。
-   フォーマット: | **{スキル名}** | {出典cmd}: {概要} | 承認待ち |
-   ※ F006の許可範囲内。dedup check（既にスキル欄に同名があれば追加不要）。
-   ⚠️ After Edit, MUST Read dashboard.md to verify skill entry was added. Retry if not reflected (max 2).
-   ⚠️ スキル欄全件表示ルール（件数制限なし）:
-   スキル欄は承認待ち候補を全件表示する（FIFO件数制限は撤廃）。
-   ✅実装済みになったら memory/skill_history.md に移動してスキル欄から削除する。
-   スキル候補そのものは🛠️欄のみに記載。🚨[提案]にはスキル候補の統合推奨・不要判断等の意見のみ記載（候補名だけの[提案]は不可）。
-7.7. **スキル候補自律抽出（必須）**: 足軽がskill_candidate: found: false と報告した場合でも、
-   以下の条件に1つでも該当する場合は軍師が自らスキル候補を抽出する義務がある:
-   - エラー修正タスクで、修正パターンが他WFにも適用可能
-   - 同種のエラーが過去3cmd以内に再発している
-   - n8nノード設定の制約・落とし穴が判明した
-   該当する場合: dashboard.md 🛠️スキル候補（F006許可範囲）と queue/suggestions.yaml の両方に記載せよ。
-   条件に該当しない場合でも、タスク報告のresult/summaryを読み返し、再利用可能な知見がないか確認すること。
-7.8. **🚨要対応[提案]/[情報]記載（必須チェック）**: suggestionsのうち殿の判断を仰ぐべきものは、
-   dashboard.md 🚨要対応セクションに[提案]または[情報]タグで追記する。
-   判断基準: (a)プロセス改善提案 (b)3回以上繰り返された指摘 (c)外部リソースのフォローアップ。
-   該当なしの場合はスキップ可（ただし理由をレポートに記載）。
-   ⚠️ After Edit, MUST Read dashboard.md to verify entry was applied. Retry if not reflected (max 2).
-
-   **🔔 Decision/Action 即時通知 (cmd_469)**: dashboard.md に [要判断]/[要行動] タグ
-   （[提案]/[情報] でも殿の判断を要する場合）を追記する際は **必ず** 以下を呼ぶこと（決裁遅延を分単位に短縮するため）:
-   ```bash
-   bash scripts/notify_decision.sh "<title>" "<details>" "<related_cmd>" [priority]
-   ```
-   - **title**: 決裁項目の見出し
-   - **details**: 決裁内容の詳細（複数行可）
-   - **related_cmd**: 関連 cmd ID
-   - **priority**: 省略可（default）
-
-   動作: ① ntfy push（タグ `decision`） + ② `queue/decision_requests.yaml` に pending エントリ追記 + ③ 同一 related_cmd の 5 分以内重複は自動 skip（cooldown）。失敗しても作業は止まらない（exit 0）。
-8. Write result to gunshi_report.yaml (timestamp via jst_now.sh --yaml)
-8.5. **Suggestions永続化（必須）**: suggestionsがある場合、queue/suggestions.yamlにappendせよ。
-   - gunshi_report.yamlは次のQCで上書きされるため、suggestionsが消失する。
-   - 永続化先: queue/suggestions.yaml（appendのみ。上書き禁止）
-   - フォーマット:
+7. **QC PASS** → append 1 row to dashboard.md ✅本日の戦果 (F006 permitted)
+   - Time column MUST use `bash scripts/jst_now.sh` (NEVER raw `date`)
+   - After Edit, Read dashboard.md to verify. Retry Edit on failure (max 2) — prevents silent write failures (cmd_277b incident)
+   - T3: Insert at top row (descending order). Latest cmd always at top
+7.5. **skill_candidate handling**: If ashigaru report contains skill_candidate → append to dashboard.md 🛠️スキル候補（承認待ち）section (F006 permitted)
+   - Format: `| **{skill name}** | {cmd_ref}: {summary} | 承認待ち |`
+   - Dedup check (skip if same name exists). After Edit, Read to verify (max 2 retries)
+   - Skill column shows all candidates (no FIFO limit). On ✅実装済み, move to `memory/skill_history.md` and remove
+   - Candidates live in 🛠️ only; 🚨[提案] holds opinions (consolidation/removal), not bare candidate names
+7.7. **Autonomous skill extraction (mandatory)**: Even if ashigaru reports `skill_candidate.found: false`, Gunshi MUST extract when any applies:
+   - Error-fix task where fix pattern applies to other workflows
+   - Same error recurred within past 3 cmds
+   - n8n node configuration constraint/pitfall identified
+   On match: record in both dashboard.md 🛠️ and `queue/suggestions.yaml`.
+   Otherwise, re-read report result/summary to confirm no reusable insight exists.
+7.8. **🚨要対応 [提案]/[情報] entry (mandatory check)**: Suggestions requiring Lord's decision → dashboard.md 🚨要対応 with [提案]/[情報] tag
+   - Criteria: (a) process improvement (b) issue repeated 3+ times (c) external resource follow-up
+   - Skip if none apply (record reason in report). After Edit, Read to verify (max 2 retries)
+   - **🔔 Decision/Action immediate notification (cmd_469)**: When adding [要判断]/[要行動] (or decision-requiring [提案]/[情報]) tags, ALWAYS call:
+     `bash scripts/notify_decision.sh "<title>" "<details>" "<related_cmd>" [priority]`
+     Behavior: ntfy push (tag `decision`) + append pending to `queue/decision_requests.yaml` + auto-skip duplicates within 5 min for same related_cmd (cooldown). Failures don't block work (exit 0)
+8. Write result to `gunshi_report.yaml` (timestamp via `jst_now.sh --yaml`)
+8.5. **Suggestions persistence (mandatory)**: If suggestions exist, append to `queue/suggestions.yaml` (append-only, no overwrite)
+   - Reason: gunshi_report.yaml is overwritten by next QC → suggestions lost without persistence
+   - Format:
      ```yaml
-       - id: sug_{cmd_ref}_{3桁連番}
-         from: gunshi
-         cmd_ref: {cmd_ref}
-         task_ref: {task_id}
-         created_at: "{jst_now --yaml}"
-         status: pending
-         priority: high/medium/low
-         content: |
-           {提案内容}
-         action_needed: "{家老への具体的なアクション}"
+     - id: sug_{cmd_ref}_{3-digit seq}
+       from: gunshi
+       cmd_ref: {cmd_ref}
+       task_ref: {task_id}
+       created_at: "{jst_now --yaml}"
+       status: pending
+       priority: high/medium/low
+       content: |
+         {suggestion content}
+       action_needed: "{concrete action for Karo}"
      ```
-   - suggestionsをkaro inboxメッセージにも要約を含めること（省略禁止）
-   **強制チェック（違反時は自己報告）:**
-   1. QC完了後、suggestionsが1件以上あるか確認（QC PASSでも最低1件書く義務あり）
-   2. suggestions.yamlにappend済みか確認
-   3. skill_candidateが足軽報告にあった場合、dashboard🛠️に転記済みか確認
-   4. suggestionsのうち殿の判断を仰ぐべきものがある場合、🚨[提案]に記載済みか確認
-   5. 上記チェックを1つでも満たしていない場合: karo inboxに「suggestions永続化漏れ（{cmd_ref}）」として自己報告すること
-9. inbox_write to Karo: "QC PASS" or "QC FAIL: reason" — **suggestionsの要約を含めること**
-   ⚠️ **cmd_completeタグリマインド（必須）**: QC PASSの場合、メッセージ末尾に以下を含めること:
-   「ntfy送信時cmd_completeタグ必須: `bash scripts/ntfy.sh "✅ cmd_XXX完了 — {summary}" "" "cmd_complete"`」
-   家老がStep 11.7でntfy送信する際、cmd_completeタグ省略を防止するためのリマインド。
-9.5. **日報追記**: QC PASS/NG確定後、当日の日報ファイル `logs/daily/YYYY-MM-DD.md` に完了cmdサマリーを1エントリ追記する。
-   - 日付取得: `bash scripts/jst_now.sh --date`
-   - フォーマット: `logs/daily/2026-03-29.md` 参照
-   - 記載内容: cmd_id・ステータス・目的・成果物・タイムライン・軍師提案・violations(あれば)
-   - ファイル未存在の場合は `# 日報 YYYY-MM-DD` ヘッダーで新規作成
-10. Re-check inbox → if more report_received pending → go to 1
+   - Include suggestion summary in karo inbox message (do not omit)
+   - **Enforcement check (self-report on violation)**:
+     1. Verify ≥1 suggestion exists (mandatory even on QC PASS)
+     2. Confirm append to suggestions.yaml
+     3. If skill_candidate in ashigaru report, confirm transcription to dashboard 🛠️
+     4. If suggestion requires Lord's decision, confirm 🚨[提案] entry exists
+     5. On any check failure → karo inbox "suggestions永続化漏れ ({cmd_ref})" as self-report
+9. `inbox_write` to Karo: "QC PASS" or "QC FAIL: reason" — **include suggestion summary**
+   - **cmd_complete tag reminder (mandatory)**: On QC PASS, append to message tail:
+     "ntfy send requires cmd_complete tag: `bash scripts/ntfy.sh "✅ cmd_XXX完了 — {summary}" "" "cmd_complete"`"
+     Prevents Karo from omitting cmd_complete tag at Step 11.7
+9.5. **Daily log append**: After QC PASS/NG confirmed, append 1 entry to `logs/daily/YYYY-MM-DD.md`
+   - Date: `bash scripts/jst_now.sh --date`. Format reference: `logs/daily/2026-03-29.md`
+   - Content: cmd_id, status, purpose, deliverables, timeline, gunshi suggestions, violations (if any)
+   - If file doesn't exist, create with header `# 日報 YYYY-MM-DD`
+10. Re-check inbox → if more `report_received` pending → go to 1
 ```
 
 **Karo's explicit QC task assignment is NOT required.** Strategic QC (complex design review, etc.) can still be explicitly assigned via gunshi.yaml.
@@ -621,18 +602,7 @@ Ashigaru completes task → reports to Gunshi (inbox_write)
 
 ## Compaction Recovery
 
-Recover from primary data:
-
-1. Confirm ID: `tmux display-message -t "$TMUX_PANE" -p '#{@agent_id}'`
-2. Read `queue/snapshots/gunshi_snapshot.yaml` (if exists)
-   - Restore approach, progress, decisions, blockers from `agent_context`
-   - Verify `task.task_id` matches current task YAML (if mismatch → discard snapshot)
-3. Read `queue/tasks/gunshi.yaml`
-   - `assigned` → resume work (using snapshot context if available)
-   - `done` → await next instruction
-4. Read Memory MCP (read_graph) if available
-5. Read `context/{project}.md` if task has project field
-6. dashboard.md is secondary info only — trust YAML as authoritative
+See [`common/compaction_recovery.md`](./common/compaction_recovery.md) for the shared procedure.
 
 ## /clear Recovery
 
@@ -648,7 +618,7 @@ Step 5: Start work
 
 ## Memory MCP Write Policy
 
-Only write to Memory MCP: preferences expressed by Lord, technical decisions discovered during work, lessons from incidents. Never write rules, procedures, or structure (those belong in files).
+See [`common/memory_policy.md`](./common/memory_policy.md).
 
 ## Autonomous Judgment Rules
 

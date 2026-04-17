@@ -1,7 +1,7 @@
 # Fork Difference Analysis: shogun vs upstream
 
 > **Generated**: 2026-04-17
-> **Base**: `git diff upstream/main...main` (106 files, +16,212 / −3,185 lines)
+> **Base**: `git diff upstream/main...main` (109 files, +16,200 / −3,201 lines)
 > **Upstream**: https://github.com/yohey-w/multi-agent-shogun.git
 > **Fork branch**: main
 
@@ -73,6 +73,9 @@ This fork extends the upstream multi-agent-shogun system with production-grade o
 | `instructions/ashigaru.md` | fork-modified | Adds: context snapshot steps, expanded skill_candidate guidance, JST timestamp rule, report target switched to Gunshi, editable_files whitelist section, GChat Webhook guidelines, Fork Extensions (output naming, n8n fix protocol, internal parallelization), Agent() tool usage permission, mandatory report schema fields (worker_id, parent_cmd, timestamp, result). (cmd_488 schema fix) | Keep fork — no upstream equivalent |
 | `instructions/codex-ashigaru.md` | fork-added | Codex CLI-specific ashigaru instructions. Adapted from ashigaru.md for OpenAI Codex CLI tool descriptions and constraints. | Keep fork — no upstream equivalent |
 | `instructions/common/worktree.md` | fork-added | Guide for git worktree-based parallel execution. Defines when to create worktrees, branch naming, dispatch procedure, merge workflow. From cmd_144 lesson. | Keep fork — no upstream equivalent |
+| `instructions/common/compaction_recovery.md` | fork-added | Shared post-compaction recovery steps for all agents. Extracted from duplicated sections in shogun/karo/gunshi/ashigaru to a single source of truth. | Keep fork — no upstream equivalent |
+| `instructions/common/memory_policy.md` | fork-added | Shared Memory MCP write policy for all agents (what to write vs not write). Extracted from karo/gunshi duplication. | Keep fork — no upstream equivalent |
+| `instructions/common/self_watch_phase.md` | fork-added | Shared Agent Self-Watch Phase 1/2/3 delivery model (cmd_107). Extracted from duplicated sections in shogun/ashigaru. | Keep fork — no upstream equivalent |
 | `instructions/generated/codex-karo.md` | fork-modified | Prepends 144-line YAML front-matter (role, F001-F006 forbidden actions, full workflow, pane map, inbox rules). Machine-readable config for Codex-based Karo. | Keep fork — no upstream equivalent |
 | `instructions/generated/copilot-karo.md` | fork-modified | Same YAML front-matter as codex-karo.md. Config for Copilot-based Karo variant. | Keep fork — no upstream equivalent |
 | `instructions/generated/karo.md` | fork-modified | Same YAML front-matter. Config for default generated Karo. | Keep fork — no upstream equivalent |

@@ -1,10 +1,10 @@
 # GUI Verification Protocol (tkinter)
 
-WSL2では tkinter の実機確認不可。以下のプロトコルで補完する (karo+gunshi+ashigaru 関与):
+WSL2 cannot run tkinter GUIs for live verification. Compensate with the following protocol (karo + gunshi + ashigaru involvement):
 
-1. **gui_review_required: true** (task YAML): 軍師が実装前に frame 設計をレビュー
-2. **manual_verification_required: true** (task YAML): 殿の実機確認をダッシュボード [action] に登録
-3. **py_compile 静的検証** (ashigaru): import エラー・文法エラーを事前検出
-4. **実機確認依頼** (dashboard): karo が [action] タグで殿にWindowsでの動作確認を依頼
+1. **gui_review_required: true** (task YAML): Gunshi reviews frame design before implementation
+2. **manual_verification_required: true** (task YAML): Register Lord's hands-on verification as a dashboard [action] item
+3. **py_compile static check** (ashigaru): Detect import errors and syntax errors in advance
+4. **Manual verification request** (dashboard): Karo asks the Lord (via [action] tag) to verify the behavior on Windows
 
-※ gui_review_required=true のタスクは完了後も karo がダッシュボードから手動削除するまで残す
+Note: Tasks with `gui_review_required: true` remain on the dashboard after completion until Karo deletes them manually.

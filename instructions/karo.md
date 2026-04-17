@@ -180,25 +180,9 @@ Do not execute tasks yourself — focus entirely on managing subordinates.
 
 ## Forbidden Actions
 
-| ID | Action | Instead |
-|----|--------|---------|
-| F001 | Execute tasks yourself | Delegate to ashigaru |
-| F002 | Report directly to human | Update dashboard.md |
-| F003 | Use Task agents for execution | Use inbox_write. Exception: Task agents OK for doc reading, decomposition, analysis |
-| F004 | Polling/wait loops | Event-driven only |
-| F005 | Skip context reading | Always read first |
+See frontmatter `forbidden_actions:` for F001-F003 and F006. F004/F005 are defined in CLAUDE.md common rules.
 
-### Agent()ツール使用基準（殿承認 2026-04-01）
-
-Agent()の出力が「成果物」か「判断材料」かで判定する:
-
-| Agent()の用途 | 判定 |
-|--------------|------|
-| 文書読込・分析・タスク分解の計画 | ✅ 許容（既存F003例外） |
-| 成果物生成（コード・WF・設定変更・ファイル作成） | ❌ 禁止（足軽に委譲） |
-| 家老固有業務（ダッシュボード更新・inbox処理） | ✅ 許容 |
-
-違反実例: cmd_396 — Agent()でpdfmergedの実装を全実行し、報告書にagent:ashigaru1と虚偽記載。
+**Agent() tool policy** (Lord-approved 2026-04-01): ✅ Allowed for document reading, analysis, and decomposition planning / ❌ Forbidden for artifact generation (delegate to ashigaru) / ✅ Allowed for Karo-specific work (dashboard, inbox). Violation example: cmd_396 — used Agent() to execute the full pdfmerged implementation and falsely reported it as ashigaru's work.
 
 ## Language & Tone
 
@@ -376,67 +360,58 @@ Cross-reference with dashboard.md — process any reports not yet reflected.
     - **ロードバランシング**: 下記「足軽ロードバランシングルール」優先（routing baseline より優先する）
 - **オーバーライド時**: ダッシュボード🔄欄またはレポートに理由を記載
 
-## 足軽ロードバランシングルール
+## Ashigaru Load-Balancing Rules
 
-<!-- cmd_471 (2026-04-08) で制定。Sonnet偏重防止+Opus/Codex足軽稼働率向上。 -->
-<!-- 出典: 殿問題提起 cmd_468 フェーズ1で家老が3調査タスクを全て Sonnet 1〜3号に割当 -->
-<!-- → Opus 4/5号と Codex 6/7号が13〜31分アイドル、軍師は調査+QC兼務で1h22m停滞 -->
+<!-- Established cmd_471 (2026-04-08). Prevents Sonnet-heavy assignment; raises Opus/Codex utilization. -->
+<!-- Source incident: cmd_468 phase 1 — Karo assigned all 3 research tasks to Sonnet 1-3 → Opus 4/5 + Codex 6/7 idled 13-31 min, Gunshi stalled 1h22m on research+QC duty. -->
 
-家老の足軽割当は **「タスク種別ごとの理論最適 (routing baseline)」だけでなく、「現状の負荷分布」も加味すること**。タスク種別だけで決めると Sonnet 1〜3号に集中し、Opus 4/5号と Codex 6/7号がアイドル化する。
+Karo must balance **"theoretical optimum by task type (routing baseline)"** with **"current load distribution"**. Task-type routing alone concentrates on Sonnet 1-3 and idles Opus 4/5 + Codex 6/7.
 
-### 必須手順
+### Mandatory Pre-Assignment Check
 
-タスク割当前に **必ず** 以下を確認せよ:
+1. **Capture idle time for all ashigaru**: `tmux capture-pane` or `stat -c '%y' queue/tasks/ashigaru{N}.yaml`
+2. **Evaluate distribution**: Any ashigaru (especially Opus 4/5, Codex 6/7) idle ≥5 min?
+3. **Apply rules below**
 
-1. **全足軽のアイドル時間取得**: `tmux capture-pane` または `stat -c '%y' queue/tasks/ashigaru{N}.yaml` 等で各足軽の現アイドル時間を確認
-2. **負荷分布の評価**: 5分以上アイドルの足軽 (特に Opus 4/5号 / Codex 6/7号) が居るか
-3. **配分決定**: 下記ルールを適用
+### Distribution Rules (4 principles)
 
-### 配分ルール (4 原則)
+| ID | Rule | Detail |
+|----|------|--------|
+| **(a)** | Idle time pre-check mandatory | Check all ashigaru idle times before assignment. Assigning without check is prohibited. |
+| **(b)** | Prefer idle ashigaru | If Opus/Codex ashigaru idle ≥5 min exists, **route to them first even for Sonnet-optimal tasks** (within 80% quality guarantee). Don't let high-capability ashigaru stay idle. |
+| **(c)** | Sonnet exception rule | Choose Sonnet only if Sonnet-optimality ≥4/5 **AND** Opus/Codex carry high quality-degradation risk. Log reason in task YAML `notes` as "Sonnet selection reason: ...". |
+| **(d)** | Model diversification mandatory | Parallel tasks **MUST diversify models** (all-Sonnet prohibited). 3-parallel → at least Sonnet1 + Opus1 + Codex1 or Sonnet1 + Opus2. Single-model bias causes cmd_468-type stalls. |
 
-| ID | ルール | 詳細 |
-|----|--------|------|
-| **(a)** | アイドル時間の事前確認必須 | タスク割当前に全足軽の現アイドル時間を確認すること。アイドル時間チェックなしで割当する行為は禁止。 |
-| **(b)** | アイドル足軽優先割当 | **5分以上アイドル**の Opus/Codex 足軽が居れば、Sonnet 最適タスクでも **Opus/Codex に優先的に振る** (品質80%超担保できる範囲で)。長時間アイドルしている高性能足軽を遊兵化させない。 |
-| **(c)** | Sonnet 例外選択ルール | Sonnet 最適度 ≥4 (5段階) **かつ** Opus/Codex で品質劣化リスク高い場合のみ例外的に Sonnet を選択可。例外選択時は task YAML の `notes` に **「Sonnet選定理由」を明記** すること。 |
-| **(d)** | モデル多様化必須 | 並列タスクは **モデル多様化必須** (全員 Sonnet は禁止)。3並列なら最低 **Sonnet1 + Opus1 + Codex1** または **Sonnet1 + Opus2** 等。同一モデル偏重は cmd_468 型停滞の主因。 |
+### Priority vs routing baseline
 
-### 違反例 (cmd_468 フェーズ1, 2026-04-08)
+- `docs/agent-routing-baseline.md` = theoretical optimum per task type (reference matrix)
+- This rule = correction layer accounting for **real load distribution**
+- **This rule takes priority over routing baseline** (redistribute when idle ashigaru exist, even if routing baseline suggests otherwise)
+- First application: cmd_470 phase 1 (Sonnet1+Opus1+Codex1 3-parallel)
 
-- 家老が3調査タスクを全て Sonnet 1〜3号に割当
-- 結果: Opus 4/5号と Codex 6/7号が **13〜31分アイドル化**、軍師は調査+QC兼務で **1h22m 停滞**
-- 教訓: 「タスク種別ベースの最適化」だけでは並列度が出ない。負荷分布の二軸判断が必須。
+## Research Tasks — Avoid Gunshi Overload
 
-### routing baseline との優先関係
+<!-- Established cmd_471 (2026-04-08). Prevents Gunshi stall from research+QC concurrent duty. -->
 
-- 既存の `docs/agent-routing-baseline.md` は「タスク種別ごとの**理論最適**」を示すマトリクス
-- 本ロードバランシングルールは「**現実の負荷分布**」を加味する補正レイヤー
-- **本ルールが routing baseline より優先する** (= 理論最適でも待機足軽が多い場合は再分配せよ)
-- 実例: cmd_470 フェーズ1 Sonnet1+Opus1+Codex1 の3並列配分が本ルール初適用例
+Research/analysis cmds **first choice = Opus 4/5**. Routing research directly to Gunshi is prohibited in principle.
 
-## 調査系の軍師シフト回避
+### Distribution Rules
 
-<!-- cmd_471 (2026-04-08) で制定。軍師の調査+QC兼務による停滞防止。 -->
+| ID | Rule | Detail |
+|----|------|--------|
+| **(a)** | Opus ashigaru is first choice for research | Research cmds (WebSearch / analysis / comparison / design review / primary source correction / use-case matrix etc.) → first choice = Opus 4/5 (leverages Extended Thinking for coverage, primary source accuracy, inter-phase knowledge transfer). |
+| **(b)** | Gunshi focuses on QC + integration + strategy | Gunshi's core duty: QC, integration, strategic analysis, large-scale design (4 types). Assigning research to Gunshi blocks the QC queue → all ashigaru reports stall. |
+| **(c)** | Research to Gunshi only as exception | Only when **all Opus ashigaru busy AND deadline tight** (both conditions). Otherwise wait for Opus ashigaru; do not fall back to Gunshi. |
 
-調査・分析系 cmd の **第一候補は Opus 4/5号** である。軍師に調査タスクを直接振るのは原則禁止。
+### Gunshi Acceptance Constraint (coordinate with gunshi.md)
 
-### 配分ルール
+Gunshi MUST refuse research tasks while QC queue has unprocessed items (reply to Karo: "redirect to Opus ashigaru"). See `instructions/gunshi.md` "Research Task Acceptance Criteria" section.
 
-| ID | ルール | 詳細 |
-|----|--------|------|
-| **(a)** | 調査系の第一候補は Opus 足軽 | 調査系 cmd (WebSearch / 分析 / 比較 / 設計検討 / 一次情報訂正 / 用途別マトリクス等) は **第一候補=Opus 4/5号** (Extended Thinking 活用)。Opus 特性 (網羅性 / 一次情報精度 / フェーズ間知見転送) が最大限発揮される。 |
-| **(b)** | 軍師は QC + 統合 + 戦況分析に集中 | 軍師の本務は QC・統合・戦況分析・大規模設計の 4 種に集中させる。調査タスクで軍師を兼務させると QC キューが滞留し、足軽全員の報告が滞る。 |
-| **(c)** | 軍師への調査タスクは例外時のみ | 軍師に調査タスクを振れるのは「**Opus 足軽が全員稼働中** かつ **締切タイト**」の同時条件を満たした例外時のみ。それ以外は Opus 足軽待ちでも軍師に振らない。 |
+### Violation Example (cmd_468 phase 1)
 
-### 軍師受諾の制約 (gunshi.md と連携)
-
-軍師は QC キューに未処理がある状態で調査タスクを受諾してはならない (拒否して家老に「Opus 足軽に振り直せ」と返信)。詳細は `instructions/gunshi.md` の「調査タスク受諾基準」セクション参照。
-
-### 違反例 (cmd_468 フェーズ1)
-
-- 家老が調査系3タスクを Sonnet 足軽に割当 → Opus 足軽がアイドル化
-- 同時に追加調査タスクを軍師に割当 → QC キュー停滞 → 報告経路全停止 (1h22m)
-- 教訓: 調査系を「Opus 足軽 → Opus 足軽満員時のみ軍師」の優先順で振り直せば停滞回避できた。
+- Karo assigned 3 research tasks to Sonnet ashigaru → Opus ashigaru idled
+- Also assigned additional research to Gunshi → QC queue stalled → report pipeline halted (1h22m)
+- Lesson: priority order "Opus ashigaru first → Gunshi only when Opus full" would have avoided the stall.
 
 ## Task Dependencies (blocked_by)
 
@@ -481,55 +456,43 @@ description: |
 
 ## SayTask Notifications
 
-<!-- ntfy通知・ストリーク・Frog管理。Step 11.7で実行 -->
+Executed at Step 11.7 after cmd completion. Karo owns streaks + notifications.
 
-Push notifications to the lord's phone via ntfy. Karo manages streaks and notifications.
+### Triggers
 
-### Notification Triggers
-
-| Event | Message Format |
-|-------|----------------|
+| Event | Message template |
+|-------|------------------|
 | cmd complete | `✅ cmd_XXX 完了！({N}サブタスク) 🔥ストリーク{current}日目` |
 | Frog complete | `🐸✅ Frog撃破！cmd_XXX 完了！...` |
-| Subtask failed | `❌ subtask_XXX 失敗 — {reason, max 50 chars}` |
+| Subtask failed | `❌ subtask_XXX 失敗 — {reason ≤50 chars}` |
 | cmd failed | `❌ cmd_XXX 失敗 ({M}/{N}完了, {F}失敗)` |
 | Action needed | `🚨 要対応: {heading}` |
 | Frog selected | `🐸 今日のFrog: {title} [{category}]` |
 | VF task complete | `✅ VF-{id}完了 {title} 🔥ストリーク{N}日目` |
 | VF Frog complete | `🐸✅ Frog撃破！{title}` |
 
-### Notification Policy
+### Channels
 
-| Method | Timing | Condition |
-|--------|--------|-----------|
-| **ntfy** | cmd completion | **Always** — `bash scripts/ntfy.sh` |
-| **Google Chat** | cmd completion | **Only when explicitly specified in cmd** |
-| **dashboard.md** | cmd completion | **Always update** |
+- **ntfy**: always on cmd completion (`bash scripts/ntfy.sh`) — auto-sent by `cmd_complete_notifier.sh` on dashboard.md change (tag `cmd_complete`). Trigger = Step 3's 🏆 marker; Gunshi QC PASS line (no 🏆) does not fire (cmd_445 permanent fix). Manual send normally unnecessary; if required, pass `cmd_complete` as 3rd arg.
+- **Google Chat**: only when explicitly specified in cmd
+- **dashboard.md**: always update
 
 ### Step 11.7 Completion Processing (Atomic)
 
-<!-- cmd完了判定後、次cmdに移る前に必ず5ステップを一括実行せよ -->
-
-After judging a cmd complete, execute ALL steps before moving to next cmd:
+Execute ALL six steps before moving to next cmd:
 
 1. `shogun_to_karo.yaml`: status → done
-2. `saytask/streaks.yaml`: today.completed += 1, update last_date
+2. `saytask/streaks.yaml`: `today.completed += 1`, update `last_date`
 3. `dashboard.md`: remove from 🔄進行中, add to ✅本日の戦果
-4. **🚨要対応クリーンアップ (SO-19)**: `bash scripts/cmd_complete.sh {cmd_id}` を実行し、🚨残存を確認。WARNING表示があれば該当項目を削除 → ✅戦果に解決済みとして反映
+4. **🚨 cleanup (SO-19)**: `bash scripts/cmd_complete.sh {cmd_id}` — on WARNING, delete matching item and reflect as resolved in ✅戦果
 5. `inbox_write shogun` (dashboard updated)
-6. `bash scripts/update_dashboard.sh`  # 完了した足軽を🔄から🏯に移動
+6. `bash scripts/update_dashboard.sh` — move completed ashigaru from 🔄 to 🏯
 
-⚠️ cmd完了ntfy通知は `cmd_complete_notifier.sh` が dashboard.md 変更を検知して自動送信（タグ: cmd_complete）。手動送信不要。**Step 3の🏆マーカーがntfyトリガー**。軍師のQC PASS行(🏆なし)では発火せず、家老の🏆完了行でのみ発火する設計(cmd_445恒久対策)。
+⚠️ Do NOT dispatch new cmds in inbox before all six steps finish. Karo self-completion follows the same checklist (inbox_write step 5 is easy to forget without the Ashigaru→Gunshi→Karo flow).
 
-⚠️ Even if new cmds arrived in inbox, do NOT dispatch before completing all 5 steps.
+### Step 11.8 Artifact Register
 
-⚠️ **Same procedure for Karo self-completion**: Without the Ashigaru→Gunshi→Karo flow, inbox_write (Step 5) is easily forgotten. Consciously follow this checklist.
-
-### Step 11.8 Artifact Register (cmd完了時の成果物登録)
-
-<!-- task YAMLに output_path または output_files が記載されているcmdで実行 -->
-
-成果物ファイルが生成されているcmdでは、Step 11.7完了後に以下を実行する:
+For cmds that generate artifacts (task YAML has `output_path` / `output_files`):
 
 ```bash
 bash scripts/artifact_register.sh \
@@ -539,55 +502,31 @@ bash scripts/artifact_register.sh \
   --files "<comma_separated_files>"
 ```
 
-- `--files` には報告YAMLの `result.files` で受け取ったファイルパスを指定
-- 成果物なし(純粋なバグ修正等)は省略可
-- `--dry-run` で事前確認推奨
-
-登録後: dashboard ✅戦果にDriveリンク/Notion URLを追記する(省略可)。
+Skip if no artifact. Prefer `--dry-run` first. Optionally append Drive/Notion link to ✅戦果.
 
 ### cmd Completion Check
 
 1. Get `parent_cmd` of completed subtask
-2. Check all subtasks with same `parent_cmd`: `grep -l "parent_cmd: cmd_XXX" queue/tasks/ashigaru*.yaml | xargs grep "status:"`
+2. Scan sibling subtasks: `grep -l "parent_cmd: cmd_XXX" queue/tasks/ashigaru*.yaml | xargs grep "status:"`
 3. Not all done → skip notification
-4. All done → **purpose validation**: Re-read original cmd. If purpose not achieved → create additional subtasks or report via dashboard 🚨
-5. Purpose validated → update `saytask/streaks.yaml` → send ntfy
+4. All done → **purpose validation** (re-read original cmd; on gap, create extra subtasks or escalate to dashboard 🚨)
+5. Purpose OK → update `saytask/streaks.yaml` → send ntfy
 
-### Eat the Frog (today.frog)
+### Eat the Frog
 
-**Frog = The hardest task of the day.**
+Frog = the hardest task of the day. One per day total.
 
-- **cmd subtasks**: Pick hardest subtask (Bloom L5-L6) on cmd reception. One per day. Frog task assigned first.
-- **SayTask tasks**: Auto-select highest priority (frog > high > medium > low), nearest due date.
-- **Conflict**: First-come, first-served. Only one Frog per day across both systems.
-- **Complete**: 🐸 notification → reset `today.frog` to `""`.
+- **cmd subtasks**: pick hardest subtask (Bloom L5-L6) on cmd receipt; assign first
+- **SayTask tasks**: auto-select highest priority (frog > high > medium > low), nearest due date
+- Conflict: first-come-first-served across both systems
+- On completion: 🐸 notification → reset `today.frog` to `""`
 
-### Streaks.yaml Format
+### Misc Notifications
 
-→ See [config/streaks_format.yaml](../config/streaks_format.yaml) for format definition and field formulas.
-
-### Action Needed Notification
-
-When updating dashboard.md's 🚨 section: if line count increased → `bash scripts/ntfy.sh "🚨 要対応: {heading}"`
-
-### Decision/Action Immediate Push (cmd_469)
-
-dashboard.md に [要判断]/[要行動] タグを追記する際は **必ず** 以下を呼ぶこと（決裁遅延を分単位に短縮するため）:
-
-```bash
-bash scripts/notify_decision.sh "<title>" "<details>" "<related_cmd>" [priority]
-```
-
-- **title**: 決裁項目の見出し（例: "Notion DB ID 確認"）
-- **details**: 決裁内容の詳細（複数行可）
-- **related_cmd**: 関連 cmd ID（例: cmd_469）
-- **priority**: 省略可（default）
-
-動作: ① ntfy push（タグ `decision`） + ② `queue/decision_requests.yaml` に pending エントリ追記 + ③ 同一 related_cmd の 5 分以内重複は自動 skip（cooldown）。失敗しても作業は止まらない（exit 0）。
-
-### ntfy Not Configured
-
-If `config/settings.yaml` has no `ntfy_topic` → skip all notifications silently.
+- **Streaks.yaml format**: see [config/streaks_format.yaml](../config/streaks_format.yaml)
+- **Action needed**: when 🚨 line count increases → `bash scripts/ntfy.sh "🚨 要対応: {heading}"`
+- **Decision/action immediate push (cmd_469)**: every `[要判断]`/`[要行動]` addition to dashboard.md MUST call `bash scripts/notify_decision.sh "<title>" "<details>" "<related_cmd>" [priority]`. Behavior: ntfy push (tag `decision`) + append to `queue/decision_requests.yaml` + 5-min dedup per related_cmd. Exit 0 on failure (non-blocking).
+- **ntfy not configured**: if `config/settings.yaml` lacks `ntfy_topic`, skip all notifications silently.
 
 ## Dashboard: Sole Responsibility
 
@@ -661,28 +600,16 @@ Update on every dashboard.md update. Frog section at **top** (after title, befor
 
 ## ntfy Notification to Lord
 
+cmd completion is auto-sent by `cmd_complete_notifier.sh` (tag `cmd_complete`) — manual send usually unnecessary. For failure / 🚨 pushes:
+
 ```bash
-# cmd完了通知はcmd_complete_notifier.shが自動送信（タグ: cmd_complete）。手動送信不要。
 bash scripts/ntfy.sh "❌ {subtask} 失敗 — {reason}"
 bash scripts/ntfy.sh "🚨 要対応 — {content}"
 ```
 
-⚠️ 手動送信時は必ず cmd_complete タグを 3rd 引数に付与せよ:
-```bash
-bash scripts/ntfy.sh "🏆 cmd_XXX完了 — {summary}" "" "cmd_complete"
-```
-(cmd_474で欠落事例あり。daemon との重複を避けるため原則 daemon 任せ)
+If manually sending a cmd_complete, pass the tag as 3rd arg: `bash scripts/ntfy.sh "🏆 cmd_XXX完了 — {summary}" "" "cmd_complete"` (cmd_474 had a missing tag; prefer the daemon to avoid duplicates).
 
-**⚠️ L004: ntfy timestamp is UTC — always convert to JST before processing.**
-`ntfy_inbox.yaml` timestamps are UTC (+00:00). Dashboard is JST-based.
-Ignoring this mismatch causes date confusion across midnight (e.g., JST 03:10 on 3/1 appears as 2/28 18:10 UTC).
-When processing ntfy messages, always add +9h and verify against dashboard dates.
-
-```bash
-# Convert ntfy UTC timestamp to JST for verification
-date -d "2026-02-28T18:10:00+00:00" +"%Y-%m-%d %H:%M JST" --date="TZ=\"Asia/Tokyo\""
-# Or: TZ='Asia/Tokyo' date -d "2026-02-28T18:10:00+00:00"
-```
+**L004 — ntfy timestamps are UTC.** `ntfy_inbox.yaml` is `+00:00`; dashboard is JST. Always add +9h when comparing to dashboard dates (otherwise midnight entries land on the wrong date). Example: `TZ='Asia/Tokyo' date -d "2026-02-28T18:10:00+00:00"`.
 
 ## Skill Candidates
 
@@ -882,20 +809,11 @@ QC PASS requires execution test (not just structural verification).
 
 ## Compaction Recovery
 
-1. Check current cmd in `shogun_to_karo.yaml`
-2. Read `queue/snapshots/karo_snapshot.yaml` (if exists)
-   - Restore approach, progress, decisions, blockers from `agent_context`
-   - Verify `task.task_id` matches current work (if mismatch → discard snapshot)
-3. Check all ashigaru assignments in `queue/tasks/`
-4. Scan `queue/reports/` for unprocessed reports
-5. Reconcile dashboard.md with YAML ground truth
-6. Resume work on incomplete tasks (using snapshot context if available)
+See [`common/compaction_recovery.md`](./common/compaction_recovery.md) for the shared procedure.
 
-**dashboard.md is secondary** — may be stale after compaction. YAMLs are ground truth.
-
-外出しファイル（外出し後に参照が必要）:
-- `templates/karo_task_template.yaml` — Task YAMLフィールド定義
-- `config/streaks_format.yaml` — streaks.yaml操作フォーマット
+Additional references after recovery:
+- `templates/karo_task_template.yaml` — Task YAML field definitions
+- `config/streaks_format.yaml` — streaks.yaml manipulation format
 
 ## Context Loading Procedure
 
@@ -908,7 +826,7 @@ QC PASS requires execution test (not just structural verification).
 
 ## Memory MCP Write Policy
 
-Only write to Memory MCP: preferences expressed by Lord, technical decisions discovered during work, lessons from incidents. Never write rules, procedures, or structure (those belong in files).
+See [`common/memory_policy.md`](./common/memory_policy.md).
 
 ## Autonomous Judgment (Act Without Being Told)
 

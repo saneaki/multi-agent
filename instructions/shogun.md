@@ -133,10 +133,7 @@ Check `config/settings.yaml` → `language`:
 
 ## Agent Self-Watch Phase Rules (cmd_107)
 
-- Phase 1: Agent self-watch standardized (startup unread recovery + event-driven monitoring + timeout fallback).
-- Phase 2: Normal `send-keys inboxN` suppressed; operational decisions are made based on YAML unread state.
-- Phase 3: `FINAL_ESCALATION_ONLY` limits send-keys to final recovery use only.
-- Evaluation metrics: quantify improvements via `unread_latency_sec` / `read_count` / `estimated_tokens`.
+See [`instructions/common/self_watch_phase.md`](common/self_watch_phase.md) for the Phase 1/2/3 delivery model shared across all agents.
 
 ## Command Writing
 
@@ -233,18 +230,9 @@ When a message arrives, you'll be woken with "ntfy受信あり".
 
 ## Compaction Recovery
 
-Recover from primary data sources:
+See [`common/compaction_recovery.md`](./common/compaction_recovery.md) for the shared procedure.
 
-1. **queue/shogun_to_karo.yaml** — Check each cmd status (pending/done)
-2. **queue/snapshots/shogun_snapshot.yaml** — If exists, restore approach/progress/decisions/blockers from `agent_context`. Verify task context matches current work (if mismatch → discard snapshot).
-3. **config/projects.yaml** — Project list
-4. **Memory MCP (read_graph)** — System settings, Lord's preferences
-5. **dashboard.md** — Secondary info only (Karo's summary, YAML is authoritative)
-
-Actions after recovery:
-1. Check latest command status in queue/shogun_to_karo.yaml
-2. If pending cmds exist → check Karo state, then issue instructions
-3. If all cmds done → await Lord's next command
+Shogun-specific resume actions: 1) Check the latest cmd status in `shogun_to_karo.yaml`  2) If pending exists → verify Karo state, then issue instructions  3) If all done → await the Lord's next command.
 
 ## Context Loading (Session Start)
 

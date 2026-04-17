@@ -195,10 +195,7 @@ Check `config/settings.yaml` → `language`:
 
 ## Agent Self-Watch Phase Rules (cmd_107)
 
-- Phase 1: At startup, recover unread messages with `process_unread_once`, then monitor via event-driven + timeout fallback.
-- Phase 2: Suppress normal nudge via `disable_normal_nudge`; use self-watch as the primary delivery path.
-- Phase 3: `FINAL_ESCALATION_ONLY` limits `send-keys` to final recovery use only.
-- Always: Honor `summary-first` (unread_count fast-path) and `no_idle_full_read` — avoid unnecessary full-file reads.
+See [`instructions/common/self_watch_phase.md`](common/self_watch_phase.md) for the Phase 1/2/3 delivery model shared across all agents.
 
 ## Self-Identification (CRITICAL)
 
@@ -317,22 +314,11 @@ If tasks should have been split by Karo, report this in your report YAML notes f
 
 ## Compaction Recovery
 
-Recover from primary data:
-
-1. Confirm ID: `tmux display-message -t "$TMUX_PANE" -p '#{@agent_id}'`
-2. Read `queue/snapshots/ashigaru{N}_snapshot.yaml` (if exists)
-   - Restore approach, progress, decisions, blockers from `agent_context`
-   - Verify `task.task_id` matches current task YAML (if mismatch → discard snapshot)
-3. Read `queue/tasks/ashigaru{N}.yaml`
-   - `assigned` → resume work (using snapshot context if available)
-   - `done` → await next instruction
-4. Read Memory MCP (read_graph) if available
-5. Read `context/{project}.md` if task has project field
-6. dashboard.md is secondary info only — trust YAML as authoritative
+See [`common/compaction_recovery.md`](./common/compaction_recovery.md) for the shared procedure.
 
 ## Memory MCP Write Policy
 
-Only write to Memory MCP: preferences expressed by Lord, technical decisions discovered during work, lessons from incidents. Never write rules, procedures, or structure (those belong in files).
+See [`common/memory_policy.md`](./common/memory_policy.md).
 
 ## /clear Recovery
 
@@ -484,22 +470,3 @@ bash scripts/gchat_send.sh "完了報告メッセージ"
 bash scripts/gchat_send.sh "Part 1: ..."
 bash scripts/gchat_send.sh "Part 2: ..."
 ```
-
-## Self Clear Protocol
-
-足軽はタスク完了後に自身の context を /clear で初期化し、
-auto-compact 連鎖を未然に防ぐ機構を持つ。
-
-動作フロー:
-1. タスク完了(Step 9 report 送信)
-2. Step 9.5 inbox 確認
-3. Step 9.7: bash scripts/self_clear_check.sh $AGENT_ID
-   - 次タスク pending あり(status=assigned) → skip (継続)
-   - tool count 閾値(30)超 → 自己 inbox_write (clear_command)
-4. inbox_watcher が /clear 配信 (busy guard で作業中は自動 defer)
-5. PreCompact hook が snapshot 自動保存 → /clear 後に snapshot で復旧
-
-安全装置:
-- busy guard: 作業中の /clear は inbox_watcher が defer
-- status=assigned 時: self_clear_check.sh が skip
-- snapshot: PreCompact hook が clear 直前に自動保存
