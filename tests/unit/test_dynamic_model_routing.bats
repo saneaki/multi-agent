@@ -30,7 +30,7 @@ capability_tiers:
   claude-sonnet-4-5-20250929:
     max_bloom: 5
     cost_group: claude_max
-  claude-opus-4-6:
+  claude-opus-4-7:
     max_bloom: 6
     cost_group: claude_max
 YAML
@@ -63,7 +63,7 @@ capability_tiers:
   gpt-5.3-codex-spark:
     max_bloom: 3
     cost_group: chatgpt_pro
-  claude-opus-4-6:
+  claude-opus-4-7:
     max_bloom: 6
     cost_group: claude_max
 YAML
@@ -92,7 +92,7 @@ capability_tiers:
   gpt-5.3-codex-spark:
     max_bloom: 3
     cost_group: chatgpt_pro
-  claude-opus-4-6:
+  claude-opus-4-7:
     max_bloom: 6
     cost_group: claude_max
 YAML
@@ -105,7 +105,7 @@ capability_tiers:
   claude-sonnet-4-5-20250929:
     max_bloom: 5
     cost_group: claude_max
-  claude-opus-4-6:
+  claude-opus-4-7:
     max_bloom: 6
     cost_group: claude_max
 YAML
@@ -139,7 +139,7 @@ capability_tiers:
   claude-sonnet-4-5-20250929:
     max_bloom: 5
     cost_group: claude_max
-  claude-opus-4-6:
+  claude-opus-4-7:
     max_bloom: 6
     cost_group: claude_max
 YAML
@@ -160,7 +160,7 @@ capability_tiers:
   claude-sonnet-4-5-20250929:
     max_bloom: 5
     cost_group: claude_max
-  claude-opus-4-6:
+  claude-opus-4-7:
     max_bloom: 6
     cost_group: claude_max
 YAML
@@ -245,10 +245,10 @@ cli:
       model: claude-sonnet-4-6
     ashigaru6:
       type: claude
-      model: claude-opus-4-6
+      model: claude-opus-4-7
     ashigaru7:
       type: claude
-      model: claude-opus-4-6
+      model: claude-opus-4-7
     gunshi:
       type: claude
       model: opus
@@ -259,7 +259,7 @@ capability_tiers:
   claude-sonnet-4-6:
     max_bloom: 5
     cost_group: claude_max
-  claude-opus-4-6:
+  claude-opus-4-7:
     max_bloom: 6
     cost_group: claude_max
 bloom_routing: "manual"
@@ -300,7 +300,7 @@ capability_tiers:
   claude-sonnet-4-6:
     max_bloom: 5
     cost_group: claude_max
-  claude-opus-4-6:
+  claude-opus-4-7:
     max_bloom: 6
     cost_group: claude_max
 bloom_model_preference:
@@ -315,7 +315,7 @@ bloom_model_preference:
     - claude-sonnet-4-6
     - gpt-5.3
   L6:
-    - claude-opus-4-6
+    - claude-opus-4-7
     - claude-sonnet-4-6
 YAML
 
@@ -440,7 +440,7 @@ load_adapter_with() {
 
 @test "TC-DMR-013: FR-02 Opus Thinking → 6" {
     load_adapter_with "${TEST_TMP}/settings_with_tiers.yaml"
-    result=$(get_capability_tier "claude-opus-4-6")
+    result=$(get_capability_tier "claude-opus-4-7")
     [ "$result" = "6" ]
 }
 
@@ -505,7 +505,7 @@ load_adapter_with() {
 @test "TC-DMR-025: FR-03 L6 → Opus Thinking" {
     load_adapter_with "${TEST_TMP}/settings_with_tiers.yaml"
     result=$(get_recommended_model 6)
-    [ "$result" = "claude-opus-4-6" ]
+    [ "$result" = "claude-opus-4-7" ]
 }
 
 @test "TC-DMR-026: FR-03 capability_tiersセクション不在 → 空文字" {
@@ -544,7 +544,7 @@ load_adapter_with() {
 
 @test "TC-DMR-031: FR-04 Opus → claude_max" {
     load_adapter_with "${TEST_TMP}/settings_with_tiers.yaml"
-    result=$(get_cost_group "claude-opus-4-6")
+    result=$(get_cost_group "claude-opus-4-7")
     [ "$result" = "claude_max" ]
 }
 
@@ -693,7 +693,7 @@ load_adapter_with() {
 @test "TC-DMR-113: FR-06 bloom=6でOpusに到達" {
     load_adapter_with "${TEST_TMP}/settings_with_tiers.yaml"
     result=$(get_switch_recommendation "gpt-5.3-codex-spark" 6)
-    [[ "$result" == *"claude-opus-4-6"* ]]
+    [[ "$result" == *"claude-opus-4-7"* ]]
 }
 
 # --- TC-DMR-120〜121: NFR-02 応答速度 ---
@@ -736,7 +736,7 @@ load_adapter_with() {
 @test "TC-DMR-140: NFR-04 L3にOpus不使用" {
     load_adapter_with "${TEST_TMP}/settings_with_tiers.yaml"
     result=$(get_recommended_model 3)
-    [ "$result" != "claude-opus-4-6" ]
+    [ "$result" != "claude-opus-4-7" ]
 }
 
 @test "TC-DMR-141: NFR-04 chatgpt_pro優先" {
@@ -1031,7 +1031,7 @@ _restore_tmux_for_fam() { unset -f tmux 2>/dev/null; }
 @test "TC-FAM-003: Opus足軽が存在 → ashigaru6 を返す" {
     load_adapter_with "${TEST_TMP}/settings_mixed_cli.yaml"
     _mock_tmux_for_fam
-    result=$(find_agent_for_model "claude-opus-4-6")
+    result=$(find_agent_for_model "claude-opus-4-7")
     _restore_tmux_for_fam
     [ "$result" = "ashigaru6" ]
 }

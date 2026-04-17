@@ -574,7 +574,7 @@ cli:
   agents:
     gunshi:
       type: claude
-      model: claude-opus-4-6
+      model: claude-opus-4-7
       thinking: true
 YAML
     load_adapter_with "${TEST_TMP}/settings_display.yaml"
@@ -664,7 +664,7 @@ cli:
       thinking: true
     ashigaru2:
       type: claude
-      model: claude-opus-4-6
+      model: claude-opus-4-7
       thinking: false
     ashigaru3:
       type: claude

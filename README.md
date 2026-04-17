@@ -1142,7 +1142,7 @@ capability_tiers:
   claude-sonnet-4-6:
     max_bloom: 5       # L1–L5: + design evaluation
     cost_group: claude_max
-  claude-opus-4-6:
+  claude-opus-4-7:
     max_bloom: 6       # L1–L6: + novel architecture, strategy
     cost_group: claude_max
 ```
