@@ -1161,12 +1161,8 @@ for s in data.get('specials', []):
         # Skip if: (1) already sent this batch, (2) clear_command already handled above,
         #          (3) agent is shogun (human-controlled).
         if [ "$has_task_assigned" = "1" ] && [ "$NEW_CONTEXT_SENT" -eq 0 ] && [ "$clear_seen" -eq 0 ]; then
-            if agent_has_acked_latest_task "$AGENT_ID"; then
-                send_context_reset
-                NEW_CONTEXT_SENT=1
-            else
-                echo "[$(date)] [SKIP] CONTEXT-RESET skipped: task_assigned ACK pending for $AGENT_ID" >&2
-            fi
+            send_context_reset
+            NEW_CONTEXT_SENT=1
         fi
 
         # If startup prompt was just sent (Codex), skip follow-up nudge this cycle.

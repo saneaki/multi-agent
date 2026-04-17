@@ -43,6 +43,11 @@ setup() {
     sleep 1
 }
 
+teardown() {
+    pkill -f "inbox_watcher.sh ashigaru1" 2>/dev/null || true
+    sleep 0.5
+}
+
 # Helper: dump watcher log on failure
 dump_watcher_log() {
     local log_file="$1"
