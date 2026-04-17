@@ -127,7 +127,7 @@ Output ONLY the matching pattern. Show:
 
 ## Pattern A-Free — Claude Free のみ
 
-> Sonnet 4.6 と Haiku 4.5 が使えるが Opus 4.6 は不可。L6 タスクはL5品質で処理される。
+> Sonnet 4.6 と Haiku 4.5 が使えるが Opus 4.7 は不可。L6 タスクはL5品質で処理される。
 
 ### 固定エージェント
 
@@ -157,7 +157,7 @@ capability_tiers:
 |-------|-------|------|
 | L1–L3 | Haiku 4.5 | 速い・安い |
 | L4–L5 | Sonnet 4.6 | 分析・設計評価 |
-| **L6** | ⚠️ **GAP** | Opus 4.6 不可。L5品質で代替処理される。 |
+| **L6** | ⚠️ **GAP** | Opus 4.7 不可。L5品質で代替処理される。 |
 
 ---
 
@@ -170,7 +170,7 @@ capability_tiers:
 | エージェント | 推奨モデル | 備考 |
 |------------|-----------|------|
 | Karo (家老) | `claude-sonnet-4-6` | L4-L5オーケストレーション。Opusは過剰。 |
-| Gunshi (軍師) | `claude-opus-4-6` | L5-L6の深いQC・アーキテクチャ評価 |
+| Gunshi (軍師) | `claude-opus-4-7` | L5-L6の深いQC・アーキテクチャ評価 |
 
 ### `config/settings.yaml` snippet
 
@@ -185,8 +185,8 @@ capability_tiers:
   claude-sonnet-4-6:
     max_bloom: 5       # L4-L5: $3/$15/M, SWE-bench 79.6%, 1M context
     cost_group: claude_max
-  claude-opus-4-6:
-    max_bloom: 6       # L6: $5/$25/M, SWE-bench 80.8% — 真の創造タスクのみ
+  claude-opus-4-7:
+    max_bloom: 6       # L6: 価格/benchmark要更新(Anthropic公式4.7情報待ち) — 真の創造タスクのみ
     cost_group: claude_max
 ```
 
@@ -196,7 +196,7 @@ capability_tiers:
 |-------|-------|------|
 | L1–L3 | Haiku 4.5 | SWE-bench 73.3%、Sonnet 4.5比▲4pp、コスト1/3 |
 | L4–L5 | Sonnet 4.6 | SWE-bench 79.6%、数学+27pt (vs Sonnet 4.5) |
-| L6 | Opus 4.6 | SWE-bench 80.8%。Sonnetと1.2pp差。真のL6のみ推奨 |
+| L6 | Opus 4.7 | 価格/benchmark要更新(Anthropic公式4.7情報待ち)。真のL6のみ推奨 |
 
 ---
 
@@ -278,7 +278,7 @@ capability_tiers:
 | L1–L3 | **Spark** | Cerebras製。Codex枠と独立クォータ。 |
 | L4 | gpt-5.3-codex | |
 | L5 | codex-max | |
-| **L6** | ⚠️ **GAP** | L6 は Claude Opus 4.6 必須。 |
+| **L6** | ⚠️ **GAP** | L6 は Claude Opus 4.7 必須。 |
 
 ---
 
@@ -292,7 +292,7 @@ capability_tiers:
 | エージェント | 推奨モデル |
 |------------|-----------|
 | Karo (家老) | `claude-sonnet-4-6` |
-| Gunshi (軍師) | `claude-opus-4-6` |
+| Gunshi (軍師) | `claude-opus-4-7` |
 
 ### `config/settings.yaml` snippet
 
@@ -311,7 +311,7 @@ capability_tiers:
   claude-sonnet-4-6:
     max_bloom: 5       # L5: Claude品質のアーキテクチャ評価
     cost_group: claude_max
-  claude-opus-4-6:
+  claude-opus-4-7:
     max_bloom: 6       # L6: 創造・戦略タスク
     cost_group: claude_max
 ```
@@ -323,7 +323,7 @@ capability_tiers:
 | L1–L2 | codex-mini | Codex Plus枠を消費してClaude Max節約 |
 | L3–L4 | gpt-5.3-codex | |
 | L5 | Sonnet 4.6 | Claude品質に切り替わる |
-| L6 | Opus 4.6 | |
+| L6 | Opus 4.7 | |
 
 ---
 
@@ -337,7 +337,7 @@ capability_tiers:
 | エージェント | 推奨モデル | 理由 |
 |------------|-----------|------|
 | Karo (家老) | `claude-sonnet-4-6` | L4-L5オーケストレーション。SWE-bench 79.6% |
-| Gunshi (軍師) | `claude-opus-4-6` | L5-L6深いQC。SWE-bench 80.8% |
+| Gunshi (軍師) | `claude-opus-4-7` | L5-L6深いQC。benchmark要更新(Anthropic公式4.7情報待ち) |
 
 ### Q3a×Q3b の回答別 config
 
@@ -363,8 +363,8 @@ capability_tiers:
   claude-sonnet-4-6:
     max_bloom: 5       # L5: SWE-bench 79.6%, 1M context
     cost_group: claude_max
-  claude-opus-4-6:
-    max_bloom: 6       # L6: SWE-bench 80.8%
+  claude-opus-4-7:
+    max_bloom: 6       # L6: benchmark要更新(Anthropic公式4.7情報待ち)
     cost_group: claude_max
 ```
 
@@ -387,8 +387,8 @@ capability_tiers:
   claude-sonnet-4-6:
     max_bloom: 5       # L4-L5: SWE-bench 79.6% — L4もClaude品質
     cost_group: claude_max
-  claude-opus-4-6:
-    max_bloom: 6       # L6: SWE-bench 80.8%
+  claude-opus-4-7:
+    max_bloom: 6       # L6: benchmark要更新(Anthropic公式4.7情報待ち)
     cost_group: claude_max
 ```
 
@@ -414,7 +414,7 @@ capability_tiers:
   claude-sonnet-4-6:
     max_bloom: 5       # L5
     cost_group: claude_max
-  claude-opus-4-6:
+  claude-opus-4-7:
     max_bloom: 6       # L6
     cost_group: claude_max
 ```
@@ -438,7 +438,7 @@ capability_tiers:
   claude-sonnet-4-6:
     max_bloom: 5       # L4-L5: Claude品質でL4も処理
     cost_group: claude_max
-  claude-opus-4-6:
+  claude-opus-4-7:
     max_bloom: 6       # L6
     cost_group: claude_max
 ```
@@ -449,11 +449,11 @@ capability_tiers:
 |-------|-------|----------|
 | L1–L3 | **Spark** → Haiku(フォールバック) | 1000 tok/s。枠切れ時に自動切替 |
 | L4 | gpt-5.3-codex | Codex Pro枠フル活用 |
-| L5 | Sonnet 4.6 | Claude品質。Opusとの差1.2ptで1/5価格 |
-| L6 | Opus 4.6 | 真の創造タスクのみ投入 |
+| L5 | Sonnet 4.6 | Claude品質。Opus 4.7 との定量差は要更新(Anthropic公式4.7情報待ち) |
+| L6 | Opus 4.7 | 真の創造タスクのみ投入 |
 
 > **コスト最適化のポイント**: Spark と gpt-5.3 は独立クォータ。両方を同時最大利用可能。
-> L5 は Opus でなく Sonnet 4.6 で十分（SWE-bench差1.2%、価格差約1.7倍: $3/$15 vs $5/$25/M）。
+> L5 は Opus でなく Sonnet 4.6 を基本推奨（Opus 4.7 のSWE-bench/価格は要更新: Anthropic公式情報待ち）。
 
 ---
 
