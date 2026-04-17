@@ -38,6 +38,12 @@ workflow:
   - step: 2
     action: read_yaml
     target: queue/shogun_to_karo.yaml
+  - step: 2.5
+    action: check_context_policy
+    note: |
+      shogun_to_karo.yaml の cmd.context_policy を確認:
+      - preserve_across_stages: 進行中 self_clear 禁止(全subtask完了まで)
+      - clear_between (default/未記載): 各subtask完了時に self_clear 可
   - step: 3
     action: update_dashboard
     target: dashboard.md
@@ -52,19 +58,30 @@ workflow:
     note: "Receive shogun's instruction as PURPOSE. Design the optimal execution plan yourself."
   - step: 5
     action: decompose_tasks
+    race001_check: "【RACE-001】並列subtask間でeditable_filesが重複していないか確認すること。同一ファイルを複数の足軽が同時編集するとRACE-001違反。重複がある場合はシリアル実行に変更。editable_filesはstep 6で設定するが、並列割当前に必ず競合確認を行うこと。"
   - step: 6
     action: write_yaml
     target: "queue/tasks/ashigaru{N}.yaml"
     bloom_level_rule: "【必須】bloom_level付与必須(L1-L6)。L1-L3=定型/機械的、L4=実装/判断、L5=評価、L6=設計。省略禁止。"
+    title_required_rule: "【必須】titleフィールド必須。dashboard.md の「🔄進行中」テーブル「内容」列に表示されるため、20〜40文字程度の具体的な日本語要約を記載すること。例: title: \"merge_tab.py UI改修(出力先指定+自動オープン)\"。省略すると内容列が空欄になる(cmd_514不具合)。"
+    editable_files_rule: "【必須】editable_filesフィールド必須。足軽が変更するファイルパスまたはglobパターンをリストせよ。自身のreport/task YAMLは暗黙許可のため記載不要。例: editable_files: [\"scripts/log_violation.sh\", \"tests/unit/test_*.bats\"]"
+    editable_files_completeness: "【SO-20完全性】instructionsで足軽に編集・作成・更新・再生成を指示する全ファイルをeditable_filesに列挙すること。参照(Read)のみのファイルは不要。不足はQC NGの原因となる。"
     echo_message_rule: "OPTIONAL。特別な場合のみ指定。通常は省略（足軽が自動生成）。DISPLAY_MODE=silentなら省略必須。"
+    gui_review_required_rule: "【GUI検証フィールド】tkinter/GUI関連タスクには gui_review_required: true を設定すること(default: false)。軍師による親子frame設計の事前レビューが必須となる。RACE-001回避も兼ねる。"
+    manual_verification_required_rule: "【実機確認フィールド】殿の実機確認が必要なタスクには manual_verification_required: true を設定すること(default: false)。完了時ダッシュボードに[action]登録が必須。このフィールドがtrueのタスクは完了処理時に自動削除せず、殿確認後に手動削除する(SO-19例外)。"
   - step: 6.5
     action: bloom_routing
     condition: "bloom_routing != 'off' in config/settings.yaml"
     note: "Dynamic Model Routing: bloom_level読取→get_recommended_model→find_agent_for_model→ルーティング。ビジーペイン不可。"
+    gui_rule: "tkinter/GUI 関連タスクでは原則 gui_review_required: true を設定し、軍師事前レビューを経由すること(RACE-001回避も兼ねる)。"
   - step: 7
     action: inbox_write
     target: "ashigaru{N}"
     method: "bash scripts/inbox_write.sh"
+  - step: 7.5
+    action: context_snapshot_write
+    command: 'bash scripts/context_snapshot.sh write karo "<approach>" "<progress>" "<decisions>" "<blockers>"'
+    note: "タスク割当後・長期作業の節目に書込む。Progress/decisions/blockers are pipe-separated."
   - step: 8
     action: check_pending
     note: "If pending cmds remain in shogun_to_karo.yaml → loop to step 2. Otherwise stop."
@@ -80,11 +97,31 @@ workflow:
     action: scan_all_reports
     target: "queue/reports/ashigaru*_report.yaml + queue/reports/gunshi_report.yaml"
     note: "Scan ALL reports (ashigaru + gunshi). Communication loss safety net."
+  - step: 10.3
+    action: schema_quick_check
+    note: |
+      足軽report受領時の5秒スキーマ確認(safety net、gunshi QC backup):
+      1. grep -E '^(worker_id|task_id|parent_cmd|status|timestamp|result|skill_candidate):' \
+           queue/reports/ashigaru{N}_report.yaml | wc -l → 7未満なら欠損疑い
+      2. grep -E '^(agent|cmd_ref|completed_at|reported_at|cmd_id):' \
+           queue/reports/ashigaru{N}_report.yaml | wc -l → 1件でもヒット → NG名(SO-01違反)
+      3. 違反検出時の行動:
+         a. gunshi QC結果を先に確認 (queue/reports/gunshi_report.yaml)
+         b. gunshi が既にFAIL判定 → 重複redo不要、gunshi 判断尊重
+         c. gunshi 未catch または PASS判定 → 即座に gunshi に再QC依頼(inbox)
+      注意: 本checkは primary validation ではない。詳細判定は gunshi 専権。
+      karo は「検出→gunshi に escalation」に留めること(F001境界遵守)。
   - step: 11
     action: update_dashboard
     target: dashboard.md
     timestamp: "bash scripts/jst_now.sh (NEVER raw date command)"
-    cleanup_rule: "完了cmd→🔄進行中から削除→✅戦果に1-3行サマリ追加。50行超→2週超古いエントリ削除。ステータスボードとして簡潔に。"
+    cleanup_rule: "完了cmd→🔄進行中から削除→✅戦果に1-3行サマリ追加。戦果追加は先頭行に挿入（降順維持）。最新cmdが常にテーブル最上段に来ること。50行超→2週超古いエントリ削除。ステータスボードとして簡潔に。"
+    result_column_rule: "結果列(第4列)は60-80文字以内の1行サマリに統一。詳細(担当/commit hash/AC件数/run ID等の重要数値)はdaily log / report YAMLに残す。例: '🏆 スキル5件並列実装+軍師QC PASS AC各4-5/5 | ✅'"
+    so19_supplement: "【SO-19例外】manual_verification_required: true のtaskは完了処理時にダッシュボードから自動削除しない。殿実機確認後の手動削除を待つ。"
+  - step: 11.3
+    action: context_snapshot_write
+    command: 'bash scripts/context_snapshot.sh write karo "<approach>" "<progress>" "<decisions>" "<blockers>"'
+    note: "報告受信後に書込む。Progress/decisions/blockers are pipe-separated."
   - step: 11.5
     action: unblock_dependent_tasks
     note: "blocked_by に完了task_idがあれば削除。リスト空→blocked→assigned→send-keys。"
@@ -528,10 +565,14 @@ Race condition is eliminated: context reset wipes old context. Agent re-reads YA
 
 | Direction | Method | Reason |
 |-----------|--------|--------|
-| Ashigaru/Gunshi → Karo | Report YAML + inbox_write | File-based notification |
+| Ashigaru → Gunshi | Report YAML + inbox_write | Quality check (Gunshi auto-starts QC. No task YAML from Karo needed) |
+| Gunshi → Karo | Report YAML + inbox_write | QC result + strategic reports. On QC PASS, Gunshi also writes dashboard ✅ entry |
 | Karo → Shogun/Lord | dashboard.md update only | **inbox to shogun FORBIDDEN** — prevents interrupting Lord's input |
-| Karo → Gunshi | YAML + inbox_write | Strategic task delegation |
+| Karo → Gunshi | YAML + inbox_write | Strategic tasks only. Standard QC auto-triggered, no assignment needed |
 | Top → Down | YAML + inbox_write | Standard wake-up |
+
+**Gunshi Autonomous QC**: Ashigaru sends report_received to Gunshi inbox → Gunshi auto-starts QC.
+Karo does NOT need to assign QC task YAML (for standard QC). On QC PASS, Gunshi writes ✅ entry directly to dashboard.md.
 
 ## File Operation Rule
 
