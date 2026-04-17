@@ -237,6 +237,8 @@ tests/specs/osato_lms_*
 !.github/FUNDING.yml
 !.github/workflows/
 !.github/workflows/*.yml
+!.githooks/
+!.githooks/pre-commit
 
 # Android companion app
 !android/

@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+# (1) shellcheck guard
+if command -v shellcheck &>/dev/null; then
+    echo "[pre-commit] Running shellcheck on scripts/*.sh ..."
+    failed=0
+    while IFS= read -r -d '' sh_file; do
+        if ! shellcheck "$sh_file"; then
+            failed=1
+        fi
+    done < <(find "$SCRIPT_DIR/scripts" -name "*.sh" -print0 2>/dev/null)
+    if [ "$failed" -ne 0 ]; then
+        echo "[pre-commit] shellcheck FAILED. Commit aborted." >&2
+        exit 1
+    fi
+    echo "[pre-commit] shellcheck OK"
+else
+    echo "[pre-commit] shellcheck not installed — skipping (install shellcheck for local linting)" >&2
+fi
+
+# (2) generated/ diff guard
+echo "[pre-commit] Running build_instructions.sh to check generated/ ..."
+if ! bash "$SCRIPT_DIR/scripts/build_instructions.sh" &>/dev/null; then
+    echo "[pre-commit] build_instructions.sh failed. Commit aborted." >&2
+    exit 1
+fi
+
+if ! git -C "$SCRIPT_DIR" diff --exit-code -- instructions/generated/ &>/dev/null; then
+    echo "[pre-commit] generated/ が最新でありません。build_instructions.sh 実行後に再 commit してください。" >&2
+    echo "[pre-commit] 差分ファイル:" >&2
+    git -C "$SCRIPT_DIR" diff --name-only -- instructions/generated/ >&2
+    exit 1
+fi
+
+echo "[pre-commit] generated/ diff guard OK"
+
+exit 0
