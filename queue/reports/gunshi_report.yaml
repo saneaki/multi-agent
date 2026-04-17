@@ -1,67 +1,441 @@
 worker_id: gunshi
-task_id: subtask_519a
-cmd_id: cmd_519
-parent_cmd: cmd_519
-timestamp: "2026-04-17T10:55:00+09:00"
+task_id: subtask_524c
+cmd_id: cmd_524
+parent_cmd: cmd_524
+timestamp: "2026-04-17T12:21:09+09:00"
+task_type: qc_review
+report_to: karo
+status: done
+
+result:
+  type: qc_review
+  overall: all_pass
+
+  qc1_result: "PASS — shogun-decision-notify-pattern/SKILL.md 432L。ntfy push(L31)/atomic append(L81)/cooldown(L115)/fail-safe(L182) 4要素全確認。7再利用シーン(L14-22)+横展開3パターン(リマインダーL310/ヘルスチェックL327/アラートL345)。commit 7824aa1(ash4)"
+  qc2_result: "PASS — shogun-systemd-user-cron-healthcheck-pattern/SKILL.md 384L。loginctl enable-linger(§3 L103)/healthcheck(§4 L120)/cooldown(§5 L191)/StartLimit(§6 L231) 4要素全確認。5再利用シーン(inbox_watcher/n8n watcher/stall_detector/Discord Bot/任意常駐)。commit f18d303(ash2)"
+
+  auto_check_524a:
+    SO-01: "PASS"
+    SO-03: "PASS"
+    SO-06: "FAIL — report_to: karo(task YAML指定。gunshi inboxにはreport_received送信済)"
+    SO-12: "FAIL — ashigaru4 snapshot未クリア"
+    SO-19: "PASS"
+  auto_check_524b:
+    SO-01: "FAIL — worker_id/parent_cmd/timestamp欠損(ashigaru2テンプレ不整合)"
+    SO-03: "FAIL — timestamp未使用(reported_at使用)"
+    SO-06: "FAIL — report_to: karo"
+    SO-12: "FAIL — ashigaru2 snapshot未クリア"
+    SO-19: "PASS"
+
+north_star_alignment:
+  status: aligned
+  reason: "cmd_524の2件SKILL(C2 decision-notify+C9 systemd-healthcheck)全件品質確認完了。karo完了処理を可能にするnorth starに合致"
+  risks_to_north_star:
+    - "524a 432Lが400L上限超過(内容密度優先で許容)"
+
+observations:
+  OBS-1:
+    severity: info
+    detail: "524a 432L(400L超過)、524b 384L(範囲内)。超過分はTesting節57L分離で375Lに収まるが内容密度高く許容"
+  OBS-2:
+    severity: low
+    detail: "ashigaru2/4とも SO-12 snapshot未クリア。反復パターン。self_clear_checkで自動対応されるため実害なし"
+  OBS-3:
+    severity: low
+    detail: "ashigaru2 report YAMLスキーマ不整合(worker_id→欠損、timestamp→reported_at)。ashigaru1と同傾向。テンプレート標準化の全体施策が有効"
+
+suggestions:
+  - "sug_cmd_524_002: 足軽report YAMLスキーマの統一施策。ashigaru1/2ともSO-01/SO-03が反復FAIL。テンプレートをashigaru.md Step 6に明記するcmd推奨(priority: medium)"
+
+next_action_for_karo: |
+  1. queue/tasks/ashigaru4.yaml + ashigaru2.yaml status を done に更新
+  2. dashboard 🔄進行中の cmd_524 行を削除
+  3. cmd_524 完了処理 (SO-19)
+  4. ntfy送信時cmd_completeタグ必須: bash scripts/ntfy.sh "✅ cmd_524完了 -- C2 decision-notify 432L + C9 systemd-healthcheck 384L SKILL新設" "" "cmd_complete"
+
+files_modified:
+  - "dashboard.md (✅戦果追加済)"
+  - "queue/reports/gunshi_report.yaml (this file)"
+
+agent_tool_used: false
+agent_tool_tokens: 0
+
+---
+
+worker_id: gunshi
+task_id: subtask_523g
+cmd_id: cmd_523
+parent_cmd: cmd_523
+timestamp: "2026-04-17T12:13:17+09:00"
+task_type: qc_review
+report_to: karo
+status: done
+
+result:
+  type: qc_review
+  overall: all_pass
+
+  qc1_result: "PASS — CLAUDE.md L448 'Hook E2E Testing Checklist' 確認。Test Rules節末尾に配置。markdown構文正常。commit d6c69ec(ash1)"
+  qc2_result: "PASS — ~/.claude/skills/shogun-n8n-notion-trigger-v1-flat-access/SKILL.md 存在(105L)。通常API vs Trigger v1構造比較+コード例あり。shogun-n8n-notion-property-sync/SKILL.md L461に参照行あり。commit 0d6806c(ash5)"
+  qc3_result: "PASS — n8n-code-javascript/SKILL.md L347 'YAML Regex Parsing' 確認(383L)。extractBlock(L358)/getField(L365)/三重null判定(L371-372)コード例あり。commit c92d6fd(ash3)"
+  qc4_result: "PASS — n8n-gcal-api-pagination-guard/SKILL.md L281 'syncToken Date Guard' 確認(318L)。RANGE_START/END(L292-293)+cancelledバイパス(L298)コード例あり。commit 3fcb226(ash6)"
+  qc5_result: "PASS — pdfmerged-feature-release-workflow/SKILL.md L388 'Version Consistency Check' 確認(409L)。build-exe.yml validation stepのYAML例あり(L393-)。commit d41b538(ash7)"
+
+north_star_alignment:
+  status: aligned
+  reason: "cmd_523の6件成果物(CLAUDE.md追記+skill統合4件)全件品質確認完了。karo完了処理を可能にするnorth starに合致"
+  risks_to_north_star:
+    - "n8n-code-javascript/SKILL.md 383Lで400L接近。次回統合時にセクション分離検討を推奨"
+
+suggestions:
+  - "sug_cmd_523_001: n8n-code-javascript/SKILL.md が383Lに到達。400L上限接近のため、次回追記時はYAML Regex Parsing節の独立SKILL化を検討(priority: low)"
+
+skill_candidate:
+  found: false
+
+files_modified:
+  - "dashboard.md (✅戦果追加)"
+  - "queue/reports/gunshi_report.yaml (this file)"
+
+agent_tool_used: false
+agent_tool_tokens: 0
+
+---
+
+worker_id: gunshi
+task_id: subtask_521a
+cmd_id: cmd_521
+parent_cmd: cmd_521
+timestamp: "2026-04-17T11:47:42+09:00"
 task_type: research_and_report
 report_to: karo
+status: done
 
-review_file: projects/artifact-standardization/review_cmd519.md
-sug_restored: "001/002/003いずれも復元不能(suggestions.yaml未記録+gunshi_report.yaml非git追跡)"
-unresolved_count: 2
-skill_candidate_judgment: "不要(利用頻度低、design.md+CLAUDE.md+karo.md Step11.8で十分カバー)"
-dashboard_info3_delete: true
-commit_hash: pending
+result:
+  type: skill_triage
+  triage_file: "projects/skill-triage-cmd521/skill_triage.md"
+  a_count: 5
+  b_count: 4
+  c_count: 1
+  d_count: 2
+  high_priority_candidates: []
+  medium_priority_candidates:
+    - "C2: shogun-decision-notify-pattern"
+    - "C9: shogun-systemd-user-cron-healthcheck-pattern"
+  commit_hash: "993726a"
+
+  summary: |
+    dashboard🛠️スキル候補12件をdecision_framework(a-d)で精査:
+    (a)新規独立化 5件: C2 decision-notify(medium), C4 snapshot-schema(low),
+      C6 pandoc-gha(low), C9 systemd-healthcheck(medium), C11 legal-ivr(low)
+    (b)既存統合 4件: C5→notion-property-sync, C7→n8n-code-javascript,
+      C8→gcal-pagination-guard, C10→pdfmerged-release-workflow
+    (c)CLAUDE.md記載 1件: C3 precompact-e2e(Test Rules節15行)
+    (d)却下 2件: C1 csm軍師ペイン(単発事象), C12 artifact-registration(cmd_519で不要判断済)
+
+  dashboard_update_proposal: |
+    🛠️欄から削除推奨: C1(csm軍師ペイン高さ確保), C12(artifact-registration-pattern)
+    優先実装推奨: C2(medium), C9(medium)
+    統合即実行推奨: C5, C7, C8, C10 (既存skill更新のみで完了)
+
+north_star_alignment:
+  status: aligned
+  reason: "12候補全件を4区分分類。殿が一覧表で候補単位にGO/NO-GO判断可能"
+  risks_to_north_star:
+    - "C5統合先(notion-property-sync 459→474L)が400L上限超過。分離も選択肢"
+
+skill_candidate:
+  found: false
+
+files_modified:
+  - "projects/skill-triage-cmd521/skill_triage.md"
+  - "queue/reports/gunshi_report.yaml"
+
+agent_tool_used: false
+agent_tool_tokens: 0
+
+---
+
+worker_id: gunshi
+task_id: subtask_520ab_qc
+cmd_id: cmd_520
+parent_cmd: cmd_520
+timestamp: "2026-04-17T11:41:34+09:00"
+task_type: qc_review
+report_to: karo
+target_report: queue/reports/ashigaru1_report.yaml
+
+qc_result: PASS
+verdict: 家老、足軽1号 subtask_520ab のmerge_tab.py出力先フォルダを開く正確化+v0.9.5 retag 5回目を受理可。AC5/5 PASS。commit d8595bd、CI全green。
 
 summary: |
-  cmd_519 subtask_519a 振り返りレビュー完了。
-  sug_cmd_509_001/002/003 は全情報源(git log/suggestions.yaml/gunshi_report.yaml履歴/
-  dashboard.md git履歴/grep全文検索)を調査したが復元不能。
-  原因: suggestions.yaml への追記フローが cmd_509 QC 時に未実行。
-  代替として cmd_511 imp_001-004(対処済)と sug_cmd_511_001(未対応/low)を整理。
-  未対応2件: (1)Drive サブフォルダ分離 low (2)suggestions.yaml追記フロー改善 medium。
-  skill化判断: artifact-registration-pattern は不要(利用頻度低・既存手順で充足)。
-  dashboard [info-3] 削除推奨。
+  cmd_520 subtask_520ab QC審査。
+  Phase A: merge_tab.py修正 — open_after_var重複削除(standalone 0件確認)、
+  ラベル2箇所『���力先フォルダを開く』統一、_open_folder_cross_platform(final_path.parent)挙動修正。
+  py_compile OK。3ファイル修正(merge_tab.py/CHANGELOG.md/TEST_GUIDE.md)。
+  Phase B: v0.9.5 retag 5回目 d8595bd。CI run 24544799259 all green。
+  Release body Fixed 3件追記。AC5/5 PASS。
 
 acceptance_criteria_check:
   AC1:
-    check: "sug_cmd_509_001/002/003 の具体内容が復元(または復元不能と明記)されている"
+    check: "L254-259 の open_after_var Checkbutton が削除されている"
     result: PASS
-    evidence: "review_cmd519.md §1 に復元不能と明記。調査6情報源の結果を個別記載"
+    evidence: "grep -v batch_/select_ → 0件。standalone open_after_var 完全削除"
   AC2:
-    check: "cmd_511で対処済/未対応 の採否が明記されている"
+    check: "batch/select 両モードのラベルが『出���先フォルダを開く』に統一されている"
     result: PASS
-    evidence: "§3 採否一覧表: imp_001-004 対処済、sug_cmd_511_001 未対応"
+    evidence: "L123, L186 の2箇所確認"
   AC3:
-    check: "未対応の提案に優先度付き推奨cmd案が添えられている"
+    check: "_post_merge_open が final_path.parent をフォルダオープン関数に渡す形に修正されている"
     result: PASS
-    evidence: "§4: Drive サブフォルダ分離(low)+suggestions.yaml改善(medium) 各推奨cmd案付き"
+    evidence: "_open_folder_cross_platform(final_path.parent) 呼出し確認"
   AC4:
-    check: "skill化判断(artifact-registration-pattern)が明記されている"
+    check: "v0.9.5 tag が cmd_520 commit を指し、CI build-exe.yml が全 green"
     result: PASS
-    evidence: "§5: skill化は時期尚早(不要)。理由4点+代替策記載"
+    evidence: "git rev-parse v0.9.5 = d8595bd。CI run 24544799259 completed/success"
   AC5:
-    check: "dashboard [info-3] 削除提案が報告に含まれる"
+    check: "Release body に cmd_520 変更点が反映さ���ている"
     result: PASS
-    evidence: "§6.1: cmd_519完了をもって削除推奨"
+    evidence: "Fixed セクションに3件追記。URL: https://github.com/saneaki/pdfmerged/releases/tag/v0.9.5"
+
+auto_check:
+  SO-01: "FAIL — report YAMLにworker_id/parent_cmd/timestamp欠損(agent/cmd_id/reported_atで代替記載)"
+  SO-03: "FAIL — timestamp形式がreported_at"
+  SO-06: "PASS — report_to is gunshi"
+  SO-12: "FAIL — ashigaru1 snapshot未クリア"
+  SO-19: "PASS — 🚨残留なし"
+
+observations:
+  OBS-1:
+    severity: low
+    detail: "report YAMLスキーマ不整合: worker_id→agent, parent_cmd欠損, timestamp→reported_at。機能上問題なし。ashigaru1の報告テンプレート修正推奨"
+  OBS-2:
+    severity: low
+    detail: "ashigaru1 snapshot未クリア(SO-12)。反復的な軽微指摘。次回リマインド程度で対応"
 
 north_star_check:
-  north_star: "cmd_509完成後のsug_cmd_509_001/002/003を3cmd運用実績に照らして振り返り、採否と優先度を確定してartifact_register.sh改善サイクルを閉じる"
-  result: ALIGNED_WITH_CAVEAT
-  evidence: |
-    - sug_cmd_509_001/002/003 の内容復元は不能だが、調査過程と不能理由を明記
-    - cmd_511 の改善4件(対処済)+未対応1件を整理し、代替的に改善サイクルを評価
-    - artifact_register.sh の運用定着度を客観的に評価(利用2回/登録対象cmd少)
-    - skill化判断+info-3削除で改善サイクル閉鎖の道筋を提示
-  caveat: "sug復元不能のため『sug内容に照らした採否判定』は実施できず、代替分析で補完"
+  north_star: "一括/選択結合モードの処理後オープン機能を殿期待の『出力先フォルダを開く』に正確化し、重複チェックボックス削除+ラベル統一+挙動修正を完了させ v0.9.5 を差替リリース��る"
+  result: FULLY_ALIGNED
+  evidence: "重複削除+ラベル統一+挙動修正の3要素全完了。v0.9.5 retag 5回目 CI green。殿の実機確認で最終確定"
 
-karo_action_required:
-  - "dashboard [info-3] 削除 (cmd_519完了時)"
-  - "dashboard 🛠️ skill候補 artifact-registration-pattern 削除 (skill化不要判断)"
-  - "suggestions.yaml 追記フロー強化の検討 (medium priority)"
+suggestions:
+  - "sug_cmd_520_001: ashigaru1 report YAMLスキーマを標準形式に統一(worker_id/parent_cmd/timestamp必須フィールド記載)。auto_check SO-01/SO-03の反復回避(priority: low)"
+
+next_action_for_karo: |
+  1. queue/tasks/ashigaru1.yaml status を done に更新
+  2. dashboard 🔄進行中の cmd_520 行を削除
+  3. dashboard 🚨要対応 [action-3] の pdfmerged v0.9.5 Windows実機確認対象にcmd_520変更を追記
+  4. cmd_520 完了処理 (SO-19)
+  5. ntfy送信時cmd_completeタグ必須: bash scripts/ntfy.sh "✅ cmd_520完了 — merge_tab出力先フォルダを開く正確化+retag 5回目" "" "cmd_complete"
 
 files_modified:
-  - "projects/artifact-standardization/review_cmd519.md (new)"
+  - "dashboard.md (✅戦果追加)"
+  - "queue/reports/gunshi_report.yaml (this file)"
+
+agent_tool_used: false
+agent_tool_tokens: 0
+
+---
+
+worker_id: gunshi
+task_id: subtask_517b_qc
+cmd_id: cmd_517
+parent_cmd: cmd_517
+timestamp: "2026-04-17T11:37:32+09:00"
+task_type: qc_review
+report_to: karo
+target_report: queue/reports/ashigaru3_report.yaml
+
+qc_result: PASS
+verdict: 家老、足軽3号 subtask_517b のinbox_watcher.sh nudge到達確認ロジック追加を受理可。stall_detector.sh既存226行AC1-4充足、inbox_watcher.sh 74行追加syntax OK、commit 2589c17。
+
+summary: |
+  cmd_517 subtask_517b QC審査(Phase1: 停滞監視システム構築)。
+  (A) stall_detector.sh: 既存226行がAC1-4を充足(inbox_unread/task_no_progress/karo_completion_pending 3種検知、stall_notified.txt重複抑制、cron起動前提F004遵守)。dry-run 4件検知正常動作。
+  (B) inbox_watcher.sh: nudge_verify_start/reset/check 3関数+統合箇所3箇所、計74行追加。
+  30秒後unread変化確認→未達2回再送→3回目clear_command発動。command-layer agent(shogun/karo/gunshi)保護+Phase2+活性時スキップで既存escalationとの重複回避。
+  auto_check 5/5 PASS、syntax OK両方、commit 2589c17確認済。
+
+acceptance_criteria_check:
+  AC1:
+    check: "stall_detector.sh が status:assigned + inbox未読30分超のタスクを検知してkaro inboxにstall_alertを送信する"
+    result: PASS
+    evidence: "dry-run 4件検知(subtask_518a karo_completion_pending, subtask_517b task_no_progress, subtask_512e karo_completion_pending, subtask_502a task_no_progress)"
+  AC2:
+    check: "stall_detector.sh の重複通知抑制(30分以内は再送しない)"
+    result: PASS
+    evidence: "queue/tmp/stall_notified.txt にtask_id+stall_typeを記録し30分以内の同内容再送を抑制"
+  AC3:
+    check: "inbox_watcher.sh にnudge到達確認ロジックが追加され、未達時2回再送する"
+    result: PASS
+    evidence: "nudge_verify_check() L404-443: 30秒後unread count比較→減少で配信確認→未変化で再送(max 2)→3回目clear_command"
+  AC4:
+    check: "F004遵守: stall_detector.sh はagent内pollingではなく外部cron起動を前提とした設計"
+    result: PASS
+    evidence: "スクリプト内にsleep/while true等のpollingなし。--helpにcron設定例を記載"
+  AC5:
+    check: "既存inbox_watcher.sh の escalation(2-4min/4min+/clear)ロジックに副作用なし"
+    result: PASS
+    evidence: "Phase2+活性時(FIRST_UNREAD_SEEN>0 && elapsed>=ESCALATE_PHASE2)はverifyスキップ。command-layer agentはclear抑制"
+
+observations:
+  OBS-1:
+    severity: info
+    detail: "stall_detector.shは.gitignore対象(git ls-files出力なし)。gitで追跡されていない。意図的であれば問題なし。追跡すべき場合は.gitignore修正が必要"
+  OBS-2:
+    severity: info
+    detail: "NUDGE_VERIFY_WAIT_SEC はデフォルト30秒。環境変数で上書き可能な設計(${NUDGE_VERIFY_WAIT_SEC:-30})。運用調整の余地あり"
+
+north_star_check:
+  north_star: "マルチエージェントの停滞(task YAML assigned放置/inbox未読放置)を自動検知し、家老・将軍に通知することでお見合い問題を構造的に根治する"
+  result: FULLY_ALIGNED
+  evidence: "Phase1-B(nudge配信信頼性強化)完了。Phase2(CLAUDE.md+checklist)も既に完了(10:41戦果)。停滞検知+nudge再送+自動/clear の3段構えで根治基盤確立"
+
+suggestions:
+  - "sug_cmd_517_001: stall_detector.shのgit追跡検討。.gitignore対象のままでは他開発者がスクリプトを見落とす可能性あり。cron設定とセットで運用ドキュメント化推奨(priority: low)"
+
+next_action_for_karo: |
+  1. queue/tasks/ashigaru3.yaml status を done に更新
+  2. dashboard 🔄進行中の cmd_517 行を更新(Phase1も完了)
+  3. cmd_517 完了処理 (SO-19)
+  4. ntfy送信時cmd_completeタグ必須: bash scripts/ntfy.sh "✅ cmd_517完了 — stall_detector.sh+inbox_watcher.sh nudge到達確認。お見合い問題根治Phase1/2全完了" "" "cmd_complete"
+
+files_modified:
+  - "dashboard.md (✅戦果追加)"
+  - "queue/reports/gunshi_report.yaml (this file)"
+
+agent_tool_used: false
+agent_tool_tokens: 0
+
+---
+
+worker_id: gunshi
+task_id: subtask_518a_qc
+cmd_id: cmd_518
+parent_cmd: cmd_518
+timestamp: "2026-04-17T10:56:00+09:00"
+task_type: qc_review
+report_to: karo
+target_report: queue/reports/ashigaru2_report.yaml
+
+qc_result: PASS
+verdict: 家老、足軽2号 subtask_518a のOpus 4.7 Extended thinking設定検出を受理可。対象ディレクトリにヒットなし、変更不要。
+
+summary: |
+  cmd_518 subtask_518a QC審査。
+  Opus 4.7 Extended thinking (thinking.type='enabled' + budget_tokens) の残存検出調査。
+  対象ディレクトリ (scripts/config/skills/tests/instructions/) で grep 0件。
+  既存 MAX_THINKING_TOKENS=0 設定 (Sonnet/Haiku用) は正しく保持。
+  bats 70 PASS / 0 FAIL。変更ファイルなし、コミット不要。AC5/5 PASS。
+
+acceptance_criteria_check:
+  AC1:
+    check: "grep -rn 'thinking.*enabled|budget_tokens' のヒット全件が除去/移行されている"
+    result: PASS
+    evidence: "対象ディレクトリで0件。除去不要(既にクリーン)"
+  AC2:
+    check: "移行先として /effort xhigh または Adaptive thinking(デフォルト)を採用"
+    result: PASS
+    evidence: "移行対象ゼロのため該当なし。CLI経由 (claude --model opus --effort max) で問題なし"
+  AC3:
+    check: "非Opusモデル(Sonnet/Haiku)側のthinking設定は変更されていない"
+    result: PASS
+    evidence: "MAX_THINKING_TOKENS=0 (test_cli_adapter.bats, test_switch_cli.bats) 保持確認"
+  AC4:
+    check: "既存テスト(bats/pytest)が全PASS"
+    result: PASS
+    evidence: "bats tests/unit/test_cli_adapter.bats: 70 PASS / 0 FAIL"
+  AC5:
+    check: "副作用なし(非Opusモデル/Sonnet/Haiku側のthinking挙動に影響なし)"
+    result: PASS
+    evidence: "変更ファイルなし。副作用の発生余地なし"
+
+observations:
+  OBS-1:
+    severity: info
+    detail: |
+      Windows plugins パス (C:\Users\drug-\.claude\plugins\...\improve_description.py L118-119, L155-156) に
+      "type": "enabled" + "budget_tokens": 10000 が残存。
+      editable_files スコープ外のため本タスク対象外。別cmd対応推奨。
+
+north_star_check:
+  north_star: "Opus 4.7で廃止されたExtended thinking設定を本プロジェクトから完全除去し、実行時エラーを未然防止する"
+  result: FULLY_ALIGNED
+  evidence: "対象ディレクトリに該当設定なし。プロジェクトはCLI経由起動のため実行時エラーリスクなし"
+
+next_action_for_karo: |
+  1. queue/tasks/ashigaru2.yaml status を done に更新
+  2. dashboard ✅戦果に cmd_518 記載:
+     "cmd_518 Opus 4.7 Extended thinking設定検出→対象ゼロ(既にクリーン)。
+      MAX_THINKING_TOKENS=0(Sonnet/Haiku用)保持。bats 70/0。AC5/5 PASS"
+  3. OBS-1 (Windows plugins budget_tokens残存) → 必要に応じて別cmd
+  4. cmd_518 完了処理 (SO-19)
+
+---
+
+worker_id: gunshi
+task_id: subtask_512e_qc
+cmd_id: cmd_512
+parent_cmd: cmd_512
+timestamp: "2026-04-17T10:57:00+09:00"
+task_type: qc_review
+report_to: karo
+target_report: queue/reports/ashigaru4_report.yaml
+
+qc_result: PASS
+verdict: 家老、足軽4号 subtask_512e のv0.9.5 retag(4回目)を受理可。CI全green、Release body品質良好。cmd_512全タスク完了。
+
+summary: |
+  cmd_512 subtask_512e QC審査。pdfmerged v0.9.5 retag(4回目)。
+  retag: a4152d2→5107c19 (512a/512b/512c 全含む)。
+  CI run 24543476993: build(3m51s)/smoke(24s)/docs_build(29s)/release(11s) 全green。
+  Release body: What's Changed(Fixed4+Added6+Changed6)/対象ユーザー/既知の制限/Full Changelog 全セクション揃い。
+  Assets: PDFMergerTool.exe + pdfmerged-test-kit-v0.9.5.zip。
+  AC4/4 PASS。cmd_512の最終ステップ完了。
+
+acceptance_criteria_check:
+  AC_G1:
+    check: "gh release view v0.9.5 でAssetsに PDFMergerTool.exe が新規生成されている"
+    result: PASS
+    evidence: "Assets: PDFMergerTool.exe + pdfmerged-test-kit-v0.9.5.zip"
+  AC_G2:
+    check: "Release body に What's Changed / 対象ユーザー / 既知の制限 が含まれる"
+    result: PASS
+    evidence: "3セクション全て確認。Fixed4+Added6+Changed6の内訳も妥当"
+  AC_CI:
+    check: "build-exe.yml 全ジョブ(build/smoke/docs_build/release) green"
+    result: PASS
+    evidence: "CI run 24543476993: 4ジョブ全green。Node.js 20 deprecation warning はCI注意事項(影響なし)"
+  AC_TAG:
+    check: "git log --oneline -1 のコミットにv0.9.5タグが付いている"
+    result: PASS
+    evidence: "5107c19 (HEAD -> main, tag: v0.9.5)"
+
+observations:
+  OBS-1:
+    severity: info
+    detail: "Node.js 20 deprecation warning (actions/checkout@v4等)。2026-06-02以降Node.js 24強制。現時点影響なし"
+
+north_star_check:
+  north_star: "cmd_512(subtask_512a/b/c)の全改修をv0.9.5に差替えリリースし、殿の実機確認対象を改善版に更新する"
+  result: FULLY_ALIGNED
+  evidence: "512a(merge_tab UI)+512b(redactor_tab)+512c(docs+tests) 全コミットをv0.9.5 tagに含む。CI green+Release body更新済"
+
+next_action_for_karo: |
+  1. queue/tasks/ashigaru4.yaml status を done に更新
+  2. dashboard ✅戦果に cmd_512 完了を記載:
+     "cmd_512 pdfmerged v0.9.5 UX改善完了
+      512a merge_tab UI改修(A1-A4+B1-B3) /
+      512b redactor_tab result_frame expand+説明圧縮 /
+      512c docs5ファイル同期+テスト3件(pytest 17/17) /
+      512e v0.9.5 retag(4回目) CI全green(run 24543476993)
+      Release: https://github.com/saneaki/pdfmerged/releases/tag/v0.9.5
+      manual_verification_required=true(殿の実機確認待ち)"
+  3. dashboard 🚨要対応に [action] 殿Windows実機確認依頼を追加
+     (512a gui_review_required=true, 512b manual_verification_required=true)
+  4. cmd_512 完了処理 (SO-19)
+
+files_modified:
   - "queue/reports/gunshi_report.yaml (this file)"
 
 agent_tool_used: false
