@@ -157,4 +157,28 @@ mv "$TMP_DASH" "$DASHBOARD"
 # タイムスタンプ更新（2行目）
 sed -i "2s/.*/最終更新: ${TIMESTAMP} JST/" "$DASHBOARD"
 
+# 🚨要対応セクションのタグに連番付与（冪等: 既存[tag-N]を剥がして再付番）
+python3 -c "
+import re, sys
+KNOWN_TAGS = {'info', 'action', 'decision', 'proposal'}
+path = '$DASHBOARD'
+with open(path, encoding='utf-8') as f:
+    content = f.read()
+m = re.search(r'(## 🚨 要対応.*?)(?=\n## |\Z)', content, re.DOTALL)
+if not m:
+    sys.exit(0)
+counters = {}
+def repl(mo):
+    tag = mo.group(2).lower()
+    if tag not in KNOWN_TAGS:
+        return mo.group(0)
+    counters[tag] = counters.get(tag, 0) + 1
+    return mo.group(1) + '[' + tag + '-' + str(counters[tag]) + ']' + mo.group(3)
+new_sec = re.sub(r'(?m)^(\| )\[([a-zA-Z]+)(?:-\d+)?\]( \|)', repl, m.group(1))
+if new_sec == m.group(1):
+    sys.exit(0)
+with open(path, 'w', encoding='utf-8') as f:
+    f.write(content[:m.start()] + new_sec + content[m.end():])
+" || echo "[WARN] tag renumber failed (non-fatal)"
+
 echo "dashboard.md updated ($(bash "$SCRIPT_DIR/jst_now.sh" 2>/dev/null || date))"
