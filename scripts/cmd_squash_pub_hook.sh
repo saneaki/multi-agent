@@ -56,8 +56,11 @@ squash_and_pub() {
     # S1: unpushed commits を grep (E6: word boundary \b)
     local commits
     commits=$(git log origin/main..HEAD --grep="Refs ${cmd_id}\b" --oneline 2>/dev/null || true)
-    local count
-    count=$(echo "$commits" | grep -c . 2>/dev/null || echo 0)
+    # empty string ケースでは count=0 を確定 (echo "" | grep -c . の newline 混入回避)
+    local count=0
+    if [ -n "$commits" ]; then
+        count=$(printf '%s\n' "$commits" | grep -c '^' 2>/dev/null || echo 0)
+    fi
 
     if [ "$count" -eq 0 ]; then
         log "SKIP: no unpushed commits for $cmd_id"
