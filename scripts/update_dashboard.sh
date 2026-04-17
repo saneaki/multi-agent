@@ -28,6 +28,49 @@ ashigaru_name() {
   esac
 }
 
+# YAML から task title を python3+PyYAML で取得
+# 優先順位: title > purpose > task.description1行目 > task_type
+# YAML パースエラー時は regex フォールバック
+get_task_title() {
+  local yaml_file="$1"
+  python3 -c "
+import yaml, sys, re
+
+yaml_file = '$yaml_file'
+
+# まず PyYAML でパース試行
+d = None
+try:
+    d = yaml.safe_load(open(yaml_file))
+except Exception:
+    d = None
+
+if isinstance(d, dict):
+    for key in ['title', 'purpose']:
+        v = d.get(key, '')
+        if v and str(v).strip():
+            print(str(v).strip()[:50]); sys.exit(0)
+    task = d.get('task', {})
+    if isinstance(task, dict):
+        desc = task.get('description', '')
+        if desc and str(desc).strip():
+            line = str(desc).strip().split('\n')[0]
+            print(line[:50]); sys.exit(0)
+    print(d.get('task_type', '')); sys.exit(0)
+
+# フォールバック: 正規表現でトップレベル title/purpose を抽出
+try:
+    content = open(yaml_file).read()
+    for key in ['title', 'purpose']:
+        m = re.search(r'^' + key + r':\s*[\"\']*(.+?)[\"\']?\s*$', content, re.MULTILINE)
+        if m:
+            print(m.group(1).strip()[:50]); sys.exit(0)
+except Exception:
+    pass
+sys.exit(0)
+" 2>/dev/null || echo ""
+}
+
 # tmpファイル
 TMP_IN_PROG=$(mktemp)
 TMP_STANDBY=$(mktemp)
@@ -41,11 +84,8 @@ for yaml_file in "$TASKS_DIR"/ashigaru*.yaml "$TASKS_DIR"/gunshi.yaml; do
   cmd_id=$(grep "^cmd_id:" "$yaml_file" 2>/dev/null   | awk '{print $2}' | tr -d '"' | tr -d "'" || echo "")
   status=$(grep "^status:" "$yaml_file" 2>/dev/null   | awk '{print $2}' | tr -d '"' | tr -d "'" || echo "")
   assigned_to=$(grep "^assigned_to:" "$yaml_file" 2>/dev/null | awk '{print $2}' | tr -d '"' | tr -d "'" || echo "")
-  # title: フィールドを優先、なければ purpose: を使用（Python使用でUnicode安全切り捨て）
-  title=$(grep "^title:" "$yaml_file" 2>/dev/null | sed 's/^title:[[:space:]]*//' | tr -d '"' | sed 's/^[|>]//' | python3 -c "import sys; s=sys.stdin.read().strip(); print(s[:50])" 2>/dev/null || true)
-  if [ -z "$title" ]; then
-    title=$(grep "^purpose:" "$yaml_file" 2>/dev/null | sed 's/^purpose:[[:space:]]*//' | tr -d '"' | sed 's/^[|>]//' | python3 -c "import sys; s=sys.stdin.read().strip(); print(s[:50])" 2>/dev/null || true)
-  fi
+  # python3+PyYAML で title 取得: title > purpose > task.description1行目 > task_type
+  title=$(get_task_title "$yaml_file")
 
   agent_name=$(ashigaru_name "$assigned_to")
 
