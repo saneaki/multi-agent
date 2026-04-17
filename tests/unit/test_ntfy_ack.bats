@@ -104,7 +104,7 @@ teardown() {
 # --- ヘルパー ---
 
 run_listener() {
-    timeout 3 bash "$MOCK_PROJECT/ntfy_listener_test.sh" 2>/dev/null || true
+    NTFY_SKIP_HOST_CHECK=1 timeout 3 bash "$MOCK_PROJECT/ntfy_listener_test.sh" 2>/dev/null || true
 }
 
 # ═══════════════════════════════════════════════════════════════

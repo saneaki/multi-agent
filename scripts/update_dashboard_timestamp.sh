@@ -31,7 +31,11 @@ fi
 # JST現在時刻を取得
 JST_NOW="$(bash "$SCRIPT_DIR/jst_now.sh")"
 
-# 「最終更新:」行を書き換え
-sed -i "s|^最終更新:.*|最終更新: $JST_NOW|" "$DASHBOARD"
+# 「最終更新:」行を書き換え (macOS BSD sed / GNU sed 両対応)
+if sed --version >/dev/null 2>&1; then
+    sed -i "s|^最終更新:.*|最終更新: $JST_NOW|" "$DASHBOARD"
+else
+    sed -i '' "s|^最終更新:.*|最終更新: $JST_NOW|" "$DASHBOARD"
+fi
 
 echo "更新完了: 最終更新: $JST_NOW" >&2

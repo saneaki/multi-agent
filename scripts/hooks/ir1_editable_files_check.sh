@@ -19,6 +19,19 @@ set -euo pipefail
 
 SHOGUN_ROOT="${__IR1_SHOGUN_ROOT:-/home/ubuntu/shogun}"
 
+# Resolve python3 binary:
+#   1. __IR1_PYTHON_BIN (test override)
+#   2. <real-project>/.venv/bin/python3 (CI venv, derived from script location)
+#   3. system python3
+_HOOK_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+if [ -n "${__IR1_PYTHON_BIN:-}" ]; then
+    PYTHON_BIN="$__IR1_PYTHON_BIN"
+elif [ -x "${_HOOK_ROOT}/.venv/bin/python3" ]; then
+    PYTHON_BIN="${_HOOK_ROOT}/.venv/bin/python3"
+else
+    PYTHON_BIN="python3"
+fi
+
 # Read stdin JSON (from Claude Code PostToolUse)
 INPUT=$(cat 2>/dev/null || true)
 
@@ -62,7 +75,7 @@ if [ ! -f "$TASK_YAML" ]; then
     exit 0
 fi
 
-EDITABLE_RESULT=$(python3 -c "
+EDITABLE_RESULT=$("$PYTHON_BIN" -c "
 import yaml, sys, os, fnmatch
 
 task_yaml = sys.argv[1]
@@ -123,7 +136,7 @@ case "$EDITABLE_RESULT" in
         ;;
     NO_MATCH)
         # Extract cmd_id (parent_cmd/task_id) from task YAML for traceability
-        CMD_ID=$(python3 -c "
+        CMD_ID=$("$PYTHON_BIN" -c "
 import yaml, sys
 try:
     with open(sys.argv[1]) as f:

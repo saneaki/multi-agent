@@ -15,8 +15,9 @@ CORRUPT_DIR="$SCRIPT_DIR/logs/ntfy_inbox_corrupt"
 
 # ホスト名ガード: VPS(srv1121380)のみでリスナーを稼働させる
 # WSL2等の他ホストでは二重応答を防ぐため起動しない
+# テスト/CI向けに NTFY_SKIP_HOST_CHECK=1 で回避可能
 NTFY_ALLOWED_HOST="srv1121380"
-if [ "$(hostname)" != "$NTFY_ALLOWED_HOST" ]; then
+if [ "${NTFY_SKIP_HOST_CHECK:-0}" != "1" ] && [ "$(hostname)" != "$NTFY_ALLOWED_HOST" ]; then
     echo "[ntfy_listener] This host ($(hostname)) is not the designated listener ($NTFY_ALLOWED_HOST). Exiting." >&2
     exit 0
 fi

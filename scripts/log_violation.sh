@@ -13,7 +13,7 @@
 
 set -euo pipefail
 
-SHOGUN_ROOT="/home/ubuntu/shogun"
+SHOGUN_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 RULE_ID="${1:-}"
 AGENT_ID="${2:-}"
 DETAIL="${3:-}"
