@@ -34,19 +34,31 @@ LOCKFILE="/tmp/log_violation.lock"
 
 mkdir -p "$LOG_DIR"
 
-(
-    flock -w 5 200 || { echo "Failed to acquire lock" >&2; exit 1; }
-
-    # Create daily log file if it doesn't exist
+_write_line() {
     if [ ! -f "$LOG_FILE" ]; then
         echo "# 日報 ${DATE}" > "$LOG_FILE"
         echo "" >> "$LOG_FILE"
     fi
-
-    # Append a single pipe-delimited violation line (no heading, no table header)
-    # Karo consolidates these raw lines into cmd entries in Step 11.7
+    # Pipe-delimited violation line; karo consolidates in Step 11.7
     echo "| ${TIMESTAMP} | ${RULE_ID} | ${AGENT_ID} | ${CMD_ID} | ${DETAIL} |" >> "$LOG_FILE"
+}
 
-) 200>"$LOCKFILE"
+# flock はLinuxのみ。macOSは mkdir ベースの排他で代替
+if command -v flock >/dev/null 2>&1; then
+    (
+        flock -w 5 200 || { echo "Failed to acquire lock" >&2; exit 1; }
+        _write_line
+    ) 200>"$LOCKFILE"
+else
+    _ld="${LOCKFILE}.d"
+    _i=0
+    while ! mkdir "$_ld" 2>/dev/null; do
+        sleep 0.1
+        _i=$((_i+1))
+        [ $_i -ge 50 ] && { echo "Failed to acquire lock" >&2; exit 1; }
+    done
+    trap 'rmdir "$_ld" 2>/dev/null' EXIT
+    _write_line
+fi
 
 echo "violation logged: ${RULE_ID} by ${AGENT_ID} → ${LOG_FILE}"
