@@ -61,11 +61,11 @@ cli:
       effort: max
     ashigaru4:
       cli_type: claude
-      model: claude-opus-4-6
+      model: claude-opus-4-7
       effort: max
     ashigaru5:
       cli_type: claude
-      model: claude-opus-4-6
+      model: claude-opus-4-7
       effort: max
     ashigaru6:
       cli_type: codex
@@ -77,7 +77,7 @@ cli:
       effort: max
     gunshi:
       cli_type: claude
-      model: claude-opus-4-6
+      model: claude-opus-4-7
       effort: max
     karo:
       cli_type: claude
@@ -94,8 +94,8 @@ formations:
       ashigaru1: { cli_type: claude, model: claude-sonnet-4-6, effort: max }
       ashigaru2: { cli_type: claude, model: claude-sonnet-4-6, effort: max }
       ashigaru3: { cli_type: claude, model: claude-sonnet-4-6, effort: max }
-      ashigaru4: { cli_type: claude, model: claude-opus-4-6, effort: max }
-      ashigaru5: { cli_type: claude, model: claude-opus-4-6, effort: max }
+      ashigaru4: { cli_type: claude, model: claude-opus-4-7, effort: max }
+      ashigaru5: { cli_type: claude, model: claude-opus-4-7, effort: max }
       ashigaru6: { cli_type: codex, model: gpt-5.3-codex }
       ashigaru7: { cli_type: codex, model: gpt-5.3-codex }
   all-sonnet:
@@ -111,10 +111,10 @@ formations:
   all-opus:
     description: "全員Claude Opus（高難度用）"
     agents:
-      ashigaru1: { cli_type: claude, model: claude-opus-4-6, effort: max }
-      ashigaru2: { cli_type: claude, model: claude-opus-4-6, effort: max }
-      ashigaru3: { cli_type: claude, model: claude-opus-4-6, effort: max }
-      ashigaru4: { cli_type: claude, model: claude-opus-4-6, effort: max }
-      ashigaru5: { cli_type: claude, model: claude-opus-4-6, effort: max }
-      ashigaru6: { cli_type: claude, model: claude-opus-4-6, effort: max }
-      ashigaru7: { cli_type: claude, model: claude-opus-4-6, effort: max }
+      ashigaru1: { cli_type: claude, model: claude-opus-4-7, effort: max }
+      ashigaru2: { cli_type: claude, model: claude-opus-4-7, effort: max }
+      ashigaru3: { cli_type: claude, model: claude-opus-4-7, effort: max }
+      ashigaru4: { cli_type: claude, model: claude-opus-4-7, effort: max }
+      ashigaru5: { cli_type: claude, model: claude-opus-4-7, effort: max }
+      ashigaru6: { cli_type: claude, model: claude-opus-4-7, effort: max }
+      ashigaru7: { cli_type: claude, model: claude-opus-4-7, effort: max }

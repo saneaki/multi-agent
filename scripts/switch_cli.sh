@@ -13,7 +13,7 @@
 #   bash scripts/switch_cli.sh ashigaru3 --type claude --model claude-sonnet-4-6
 #
 #   # 同一CLI内でモデルだけ変更（Sonnet → Opus）
-#   bash scripts/switch_cli.sh ashigaru3 --model claude-opus-4-6
+#   bash scripts/switch_cli.sh ashigaru3 --model claude-opus-4-7
 #
 #   # 全足軽を一括切替
 #   for i in $(seq 1 7); do bash scripts/switch_cli.sh ashigaru$i --type claude --model claude-sonnet-4-6; done
@@ -50,7 +50,7 @@ usage() {
     echo ""
     echo "  agent_id   karo, ashigaru1-7, gunshi"
     echo "  --type     claude | codex | copilot | kimi"
-    echo "  --model    claude-sonnet-4-6 | claude-opus-4-6 | gpt-5.3-codex | etc."
+    echo "  --model    claude-sonnet-4-6 | claude-opus-4-7 | gpt-5.3-codex | etc."
     echo ""
     echo "If --type/--model omitted, uses current settings.yaml values."
     exit 1
