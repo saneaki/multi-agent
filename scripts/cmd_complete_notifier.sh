@@ -69,7 +69,8 @@ check_and_notify() {
         fi
 
         # 完了概要を抽出（3列目: cmd_NNN以降のテキスト）
-        summary=$(echo "$line" | awk -F'|' '{print $4}' | sed 's/✅.*//' | sed 's/^ *//; s/ *$//' | head -c 60 || true)
+        summary=$(echo "$line" | awk -F'|' '{print $4}' | sed 's/✅.*//' | sed 's/^ *//; s/ *$//')
+        summary="${summary:0:60}"
 
         # ntfy 送信
         log "Sending ntfy for $cmd_id: $summary"

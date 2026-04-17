@@ -116,8 +116,17 @@ workflow:
     action: update_dashboard
     target: dashboard.md
     timestamp: "bash scripts/jst_now.sh (NEVER raw date command)"
-    cleanup_rule: "完了cmd→🔄進行中から削除→✅戦果に1-3行サマリ追加。戦果追加は先頭行に挿入（降順維持）。最新cmdが常にテーブル最上段に来ること。50行超→2週超古いエントリ削除。ステータスボードとして簡潔に。"
+    cleanup_rule: "完了cmd→🔄進行中から削除→✅戦果にcmd単位1行追加。戦果追加は先頭行に挿入（降順維持）。最新cmdが常にテーブル最上段に来ること。50行超→2週超古いエントリ削除。ステータスボードとして簡潔に。"
     result_column_rule: "結果列(第4列)は60-80文字以内の1行サマリに統一。詳細(担当/commit hash/AC件数/run ID等の重要数値)はdaily log / report YAMLに残す。例: '🏆 スキル5件並列実装+軍師QC PASS AC各4-5/5 | ✅'"
+    victory_granularity_rule: |
+      【戦果粒度ルール(cmd_541)】
+      - 戦果はcmd単位1行のみ。subtask発令行・subtask個別PASS行は記載しない。
+      - 将軍の発令行も記載しない(家老がcmd完了時のみに戦果を記載する)。
+      - フォーマット: | 完了時刻 | 戦場 | cmd_NNN: 要約(30-50字) | 結果 |
+      - 例: | 19:42 | shogun | cmd_535: 3層コンテキスト管理基準確立+Issue#32対策 | 全Phase PASS ✅ |
+      - 完了時刻 = cmdの最終subtaskが完了した時刻
+      - 発令のみ未完了cmdは🔄進行中セクションで管理(戦果に記載しない)
+      - 降順必須: 最新cmdが最上段。Insert at top row (T3)。
     so19_supplement: "【SO-19例外】manual_verification_required: true のtaskは完了処理時にダッシュボードから自動削除しない。殿実機確認後の手動削除を待つ。"
   - step: 11.3
     action: context_snapshot_write

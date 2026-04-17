@@ -80,6 +80,10 @@ workflow:
     condition: "DISPLAY_MODE=shout"
     rules:
       - "Same rules as ashigaru. See instructions/ashigaru.md step 8."
+  - step: 9
+    action: self_clear_check
+    command: 'bash scripts/gunshi_self_clear_check.sh'
+    note: "QC完了+dashboard更新+karo inbox送信後に実行。preserve_across_stagesのcmdが進行中ならSKIP。"
 
 files:
   task: queue/tasks/gunshi.yaml
@@ -265,10 +269,9 @@ This prevents the 9-hour stall incident (cmd_244/245, 2026-02-27) where Karo wen
       - On mismatch: QC NG + karo inbox "SO-20 violation: {missing} not in editable_files"
       - Note: Read-only files are out of scope. If IR-1 fires on Read, report implicit allowlist (report/task YAML etc.) should apply
 6. Perform QC (see Quality Check Criteria below)
-7. **QC PASS** → append 1 row to dashboard.md ✅本日の戦果 (F006 permitted)
-   - Time column MUST use `bash scripts/jst_now.sh` (NEVER raw `date`)
-   - After Edit, Read dashboard.md to verify. Retry Edit on failure (max 2) — prevents silent write failures (cmd_277b incident)
-   - T3: Insert at top row (descending order). Latest cmd always at top
+7. **QC PASS** → 戦果記載は不要。家老(karo)がcmd完了時に1行まとめて記載する(cmd_541以降)。
+   - Gunshiはsubtask単位の戦果行をdashboard.mdに追記してはならない。
+   - 降順厳守: dashboardの✅戦果は最新cmdが最上段になるよう家老が管理する。
 7.5. **skill_candidate handling**: If ashigaru report contains skill_candidate → append to dashboard.md 🛠️スキル候補（承認待ち）section (F006 permitted)
    - Format: `| **{skill name}** | {cmd_ref}: {summary} | 承認待ち |`
    - Dedup check (skip if same name exists). After Edit, Read to verify (max 2 retries)
@@ -318,6 +321,10 @@ This prevents the 9-hour stall incident (cmd_244/245, 2026-02-27) where Karo wen
    - Content: cmd_id, status, purpose, deliverables, timeline, gunshi suggestions, violations (if any)
    - If file doesn't exist, create with header `# 日報 YYYY-MM-DD`
 10. Re-check inbox → if more `report_received` pending → go to 1
+10.5. **Self clear check**: When inbox is empty and status=done, run:
+    `bash scripts/gunshi_self_clear_check.sh`
+    - context_policy=preserve_across_stages なら自動 SKIP (ログ出力)
+    - tool_count > 30 なら self clear_command 発火
 ```
 
 **Karo's explicit QC task assignment is NOT required.** Strategic QC (complex design review, etc.) can still be explicitly assigned via gunshi.yaml.
@@ -615,6 +622,33 @@ Step 3: Read queue/tasks/gunshi.yaml → assigned=work, idle=wait
 Step 4: Read context files if specified
 Step 5: Start work
 ```
+
+## Self Clear Protocol (Step 9)
+
+QC完了+karo inbox送信+inbox空確認後、以下を実行する:
+
+```bash
+bash scripts/gunshi_self_clear_check.sh
+```
+
+**動作フロー:**
+1. task YAML の status を確認
+2. status=assigned/in_progress → skip (継続タスクあり、clear しない)
+3. status=done/idle → 未読 inbox を確認
+   - 未読あり → skip (未処理レポートあり)
+4. 直近 task_assigned の cmd_id から shogun_to_karo.yaml の context_policy を参照
+   - preserve_across_stages → skip (多段 cmd 進行中、SKIP ログ出力)
+5. tool call count を確認
+   - count > 30(閾値) → 自己 inbox_write (clear_command) を送信
+   - count ≤ 30 → skip (clear 不要)
+6. inbox_watcher が /clear を配信
+
+**安全装置:**
+- preserve_across_stages gate: 多段 cmd 中の /clear を自動防止
+- 未読 inbox gate: 未処理 QC レポートがある間は clear しない
+- status=assigned 時: スクリプトが自動 skip
+
+**ログ:** `/tmp/self_clear_gunshi.log` に判定結果を記録
 
 ## Memory MCP Write Policy
 

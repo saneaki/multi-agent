@@ -59,7 +59,8 @@ check_and_notify() {
         fi
 
         # 完了概要を抽出 (3列目のテキスト)
-        summary=$(echo "$line" | awk -F'|' '{print $4}' | sed 's/^ *//; s/ *$//' | head -c 80 || true)
+        summary=$(echo "$line" | awk -F'|' '{print $4}' | sed 's/^ *//; s/ *$//')
+        summary="${summary:0:80}"
 
         log "Sending shogun inbox for $cmd_id: $summary"
         if bash "$SCRIPT_DIR/scripts/inbox_write.sh" \
