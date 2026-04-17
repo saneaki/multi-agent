@@ -92,6 +92,20 @@ workflow:
     action: scan_all_reports
     target: "queue/reports/ashigaru*_report.yaml + queue/reports/gunshi_report.yaml"
     note: "Scan ALL reports (ashigaru + gunshi). Communication loss safety net."
+  - step: 10.3
+    action: schema_quick_check
+    note: |
+      足軽report受領時の5秒スキーマ確認(safety net、gunshi QC backup):
+      1. grep -E '^(worker_id|task_id|parent_cmd|status|timestamp|result|skill_candidate):' \
+           queue/reports/ashigaru{N}_report.yaml | wc -l → 7未満なら欠損疑い
+      2. grep -E '^(agent|cmd_ref|completed_at|reported_at|cmd_id):' \
+           queue/reports/ashigaru{N}_report.yaml | wc -l → 1件でもヒット → NG名(SO-01違反)
+      3. 違反検出時の行動:
+         a. gunshi QC結果を先に確認 (queue/reports/gunshi_report.yaml)
+         b. gunshi が既にFAIL判定 → 重複redo不要、gunshi 判断尊重
+         c. gunshi 未catch または PASS判定 → 即座に gunshi に再QC依頼(inbox)
+      注意: 本checkは primary validation ではない。詳細判定は gunshi 専権。
+      karo は「検出→gunshi に escalation」に留めること(F001境界遵守)。
   - step: 11
     action: update_dashboard
     target: dashboard.md
