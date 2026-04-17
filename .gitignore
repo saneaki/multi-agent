@@ -119,6 +119,8 @@
 !scripts/install-shogun-discord-service.sh
 !scripts/hooks/
 !scripts/hooks/pre_compact_snapshot.sh
+!scripts/hooks/pre_compact_dispatch_persist.sh
+!scripts/hooks/post_compact_dispatch_restore.sh
 !scripts/hooks/ir1_editable_files_check.sh
 !scripts/hooks/pre_push_difference_check.sh
 !scripts/hooks/karo_session_start_check.sh
