@@ -1,43 +1,118 @@
 worker_id: gunshi
-task_id: subtask_527b
-cmd_id: cmd_527
-parent_cmd: cmd_527
-timestamp: "2026-04-17T13:20:39+09:00"
+task_id: subtask_530b_qc
+cmd_id: cmd_530
+parent_cmd: cmd_530
+timestamp: "2026-04-17T16:51:44+09:00"
 status: done
 result:
-  overall: all_pass
-  qc_items:
-    - id: QC1
-      target: "§1 D6 retag要否判定追記"
+  type: quality_check
+  ashigaru_task_id: subtask_530b
+  ashigaru_worker_id: ashigaru4
+  qa_decision: pass
+  target_files:
+    - "CLAUDE.md"
+    - "instructions/common/compaction_recovery.md"
+    - "instructions/common/protocol.md"
+    - "instructions/common/context_snapshot.md"
+    - "instructions/common/artifact_registration.md"
+    - "instructions/common/batch_processing.md"
+    - "instructions/common/hook_e2e_testing.md"
+  commit: "d383520"
+  acceptance_criteria:
+    - id: AC1
+      check: "wc -l CLAUDE.md ≤ 320"
       result: PASS
-      detail: |
-        L80-87に D6 存在確認。docs/TEST_GUIDE.md, create_test_pdfs.py,
-        test_kit_files/, pdf_tools/__version__ の4対象カバー。
-        判定コマンド git log <tag>..HEAD -- が正確。旧D6→D7(L88)リナンバリング正常。
-    - id: QC2
-      target: "§3 QC-6 test-kit同梱QC追記"
+      evidence: "wc -l CLAUDE.md = 302 (余裕18行、508→302の-206L/-40.6%)"
+    - id: AC2
+      check: "4新ファイル実在"
       result: PASS
-      detail: |
-        L232-244に QC-6 存在確認。gh release download + zipfile.extract +
-        keywordループgrep構文。bash実行可能な構文。既存§1-§5構造と整合、節番号衝突なし。
-    - id: QC3
-      target: "§5 見落としパターン行8追記"
+      evidence: |
+        context_snapshot.md=54L / artifact_registration.md=38L /
+        batch_processing.md=24L / hook_e2e_testing.md=13L 全て存在確認
+    - id: AC3
+      check: "CLAUDE.md内pointer全て実在ファイルを指す"
       result: PASS
-      detail: |
-        L298に行8存在確認。内容「docs差替commitをpush後retagを忘れ」がcmd_526事故を正確に記述。
-        §1 D6 + §3 QC-6 (cmd_526 事故) への参照あり。
-    - id: QC4
-      target: "変更履歴 v1.1.0 行追加"
+      evidence: |
+        grep -n 'instructions/common/' CLAUDE.md で10件ヒット:
+        compaction_recovery.md(L143) / protocol.md(L148) / context_snapshot.md(L159) /
+        shogun_mandatory.md(L179) / artifact_registration.md(L240) /
+        hook_e2e_testing.md(L259) / batch_processing.md(L268) /
+        gui_verification.md(L286) / destructive_safety.md(L291)
+        全て実在確認
+    - id: AC4
+      check: "移動した6セクションの内容が新ファイル/既存common/に保持(情報欠損ゼロ)"
       result: PASS
-      detail: |
-        L401に v1.1.0 | 2026-04-17 | cmd_526事故再発防止 記載確認。
-        git commit 510cdaf (shogun repo) push済。
-  north_star_check:
-    before: "D6+QC-6+見落とし行8+v1.1.0がcmd_526事故再発防止として十分か"
-    during: "各QC項目の内容が事故パターンを正確にカバーしている"
-    after: "4項目全てがcmd_526の「TEST_GUIDE改訂後retag漏れ」を構造的に防止。§1 D6で検知→§3 QC-6で検証→§5行8で教訓記録の三層防御確立"
-  line_count: 434
-  commit: 510cdaf
-  violations: なし
+      evidence: |
+        - Communication Protocol 91L → protocol.md 133L (既存+FIX2追加)
+        - Post-Compaction Recovery 18L → compaction_recovery.md 31L (既存+FIX1追加)
+        - Context Snapshot 55L → context_snapshot.md 54L (完全移植)
+        - Artifact Registration 38L → artifact_registration.md 38L (完全移植)
+        - Batch Processing 24L → batch_processing.md 24L (完全移植)
+        - Hook E2E 12L → hook_e2e_testing.md 13L (完全移植)
+        情報欠損ゼロを確認
+    - id: AC5
+      check: "compaction_recovery.md にpersona復元警告(FIX1)追補"
+      result: PASS
+      evidence: |
+        compaction_recovery.md L5-9 に以下追補確認:
+        'CRITICAL: Compaction summaries do NOT preserve persona...'
+        1. Read your instructions file (shogun→instructions/shogun.md, 等)
+        2. Restore persona and speech style (戦国口調)
+    - id: AC6
+      check: "protocol.md にGunshi自律QC注記(FIX2)追加"
+      result: PASS
+      evidence: |
+        protocol.md L107-108 に以下追加確認:
+        'Gunshi Autonomous QC: Ashigaru sends report_received to Gunshi inbox
+         → Gunshi auto-starts QC. Karo does NOT need to assign QC task YAML
+         (for standard QC). On QC PASS, Gunshi writes ✅ entry directly to dashboard.md.'
+  fix_verification:
+    FIX1: "PASS — compaction_recovery.md に persona 復元警告2点が明記"
+    FIX2: "PASS — protocol.md Report Flow 表下に Gunshi 自律 QC 注記2行追加"
+    FIX3: "PASS — CLAUDE.md Batch Processing 要約 L263-268 は 5L→6行本文+1pointer=計7L。batch1 QC gate絶対+Quality template必須の両ルール明記(元指摘通り拡張)"
+    FIX4: "PASS — hook_e2e_testing.md として新設(hook_testing.md ではない)"
+  deliverables_verified: true
+  tests_status: not_applicable
+  build_status: not_applicable
+  scope_match: complete
+  design_fidelity: perfect
+  summary: |
+    足軽4号の cmd_530 subtask_530b 実装はタスク指示と1対1完全一致。
+    508L→302L(-206L, -40.6%)圧縮達成。AC6/6 全PASS、FIX1-4 全反映確認。
+    外部化4ファイル全て存在・情報欠損ゼロ・pointer全て有効。
+    軍師 530a CONDITIONAL判定で指摘した4修正が足軽により的確に反映されている。
+    cmd_530 north_star「CLAUDE.md bootstrap 品質維持(情報欠損ゼロ)」を完全達成。
+  suggestions:
+    - "[情報] push 未実行(local only)。commit d383520 を origin/main に push 要。
+       karo に cmd_530 完了処理と併せて push 指示を依頼する必要あり"
+    - "[提案] 本 cmd の成功パターンを skills/shogun-claude-md-compression-pattern/
+       SKILL.md として抽出可。Phase2 設計→CONDITIONAL→FIX指摘→実装→QCの 5 段階
+       ワークフローが bootstrap ファイル圧縮の横展開可能なパターン。
+       cmd_530 完了後の後続タスクとして検討推奨(low priority)"
+  concerns_flagged:
+    - "push 未実行(ashigaru 判断で git workflow 別段階として扱い)。
+       task YAML には push 指示なし、ashigaru の判断は適切。
+       ただし本番反映には karo/shogun の push 指示必要"
+  files_modified:
+    - "queue/reports/gunshi_report.yaml"
+    - "dashboard.md (✅本日の戦果 cmd_530 エントリ追加)"
+    - "queue/suggestions.yaml (sug_cmd_530_002 追加予定)"
 skill_candidate:
   found: false
+  name: null
+  description: null
+  reason: |
+    cmd_530 単独では skill 化に至らないが、Phase2 圧縮の全工程
+    (設計レビュー→CONDITIONAL→FIX指摘→実装→QC)は bootstrap ファイル
+    圧縮の成功パターンとして横展開可能。cmd_530 完了後に改めて
+    skill 抽出検討推奨(suggestions 記載)。
+north_star_alignment:
+  status: aligned
+  reason: |
+    CLAUDE.md 圧縮(508→302L, -4k tokens)を情報欠損ゼロで達成。
+    FIX1-4 反映により全 agent 起動時の bootstrap 品質も維持。
+    軍師 530a CONDITIONAL 判定の全指摘が足軽実装で的確に反映され、
+    north_star「情報欠損ゼロ」を完全達成した。
+  risks_to_north_star:
+    - "push 未実行のため、本番 CLAUDE.md は未更新。
+       他 agent の起動時は依然として旧 508L 版を読む(要 karo フォロー)"
