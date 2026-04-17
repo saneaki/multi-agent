@@ -126,6 +126,8 @@
 !scripts/stop_hook_daily_log.sh
 !scripts/n8n_feedback_append.py
 !scripts/self_clear_check.sh
+!scripts/gunshi_self_clear_check.sh
+!scripts/shogun_context_notify.sh
 !scripts/qc_auto_check.sh
 !scripts/discord_to_ntfy.py
 !scripts/start_discord_bot.sh
