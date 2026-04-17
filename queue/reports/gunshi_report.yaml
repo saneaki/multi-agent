@@ -1,4 +1,65 @@
 worker_id: gunshi
+task_id: subtask_525abc_qc
+cmd_id: cmd_525
+parent_cmd: cmd_525
+timestamp: "2026-04-17T13:09:33+09:00"
+task_type: qc_review
+report_to: karo
+status: done
+
+result:
+  type: qc_review
+  overall: all_pass
+
+  qc_525a:
+    target: "subtask_525a(ash3): shogun-snapshot-schema-multi-source-fallback SKILL.md"
+    result: PASS
+    evidence: "435L(>=150L)。6段階fallback chain(nested.primary→top.primary→nested.secondary→top.secondary→推論→safety net)確認。再利用シーン5件(context_snapshot/pre_compact/qc_auto_check/update_dashboard/将来script)。24セクション。commit 779ed53"
+    ac_check: "AC1 PASS(435L)/AC2 PASS(fallback chain)/AC3 PASS(5再利用シーン)/AC4 PASS(commit+push)"
+  qc_525b:
+    target: "subtask_525b(ash4): pandoc-gha-multiformat-docs SKILL.md"
+    result: PASS
+    evidence: "430L(>=150L)。GHA workflow template(pandoc+wkhtmltopdf DAG構造)確認。CJK対応(fonts-noto-cjk install+CSS+lang header)確認。PDF fallback 3段階戦略あり。24セクション。commit c82d019"
+    ac_check: "AC1 PASS(430L)/AC2 PASS(GHA template)/AC3 PASS(CJK対応)/AC4 PASS(commit+push)"
+  qc_525c:
+    target: "subtask_525c(ash5): legal-ivr-flow-design-pattern SKILL.md"
+    result: PASS
+    evidence: "406L(>=200L)。6-phase Flow Design(Phase1-6全記載)確認。DTMF vs STT Decision Matrix(7条件+混在+fallback)確認。弁護士法72条/23条/27条コンプライアンス確認。PoC 4段階+水平展開(税理士/社労士/行政書士)。36セクション。commit 7c889e8"
+    ac_check: "AC1 PASS(406L)/AC2 PASS(6-phase)/AC3 PASS(DTMF/STT Matrix)/AC4 PASS(commit+push)"
+
+north_star_alignment:
+  status: aligned
+  reason: "cmd_525の3件低優先SKILL(C4 snapshot-fallback/C6 pandoc-gha/C11 legal-ivr)全件品質確認完了"
+  risks_to_north_star:
+    - "3件とも400L超過(435/430/406L)。400L上限ルールの実態と乖離が拡大"
+
+observations:
+  OBS-1:
+    severity: info
+    detail: "3件とも400L超過。cmd_524(432/384L)と合わせ、Opus足軽による新規SKILL作成は一貫して400L前後になる傾向。150L下限は適切だが上限400Lは形骸化"
+  OBS-2:
+    severity: info
+    detail: "ashigaru3 report schema(cmd_id欠損)。ashigaru4/5は標準準拠。ashigaru間のテンプレート差異が依然残存"
+
+suggestions:
+  - "sug_cmd_525_001: SKILL新設時のL上限を400→500Lに緩和、または上限撤廃し150L下限のみ維持を提案。Opus足軽は一貫して400-435L出力(priority: low)"
+
+next_action_for_karo: |
+  1. queue/tasks/ashigaru3/4/5.yaml status を done に更新
+  2. dashboard 🔄進行中の cmd_525 行を更新(3件完了)
+  3. cmd_525 全件完了の場合: 完了処理 (SO-19)
+  4. ntfy送信時cmd_completeタグ必須: bash scripts/ntfy.sh "✅ cmd_525完了 -- C4 snapshot-fallback 435L + C6 pandoc-gha 430L + C11 legal-ivr 406L SKILL新設" "" "cmd_complete"
+
+files_modified:
+  - "dashboard.md (✅戦果追加)"
+  - "queue/reports/gunshi_report.yaml (this file)"
+
+agent_tool_used: false
+agent_tool_tokens: 0
+
+---
+
+worker_id: gunshi
 task_id: subtask_524c
 cmd_id: cmd_524
 parent_cmd: cmd_524
