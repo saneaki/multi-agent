@@ -28,14 +28,14 @@ log() {
     echo "[$ts] $*" | tee -a "$LOG_FILE"
 }
 
-# E6: word boundary で誤マッチ防止
+# 戦果テーブル行の任務列(第3列)から cmd_NNN を抽出
 extract_cmd_id() {
-    echo "$1" | grep -oE '🏆🏆cmd_[0-9]+' | head -1 | sed 's/🏆🏆//'
+    echo "$1" | awk -F'|' '{print $4}' | grep -oE 'cmd_[0-9]+' | head -1
 }
 
 get_complete_lines() {
     [ -f "$DASHBOARD" ] || return 0
-    grep -E '🏆🏆cmd_[0-9]+' "$DASHBOARD" || true
+    grep -E '^\| [0-9]{2}:[0-9]{2} \|' "$DASHBOARD" || true
 }
 
 invoke_pub_us() {

@@ -47,8 +47,8 @@ check_and_notify() {
     fi
 
     while IFS= read -r line; do
-        # 🏆🏆直後の cmd_NNN のみ厳密抽出(description 内の cmd 参照を誤抽出しない)
-        cmd_id=$(echo "$line" | grep -oP '🏆🏆cmd_\d+' | head -1 | sed 's/🏆🏆//' || true)
+        # 戦果テーブル行の3列目(任務列)から cmd_NNN を抽出
+        cmd_id=$(echo "$line" | awk -F'|' '{print $4}' | grep -oE 'cmd_[0-9]+' | head -1 || true)
         if [ -z "$cmd_id" ]; then
             continue
         fi
@@ -73,19 +73,19 @@ check_and_notify() {
         else
             log "shogun inbox FAILED for $cmd_id"
         fi
-    done < <(grep -P '^\| \d\d:\d\d \|' "$DASHBOARD" | grep -P '🏆🏆cmd_\d+' || true)
+    done < <(grep -E '^\| [0-9]{2}:[0-9]{2} \|' "$DASHBOARD" || true)
 }
 
 log "shogun_inbox_notifier started (🏆🏆 trigger). Watching: $DASHBOARD"
 
-# 起動時 dedup: 既存 🏆🏆 行を state に登録して再通知防止
+# 起動時 dedup: 既存戦果テーブル行を state に登録して再通知防止
 if [ -f "$DASHBOARD" ]; then
     while IFS= read -r line; do
-        cmd_id=$(echo "$line" | grep -oP '🏆🏆cmd_\d+' | head -1 | sed 's/🏆🏆//' || true)
+        cmd_id=$(echo "$line" | awk -F'|' '{print $4}' | grep -oE 'cmd_[0-9]+' | head -1 || true)
         if [ -n "$cmd_id" ] && ! grep -qxF "$cmd_id" "$STATE_FILE" 2>/dev/null; then
             echo "$cmd_id" >> "$STATE_FILE"
         fi
-    done < <(grep -P '^\| \d\d:\d\d \|' "$DASHBOARD" | grep -P '🏆🏆cmd_\d+' || true)
+    done < <(grep -E '^\| [0-9]{2}:[0-9]{2} \|' "$DASHBOARD" || true)
     log "Initial state loaded: $(wc -l < "$STATE_FILE") cmd IDs registered (no re-notification)"
 fi
 
