@@ -510,6 +510,17 @@ bash scripts/artifact_register.sh \
 
 Skip if no artifact. Prefer `--dry-run` first. Optionally append Drive/Notion link to ✅戦果.
 
+### Step 11.9 Self-/clear Check (dry-run, cmd_531 Phase 3)
+
+After Step 11.7/11.8 and before picking up the next cmd, evaluate self-/clear conditions:
+
+```bash
+bash scripts/karo_self_clear_check.sh --dry-run
+```
+
+判定条件 (全 AND) と閾値は [Karo Self-/clear 節](#karo-self-clear-context-relief--自動化実装) を参照。
+現段階は **dry-run のみ**: 判定ログ (`/tmp/self_clear_karo.log`) を残すが `clear_command` は送信しない。本番有効化は運用安定後の別 cmd (殿承認付き) で行う。
+
 ### cmd Completion Check
 
 1. Get `parent_cmd` of completed subtask
@@ -684,13 +695,19 @@ STEP 4: Send /clear via inbox
 | Same project/files as previous task | Previous context is useful |
 | Light context (est. < 30K tokens) | /clear effect minimal |
 
-### Karo Self-/clear (Context Relief)
+### Karo Self-/clear (Context Relief) — 自動化実装
 
-Karo MAY self-/clear when ALL conditions are met:
+`scripts/karo_self_clear_check.sh` (cmd_531 Phase 3) が下記 5 条件を評価し、全 PASS 時のみ `clear_command` を自分宛に送信する。運用は当面 `--dry-run` のみ(本番有効化は別 cmd で殿承認後)。
 
-1. **No in_progress cmds**: All cmds in `shogun_to_karo.yaml` are `done` or `pending`
-2. **No active tasks**: No `queue/tasks/ashigaru*.yaml` or `gunshi.yaml` with `status: assigned/in_progress`
-3. **No unread inbox**: `queue/inbox/karo.yaml` has zero `read: false` entries
+| 条件 | 内容 |
+|------|------|
+| cond_1 | `shogun_to_karo.yaml` に `status: in_progress` の cmd がゼロ |
+| cond_2 | 全 `queue/tasks/ashigaru*.yaml` + `gunshi.yaml` が `status: idle` |
+| cond_3 | `queue/inbox/karo.yaml` に `read: false` エントリがゼロ |
+| cond_4 | 進行中 cmd に `context_policy: preserve_across_stages` なし (cond_1 通過時の保険) |
+| cond_5 | `tool_count > 50` (家老は足軽閾値 30 より高く設定) |
+
+`tool_count` の取得順序: `--tool-count N` 引数 → `queue/snapshots/karo_snapshot.yaml` → `~/.claude/tool_call_counter/karo.json` → `/tmp/claude-tool-count-{session}`。
 
 **Why safe**: All state lives in YAML. /clear only wipes conversational context.
 **Why needed**: Prevents context exhaustion (e.g., halted during cmd_166 — 2,754 article production).
