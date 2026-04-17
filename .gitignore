@@ -131,6 +131,7 @@
 !scripts/start_discord_bot.sh
 !scripts/discord_bot_healthcheck.sh
 !scripts/artifact_register.sh
+!scripts/session_start_checklist.sh
 
 # Original docs (project-specific documentation)
 !originaldocs/
