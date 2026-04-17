@@ -207,6 +207,8 @@
 !skills/shogun-screenshot/scripts/*.py
 !skills/pdfmerged-feature-release-workflow/
 !skills/pdfmerged-feature-release-workflow/SKILL.md
+!skills/shogun-bash-cross-platform-ci/
+!skills/shogun-bash-cross-platform-ci/SKILL.md
 
 # Python venv (explicit deny — whitelist patterns like LICENSE leak through !*/)
 .venv/
