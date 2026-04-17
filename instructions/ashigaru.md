@@ -484,3 +484,22 @@ bash scripts/gchat_send.sh "完了報告メッセージ"
 bash scripts/gchat_send.sh "Part 1: ..."
 bash scripts/gchat_send.sh "Part 2: ..."
 ```
+
+## Self Clear Protocol
+
+足軽はタスク完了後に自身の context を /clear で初期化し、
+auto-compact 連鎖を未然に防ぐ機構を持つ。
+
+動作フロー:
+1. タスク完了(Step 9 report 送信)
+2. Step 9.5 inbox 確認
+3. Step 9.7: bash scripts/self_clear_check.sh $AGENT_ID
+   - 次タスク pending あり(status=assigned) → skip (継続)
+   - tool count 閾値(30)超 → 自己 inbox_write (clear_command)
+4. inbox_watcher が /clear 配信 (busy guard で作業中は自動 defer)
+5. PreCompact hook が snapshot 自動保存 → /clear 後に snapshot で復旧
+
+安全装置:
+- busy guard: 作業中の /clear は inbox_watcher が defer
+- status=assigned 時: self_clear_check.sh が skip
+- snapshot: PreCompact hook が clear 直前に自動保存
