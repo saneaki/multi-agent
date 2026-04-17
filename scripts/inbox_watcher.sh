@@ -138,6 +138,14 @@ NEW_CONTEXT_SENT=${NEW_CONTEXT_SENT:-0}
 # When set, skip follow-up nudge for this cycle (agent already knows what to do).
 STARTUP_PROMPT_SENT=${STARTUP_PROMPT_SENT:-0}
 
+# ─── Nudge delivery verification (subtask_517b) ───
+# After nudge, verify inbox was read within 30s. Retry up to 2x, then clear_command.
+NUDGE_VERIFY_ATTEMPT=${NUDGE_VERIFY_ATTEMPT:-0}
+NUDGE_VERIFY_LAST_UNREAD=${NUDGE_VERIFY_LAST_UNREAD:-""}
+NUDGE_VERIFY_TS=${NUDGE_VERIFY_TS:-0}
+NUDGE_VERIFY_WAIT_SEC=${NUDGE_VERIFY_WAIT_SEC:-30}
+NUDGE_VERIFY_MAX_RESEND=${NUDGE_VERIFY_MAX_RESEND:-2}
+
 # ─── Phase feature flags (cmd_107 Phase 1/2/3) ───
 # ASW_PHASE:
 #   1 = self-watch base (compatible)
@@ -373,6 +381,64 @@ no_idle_full_read() {
     [ "${ASW_NO_IDLE_FULL_READ:-1}" = "1" ] || return 1
     [ "$trigger" = "timeout" ] || return 1
     [ "${FIRST_UNREAD_SEEN:-0}" -eq 0 ] || return 1
+    return 0
+}
+
+# ─── Nudge delivery verification ───
+# Called at the start of each process_unread cycle.
+# If a nudge was sent and 30s have passed, check if inbox unread count decreased.
+# If not: resend nudge (up to NUDGE_VERIFY_MAX_RESEND times), then clear_command.
+nudge_verify_start() {
+    local unread_count="$1"
+    NUDGE_VERIFY_ATTEMPT=0
+    NUDGE_VERIFY_LAST_UNREAD="$unread_count"
+    NUDGE_VERIFY_TS=$(date +%s)
+}
+
+nudge_verify_reset() {
+    NUDGE_VERIFY_ATTEMPT=0
+    NUDGE_VERIFY_LAST_UNREAD=""
+    NUDGE_VERIFY_TS=0
+}
+
+nudge_verify_check() {
+    [ "${NUDGE_VERIFY_TS:-0}" -gt 0 ] || return 1
+
+    local now_v
+    now_v=$(date +%s)
+    local elapsed_v=$((now_v - NUDGE_VERIFY_TS))
+    [ "$elapsed_v" -ge "${NUDGE_VERIFY_WAIT_SEC:-30}" ] || return 1
+
+    local current_fast
+    current_fast=$(get_unread_count_fast)
+    local current_count
+    current_count=$(echo "$current_fast" | "$SCRIPT_DIR/.venv/bin/python3" -c "import sys,json; print(json.load(sys.stdin).get('count',0))" 2>/dev/null)
+
+    if [ "$current_count" -lt "${NUDGE_VERIFY_LAST_UNREAD:-0}" ] 2>/dev/null || [ "$current_count" -eq 0 ] 2>/dev/null; then
+        echo "[$(date)] [VERIFY] Nudge delivered — unread decreased (${NUDGE_VERIFY_LAST_UNREAD}→${current_count}) for $AGENT_ID" >&2
+        nudge_verify_reset
+        return 1
+    fi
+
+    NUDGE_VERIFY_ATTEMPT=$((NUDGE_VERIFY_ATTEMPT + 1))
+    if [ "$NUDGE_VERIFY_ATTEMPT" -le "${NUDGE_VERIFY_MAX_RESEND:-2}" ]; then
+        echo "[$(date)] [VERIFY] Nudge not delivered for $AGENT_ID (attempt ${NUDGE_VERIFY_ATTEMPT}/${NUDGE_VERIFY_MAX_RESEND}) — resending" >&2
+        send_wakeup "$current_count"
+        NUDGE_VERIFY_TS=$(date +%s)
+        NUDGE_VERIFY_LAST_UNREAD="$current_count"
+    else
+        echo "[$(date)] [VERIFY] Nudge delivery failed after $((NUDGE_VERIFY_ATTEMPT)) retries for $AGENT_ID — sending clear_command" >&2
+        local effective_cli_v
+        effective_cli_v=$(get_effective_cli_type)
+        if [ "$AGENT_ID" = "shogun" ] || [ "$AGENT_ID" = "karo" ] || [ "$AGENT_ID" = "gunshi" ]; then
+            echo "[$(date)] [VERIFY] Suppressed clear_command for command-layer agent $AGENT_ID" >&2
+        elif [ "$FIRST_UNREAD_SEEN" -gt 0 ] && [ "$((now_v - FIRST_UNREAD_SEEN))" -ge "$ESCALATE_PHASE2" ]; then
+            echo "[$(date)] [VERIFY] Skipping — outer escalation Phase 2+ already active for $AGENT_ID" >&2
+        else
+            send_cli_command "/clear"
+        fi
+        nudge_verify_reset
+    fi
     return 0
 }
 
@@ -915,6 +981,11 @@ send_wakeup_with_escape() {
 process_unread() {
     local trigger="${1:-event}"
 
+    # Nudge delivery verification: check if prior nudge was processed
+    if nudge_verify_check 2>/dev/null; then
+        return 0
+    fi
+
     # summary-first: unread_count fast-path (Phase 2/3 optimization)
     # unread_count fast-path lets us skip expensive full reads when idle.
     local fast_info
@@ -1089,12 +1160,13 @@ for s in data.get('specials', []):
         local age=$((now - FIRST_UNREAD_SEEN))
 
         if [ "$age" -lt "$ESCALATE_PHASE1" ]; then
-            # Phase 1 (0-2 min): Standard nudge
+            # Phase 1 (0-2 min): Standard nudge + delivery verification
             echo "[$(date)] $normal_count unread for $AGENT_ID (${age}s)" >&2
             if disable_normal_nudge; then
                 echo "[$(date)] [SKIP] disable_normal_nudge=1, deferring to escalation-only path" >&2
             else
                 send_wakeup "$normal_count"
+                nudge_verify_start "$normal_count"
             fi
         elif [ "$age" -lt "$ESCALATE_PHASE2" ]; then
             # Phase 2 (2-4 min): Escape + nudge
@@ -1135,6 +1207,7 @@ for s in data.get('specials', []):
         fi
         FIRST_UNREAD_SEEN=0
         NEW_CONTEXT_SENT=0
+        nudge_verify_reset
         # Ensure idle flag exists when all messages are read.
         # Recovers from stop_hook_inbox.sh flag loss during block cycles.
         touch "${IDLE_FLAG_DIR:-/tmp}/shogun_idle_${AGENT_ID}" 2>/dev/null || true
