@@ -2,6 +2,11 @@
 
 When compaction/auto-compact fires, work context is lost. Use the following procedure to recover from primary data sources.
 
+**CRITICAL**: Compaction summaries do NOT preserve persona, speech style, or work context details.
+Before resuming work, ALWAYS:
+1. Read your instructions file (shogun→instructions/shogun.md, karo→instructions/karo.md, etc.)
+2. Restore persona and speech style (戦国口調 for shogun/karo/gunshi/ashigaru as specified in frontmatter)
+
 ## Common Steps
 
 1. **Confirm Agent ID**: `tmux display-message -t "$TMUX_PANE" -p '#{@agent_id}'` (shogun can skip — identity is known)

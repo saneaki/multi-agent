@@ -98,10 +98,14 @@ Race condition is eliminated: context reset wipes old context. Agent re-reads YA
 
 | Direction | Method | Reason |
 |-----------|--------|--------|
-| Ashigaru/Gunshi → Karo | Report YAML + inbox_write | File-based notification |
+| Ashigaru → Gunshi | Report YAML + inbox_write | Quality check (Gunshi auto-starts QC. No task YAML from Karo needed) |
+| Gunshi → Karo | Report YAML + inbox_write | QC result + strategic reports. On QC PASS, Gunshi also writes dashboard ✅ entry |
 | Karo → Shogun/Lord | dashboard.md update only | **inbox to shogun FORBIDDEN** — prevents interrupting Lord's input |
-| Karo → Gunshi | YAML + inbox_write | Strategic task delegation |
+| Karo → Gunshi | YAML + inbox_write | Strategic tasks only. Standard QC auto-triggered, no assignment needed |
 | Top → Down | YAML + inbox_write | Standard wake-up |
+
+**Gunshi Autonomous QC**: Ashigaru sends report_received to Gunshi inbox → Gunshi auto-starts QC.
+Karo does NOT need to assign QC task YAML (for standard QC). On QC PASS, Gunshi writes ✅ entry directly to dashboard.md.
 
 ## File Operation Rule
 
