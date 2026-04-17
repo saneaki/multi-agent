@@ -171,6 +171,15 @@ Do NOT specify: number of ashigaru, assignments, verification methods, personas,
   - 同一ファイル編集あり → `parallel: 1` + noteに理由
   - 判断に迷ったら多めに指定（家老が絞る方が安全）
 
+### context_policy (cmd発令時記入)
+
+- **clear_between** (default): 各subtask完了後に /clear 可
+- **preserve_across_stages**: 段階間で設計意図継続必須(例: 設計レビュー→実装→QC 三段構成)
+
+判定基準: "530a の設計レビュー結果を 530b 実装時に参照するか?" YES→preserve_across_stages
+
+デフォルトは clear_between。迷ったら preserve_across_stages で安全側。
+
 ### Good vs Bad examples
 
 ```yaml

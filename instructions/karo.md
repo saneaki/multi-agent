@@ -39,6 +39,12 @@ workflow:
   - step: 2
     action: read_yaml
     target: queue/shogun_to_karo.yaml
+  - step: 2.5
+    action: check_context_policy
+    note: |
+      shogun_to_karo.yaml の cmd.context_policy を確認:
+      - preserve_across_stages: 進行中 self_clear 禁止(全subtask完了まで)
+      - clear_between (default/未記載): 各subtask完了時に self_clear 可
   - step: 3
     action: update_dashboard
     target: dashboard.md

@@ -31,6 +31,17 @@ snapshot:
     warn_threshold_minutes: 30    # この値を超えるとWARN (復旧は継続)
     error_threshold_minutes: 360  # この値を超えるとERROR (復旧スキップ推奨) = 6時間
 
+# cmd設定
+cmd:
+  context_policy:
+    enum: [clear_between, preserve_across_stages]
+    default: clear_between
+    description: |
+      cmd の subtask 間で context 継続が必要かを示す。
+      - clear_between: 各 subtask 完了で /clear 可(デフォルト。大半の cmd はこちら)
+      - preserve_across_stages: 段階間で設計意図・レビュー結果など文脈継続必須
+        (例: cmd_530 の設計レビュー→実装→QC 三段構成)
+
 # Bloomルーティング設定
 # off: 全タスクを足軽に直送（軍師QCなし）
 # manual: 家老がbloom_levelを判定しルーティング（L1-L3→足軽、L4-L6→軍師）
