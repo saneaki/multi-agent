@@ -110,6 +110,7 @@
 !scripts/shc.sh
 !scripts/switch_cli.sh
 !scripts/cmd_complete_notifier.sh
+!scripts/shogun_inbox_notifier.sh
 !scripts/jst_now.sh
 !scripts/send_test_email.py
 !scripts/dashboard_rotate.sh

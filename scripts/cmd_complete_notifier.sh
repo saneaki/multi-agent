@@ -3,22 +3,22 @@
 # cmd_complete_notifier.sh — dashboard.md 変更検知 → ntfy自動通知
 #
 # 概要:
-#   dashboard.md の「本日の戦果」セクションの🏆完了行を監視し、
+#   dashboard.md の「本日の戦果」セクションの🏆🏆完了行を監視し、
 #   新しく追加された cmd 完了時に殿のスマートフォンへ ntfy 通知を送る。
 #
 # 動作:
 #   - inotifywait で dashboard.md を常時監視
-#   - 変更検知時: 🏆マーカーを含む完了行のみ抽出（セマンティックゲート）
-#   - 未通知 cmd ID を state file（logs/ntfy_notified_cmds.txt）で管理
+#   - 変更検知時: 🏆🏆マーカーを含む完了行のみ抽出（セマンティックゲート）
+#   - 未通知 cmd ID を state file（logs/ntfy_completed_cmds.txt）で管理
 #   - 未通知のものだけ ntfy 送信（重複防止）
 #
-# 🏆セマンティッ���ゲート設計 (cmd_444/cmd_445):
-#   dashboard.mdには2種類の✅行が書かれる:
-#     1) 軍師QC PASS行: 「✅ QC PASS」（🏆なし） — QC完了時点
-#     2) 家老🏆完了行: 「🏆cmd_NNN完了」（🏆あり） — 全完了判定後
-#   notifierは🏆を含む行のみをトリガーにすることで、
-#   QC完了前の早期通知を防止する。
-#   🏆は家老がStep 11.7 Step3で書く = QC PASS確認+完了判定後。
+# 🏆🏆セマンティックゲート設計 (cmd_538 Fix A):
+#   dashboard.mdには2種類の🏆行が書かれる:
+#     1) 軍師QC PASS行: 「🏆cmd_NNN subtask_xxx PASS」（🏆単体） — subtask完了時点
+#     2) 家老🏆🏆完了行: 「🏆🏆cmd_NNN COMPLETE」（🏆🏆二重） — 全完了判定後
+#   notifierは🏆🏆を含む行のみをトリガーにすることで、
+#   subtask単体PASS時の早期通知を防止する。
+#   🏆🏆は家老がStep 11.7で書く = 全Phase QC PASS確認+cmd完了判定後。
 #
 # 起動: watcher_supervisor.sh から nohup で起動される
 # ═══════════════════════════════════════════════════════════════
@@ -37,7 +37,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$SCRIPT_DIR"
 
 DASHBOARD="$SCRIPT_DIR/dashboard.md"
-STATE_FILE="$SCRIPT_DIR/logs/ntfy_notified_cmds.txt"
+STATE_FILE="$SCRIPT_DIR/logs/ntfy_completed_cmds.txt"
 LOG_FILE="$SCRIPT_DIR/logs/cmd_complete_notifier.log"
 
 # state file 初期化
@@ -54,8 +54,8 @@ check_and_notify() {
         return 0
     fi
 
-    # 完了行パターン: | HH:MM | ... 🏆cmd_NNN完了 ... | ✅ ... |
-    # 🏆フィルタ: 軍師QC PASS行(🏆なし)を除外し、家老🏆完了行のみトリガー
+    # 完了行パターン: | HH:MM | ... 🏆🏆cmd_NNN COMPLETE ... | ... ✅ ... |
+    # 🏆🏆フィルタ: subtask PASS行(🏆単体)を除外し、家老🏆🏆COMPLETE行のみトリガー
     while IFS= read -r line; do
         # cmd番号を抽出
         cmd_id=$(echo "$line" | grep -oP 'cmd_\d+' | head -1 || true)
@@ -79,10 +79,10 @@ check_and_notify() {
         else
             log "ntfy FAILED for $cmd_id"
         fi
-    done < <(grep -P '^\| \d\d:\d\d \|' "$DASHBOARD" | grep '🏆' | grep -P 'cmd_\d+' | grep '✅' || true)
+    done < <(grep -P '^\| \d\d:\d\d \|' "$DASHBOARD" | grep '🏆🏆' | grep -P 'cmd_\d+' || true)
 }
 
-log "cmd_complete_notifier started. Watching: $DASHBOARD"
+log "cmd_complete_notifier started (🏆🏆 trigger). Watching: $DASHBOARD"
 
 # 起動時に既存の完了行を state file に記録（起動直後の大量通知を防止）
 if [ -f "$DASHBOARD" ]; then
@@ -91,7 +91,7 @@ if [ -f "$DASHBOARD" ]; then
         if [ -n "$cmd_id" ] && ! grep -qxF "$cmd_id" "$STATE_FILE" 2>/dev/null; then
             echo "$cmd_id" >> "$STATE_FILE"
         fi
-    done < <(grep -P '^\| \d\d:\d\d \|' "$DASHBOARD" | grep '🏆' | grep -P 'cmd_\d+' | grep '✅' || true)
+    done < <(grep -P '^\| \d\d:\d\d \|' "$DASHBOARD" | grep '🏆🏆' | grep -P 'cmd_\d+' || true)
     log "Initial state loaded: $(wc -l < "$STATE_FILE") cmd IDs registered"
 fi
 
