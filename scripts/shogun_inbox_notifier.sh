@@ -47,7 +47,8 @@ check_and_notify() {
     fi
 
     while IFS= read -r line; do
-        cmd_id=$(echo "$line" | grep -oP 'cmd_\d+' | head -1 || true)
+        # 🏆🏆直後の cmd_NNN のみ厳密抽出(description 内の cmd 参照を誤抽出しない)
+        cmd_id=$(echo "$line" | grep -oP '🏆🏆cmd_\d+' | head -1 | sed 's/🏆🏆//' || true)
         if [ -z "$cmd_id" ]; then
             continue
         fi
@@ -71,7 +72,7 @@ check_and_notify() {
         else
             log "shogun inbox FAILED for $cmd_id"
         fi
-    done < <(grep -P '^\| \d\d:\d\d \|' "$DASHBOARD" | grep '🏆🏆' | grep -P 'cmd_\d+' || true)
+    done < <(grep -P '^\| \d\d:\d\d \|' "$DASHBOARD" | grep -P '🏆🏆cmd_\d+' || true)
 }
 
 log "shogun_inbox_notifier started (🏆🏆 trigger). Watching: $DASHBOARD"
@@ -79,11 +80,11 @@ log "shogun_inbox_notifier started (🏆🏆 trigger). Watching: $DASHBOARD"
 # 起動時 dedup: 既存 🏆🏆 行を state に登録して再通知防止
 if [ -f "$DASHBOARD" ]; then
     while IFS= read -r line; do
-        cmd_id=$(echo "$line" | grep -oP 'cmd_\d+' | head -1 || true)
+        cmd_id=$(echo "$line" | grep -oP '🏆🏆cmd_\d+' | head -1 | sed 's/🏆🏆//' || true)
         if [ -n "$cmd_id" ] && ! grep -qxF "$cmd_id" "$STATE_FILE" 2>/dev/null; then
             echo "$cmd_id" >> "$STATE_FILE"
         fi
-    done < <(grep -P '^\| \d\d:\d\d \|' "$DASHBOARD" | grep '🏆🏆' | grep -P 'cmd_\d+' || true)
+    done < <(grep -P '^\| \d\d:\d\d \|' "$DASHBOARD" | grep -P '🏆🏆cmd_\d+' || true)
     log "Initial state loaded: $(wc -l < "$STATE_FILE") cmd IDs registered (no re-notification)"
 fi
 
