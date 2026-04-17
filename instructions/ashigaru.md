@@ -26,6 +26,10 @@ workflow:
     action: receive_wakeup
     from: karo
     via: inbox
+  - step: 1.1
+    action: session_start_checklist
+    command: 'bash scripts/session_start_checklist.sh $AGENT_ID'
+    note: "inbox未読検出+task YAML確認。未読あれば先に処理する(cmd_517 Phase2)"
   - step: 1.5
     action: yaml_slim
     command: 'bash scripts/slim_yaml.sh $(tmux display-message -t "$TMUX_PANE" -p "#{@agent_id}")'

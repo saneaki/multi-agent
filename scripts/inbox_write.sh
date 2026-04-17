@@ -115,6 +115,24 @@ except Exception as e:
         _release_lock
 
         if [ $STATUS -eq 0 ]; then
+            # type:report_received → 送信元エージェントのtask YAMLを completed_pending_karo に遷移
+            if [ "$TYPE" = "report_received" ] && [ -n "$FROM" ] && [ "$FROM" != "unknown" ]; then
+                TASK_FILE="$SCRIPT_DIR/queue/tasks/${FROM}.yaml"
+                if [ -f "$TASK_FILE" ]; then
+                    "$SCRIPT_DIR/.venv/bin/python3" -c "
+import re
+content = open('$TASK_FILE').read()
+new_content = re.sub(
+    r'^(status:\s*)(assigned|in_progress)\s*$',
+    r'\1completed_pending_karo',
+    content, flags=re.MULTILINE
+)
+if new_content != content:
+    open('$TASK_FILE','w').write(new_content)
+" 2>/dev/null || true
+                fi
+            fi
+
             # ntfy auto-notification (cmd_complete/cmd_milestone → shogun only)
             if [[ "$TARGET" == "shogun" ]] && [[ "$TYPE" == "cmd_complete" || "$TYPE" == "cmd_milestone" ]]; then
                 # Check if ntfy_topic is configured
