@@ -18,7 +18,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: original
+          ref: main
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -62,7 +62,7 @@ jobs:
       - name: Push on success
         if: steps.check.outputs.behind != '0' && steps.merge.outputs.result == 'success'
         run: |
-          git push origin original
+          git push origin main
 
       - name: Notify success
         if: steps.check.outputs.behind != '0' && steps.merge.outputs.result == 'success'
@@ -89,7 +89,7 @@ jobs:
           2. git merge --no-ff upstream/main
           3. コンフリクトを手動解決
           4. git add . && git commit
-          5. git push origin original
+          5. git push origin main
           ISSUE_BODY
           gh issue create \
             --title "upstream/main sync conflict ($SYNC_DATE)" \
