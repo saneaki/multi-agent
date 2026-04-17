@@ -69,6 +69,13 @@ workflow:
         skill_candidate  (found: true/false必須、省略不可)
       task YAML に acceptance_criteria があれば result.acceptance_criteria も必須。
       report書込み直前に Report Format セクション NG名一覧表で照合すること。
+  - step: 5.3
+    action: self_schema_check
+    command: 'bash scripts/qc_auto_check.sh --mode pre-report $AGENT_ID'
+    note: |
+      exit 非0(SO-01/SO-03違反) → reportを修正してから再実行。
+      PASS(exit 0) → step 5.5/9 inbox_write へ進む。
+      所要時間: <5秒。省略不可(SO-01累計9連続違反の構造根治施策)。
   - step: 5.5
     action: gui_review_check
     condition: "task YAML に gui_review_required: true がある場合"

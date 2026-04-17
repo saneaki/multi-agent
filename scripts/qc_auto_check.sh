@@ -3,23 +3,89 @@
 # QC Auto Check: Automated T2 rule validation for Gunshi QC
 #
 # Usage:
-#   bash scripts/qc_auto_check.sh <ashigaru_id> <task_id>
+#   bash scripts/qc_auto_check.sh [--mode pre-report] <ashigaru_id> [task_id]
 #
-# Example:
+# Examples:
 #   bash scripts/qc_auto_check.sh ashigaru1 subtask_350a
+#   bash scripts/qc_auto_check.sh --mode pre-report ashigaru1
 #
-# Output: YAML-formatted check results to stdout
+# Modes:
+#   full (default): SO-01/03/06/12/19 full check, YAML output
+#   pre-report:     SO-01 + SO-03 only, exits 0=PASS / 1=FAIL
+#
+# Output: YAML-formatted check results to stdout (full mode only)
 # ============================================================
 
 set -euo pipefail
 
 SHOGUN_ROOT="/home/ubuntu/shogun"
+MODE="full"
+if [ "${1:-}" = "--mode" ]; then
+    MODE="${2:-}"
+    shift 2
+fi
 ASHIGARU_ID="${1:-}"
 TASK_ID="${2:-}"
 
-if [ -z "$ASHIGARU_ID" ] || [ -z "$TASK_ID" ]; then
-    echo "Usage: qc_auto_check.sh <ashigaru_id> <task_id>" >&2
+if [ -z "$ASHIGARU_ID" ]; then
+    echo "Usage: qc_auto_check.sh [--mode pre-report] <ashigaru_id> [task_id]" >&2
     exit 1
+fi
+
+if [ "$MODE" = "pre-report" ]; then
+    TASK_ID="${TASK_ID:-pre-report-check}"
+elif [ -z "$TASK_ID" ]; then
+    echo "Usage: qc_auto_check.sh [--mode pre-report] <ashigaru_id> <task_id>" >&2
+    exit 1
+fi
+
+# --- pre-report mode: SO-01 + SO-03 のみ実行して exit ---
+if [ "$MODE" = "pre-report" ]; then
+    REPORT_FILE="${SHOGUN_ROOT}/queue/reports/${ASHIGARU_ID}_report.yaml"
+    VIOLATIONS=0
+    echo "pre-report schema check: ${ASHIGARU_ID}"
+    if [ ! -f "$REPORT_FILE" ]; then
+        echo "ERROR: Report file not found: ${REPORT_FILE}" >&2
+        exit 1
+    fi
+    # SO-01: required fields
+    MISSING=""
+    for field in worker_id task_id parent_cmd status timestamp result skill_candidate; do
+        if ! grep -q "^${field}:" "$REPORT_FILE" 2>/dev/null; then
+            MISSING="${MISSING}${field} "
+        fi
+    done
+    # SO-01: NG field names
+    NG_FOUND=""
+    for ng_field in "^agent:" "^agent_id:" "^cmd_ref:" "^cmd_id:" "^completed_at:" "^reported_at:"; do
+        if grep -q "$ng_field" "$REPORT_FILE" 2>/dev/null; then
+            NG_FOUND="${NG_FOUND}${ng_field} "
+        fi
+    done
+    if [ -n "$MISSING" ]; then
+        echo "SO-01 FAIL: missing fields: ${MISSING}" >&2
+        VIOLATIONS=$((VIOLATIONS + 1))
+    fi
+    if [ -n "$NG_FOUND" ]; then
+        echo "SO-01 FAIL: NG field names detected: ${NG_FOUND}" >&2
+        VIOLATIONS=$((VIOLATIONS + 1))
+    fi
+    # SO-03: JST timestamp
+    TIMESTAMP_LINE=$(grep "^timestamp:" "$REPORT_FILE" 2>/dev/null || echo "")
+    if [ -z "$TIMESTAMP_LINE" ]; then
+        echo "SO-03 FAIL: no timestamp field" >&2
+        VIOLATIONS=$((VIOLATIONS + 1))
+    elif ! echo "$TIMESTAMP_LINE" | grep -q "+09:00"; then
+        echo "SO-03 FAIL: timestamp not JST (+09:00): ${TIMESTAMP_LINE}" >&2
+        VIOLATIONS=$((VIOLATIONS + 1))
+    fi
+    if [ "$VIOLATIONS" -eq 0 ]; then
+        echo "pre-report check PASS: SO-01 + SO-03 OK"
+        exit 0
+    else
+        echo "pre-report check FAIL: ${VIOLATIONS} violation(s) found. Fix report before inbox_write." >&2
+        exit 1
+    fi
 fi
 
 REPORT_FILE="${SHOGUN_ROOT}/queue/reports/${ASHIGARU_ID}_report.yaml"
