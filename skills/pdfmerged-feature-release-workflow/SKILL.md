@@ -382,3 +382,28 @@ git status --short
 - [skill-creation-workflow](../skill-creation-workflow/SKILL.md) — スキル作成の標準プロセス
 - `/home/ubuntu/pdfmerged/docs/RELEASE_PROCESS.md` — pdfmerged 現行のリリース手順書 (cmd_500 で最終更新)
 - `/home/ubuntu/pdfmerged/.github/workflows/build-exe.yml` — CI の version validation step
+
+---
+
+## §X Version Consistency Check
+
+### 目的
+`__version__`(pdf_tools/__init__.py)とgit tag/GitHub Releaseの整合性をCIで強制する。
+
+### build-exe.yml への追加(tag push時のみ実行)
+
+```yaml
+- name: Verify version consistency
+  if: startsWith(github.ref, 'refs/tags/')
+  run: |
+    TAG_VERSION=${GITHUB_REF#refs/tags/v}
+    FILE_VERSION=$(python -c "from pdf_tools import __version__; print(__version__)")
+    if [ "$TAG_VERSION" != "$FILE_VERSION" ]; then
+      echo "VERSION MISMATCH: tag=$TAG_VERSION file=$FILE_VERSION"
+      exit 1
+    fi
+```
+
+### 注意
+- タグ差し替え(retag)時も __version__ を先に更新してからtagを作成すること
+- validation step は tag push 時のみ実行(push to main では skip)
