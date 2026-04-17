@@ -140,6 +140,7 @@
 !scripts/discord_bot_healthcheck.sh
 !scripts/artifact_register.sh
 !scripts/session_start_checklist.sh
+!scripts/cmd_squash_pub_hook.sh
 
 # Original docs (project-specific documentation)
 !originaldocs/

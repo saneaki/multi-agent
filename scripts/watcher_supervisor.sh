@@ -62,6 +62,13 @@ start_shogun_inbox_notifier_if_missing() {
     nohup bash scripts/shogun_inbox_notifier.sh >> "logs/shogun_inbox_notifier.log" 2>&1 &
 }
 
+start_cmd_squash_pub_hook_if_missing() {
+    if pgrep -f "scripts/cmd_squash_pub_hook.sh" >/dev/null 2>&1; then
+        return 0
+    fi
+    nohup bash scripts/cmd_squash_pub_hook.sh >> "logs/cmd_squash_pub_hook.log" 2>&1 &
+}
+
 # ウェルカム画面検出: 'Try "' または 'bypass permissions' パターン
 is_welcome_screen() {
     local pane="$1"
@@ -128,6 +135,7 @@ while true; do
     start_watcher_if_missing "gunshi" "multiagent:agents.8" "logs/inbox_watcher_gunshi.log"
     start_cmd_notifier_if_missing
     start_shogun_inbox_notifier_if_missing
+    start_cmd_squash_pub_hook_if_missing
 
     # 定期点呼: 5分間隔（300秒）
     _now=$(date +%s)

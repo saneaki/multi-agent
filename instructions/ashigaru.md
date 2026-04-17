@@ -96,8 +96,15 @@ workflow:
     command: 'tmux set-option -p @current_task ""'
     note: "Clear task label for next task"
   - step: 7
-    action: git_push
-    note: "If project has git repo, commit + push your changes. Only for article/documentation completion."
+    action: git_commit_only
+    note: |
+      If project has git repo, run git commit ONLY (no push).
+      Push is deferred to cmd_squash_pub_hook.sh on 🏆🏆cmd_NNN COMPLETE.
+      Commit message 規約:
+        - 1行目: "<type>: <description> (Refs cmd_NNN)"  ※ "Refs cmd_NNN" は squash grep キー
+        - type: feat/fix/docs/refactor/test/chore/perf/ci
+        - Refs cmd_NNN が欠落した commit は squash 対象外となり孤立 push される
+      shogun repo 以外の project(pdfmerged 等) はこの制限の対象外(従来通り commit+push 可)。
   - step: 7.5
     action: build_verify
     note: "If project has build system (npm run build, etc.), run and verify success. Report failures in report YAML."
