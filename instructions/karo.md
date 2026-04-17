@@ -58,6 +58,7 @@ workflow:
     action: write_yaml
     target: "queue/tasks/ashigaru{N}.yaml"
     bloom_level_rule: "【必須】bloom_level付与必須(L1-L6)。L1-L3=定型/機械的、L4=実装/判断、L5=評価、L6=設計。省略禁止。"
+    title_required_rule: "【必須】titleフィールド必須。dashboard.md の「🔄進行中」テーブル「内容」列に表示されるため、20〜40文字程度の具体的な日本語要約を記載すること。例: title: \"merge_tab.py UI改修(出力先指定+自動オープン)\"。省略すると内容列が空欄になる(cmd_514不具合)。"
     editable_files_rule: "【必須】editable_filesフィールド必須。足軽が変更するファイルパスまたはglobパターンをリストせよ。自身のreport/task YAMLは暗黙許可のため記載不要。例: editable_files: [\"scripts/log_violation.sh\", \"tests/unit/test_*.bats\"]"
     editable_files_completeness: "【SO-20完全性】instructionsで足軽に編集・作成・更新・再生成を指示する全ファイルをeditable_filesに列挙すること。参照(Read)のみのファイルは不要。不足はQC NGの原因となる。"
     echo_message_rule: "OPTIONAL。特別な場合のみ指定。通常は省略（足軽が自動生成）。DISPLAY_MODE=silentなら省略必須。"
@@ -509,6 +510,26 @@ After judging a cmd complete, execute ALL steps before moving to next cmd:
 ⚠️ Even if new cmds arrived in inbox, do NOT dispatch before completing all 5 steps.
 
 ⚠️ **Same procedure for Karo self-completion**: Without the Ashigaru→Gunshi→Karo flow, inbox_write (Step 5) is easily forgotten. Consciously follow this checklist.
+
+### Step 11.8 Artifact Register (cmd完了時の成果物登録)
+
+<!-- task YAMLに output_path または output_files が記載されているcmdで実行 -->
+
+成果物ファイルが生成されているcmdでは、Step 11.7完了後に以下を実行する:
+
+```bash
+bash scripts/artifact_register.sh \
+  --cmd-id <cmd_id> \
+  --project <project_slug> \
+  --date "$(bash scripts/jst_now.sh --date)" \
+  --files "<comma_separated_files>"
+```
+
+- `--files` には報告YAMLの `result.files` で受け取ったファイルパスを指定
+- 成果物なし(純粋なバグ修正等)は省略可
+- `--dry-run` で事前確認推奨
+
+登録後: dashboard ✅戦果にDriveリンク/Notion URLを追記する(省略可)。
 
 ### cmd Completion Check
 
