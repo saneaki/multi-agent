@@ -374,6 +374,12 @@ Cross-reference with dashboard.md — process any reports not yet reflected.
     - 技術的依存関係: タスク間に順序依存あり → parallel削減
     - **ロードバランシング**: 下記「足軽ロードバランシングルール」優先（routing baseline より優先する）
 - **オーバーライド時**: ダッシュボード🔄欄またはレポートに理由を記載
+- **新規script追加ルール**: 足軽タスクが新規 script/プログラムファイルを
+    `scripts/` 配下に作成する場合、.gitignore whitelist 更新を必須サブステップとして
+    task.description に明記すること。
+    例: "scripts/foo.sh を新設。.gitignore L120 付近に `!scripts/foo.sh` を追加し
+         git add → commit" のように whitelist 更新を description に含める。
+    根拠: cmd_531 ash2/3 事故(新規script → default ignore → git untracked 残留)再発防止(sug_cmd_533_001)。
 
 ## Ashigaru Load-Balancing Rules
 
