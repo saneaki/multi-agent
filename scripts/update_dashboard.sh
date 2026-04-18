@@ -181,4 +181,87 @@ with open(path, 'w', encoding='utf-8') as f:
     f.write(content[:m.start()] + new_sec + content[m.end():])
 " || echo "[WARN] tag renumber failed (non-fatal)"
 
+# 📊将軍コンテキスト使用率セクション更新
+COUNTER_FILE="${HOME}/.claude/tool_call_counter/shogun.json"
+if [ -f "$COUNTER_FILE" ]; then
+    CONTEXT_PCT=$("${REPO_DIR}/.venv/bin/python3" -c "
+import json
+try:
+    with open('$COUNTER_FILE') as f:
+        data = json.load(f)
+    pct = data.get('context_pct') or data.get('usage_pct') or data.get('percent') or 0
+    print(int(float(pct)))
+except Exception:
+    print(0)
+" 2>/dev/null || echo "0")
+    if [ "$CONTEXT_PCT" -ge 80 ]; then
+        CONTEXT_ICON="🔴"
+    elif [ "$CONTEXT_PCT" -ge 70 ]; then
+        CONTEXT_ICON="🟡"
+    else
+        CONTEXT_ICON="🟢"
+    fi
+    CONTEXT_LINE="${CONTEXT_ICON} 将軍コンテキスト使用率: ${CONTEXT_PCT}%"
+else
+    CONTEXT_LINE="⚪ 将軍コンテキスト使用率: 計測データなし"
+fi
+
+# 📊セクションがあれば更新、なければ🐸セクションの前に挿入
+if grep -q "^## 📊 将軍コンテキスト" "$DASHBOARD"; then
+    python3 -c "
+import re
+path = '$DASHBOARD'
+with open(path, encoding='utf-8') as f:
+    content = f.read()
+new_content = re.sub(
+    r'(## 📊 将軍コンテキスト.*?\n)([^\n].*?\n)',
+    r'\g<1>$CONTEXT_LINE\n',
+    content
+)
+with open(path, 'w', encoding='utf-8') as f:
+    f.write(new_content)
+" 2>/dev/null || true
+fi
+
+# 📊 運用指標セクション更新 (logs/cmd_squash_pub_hook.daily.yaml 動的 parse)
+TODAY=$(bash "$SCRIPT_DIR/jst_now.sh" --date 2>/dev/null || date +%Y-%m-%d)
+DAILY_YAML="$REPO_DIR/logs/cmd_squash_pub_hook.daily.yaml"
+python3 -c "
+import sys, os, re
+dashboard = '$DASHBOARD'
+daily_yaml = '$DAILY_YAML'
+today = '$TODAY'
+
+data = {}
+if os.path.exists(daily_yaml):
+    try:
+        import yaml
+        with open(daily_yaml) as f:
+            data = yaml.safe_load(f) or {}
+    except Exception:
+        pass
+
+header = '## 📊 運用指標\n\n| 日付(JST) | /pub-us起動 | 成功 | 失敗 | kill-switch発動 |\n|-----------|------------|------|------|----------------|'
+if not data:
+    row = '| データなし | - | - | - | - |'
+else:
+    date_jst = str(data.get('date_jst', '-'))
+    label = date_jst if date_jst == today else date_jst + '(old)'
+    row = '| {} | {} | {} | {} | {} |'.format(
+        label, data.get('attempt_total', '-'),
+        data.get('success_total', '-'), data.get('failure_total', '-'),
+        str(data.get('kill_count', 0))
+    )
+
+new_section = header + '\n' + row + '\n'
+with open(dashboard, encoding='utf-8') as f:
+    content = f.read()
+if '## 📊 運用指標' in content:
+    content = re.sub(r'## 📊 運用指標.*?(?=\n## |\Z)', new_section, content, flags=re.DOTALL)
+else:
+    content = content.replace('\n## 🔄 進行中', '\n' + new_section + '\n## 🔄 進行中', 1)
+with open(dashboard, 'w', encoding='utf-8') as f:
+    f.write(content)
+" 2>/dev/null || echo "[WARN] metric section update failed (non-fatal)"
+
 echo "dashboard.md updated ($(bash "$SCRIPT_DIR/jst_now.sh" 2>/dev/null || date))"
