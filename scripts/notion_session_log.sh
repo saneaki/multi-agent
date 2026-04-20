@@ -22,6 +22,7 @@ NOTION_TOKEN="${NOTION_INTEGRATION_TOKEN}"
 ACTIVITY_LOG_DB_ID="${NOTION_ACTIVITY_LOG_DB_ID}"
 ACTIVITY_LOG_DS_ID="${NOTION_ACTIVITY_LOG_DS_ID}"
 DIARY_DS_ID="${NOTION_DIARY_DS_ID}"
+DIARY_DB_ID="${NOTION_DIARY_DB_ID:-1a4e8d62-e4aa-81f1-8ede-c239ea53299b}"
 DASHBOARD="/home/ubuntu/shogun/dashboard.md"
 TODAY=$(TZ=Asia/Tokyo date +%Y-%m-%d)
 NOTION_API="https://api.notion.com/v1"
@@ -713,7 +714,7 @@ record_artifacts_to_notion
 echo "[INFO] 日記タスク検索: ${TODAY}日記"
 
 DIARY_QUERY=$(curl -s -X POST \
-  "${NOTION_API}/data_sources/${DIARY_DS_ID}/query" \
+  "${NOTION_API}/databases/${DIARY_DB_ID}/query" \
   -H "Authorization: Bearer ${NOTION_TOKEN}" \
   -H "Content-Type: application/json" \
   -H "Notion-Version: ${NOTION_VERSION}" \
@@ -734,7 +735,7 @@ if [[ -z "${DIARY_PAGE_ID}" ]]; then
   YESTERDAY=$(TZ=Asia/Tokyo date -d "${TODAY} -1 day" +%Y-%m-%d)
   echo "[WARN] ${TODAY}の日記が見つからず。フォールバック: ${YESTERDAY}日記を検索"
   DIARY_QUERY_FB=$(curl -s -X POST \
-    "${NOTION_API}/data_sources/${DIARY_DS_ID}/query" \
+    "${NOTION_API}/databases/${DIARY_DB_ID}/query" \
     -H "Authorization: Bearer ${NOTION_TOKEN}" \
     -H "Content-Type: application/json" \
     -H "Notion-Version: ${NOTION_VERSION}" \
