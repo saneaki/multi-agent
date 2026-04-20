@@ -9,13 +9,29 @@ cd "$SCRIPT_DIR"
 
 mkdir -p logs queue/inbox
 
-# 多重起動防止: PIDファイルロック
 SUPERVISOR_LOCK="$SCRIPT_DIR/logs/watcher_supervisor.lock"
-exec 9>"$SUPERVISOR_LOCK"
-if ! flock -n 9; then
-    echo "[$(date)] [watcher_supervisor] Already running (lock: $SUPERVISOR_LOCK). Exiting." >&2
-    exit 1
-fi
+
+mode="${1:-daemon}"
+
+supervisor_pid_from_lock() {
+    local pid=""
+
+    if [ -f "$SUPERVISOR_LOCK" ]; then
+        pid="$(head -n 1 "$SUPERVISOR_LOCK" | tr -d '[:space:]' || true)"
+    fi
+    if [[ "$pid" =~ ^[0-9]+$ ]] && kill -0 "$pid" 2>/dev/null; then
+        printf '%s\n' "$pid"
+        return 0
+    fi
+
+    pid="$(pgrep -fo "bash /home/ubuntu/shogun/scripts/watcher_supervisor.sh" || true)"
+    if [[ "$pid" =~ ^[0-9]+$ ]] && kill -0 "$pid" 2>/dev/null; then
+        printf '%s\n' "$pid"
+        return 0
+    fi
+
+    return 1
+}
 
 ensure_inbox_file() {
     local agent="$1"
@@ -122,27 +138,84 @@ roll_call_check() {
 
 ROLL_CALL_LAST=0
 
-while true; do
-    start_watcher_if_missing "shogun" "shogun:main.0" "logs/inbox_watcher_shogun.log"
-    start_watcher_if_missing "karo" "multiagent:agents.0" "logs/inbox_watcher_karo.log"
-    start_watcher_if_missing "ashigaru1" "multiagent:agents.1" "logs/inbox_watcher_ashigaru1.log"
-    start_watcher_if_missing "ashigaru2" "multiagent:agents.2" "logs/inbox_watcher_ashigaru2.log"
-    start_watcher_if_missing "ashigaru3" "multiagent:agents.3" "logs/inbox_watcher_ashigaru3.log"
-    start_watcher_if_missing "ashigaru4" "multiagent:agents.4" "logs/inbox_watcher_ashigaru4.log"
-    start_watcher_if_missing "ashigaru5" "multiagent:agents.5" "logs/inbox_watcher_ashigaru5.log"
-    start_watcher_if_missing "ashigaru6" "multiagent:agents.6" "logs/inbox_watcher_ashigaru6.log"
-    start_watcher_if_missing "ashigaru7" "multiagent:agents.7" "logs/inbox_watcher_ashigaru7.log"
-    start_watcher_if_missing "gunshi" "multiagent:agents.8" "logs/inbox_watcher_gunshi.log"
-    start_cmd_notifier_if_missing
-    start_shogun_inbox_notifier_if_missing
-    start_cmd_squash_pub_hook_if_missing
+start_daemon() {
+    # 多重起動防止: PIDファイルロック
+    exec 9>"$SUPERVISOR_LOCK"
+    if ! flock -n 9; then
+        echo "[$(date)] [watcher_supervisor] Already running (lock: $SUPERVISOR_LOCK). Exiting." >&2
+        exit 1
+    fi
+    printf '%s\n' "$$" > "$SUPERVISOR_LOCK"
 
-    # 定期点呼: 5分間隔（300秒）
-    _now=$(date +%s)
-    if (( _now - ROLL_CALL_LAST >= 300 )); then
-        roll_call_check 2>&1 | tee -a "$SCRIPT_DIR/logs/roll_call.log" || true
-        ROLL_CALL_LAST=$_now
+    while true; do
+        start_watcher_if_missing "shogun" "shogun:main.0" "logs/inbox_watcher_shogun.log"
+        start_watcher_if_missing "karo" "multiagent:agents.0" "logs/inbox_watcher_karo.log"
+        start_watcher_if_missing "ashigaru1" "multiagent:agents.1" "logs/inbox_watcher_ashigaru1.log"
+        start_watcher_if_missing "ashigaru2" "multiagent:agents.2" "logs/inbox_watcher_ashigaru2.log"
+        start_watcher_if_missing "ashigaru3" "multiagent:agents.3" "logs/inbox_watcher_ashigaru3.log"
+        start_watcher_if_missing "ashigaru4" "multiagent:agents.4" "logs/inbox_watcher_ashigaru4.log"
+        start_watcher_if_missing "ashigaru5" "multiagent:agents.5" "logs/inbox_watcher_ashigaru5.log"
+        start_watcher_if_missing "ashigaru6" "multiagent:agents.6" "logs/inbox_watcher_ashigaru6.log"
+        start_watcher_if_missing "ashigaru7" "multiagent:agents.7" "logs/inbox_watcher_ashigaru7.log"
+        start_watcher_if_missing "gunshi" "multiagent:agents.8" "logs/inbox_watcher_gunshi.log"
+        start_cmd_notifier_if_missing
+        start_shogun_inbox_notifier_if_missing
+        start_cmd_squash_pub_hook_if_missing
+
+        # 定期点呼: 5分間隔（300秒）
+        _now=$(date +%s)
+        if (( _now - ROLL_CALL_LAST >= 300 )); then
+            roll_call_check 2>&1 | tee -a "$SCRIPT_DIR/logs/roll_call.log" || true
+            ROLL_CALL_LAST=$_now
+        fi
+
+        sleep 5
+    done
+}
+
+restart_daemon() {
+    local old_pid current_pid deadline
+    old_pid="$(supervisor_pid_from_lock || true)"
+
+    if [ -n "$old_pid" ]; then
+        echo "[$(date)] [watcher_supervisor] stopping old supervisor PID=$old_pid"
+        kill -TERM "$old_pid"
+        deadline=$((SECONDS + 5))
+        while kill -0 "$old_pid" 2>/dev/null; do
+            if (( SECONDS >= deadline )); then
+                echo "[$(date)] [watcher_supervisor] old supervisor PID=$old_pid did not stop within 5s." >&2
+                exit 1
+            fi
+            sleep 0.2
+        done
     fi
 
-    sleep 5
-done
+    nohup bash "$0" daemon >> "logs/watcher_supervisor.log" 2>&1 &
+    sleep 1
+
+    current_pid="$(supervisor_pid_from_lock || true)"
+    if [ -z "$current_pid" ]; then
+        echo "[$(date)] [watcher_supervisor] restart failed: daemon lock not acquired." >&2
+        exit 1
+    fi
+
+    if [ -n "$old_pid" ] && [ "$current_pid" = "$old_pid" ]; then
+        echo "[$(date)] [watcher_supervisor] restart failed: lock still owned by old PID=$old_pid." >&2
+        exit 1
+    fi
+
+    echo "[$(date)] [watcher_supervisor] restarted successfully (PID=$current_pid)"
+}
+
+case "$mode" in
+    restart)
+        restart_daemon
+        ;;
+    daemon|"")
+        start_daemon
+        ;;
+    *)
+        echo "Usage: $0 [daemon|restart]" >&2
+        exit 1
+        ;;
+esac
