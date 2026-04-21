@@ -148,6 +148,10 @@
 !logs/cmd_squash_pub_hook.pending_cmds
 !logs/cmd_squash_pub_hook.daily.yaml
 
+# cmd_555: safe_clear_check.sh persistent log dir marker
+!logs/safe_clear/
+!logs/safe_clear/.gitkeep
+
 # Original docs (project-specific documentation)
 !originaldocs/
 !originaldocs/**

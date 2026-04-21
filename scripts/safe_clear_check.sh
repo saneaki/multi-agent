@@ -78,7 +78,9 @@ case "$ROLE" in
     shogun)           TOOL_THRESHOLD=0 ;;
 esac
 
-LOG_FILE="/tmp/self_clear_${AGENT_ID}.log"
+LOG_DIR="$SCRIPT_DIR/logs/safe_clear"
+mkdir -p "$LOG_DIR" 2>/dev/null || true
+LOG_FILE="$LOG_DIR/${AGENT_ID}.log"
 PYTHON="$SCRIPT_DIR/.venv/bin/python3"
 INBOX_YAML="$SCRIPT_DIR/queue/inbox/${AGENT_ID}.yaml"
 TASK_YAML="$SCRIPT_DIR/queue/tasks/${AGENT_ID}.yaml"
