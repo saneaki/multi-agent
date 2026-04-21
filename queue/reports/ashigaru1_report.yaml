@@ -1,4 +1,327 @@
 worker_id: ashigaru1
+task_id: subtask_555d_b
+parent_cmd: cmd_555d
+status: done
+timestamp: "2026-04-22T08:18:26+09:00"
+
+result:
+  summary: |
+    cmd_555d subtask_555d_b 完了。変換係数α回帰分析 + config/counter_coefficients.yaml生成。
+    過去7日間(2026-04-14〜04-22)のJSONL 220ファイルからauto-compact発動前tool_count実測。
+    53ファイルでcompact_marker検出。agent_id別集計後、noise_threshold=10でフィルタリング。
+    agent_id別α係数: shogun=1.267(n=13), karo=0.964(n=36), gunshi=1.418(n=25), ashigaru1=0.779(n=5)。
+    サンプル不足(n<3)のashigaru2-5はフォールバックα=0.50。
+    .gitignoreにcounter_coefficients.yamlをwhitelist追加済。
+    commit: dd84865
+
+acceptance_criteria:
+  - id: AC1
+    status: PASS
+    note: "過去7日JSONL 53ファイルからagent_id別auto-compact発動時tool_countを集計。shogun/karo/gunshi/ashigaru1に実測データあり"
+  - id: AC2
+    status: PASS
+    note: "α = 95 / median_tool_count で算出。noise_threshold=10適用。サンプル<3はα=0.50使用"
+  - id: AC3
+    status: PASS
+    note: "config/counter_coefficients.yaml生成済。version/agents/default全セクション含む"
+  - id: AC4
+    status: PASS
+    note: "commit dd84865 'feat(cmd_555d): 変換係数α回帰分析 + counter_coefficients.yaml生成' 完了"
+
+agent_alphas:
+  shogun:  {alpha: 1.267, median: 75,   sample_count: 13}
+  karo:    {alpha: 0.964, median: 98.5, sample_count: 36}
+  gunshi:  {alpha: 1.418, median: 67,   sample_count: 25}
+  ashigaru1: {alpha: 0.779, median: 122, sample_count: 5}
+  ashigaru2: {alpha: 0.50, note: "サンプル不足(n=1)"}
+  ashigaru3: {alpha: 0.50, note: "サンプルなし"}
+  ashigaru4: {alpha: 0.50, note: "サンプル不足(n=2)"}
+  ashigaru5: {alpha: 0.50, note: "サンプル不足(n=2)"}
+
+---
+
+worker_id: ashigaru1
+task_id: subtask_556a
+parent_cmd: cmd_556
+status: done
+timestamp: "2026-04-22T08:05:42+09:00"
+
+result:
+  summary: |
+    cmd_556 subtask_556a 完了。COND-A/B の両実装を完了。
+    COND-A: config/qc_checklist.yaml に SO-23 セクション追加。
+      gunshi_report COND-A の strict (Option A) 定義を明記。
+      scope: n8n cmd 限定。reference: SO-22 との AND 運用。
+    COND-B: instructions/karo.md の decomposition_hint セクション末尾に
+      n8n cmd 用 pending_resources field schema を追記。
+      file_id/file_name/observed_by/observed_at の 4 フィールド構造を明示。
+      gunshi QC cross-check 説明も併記。
+
+acceptance_criteria:
+  - id: AC1
+    status: PASS
+    note: "config/qc_checklist.yaml SO-23 追加済。description に strict Option A 定義を明記。"
+  - id: AC2
+    status: PASS
+    note: "instructions/karo.md decomposition_hint セクションに pending_resources field schema 追記済。n8n cmd 限定 + 4フィールド構造明示。"
+  - id: AC3
+    status: PASS
+    note: "gunshi_report COND-A: 定義文言と意味的に一致。COND-B: schema structure (file_id/file_name/observed_by/observed_at) と一致。"
+
+skill_candidate:
+  found: false
+  reason: "単発の設定ファイル更新。汎用スキル化には至らない。"
+
+---
+
+worker_id: ashigaru1
+task_id: subtask_554a
+parent_cmd: cmd_554
+status: done
+timestamp: "2026-04-21T16:25:00+09:00"
+
+result:
+  summary: |
+    cmd_554 subtask_554a 完了。「今日の3文書中2文書がWF未動作」の一次データ調査。
+    3文書全て exec 15549 (trigger) で発火→Gemini API まで成功→Format MD Output で (β) エラー。
+    宮内麻奈様.pdf は cmd_550 テスト中に手動再処理(exec 15558)が成功→1文書は出力あり。
+    山下初姫様.pdf・宮原弘子様.pdf は cmd_550 修正後も再トリガー未実施→2文書 出力なし=WF未動作。
+    根本原因: cmd_550 修正 (null-safe) は適用済みだが、2文書は修正前エラー後に再投入されていない。
+
+  today_files:
+    - file_id: "1sDyg51cG24qhFF5EiKgdYzXnU77D8Lg5"
+      file_name: "20260420_相手方代理人から_主張書面05・資料説明書・乙13～15_宮内麻奈様.pdf"
+      mimeType: "application/pdf"
+      createdTime: "2026-04-21T01:45:57Z"
+      exec_id: "15549"
+      exec_status: "error (β: Format MD Output 失敗)"
+      reprocessed: "exec 15558 (manual success, cmd_550 テスト時)"
+      final_status: "出力あり (手動再処理済)"
+    - file_id: "1FP2Ag_f6fCkotuItSF5kxc--mTtuJkYQ"
+      file_name: "20260420_当方から_ご連絡_山下初姫様.pdf"
+      mimeType: "application/pdf"
+      createdTime: "2026-04-21T01:45:38Z"
+      exec_id: "15549"
+      exec_status: "error (β: Format MD Output 失敗)"
+      reprocessed: "なし"
+      final_status: "出力なし = WF未動作"
+    - file_id: "1e2g_X0V-JDW3EDYonYKpgWBYmZzZRrHU"
+      file_name: "20260420_先方代理人から_ご連絡_宮原弘子様.pdf"
+      mimeType: "application/pdf"
+      createdTime: "2026-04-21T01:45:14Z"
+      exec_id: "15549"
+      exec_status: "error (β: Format MD Output 失敗)"
+      reprocessed: "なし"
+      final_status: "出力なし = WF未動作"
+
+  executions_analysis:
+    - id: "15549"
+      mode: trigger
+      status: error
+      startedAt: "2026-04-21T01:50:47Z"
+      stoppedAt: "2026-04-21T01:51:39Z"
+      items_triggered: 3
+      node_results:
+        - node: "Google Drive Trigger"
+          items: 3
+          status: success
+        - node: "Filter PDF/Word"
+          items: 3
+          status: success
+        - node: "Download PDF"
+          items: 3
+          status: success
+        - node: "Process Document (PDF/DOCX)"
+          items: 3
+          status: success
+        - node: "Build Gemini Analysis Payload"
+          items: 3
+          status: success
+        - node: "Call Gemini API"
+          items: 3
+          status: success
+        - node: "Format MD Output"
+          items: 0
+          status: error
+          error: "TypeError: Cannot read properties of undefined (reading 'map') [line 14]"
+      note: "cmd_550 修正前の WF を使用。全3ファイルが同一 exec に含まれ全滅"
+    - id: "15558"
+      mode: manual
+      status: success
+      startedAt: "2026-04-21T02:27:04Z"
+      file_processed: "宮内麻奈様.pdf (ID: 1sDyg51cG24qhFF5EiKgdYzXnU77D8Lg5)"
+      nodes_ran: 22
+      note: "cmd_550 null-safe 修正適用済み WF を使用。全ノード成功"
+
+  classification:
+    verdict: "(β) 途中失敗"
+    confidence: high
+    rationale: |
+      3文書全て exec 15549 で trigger 発火し Gemini API まで全ノード成功 (items=3)。
+      Format MD Output で items=0 / error:
+        TypeError: Cannot read properties of undefined (reading 'map') [line 14]
+      これは cmd_550 で修正された null-safe 化前の旧バグ。
+      WF が active だった時点での旧コードにより全3アイテムが同ノードで失敗。
+      (α) trigger未発火は否定: exec 15549 が trigger mode で3ファイル取得済。
+      (γ) 対象外は否定: 全3ファイルが PDF (application/pdf)、Filter PDF/Word を通過(items=3)。
+      (δ) その他は否定: エラースタックが Format MD Output の特定コードに帰着。
+
+    per_file:
+      宮内麻奈様.pdf: "(β) → 後から manual exec 15558 で修正済み WF で全22ノード成功"
+      山下初姫様.pdf: "(β) → cmd_550 修正後も再投入なし → 現在未処理"
+      宮原弘子様.pdf: "(β) → cmd_550 修正後も再投入なし → 現在未処理"
+
+  why_only_2_undone: |
+    宮内麻奈様.pdf は cmd_550 テスト中 (02:27 UTC) に手動再実行 (exec 15558) で偶発的に処理済み。
+    山下初姫様・宮原弘子様の2文書は選ばれずに再処理機会なし。
+    結果として殿が確認時点で「1成功・2未動作」の状態になった。
+
+  next_action_recommendation:
+    subtask_554b: |
+      山下初姫様.pdf・宮原弘子様.pdf の2文書を現在の修正済み WF (cmd_550 null-safe 適用済み) で再処理する。
+      推奨手順:
+        1. 該当 Drive folder に同ファイルを再アップロード (同名で上書きまたは削除→再アップ)
+           または
+           n8n API manual execution に file_id を渡す方式:
+             file_ids = ["1FP2Ag_f6fCkotuItSF5kxc--mTtuJkYQ", "1e2g_X0V-JDW3EDYonYKpgWBYmZzZRrHU"]
+        2. trigger exec が発火し全22ノード成功することを確認
+        3. Drive output folder に _content.md / _summary_rebuttal.md が生成されることを確認
+
+acceptance_criteria:
+  - id: AC1
+    status: PASS
+    note: "今日の3文書全て特定: 宮内麻奈様.pdf(1sDyg..)/山下初姫様.pdf(1FP2..)/宮原弘子様.pdf(1e2g..)"
+  - id: AC2
+    status: PASS
+    note: "exec 15549(error)/exec 15558(manual success for 宮内麻奈様) を照合。2文書は対応 exec なし(再処理未実施)"
+  - id: AC3
+    status: PASS
+    note: "(β) 途中失敗と断定。根拠: exec 15549 nodes_ran で Format MD Output が items=0/error。全3ファイルに共通"
+  - id: AC4
+    status: PASS
+    note: "554b 対処方針: 2ファイル(1FP2.., 1e2g..)を修正済み WF で再処理。Drive 再アップまたは n8n manual exec"
+
+---
+
+worker_id: ashigaru1
+task_id: subtask_553a
+parent_cmd: cmd_553
+status: done
+timestamp: "2026-04-21T14:54:28+09:00"
+
+result:
+  summary: |
+    cmd_553 subtask_553a 完了。n8n「法律文書自動分析 v1.0」の「3ファイル中1つのみ動作」問題を
+    executions全件取得・分析。切り分け判断: (B) 再テスト範囲不足。
+    Format MD Output の null-safe 修正は機能しているが、trigger-mode E2E テストが未実施。
+    「失敗」とされた 5 executions は WF ロジックに起因しない n8n UI バグ (undefined node)。
+
+  executions_list:
+    - id: "15549"
+      mode: trigger
+      status: error
+      startedAt: "2026-04-21T01:50:47Z"
+      note: "cmd_550 修正前。Format MD Output で null エラー（調査対象）"
+      failed_node: "Format MD Output"
+      error_message: "Cannot read properties of undefined (reading 'map') [line 14]"
+    - id: "15558"
+      mode: manual
+      status: success
+      startedAt: "2026-04-21T02:27:04Z"
+      note: "cmd_550 修正後 (n8n API 更新 02:25 UTC 直後)。全 22 ノード成功"
+      executed_nodes_count: 22
+    - id: "15559"
+      mode: manual
+      status: error
+      startedAt: "2026-04-21T02:27:15Z"
+      note: "n8n UI バグ: undefined node 参照。WF ロジック無関係"
+      error_message: "Could not find a node named 'undefined' in the workflow."
+      error_code: "ERR_ASSERTION"
+    - id: "15560"
+      mode: manual
+      status: error
+      startedAt: "2026-04-21T02:28:07Z"
+      note: "同上 UI バグ"
+    - id: "15561"
+      mode: manual
+      status: error
+      startedAt: "2026-04-21T02:28:20Z"
+      note: "同上 UI バグ"
+    - id: "15562"
+      mode: manual
+      status: error
+      startedAt: "2026-04-21T02:29:15Z"
+      note: "同上 UI バグ"
+    - id: "15563"
+      mode: manual
+      status: error
+      startedAt: "2026-04-21T02:30:05Z"
+      note: "同上 UI バグ"
+    - id: "15565"
+      mode: trigger
+      status: success
+      startedAt: "2026-04-21T02:30:47Z"
+      note: "Filter PDF/Word で停止 (非 PDF/Word ファイル)。WF 失敗ではない"
+      executed_nodes: ["Google Drive Trigger", "Filter PDF/Word"]
+
+  classification:
+    verdict: "(B) 再テスト範囲不足"
+    confidence: high
+    rationale: |
+      1. Format MD Output 修正は機能している:
+         exec 15558 (manual) で全 22 ノード成功確認。Format MD Output を含む完全パイプラインが通過。
+      2. 5 件の「失敗」は WF ロジック無関係の UI バグ:
+         exec 15559-15563 は全て ERR_ASSERTION "Could not find a node named 'undefined'"
+         ManualExecutionService.runManually L125 で発火。
+         n8n UI で "ここから実行" ボタン使用時に node 参照が undefined になる既知バグ。
+         WF コードは一切実行されていない (runData: {})。
+         ※ cmd_550 report の「Could not find node undefined」エラーと同一現象。
+      3. trigger-mode E2E テストが未実施:
+         cmd_550 最終検証は Node.js 同等テスト (5 PASS) のみ。
+         n8n exec 15565 (trigger) は Filter で止まった非 PDF/Word ファイル。
+         実 PDF ファイルで trigger-mode フルパイプラインの確認が行われていない。
+      4. (A) 修正不足は否定:
+         exec 15558 の全ノード成功が証拠。null-safe 化は完全に機能。
+      5. (C) 他ノード起因も否定:
+         全「失敗」exec はノード実行前に infrastructure 層でクラッシュ。
+         任意のノードの失敗ではない。
+
+  root_cause_of_symptom: |
+    「3ファイル中1つのみ動作」の内訳:
+    - 1 成功: exec 15558 (manual full pipeline success)
+    - 5 失敗: exec 15559-15563 (n8n UI undefined-node バグ、実質テスト操作ミス)
+    - 1 フィルター停止: exec 15565 (trigger, 非 PDF/Word で Filter 通過せず)
+    実質的に WF ロジック起因の失敗は 0 件。
+
+  next_action_recommendation:
+    subtask_553b: |
+      trigger-mode E2E テストを実施してリグレッションを確定させる。
+      手順:
+        1. 実 PDF/Word ファイルを watched Drive folder (1Shedqmmrt6IAg8VzZTiKex6lFCy9UG6X) にアップロード
+        2. n8n WF が active になっているか確認 (現在 active: false → 要確認)
+        3. trigger exec が発火し、全 22 ノードを通過することを確認
+        4. Format MD Output が正常に動作することを確認
+        5. 成功なら cmd_553 クローズ
+      リスク: WF が active: false のため自動 trigger が発火しない可能性。
+              手動 trigger または WF を active に変更してからテスト実施。
+
+acceptance_criteria:
+  - id: AC1
+    status: PASS
+    note: "cmd_550 修正後全 8 executions を取得し、成功/失敗/停止を表化"
+  - id: AC2
+    status: PASS
+    note: "失敗 exec 15559-15563 の失敗ノード: WF ノードなし (infrastructure 層 UI バグ)"
+  - id: AC3
+    status: PASS
+    note: "(B) 再テスト範囲不足と断定。根拠: exec 15558 success + UI バグ証拠 + trigger E2E 未実施"
+  - id: AC4
+    status: PASS
+    note: "subtask_553b 推奨作業: trigger-mode E2E + WF active 状態確認を記載"
+
+---
+
+worker_id: ashigaru1
 task_id: subtask_552a
 parent_cmd: cmd_552
 status: done
