@@ -1,0 +1,224 @@
+# ============================================================
+# QC Checklist: T2 Standing Orders for Gunshi Quality Check
+# ============================================================
+# Used by: Gunshi QC (manual review) + qc_auto_check.sh (auto subset)
+# Reference: output/rule_hierarchy_report.md, output/rule_enforcement_report.md
+
+checklist:
+  # === Required (every QC, 8 items) ===
+
+  - id: SO-01
+    name: "報告YAML必須フィールド確認"
+    frequency: required
+    condition: ""
+    check_method: auto
+    description: |
+      report YAMLにworker_id, task_id, parent_cmd, status, timestamp,
+      result, skill_candidate(found: true/false)が全て存在するか
+
+  - id: SO-03
+    name: "タイムスタンプJST形式"
+    frequency: required
+    condition: ""
+    check_method: auto
+    description: |
+      report YAML内のtimestampが+09:00を含むJST形式であること。
+      UTC(+00:00)やタイムゾーンなし形式は違反
+
+  - id: SO-06
+    name: "報告フロー遵守(report_to: gunshi)"
+    frequency: required
+    condition: ""
+    check_method: auto
+    description: |
+      task YAMLのreport_toがgunshiであること。
+      足軽→軍師→家老の報告チェーンを確認
+
+  - id: SO-08
+    name: "acceptance_criteria対応表"
+    frequency: required
+    condition: ""
+    check_method: manual
+    description: |
+      report YAMLのresult内にacceptance_criteriaセクションがあり、
+      各基準のOK/NG判定が記載されていること
+
+  - id: SO-10
+    name: "テストSKIP=FAIL"
+    frequency: required
+    condition: ""
+    check_method: manual
+    description: |
+      テスト実施タスクの場合、SKIP数が0であること。
+      SKIP>=1は「テスト未完了」扱い。done報告は不可
+
+  - id: SO-16
+    name: "レポート作成委譲必須"
+    frequency: required
+    condition: ""
+    check_method: manual
+    description: |
+      ファイル生成を伴うレポート・成果物は足軽が作成していること。
+      将軍・家老が直接作成していないことを確認
+
+  - id: SO-17
+    name: "North Star Alignment"
+    frequency: required
+    condition: ""
+    check_method: manual
+    description: |
+      GL-04昇格: task YAMLにnorth_starフィールドがある場合、
+      レポートにnorth_star_alignmentセクション(status/reason/risks)が存在すること。
+      north_starがない場合でも、cmdの目的との整合性を確認
+
+  - id: SO-18
+    name: "Bug Fix GitHub Issue Tracking"
+    frequency: required
+    condition: ""
+    check_method: manual
+    description: |
+      GL-07昇格: バグ修正タスクの場合、GitHub Issue IDが報告に含まれ、
+      Issueのopen→closed更新が確認できること。
+      バグ修正以外のタスクではスキップ可
+
+  - id: SO-20
+    name: "editable_files完全性"
+    frequency: required
+    condition: ""
+    check_method: manual
+    description: |
+      task YAMLのinstructionsで編集/作成/更新/再生成を指示しているファイルパスが
+      全てeditable_filesに含まれていること。Readのみのファイルは除外。
+      不足があればNG判定。
+      注: IR-1がReadでも発火する場合はimplicit allowlist（report/task YAML等）で対応すべき。
+
+  - id: SO-21
+    name: "成果物ファイル名 cmd_{N}_ prefix 確認"
+    frequency: required
+    condition: ""
+    check_method: auto
+    description: |
+      projects/ 配下の全 .md ファイルが「cmd_{N}_」prefix を持つか確認。
+      違反があれば Artifact Registration Protocol 違反 (FAIL)。
+      自動検査: bash scripts/qc_auto_check.sh naming
+      PASS: 全ファイルが ^cmd_[0-9]+_ パターンに一致
+      FAIL: 違反ファイルリストを出力してエラー終了
+
+  # === Conditional (situation-dependent, 10 items) ===
+
+  - id: SO-02
+    name: "inbox処理プロトコル"
+    frequency: conditional
+    condition: "タスク完了後のidle前"
+    check_method: manual
+    description: |
+      タスク完了後、idle前にinbox内のread: false全件を処理し
+      read: trueに更新していること
+
+  - id: SO-04
+    name: "ダッシュボード更新分担"
+    frequency: conditional
+    condition: "dashboard.mdが更新された場合"
+    check_method: manual
+    description: |
+      Gunshi=戦果+スキル候補+[提案]/[情報]のみ。
+      Karo=それ以外。Shogun=読み取りのみ。
+      分担を逸脱した更新がないか確認
+
+  - id: SO-05
+    name: "要対応ルール"
+    frequency: conditional
+    condition: "殿の判断が必要な事項が発生した場合"
+    check_method: manual
+    description: |
+      殿のアクション必要事項がdashboard.md 🚨要対応セクションに
+      記載済みか。タグ分類: [要行動]>[要判断]>[提案]>[情報]
+
+  - id: SO-07
+    name: "コマンドキュー管理"
+    frequency: conditional
+    condition: "cmdステータス変更時"
+    check_method: manual
+    description: |
+      done/cancelledのcmdがactive fileから削除され
+      archiveに移動されていること。ステータスは正規5値のみ
+
+  - id: SO-09
+    name: "Batch Processing Protocol"
+    frequency: conditional
+    condition: "30+件バッチ処理タスクの場合"
+    check_method: manual
+    description: |
+      batch1のQCゲートを通過してから残りバッチを実行していること。
+      品質テンプレートが存在すること
+
+  - id: SO-11
+    name: "suggestions永続化"
+    frequency: conditional
+    condition: "Gunshi QC完了後"
+    check_method: manual
+    description: |
+      QC完了後のsuggestions→queue/suggestions.yaml append済みか。
+      gunshi_report.yamlは次回上書きされるため永続化必須
+
+  - id: SO-12
+    name: "コンテキストスナップショットclear"
+    frequency: conditional
+    condition: "タスク完了時"
+    check_method: auto
+    description: |
+      タスク完了後にqueue/snapshots/{agent_id}_snapshot.yamlが
+      clearされていること（ファイルが残っていればclear漏れ）
+
+  - id: SO-13
+    name: "Pre-Commit Gate"
+    frequency: conditional
+    condition: "コミット対象にコードファイルが含まれる場合"
+    check_method: manual
+    description: |
+      GitHub Actionsと同じチェック（bats tests, build_instructions.sh）を
+      ローカルで実行してからコミットしていること
+
+  - id: SO-14
+    name: "Web検索義務"
+    frequency: conditional
+    condition: "エラー修正で2回以上のリトライが発生した場合"
+    check_method: manual
+    description: |
+      エラーが1回の修正で解決しなかった場合、2回目修正前に
+      Web検索（公式ドキュメント・GitHub Issues等）を実施した証跡があるか
+
+  - id: SO-19
+    name: "🚨完了項目削除義務"
+    frequency: conditional
+    condition: "cmd完了処理時（Step 11.7）"
+    check_method: auto+manual
+    description: |
+      cmd完了時にそのcmdに紐づく🚨要対応項目があれば削除し、
+      ✅本日の戦果に解決済みとして反映すること。
+      残置された🚨項目は殿の混乱を招く。
+      自動検査: qc_auto_check.shがparent_cmdの🚨残存をWARNING検出。
+      手動検査: cmd_complete.sh {cmd_id}でStep 11.7実行時に確認
+
+  - id: SO-15
+    name: "Stop-and-Report"
+    frequency: conditional
+    condition: "10+ファイル削除、プロジェクト外変更、未知URL通信"
+    check_method: manual
+    description: |
+      大量削除・プロジェクト外操作・未知URL通信が発生した場合、
+      停止して報告→確認を得てから実行していること
+
+  - id: SO-23
+    name: "n8n修正cmd 実運用 real resource 処理完遂"
+    frequency: conditional
+    condition: "n8n workflow 修正 cmd かつ task YAML に pending_resources あり"
+    check_method: manual
+    description: |
+      殿の観察で pending と特定された実 resource 全件について、
+      trigger mode の exec で全ノード success かつ Drive output 生成確認。
+      一件でも未完了なら FAIL。
+      scope: n8n cmd 限定
+      reference: SO-22 との AND 運用（SO-22 が「機能検証 PASS」、SO-23 が「業務完遂」の二重防御）
+      gunshi QC: ash report の resource_completion で pending_resources 全件の file_id
+      cross-check を実施。1 件でも不足なら FAIL。

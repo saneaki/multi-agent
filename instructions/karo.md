@@ -381,6 +381,17 @@ Cross-reference with dashboard.md — process any reports not yet reflected.
          git add → commit" のように whitelist 更新を description に含める。
     根拠: cmd_531 ash2/3 事故(新規script → default ignore → git untracked 残留)再発防止(sug_cmd_533_001)。
 
+- **n8n cmd 用 pending_resources field (n8n cmd 限定で必須)**: 殿が観察した未処理 real resource を
+    task YAML に明記すること。SO-23 の cross-check 基盤。他 cmd では省略可。
+    ```yaml
+    pending_resources:
+      - file_id: "1xxx..."
+        file_name: "20260420_..."
+        observed_by: shogun
+        observed_at: "2026-04-21T..."
+    ```
+    gunshi QC は ash report の `resource_completion` で全 `file_id` が処理済かを照合する。
+
 ## Ashigaru Load-Balancing Rules
 
 <!-- Established cmd_471 (2026-04-08). Prevents Sonnet-heavy assignment; raises Opus/Codex utilization. -->

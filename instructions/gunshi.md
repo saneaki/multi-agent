@@ -269,6 +269,13 @@ This prevents the 9-hour stall incident (cmd_244/245, 2026-02-27) where Karo wen
       - Cross-reference with task YAML `editable_files` list
       - On mismatch: QC NG + karo inbox "SO-20 violation: {missing} not in editable_files"
       - Note: Read-only files are out of scope. If IR-1 fires on Read, report implicit allowlist (report/task YAML etc.) should apply
+   g. **SO-23 n8n cmd cross-check (n8n cmd かつ task YAML に pending_resources がある場合)**:
+      1. task YAML `pending_resources` を読み、全 `file_id` を一覧化
+      2. ash report `resource_completion` を読み、全 `pending_resource_id` を一覧化
+      3. 全 `file_id` が `resource_completion` に存在し、`all_nodes_success: true` であることを確認
+      4. 1件でも不足・false → QC FAIL: karo inbox "SO-23 violation: {file_id} not in resource_completion"
+      - n8n cmd 判定: task YAML に `pending_resources` フィールドが存在する場合に適用
+      - SO-22 (機能検証) との AND 運用: SO-22 PASS かつ SO-23 PASS の両方を満たすこと
 6. Perform QC (see Quality Check Criteria below)
 7. **QC PASS** → 戦果記載は不要。家老(karo)がcmd完了時に1行まとめて記載する(cmd_541以降)。
    - Gunshiはsubtask単位の戦果行をdashboard.mdに追記してはならない。

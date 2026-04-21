@@ -450,6 +450,20 @@ When assigned an n8n workflow fix task, Ashigaru MUST execute the following test
 5. Update production WF + deactivate/activate
 6. Delete test workflow (DELETE /api/v1/workflows/{test_id})
 7. Report MUST include execution ID and status=success
+8. **resource_completion table 必須 (n8n cmd かつ task YAML に pending_resources がある場合)**:
+   報告 YAML に以下の mapping table を含めること。1件でも欠けていると SO-23 QC FAIL。
+   ```yaml
+   resource_completion:
+     - pending_resource_id: "1xxx..."
+       exec_id: "15621"
+       all_nodes_success: true
+       output_paths: ["_content.md", "_summary_rebuttal.md"]
+       verified_at: "2026-04-21T07:32:37Z"
+   ```
+   - `pending_resource_id`: task YAML `pending_resources[].file_id` と一致させること
+   - `all_nodes_success`: trigger mode exec で全ノード success の場合 true
+   - `output_paths`: Drive output folder 内の生成ファイルパス
+   - `verified_at`: Drive output 確認日時 (UTC, `jst_now.sh` 変換可)
 
 Retry limit within the test loop is 3. If all 3 fail, report and request guidance.
 Completion reports WITHOUT manual execution tests are FORBIDDEN.

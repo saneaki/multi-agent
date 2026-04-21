@@ -1,4 +1,141 @@
 worker_id: ashigaru3
+task_id: subtask_556b
+parent_cmd: cmd_556
+status: done
+timestamp: "2026-04-22T08:08:59+09:00"
+
+result:
+  summary: |
+    cmd_556 subtask_556b 完了。COND-C/D の両実装を完了。
+    COND-C: instructions/ashigaru.md の n8n Workflow Fix Protocol に
+      resource_completion mapping table 記載義務 (step 8) を追加。
+      schema: pending_resource_id/exec_id/all_nodes_success/output_paths/verified_at。
+      n8n cmd かつ task YAML に pending_resources がある場合必須。
+    COND-D: instructions/gunshi.md の Autonomous QC Protocol step 5.g に
+      n8n cmd 用 cross-check 手順を追加。
+      pending_resources 全 file_id と resource_completion の cross-check 実施。
+      1件でも不足・false → QC FAIL。
+
+acceptance_criteria:
+  - id: AC1
+    status: PASS
+    note: "instructions/ashigaru.md n8n Workflow Fix Protocol step 8 に resource_completion table 必須化を追記済。schema 4フィールド構造明示。"
+  - id: AC2
+    status: PASS
+    note: "instructions/gunshi.md Autonomous QC Protocol step 5.g に SO-23 n8n cmd cross-check 追記済。4手順 + n8n cmd 判定条件 + SO-22 AND 運用明示。"
+  - id: AC3
+    status: PASS
+    note: "COND-C: shogun_to_karo.yaml 定義 (pending_resource_id/exec_id/all_nodes_success/output_paths/verified_at) と schema 一致。COND-D: cross-check 手順 (pending_resources 読取 → resource_completion 読取 → file_id 照合 → 1件不足で FAIL) と文言一致。"
+
+skill_candidate:
+  found: false
+  reason: "単発の instructions 更新。汎用スキル化には至らない。"
+
+---
+
+worker_id: ashigaru3
+task_id: subtask_554b
+parent_cmd: cmd_554
+status: done
+timestamp: "2026-04-21T16:37:00+09:00"
+
+result:
+  summary: |
+    subtask_554b 完了。未処理2文書(山下初姫様.pdf・宮原弘子様.pdf)を修正済みWFで再処理。
+    exec 15621 (trigger): 全22ノード success 確認。
+    Issue #35 に cmd_553訂正 + cmd_554是正完了コメント追記。
+    dashboard cmd_553行を🟡補強済に更新、cmd_554✅追加。
+
+  e2e_execution:
+    exec_id: "15621"
+    mode: trigger
+    status: success
+    startedAt: "2026-04-21T07:30:44Z"
+    stoppedAt: "2026-04-21T07:32:37Z"
+    nodes_executed: 22
+    all_nodes_success: true
+    files_processed:
+      - "reprocess_20260421_162737_20260420_先方代理人から_ご連絡_宮原弘子様.pdf"
+      - "reprocess_20260421_162737_20260420_当方から_ご連絡_山下初姫様.pdf"
+
+  issue_comment:
+    url: "https://github.com/saneaki/multi-agent/issues/35#issuecomment-4286740842"
+    content: "cmd_553結論訂正 + cmd_554是正完了 + 3文書全success表 + Issue#35クローズ可能"
+
+acceptance_criteria:
+  - id: AC1
+    status: PASS
+    note: "554a切り分け(β)に基づき対処方針決定: 2文書をDrive再アップしてtrigger発火"
+  - id: AC2
+    status: PASS
+    note: "exec 15621: 山下初姫様.pdf + 宮原弘子様.pdf 全22ノード success確認"
+  - id: AC3
+    status: PASS
+    note: "dashboard cmd_553を🟡補強済に更新、cmd_554✅行追加"
+  - id: AC4
+    status: PASS
+    note: "Issue #35 cmd_553訂正+cmd_554是正コメント追記済み"
+  - id: AC5
+    status: N/A
+    note: "コード変更なし、git commitは不要"
+
+skill_candidate:
+  found: false
+  reason: "Drive credential decrypt + upload pattern は既存手順の組み合わせ"
+
+---
+
+worker_id: ashigaru3
+task_id: subtask_553b
+parent_cmd: cmd_553
+status: done
+timestamp: "2026-04-21T15:08:17+09:00"
+
+result:
+  summary: |
+    subtask_553b 完了。trigger-mode E2E テスト実施。
+    実PDF (国選弁護人指名承諾書.pdf) を watched Drive folder にアップロード。
+    n8n polling trigger が発火 (exec 15605)、全22ノード success 確認。
+    Issue #35 に cmd_553 補強対応コメント追記済み。
+    切り分け (B) 再テスト範囲不足 → 修正OK/E2E完了 に更新。
+
+  e2e_execution:
+    exec_id: "15605"
+    mode: trigger
+    status: success
+    startedAt: "2026-04-21T06:06:12Z"
+    stoppedAt: "2026-04-21T06:07:01Z"
+    nodes_executed: 22
+    all_nodes_success: true
+    test_file: "test_e2e_20260421_150532_国選弁護人指名承諾書.pdf"
+    test_file_drive_id: "1_ESlfCAjnybQT_tfdUeV-5nZMIwi69ze"
+    folder_id: "1Shedqmmrt6IAg8VzZTiKex6lFCy9UG6X"
+
+  issue_comment:
+    url: "https://github.com/saneaki/multi-agent/issues/35#issuecomment-4286277845"
+    status: posted
+
+acceptance_criteria:
+  - id: AC1
+    status: PASS
+    note: "WF active: True 確認済み"
+  - id: AC2
+    status: PASS
+    note: "trigger-mode E2E 実施 (実PDF Drive アップロード→polling trigger 発火)"
+  - id: AC3
+    status: PASS
+    note: "exec 15605: 全22ノード success 確認"
+  - id: AC4
+    status: PASS
+    note: "Issue #35 に cmd_553 補強対応コメント追記済み (comment id: 4286277845)"
+
+skill_candidate:
+  found: false
+  reason: "n8n credential decrypt + Drive upload は既存パターンの組み合わせ。新規スキル化には至らない。"
+
+---
+
+worker_id: ashigaru3
 task_id: subtask_552b
 parent_cmd: cmd_552
 status: done

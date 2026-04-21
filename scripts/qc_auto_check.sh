@@ -275,6 +275,51 @@ else
     add_result "SO-12" "pass" "Snapshot cleared (file does not exist)"
 fi
 
+# --- SO-23: n8n cmd cross-check (WARN) ---
+# n8n cmd detection (precedence order):
+#   (1) task YAML の project: n8n_workflows (最も正確)
+#   (2) shogun_to_karo.yaml の parent_cmd ブロックの project: n8n_workflows
+# SO-23 cross-check:
+#   task YAML に pending_resources フィールドがあれば、
+#   対応 ash report に resource_completion が存在するか確認 (WARN レベル)
+# 注: cmd.project による判定ゆえ、command/north_star に "n8n" keyword が含まれるだけの
+#     shogun system cmd (e.g. cmd_556 SO-23 正式化) は false positive にならない。
+IS_N8N_CMD="false"
+if [ -f "$TASK_FILE" ]; then
+    if grep -qE "^[[:space:]]*project:[[:space:]]*n8n_workflows" "$TASK_FILE" 2>/dev/null; then
+        IS_N8N_CMD="true"
+    fi
+fi
+if [ "$IS_N8N_CMD" = "false" ] && [ -n "$PARENT_CMD" ]; then
+    SHOGUN_KARO_FILE="${SHOGUN_ROOT}/queue/shogun_to_karo.yaml"
+    if [ -f "$SHOGUN_KARO_FILE" ]; then
+        # parent_cmd ブロックを抽出し project: n8n_workflows 完全一致を検査
+        if awk -v cmd="$PARENT_CMD" '
+            /^- cmd_id:/ { in_block=0 }
+            $0 ~ "^- cmd_id:[[:space:]]*"cmd"[[:space:]]*$" { in_block=1; next }
+            in_block { print }
+        ' "$SHOGUN_KARO_FILE" | grep -qE "^[[:space:]]*project:[[:space:]]*n8n_workflows[[:space:]]*$"; then
+            IS_N8N_CMD="true"
+        fi
+    fi
+fi
+
+if [ "$IS_N8N_CMD" = "true" ]; then
+    HAS_PENDING="false"
+    if [ -f "$TASK_FILE" ] && grep -qE "^[[:space:]]*pending_resources:" "$TASK_FILE" 2>/dev/null; then
+        HAS_PENDING="true"
+    fi
+    if [ "$HAS_PENDING" = "true" ]; then
+        if [ -f "$REPORT_FILE" ] && grep -qE "^[[:space:]]*resource_completion:" "$REPORT_FILE" 2>/dev/null; then
+            add_result "SO-23" "pass" "n8n cmd: pending_resources + resource_completion both present (gunshi manual cross-check still required)"
+        else
+            add_result "SO-23" "warn" "n8n cmd: task YAML has pending_resources but ash report lacks resource_completion — SO-23 cross-check MUST be performed by gunshi"
+        fi
+    else
+        add_result "SO-23" "pass" "n8n cmd detected, no pending_resources declared (SO-23 not applicable)"
+    fi
+fi
+
 # --- check_schema_required_fields: per-field SO-01 WARN output ---
 check_schema_required_fields() {
     local report_file="$1"
