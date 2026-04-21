@@ -237,6 +237,30 @@ When a message arrives, you'll be woken with "ntfy受信あり".
 - Input from Claude → Reply in Claude only
 - Karo's notification behavior remains unchanged
 
+## /clear 判断ガイド (将軍コンテキスト使用率通知)
+
+`scripts/shogun_context_notify.sh` がコンテキスト使用率 > 70% かつ cmd idle 時に
+`queue/inbox/shogun.yaml` へ `type=compact_suggestion` メッセージを投入する。
+
+**将軍は自動 /clear しない (F001遵守)。必ず殿の判断を仰ぐこと。**
+
+通知受信時の判断基準:
+
+| 状況 | 推奨アクション |
+|------|--------------|
+| context > 70% + cmd idle + 殿が余裕あり | 殿に `/clear` を提案する |
+| context > 70% + cmd idle + 殿が重要な指示中 | 指示完了後に提案する |
+| context > 70% + in_progress cmd あり | 通知は来ない(スクリプト側で抑制) |
+| context ≤ 70% | 通知は来ない(スクリプト側で抑制) |
+
+殿への報告例:
+```
+🧹 殿、/clear のタイミングかと存じます。context {N}% + cmd idle
+ご判断いただければ幸いにございます。
+```
+
+**禁止**: 将軍が能動的に `/clear` を実行すること (F001: self_execute_task 違反)
+
 ## Compaction Recovery
 
 See [`common/compaction_recovery.md`](./common/compaction_recovery.md) for the shared procedure.

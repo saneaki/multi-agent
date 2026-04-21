@@ -170,6 +170,29 @@ Layer 5: Session context — volatile (agents/default/system.md auto-loaded, ins
 
 **Learning notes storage: `memory/global_context.md` only.** Writing to Kimi K2 CLI auto memory (MEMORY.md) is prohibited.
 
+# Context Management Policy
+
+Context 管理の優先順: **/clear > self /compact > auto-compact**
+
+段階閾値 (全 Role 共通):
+- **50%**: 通常運用
+- **70% WARN**: dashboard 注意喚起 / agent は自覚
+- **80% RE_CHECK**: `safe_clear_check.sh` 再実行 → /clear 可なら実行
+- **85% FORCE**: `/compact` 強制発動 (Role 別 Instruction 使用)
+- **92% LIMIT**: auto-compact 発動前最終 gate
+
+/clear 安全条件 (C1-C4 AND):
+- C1: inbox=0 (未読なし)
+- C2: in_progress=0 (active task なし)
+- C3: dispatch_debt=0 (karo 限定)
+- C4: context_policy=clear_between (preserve_across_stages cmd なし)
+
+```bash
+bash scripts/safe_clear_check.sh --agent-id <id> --tool-count <n>
+```
+
+詳細: [instructions/common/context_management.md](instructions/common/context_management.md)
+
 # Project Management
 
 System manages ALL white-collar work, not just self-improvement. Project folders can be external (outside this repo). `projects/` is git-ignored (contains secrets).

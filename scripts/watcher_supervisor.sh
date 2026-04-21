@@ -99,7 +99,7 @@ roll_call_check() {
     declare -A AGENT_PANES
     AGENT_PANES=(
         [karo]="multiagent:agents.0"
-        [ashigaru1]="multiagent:agents.1"
+        [ashigaru1]="multiagent:agents.9"
         [ashigaru2]="multiagent:agents.2"
         [ashigaru3]="multiagent:agents.3"
         [ashigaru4]="multiagent:agents.4"
@@ -150,7 +150,7 @@ start_daemon() {
     while true; do
         start_watcher_if_missing "shogun" "shogun:main.0" "logs/inbox_watcher_shogun.log"
         start_watcher_if_missing "karo" "multiagent:agents.0" "logs/inbox_watcher_karo.log"
-        start_watcher_if_missing "ashigaru1" "multiagent:agents.1" "logs/inbox_watcher_ashigaru1.log"
+        start_watcher_if_missing "ashigaru1" "multiagent:agents.9" "logs/inbox_watcher_ashigaru1.log"
         start_watcher_if_missing "ashigaru2" "multiagent:agents.2" "logs/inbox_watcher_ashigaru2.log"
         start_watcher_if_missing "ashigaru3" "multiagent:agents.3" "logs/inbox_watcher_ashigaru3.log"
         start_watcher_if_missing "ashigaru4" "multiagent:agents.4" "logs/inbox_watcher_ashigaru4.log"

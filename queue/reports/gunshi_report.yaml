@@ -1,118 +1,307 @@
 worker_id: gunshi
-task_id: subtask_530b_qc
-cmd_id: cmd_530
-parent_cmd: cmd_530
-timestamp: "2026-04-17T16:51:44+09:00"
+task_id: subtask_549g
+parent_cmd: cmd_549
+timestamp: "2026-04-21T09:55:00+09:00"
 status: done
+report_to: karo
+type: evaluation
+
 result:
-  type: quality_check
-  ashigaru_task_id: subtask_530b
-  ashigaru_worker_id: ashigaru4
-  qa_decision: pass
-  target_files:
-    - "CLAUDE.md"
-    - "instructions/common/compaction_recovery.md"
-    - "instructions/common/protocol.md"
-    - "instructions/common/context_snapshot.md"
-    - "instructions/common/artifact_registration.md"
-    - "instructions/common/batch_processing.md"
-    - "instructions/common/hook_e2e_testing.md"
-  commit: "d383520"
+  verdict: "Go (Conditional)"
+  verdict_rationale: |
+    cmd_549 Phase 1+2 成果物 (upstream_survey / claude_code_survey / draft_improvements) は
+    いずれも高品質。調査は事実性を担保し、改善案は優先度マトリクス付で殿の判断を即座に支援できる。
+    Phase 3 未完 (subtask_549d 最終レポート作成 + artifact registration + Google Chat 配信 + dashboard 反映)
+    ゆえ「Go Conditional」。subtask_549d が以下の conditions を充足すれば cmd_549 全体 Go:
+    (1) patch-4↔案A の段階的実装依存グラフ明示
+    (2) 未採用項目 (#121/#122/upstream-sync) を "deferred cmd_550+" と明示宣言
+    (3) patch-3 の measurement plan (cache hit rate + daily API cost) 定義
+    (4) RACE-001 対策 (sug_cmd_549_013/014) を Phase 4 として織り込み
+    (5) AC7 (Artifact Registration) / AC8 (Google Chat 配信) / AC9 (dashboard 反映) 実施
+
+  # =========================================================
+  # subtask_549g 自体の AC (task YAML より)
+  # =========================================================
   acceptance_criteria:
     - id: AC1
-      check: "wc -l CLAUDE.md ≤ 320"
-      result: PASS
-      evidence: "wc -l CLAUDE.md = 302 (余裕18行、508→302の-206L/-40.6%)"
+      met: true
+      check: "upstream_survey.md / claude_code_survey.md の調査品質評価"
+      evidence: |
+        upstream_survey.md (111L): behind=10/ahead=768/diff=148 を git で実測突合、
+        upstream v4.6.0 (20af6b5) も確認済み。PR/issue 列挙精確、fork divergence 可視化成功。
+        claude_code_survey.md (343L): claude --version=2.1.116 実測突合、23版 (2.1.83-2.1.116)
+        を破壊的7/新機能35/非推奨4 分類、公式 URL 12+ 引用。fabrication 無し。両者とも PASS 判定。
     - id: AC2
-      check: "4新ファイル実在"
-      result: PASS
+      met: true
+      check: "draft_improvements.md の大規模2案・最小3案の妥当性評価"
       evidence: |
-        context_snapshot.md=54L / artifact_registration.md=38L /
-        batch_processing.md=24L / hook_e2e_testing.md=13L 全て存在確認
+        canonical=ash3版 (197L) で 7案 (大規模2+最小5) 評価:
+        ・案A (SessionStart Hook 機械化 3-5d): PR#129 open だが技術的妥当。persona drift 根絶に効果。
+        ・案B (disableSkillShellExecution+棚卸し 4.5d): 軍師推奨と完全整合 (sug_cmd_549_007)。
+          40+ skill 棚卸しで工数膨張リスクあるが destructive_safety 補強の重要投資。
+        ・patch-3 (1h cache): 即時最優先。0.5h 1行変更で 20-30% API cost 削減。PASS 判定。
+        ・patch-1 (PreCompact): 文脈喪失防止、0.5d 低コスト・高効果。
+        ・patch-2 (inbox guard): self-send + done 再報告 loop 防止、0.5d。
+        ・patch-4 (SessionStart port): PR#129 open ゆえ再修正コストリスク、段階 gate 要。
+        ・patch-5 (disableSkillShellExecution minimal): patch-5→案B の大規模化 gate 要。
     - id: AC3
-      check: "CLAUDE.md内pointer全て実在ファイルを指す"
-      result: PASS
-      evidence: |
-        grep -n 'instructions/common/' CLAUDE.md で10件ヒット:
-        compaction_recovery.md(L143) / protocol.md(L148) / context_snapshot.md(L159) /
-        shogun_mandatory.md(L179) / artifact_registration.md(L240) /
-        hook_e2e_testing.md(L259) / batch_processing.md(L268) /
-        gui_verification.md(L286) / destructive_safety.md(L291)
-        全て実在確認
+      met: true
+      check: "cmd_549 AC全件 (AC1-AC9) の PASS/FAIL チェック"
+      evidence: "下記 cmd_549_acceptance_criteria_check 表参照 (AC1-6 PASS, AC7-9 PENDING)"
     - id: AC4
-      check: "移動した6セクションの内容が新ファイル/既存common/に保持(情報欠損ゼロ)"
-      result: PASS
-      evidence: |
-        - Communication Protocol 91L → protocol.md 133L (既存+FIX2追加)
-        - Post-Compaction Recovery 18L → compaction_recovery.md 31L (既存+FIX1追加)
-        - Context Snapshot 55L → context_snapshot.md 54L (完全移植)
-        - Artifact Registration 38L → artifact_registration.md 38L (完全移植)
-        - Batch Processing 24L → batch_processing.md 24L (完全移植)
-        - Hook E2E 12L → hook_e2e_testing.md 13L (完全移植)
-        情報欠損ゼロを確認
+      met: true
+      check: "最終レポートに含めるべき critical points を明示"
+      evidence: "下記 critical_points_for_subtask_549d 参照 (5項目)"
     - id: AC5
-      check: "compaction_recovery.md にpersona復元警告(FIX1)追補"
-      result: PASS
-      evidence: |
-        compaction_recovery.md L5-9 に以下追補確認:
-        'CRITICAL: Compaction summaries do NOT preserve persona...'
-        1. Read your instructions file (shogun→instructions/shogun.md, 等)
-        2. Restore persona and speech style (戦国口調)
-    - id: AC6
-      check: "protocol.md にGunshi自律QC注記(FIX2)追加"
-      result: PASS
-      evidence: |
-        protocol.md L107-108 に以下追加確認:
-        'Gunshi Autonomous QC: Ashigaru sends report_received to Gunshi inbox
-         → Gunshi auto-starts QC. Karo does NOT need to assign QC task YAML
-         (for standard QC). On QC PASS, Gunshi writes ✅ entry directly to dashboard.md.'
-  fix_verification:
-    FIX1: "PASS — compaction_recovery.md に persona 復元警告2点が明記"
-    FIX2: "PASS — protocol.md Report Flow 表下に Gunshi 自律 QC 注記2行追加"
-    FIX3: "PASS — CLAUDE.md Batch Processing 要約 L263-268 は 5L→6行本文+1pointer=計7L。batch1 QC gate絶対+Quality template必須の両ルール明記(元指摘通り拡張)"
-    FIX4: "PASS — hook_e2e_testing.md として新設(hook_testing.md ではない)"
-  deliverables_verified: true
-  tests_status: not_applicable
-  build_status: not_applicable
-  scope_match: complete
-  design_fidelity: perfect
-  summary: |
-    足軽4号の cmd_530 subtask_530b 実装はタスク指示と1対1完全一致。
-    508L→302L(-206L, -40.6%)圧縮達成。AC6/6 全PASS、FIX1-4 全反映確認。
-    外部化4ファイル全て存在・情報欠損ゼロ・pointer全て有効。
-    軍師 530a CONDITIONAL判定で指摘した4修正が足軽により的確に反映されている。
-    cmd_530 north_star「CLAUDE.md bootstrap 品質維持(情報欠損ゼロ)」を完全達成。
-  suggestions:
-    - "[情報] push 未実行(local only)。commit d383520 を origin/main に push 要。
-       karo に cmd_530 完了処理と併せて push 指示を依頼する必要あり"
-    - "[提案] 本 cmd の成功パターンを skills/shogun-claude-md-compression-pattern/
-       SKILL.md として抽出可。Phase2 設計→CONDITIONAL→FIX指摘→実装→QCの 5 段階
-       ワークフローが bootstrap ファイル圧縮の横展開可能なパターン。
-       cmd_530 完了後の後続タスクとして検討推奨(low priority)"
-  concerns_flagged:
-    - "push 未実行(ashigaru 判断で git workflow 別段階として扱い)。
-       task YAML には push 指示なし、ashigaru の判断は適切。
-       ただし本番反映には karo/shogun の push 指示必要"
-  files_modified:
-    - "queue/reports/gunshi_report.yaml"
-    - "dashboard.md (✅本日の戦果 cmd_530 エントリ追加)"
-    - "queue/suggestions.yaml (sug_cmd_530_002 追加予定)"
+      met: true
+      check: "判定 (Go/NG) を明記した gunshi_report.yaml"
+      evidence: "verdict: Go (Conditional) を明記、conditions 5件も併記"
+
+  # =========================================================
+  # cmd_549 全体 AC1-AC9 チェック (拙者の本務)
+  # =========================================================
+  cmd_549_acceptance_criteria_check:
+    - id: cmd_549_AC1
+      check: "upstream 直近10件以上のcommit/最新release/open PR/open issueの要約"
+      status: PASS
+      evidence: "upstream_survey.md 111L, behind=10/ahead=768/diff=148, v4.6.0 (20af6b5), 5示唆列挙"
+      subtask: "549a (ashigaru4)"
+    - id: cmd_549_AC2
+      check: "Claude Code 直近4週間のリリースと新機能・非推奨/破壊的変更の要約"
+      status: PASS
+      evidence: "claude_code_survey.md 343L, 23版網羅, 破壊的7/新機能35/非推奨4 分類, URL 12+"
+      subtask: "549b (ashigaru5)"
+    - id: cmd_549_AC3
+      check: "大規模変更案 最低2案、根拠・利益・コスト・リスク・所要工数"
+      status: PASS
+      evidence: "draft_improvements.md 案A (3-5d) + 案B (4.5d) 両方 6項目網羅 (ash3 canonical)"
+      subtask: "549c (ashigaru3 canonical)"
+    - id: cmd_549_AC4
+      check: "最小変更案 最低3案、根拠・効果・所要工数"
+      status: PASS
+      evidence: "patch-1-5 計5案 (要求3案超過), 各案に工数・根拠・効果明記"
+      subtask: "549c (ashigaru3 canonical)"
+    - id: cmd_549_AC5
+      check: "各改善案は shogun 構成 (Shogun/Karo/Ashigaru/Gunshi, inbox/queue/instructions) のどこに作用するか明記"
+      status: PASS
+      evidence: "全7案で scripts/ settings.json queue/ instructions/ 等を具体列挙"
+      subtask: "549c (ashigaru3 canonical)"
+    - id: cmd_549_AC6
+      check: "レポートは projects/cmd_549_system_improvement/ 配下の markdown として保存"
+      status: PASS
+      evidence: "3成果物 (upstream_survey/claude_code_survey/draft_improvements) 保存確認済"
+      subtask: "549a/b/c"
+    - id: cmd_549_AC7
+      check: "Artifact Registration (Notion成果物DB + Drive) 完了"
+      status: PENDING
+      reason: "subtask_549d 最終レポート作成後に実施予定。karo Step 11.8 AR script 呼出が必要。"
+      subtask: "549d (未着手)"
+    - id: cmd_549_AC8
+      check: "Google Chat にレポートサマリ + ファイルリンク配信完了"
+      status: PENDING
+      reason: "subtask_549d 最終レポート完成後に scripts/google_chat.sh で配信予定"
+      subtask: "549d (未着手)"
+    - id: cmd_549_AC9
+      check: "ダッシュボードに要対応/🏆反映"
+      status: PENDING
+      reason: "subtask_549d 完了後 karo が dashboard.md 更新予定"
+      subtask: "549d (未着手) + karo"
+
+  cmd_549_ac_summary:
+    ac_pass: 6
+    ac_pending: 3
+    ac_fail: 0
+    total: 9
+    phase_1_2_completion: "100% (AC1-AC6 全 PASS)"
+    phase_3_remaining: "AC7/AC8/AC9 (subtask_549d + karo で実施)"
+
+  # =========================================================
+  # 調査品質評価 (Phase 1)
+  # =========================================================
+  phase_1_research_quality:
+    upstream_survey:
+      factuality: "高 (git log/gh api の直接突合で fabrication 無し)"
+      coverage: "十分 (behind=10/ahead=768/diff=148 + PR#129/#116/#121/#122 + 65d76aa 言及)"
+      shogun_implications: "適切 (取込検討 high 2 + medium 3 の合計5件を具体化)"
+      missing_aspects: "upstream yohey-w のリポジトリが最近 inactive か activity 頻度の分析が薄い (minor)"
+    claude_code_survey:
+      factuality: "高 (claude --version=2.1.116 実測突合, 公式 URL 12+ 引用)"
+      coverage: "十分 (2.1.83-2.1.116 の 23版網羅, hooks/skills/subagents/MCP/thinking/caching)"
+      shogun_implications: "適切 (activate 候補 high 2 + medium 3 の合計5件を具体化)"
+      missing_aspects: "Claude Agent SDK (Python+TypeScript) の shogun 活用可能性評価が薄い (minor)"
+
+  # =========================================================
+  # 改善案妥当性評価 (Phase 2 / ash3 canonical)
+  # =========================================================
+  phase_2_proposal_validity:
+    major_proposals:
+      - id: "案A SessionStart Hook 機械化"
+        feasibility: "高 (PR#129 参考実装あり)"
+        cost_benefit: "良 (3-5d コスト vs persona drift 根絶の恒久効果)"
+        risk: "中 (PR#129 open 状態ゆえ upstream merge 後の再修正コスト発生可能性)"
+        recommendation: "ACCEPT with gate (PR#129 merge 状態監視して実装タイミング決定)"
+      - id: "案B disableSkillShellExecution+棚卸し+destructive_safety 二重ネット化"
+        feasibility: "中 (40+ skill 棚卸しの工数見積もり不確実性)"
+        cost_benefit: "良 (4.5d で destructive_safety 恒久補強)"
+        risk: "中 (工数膨張 4.5→5-7d に拡大リスク, YAML 透明性は維持)"
+        recommendation: "ACCEPT with phased approach (patch-5 minimal 先行 → 案B 大規模化判断 gate)"
+    minimal_proposals:
+      - id: "patch-3 ENABLE_PROMPT_CACHING_1H"
+        effect: "即時最優先 (0.5h, 20-30% API cost 削減)"
+        side_effect: "無 (環境変数1行追加のみ)"
+        recommendation: "IMMEDIATE ADOPTION (Phase 4 先頭で実施推奨)"
+        missing: "measurement plan (dashboard metric: cache hit rate + daily API cost)"
+      - id: "patch-1 PreCompact hook"
+        effect: "高 (文脈喪失 incident 構造解消, 0.5d)"
+        side_effect: "低 (既存 SessionStart hook との併存で干渉最小)"
+        recommendation: "ADOPT (Phase 4 で実施, 案A 設計と整合)"
+      - id: "patch-2 inbox self-send guard + done 再報告 loop 防止"
+        effect: "中 (F006-adjacent 防止, 0.5d)"
+        side_effect: "低 (既存 inbox_write.sh への validation 追加のみ)"
+        recommendation: "ADOPT (Phase 4 で実施)"
+      - id: "patch-4 SessionStart hook 先行ポート (1d)"
+        effect: "中 (案A の minimal 先行版)"
+        side_effect: "中 (PR#129 merge 後に再修正必要)"
+        recommendation: "DEFER until PR#129 merge or dedicated design"
+      - id: "patch-5 disableSkillShellExecution minimal (1d)"
+        effect: "中 (destructive_safety 補強)"
+        side_effect: "低 (settings.json 1項目追加)"
+        recommendation: "ADOPT (Phase 4 で patch-5 minimal → 案B 大規模化 gate)"
+
+  # =========================================================
+  # critical_points_for_subtask_549d (最終レポート作成への指示)
+  # =========================================================
+  critical_points_for_subtask_549d:
+    - priority: critical
+      point: "patch-4 ↔ 案A の段階的実装依存グラフを明示"
+      detail: |
+        patch-4 (SessionStart hook 先行ポート 1d) と 案A (SessionStart hook 機械化 3-5d) の
+        関係は「patch-4 → 案A」の段階的実装。最終レポートで:
+        - patch-4 実施条件 (PR#129 merge 状態)
+        - 案A への大規模化 gate (patch-4 運用実績 + persona drift 発生回数計測)
+        - 中止判断条件 (patch-4 副作用発生時の rollback 計画)
+        を明示的 decision gate 表現 (Mermaid graph 推奨) で記載せよ。
+    - priority: critical
+      point: "patch-5 ↔ 案B の段階的実装依存グラフを明示"
+      detail: |
+        patch-5 (disableSkillShellExecution minimal 1d) と 案B (disableSkillShellExecution+棚卸し 4.5d) の
+        関係も同様に段階実装。patch-5 minimal 運用後に 40+ skill 棚卸しへ進む gate を明示。
+    - priority: high
+      point: "未採用項目を「deferred (cmd_550+)」として明示宣言"
+      detail: |
+        upstream PR#121 (report flow 統一) / PR#122 (dashboard-viewer) / upstream-sync 月次化 を
+        deferred として cmd_550+ に申し送り明記。最終レポートで:
+        - 各 deferred 項目の理由
+        - 再評価 trigger (例: PR#121 merge 時 / dashboard 閲覧頻度増加時)
+        を記載せよ。
+    - priority: high
+      point: "patch-3 の measurement plan を定義"
+      detail: |
+        patch-3 (ENABLE_PROMPT_CACHING_1H) 実装と並行して:
+        - dashboard metric に cache hit rate を追加
+        - daily API cost (current vs 1h cache 後) の比較指標定義
+        - A/B test window 設定 (推奨 1week)
+        を計画セクションに織り込め。
+    - priority: high
+      point: "RACE-001 対策を Phase 4 として織り込む"
+      detail: |
+        本 cmd 遂行中に発生した RACE-001 (ash2+ash3 subtask_549c duplicate assignment) を
+        cmd_549 最終レポートの「内部運用改善セクション」として以下を収録せよ:
+        - sug_cmd_549_013: ash2 task → cancelled_duplicate, report → archive, karo.md 改修
+        - sug_cmd_549_014: task YAML mutex field (in_progress_agent_id) 導入
+        これは cmd_549 本務 (外部 upstream/CC 改善) と並列の内部改善として価値高。
+
+  # =========================================================
+  # 追加提案 (最大3件)
+  # =========================================================
+  additional_proposals:
+    - priority: medium
+      proposal: "dashboard-viewer 段階導入 (PR#122 参考)"
+      rationale: |
+        upstream PR#122 dashboard-viewer は 直接取込 (DEFER) だが、最小実装として
+        dashboard.md の markdown → HTML 生成 script (scripts/dashboard_viewer.sh) を
+        cmd_550+ で検討価値あり。特に 殿のモバイル閲覧性向上に寄与。
+      target: "scripts/ + projects/shogun_web/ (新規)"
+      estimate: "1-2d"
+    - priority: medium
+      proposal: "Claude Agent SDK (Python) 活用検討"
+      rationale: |
+        claude_code_survey.md §2 で SDK 言及はあるが shogun への応用検討が薄い。
+        特に:
+        - karo 自動 task 分解の Agent SDK ベース実装
+        - 動的 task graph の JSON Schema 定義と validation
+        cmd_551+ で「shogun-next-gen 設計調査」として単独 cmd 化価値あり。
+      target: "shogun-next-gen (新規 cmd)"
+      estimate: "3-5d 調査"
+    - priority: low
+      proposal: "自動 upstream-sync 月次 CI 化 (workflow dispatch)"
+      rationale: |
+        upstream_survey.md 示唆の「upstream-sync 月次 routine 化」を CI 化:
+        - .github/workflows/upstream-sync.yml 新規作成
+        - 月1で behind count 計測、10+ behind なら karo inbox に通知
+        労力 0.5d で運用自動化。ただし手動実行でも足りるゆえ優先度 low。
+      target: ".github/workflows/"
+      estimate: "0.5d"
+
+  # =========================================================
+  # previous_qcs (Phase 1+2 の autonomous QC 履歴)
+  # =========================================================
+  previous_qcs_summary:
+    - task_id: subtask_549a
+      worker: ashigaru4
+      qa_decision: pass_conditional
+      issue: "SO-01 violation (skill_candidate 欠損)"
+      suggestions_ref: "sug_cmd_549_001-004"
+    - task_id: subtask_549b
+      worker: ashigaru5
+      qa_decision: pass
+      issue: null
+      suggestions_ref: "sug_cmd_549_005-008"
+    - task_id: subtask_549c (ash2 duplicate - superseded)
+      worker: ashigaru2
+      qa_decision: pass_but_superseded
+      issue: "RACE-001 adjacent - canonical は ash3 版"
+      suggestions_ref: "sug_cmd_549_009-012"
+    - task_id: subtask_549c (ash3 canonical)
+      worker: ashigaru3
+      qa_decision: pass_clean
+      issue: null
+      suggestions_ref: "sug_cmd_549_013-014 (RACE-001 対応)"
+
+files_modified:
+  - "queue/reports/gunshi_report.yaml"
+  - "queue/tasks/gunshi.yaml (status: in_progress → done)"
+  - "queue/snapshots/gunshi_snapshot.yaml"
+  - "logs/daily/2026-04-21.md"
+
+notes: |
+  cmd_549 Phase 3 (subtask_549g) 軍師査読 完了。
+  判定: Go (Conditional) — Phase 1+2 成果物は全 PASS、Phase 3 (subtask_549d) で 5 conditions 充足要。
+  最終レポート作成 (subtask_549d) への critical_points 5件を明示提供。
+  追加提案 3件 (cmd_550+ 向け) を記載。
+  RACE-001 incident は本 report + sug_cmd_549_013/014 に記録済み、karo 対応待ち。
+  context_policy: preserve_across_stages により /clear 禁止継続。
+
+north_star_alignment:
+  status: fully_aligned
+  reason: |
+    本査読は cmd_549 north_star 「upstream最新動向と Claude Code 最新機能を取り込み、
+    shogun システムを最新基盤と競争力ある運用モデルに保つ」に完全整合。
+    Phase 1+2 成果物は北極星を具体化する改善案として質・量ともに十分。
+    軍師査読は Phase 3 subtask_549d への引継ぎで「実装可能性」「段階的 gate」「measurement」
+    の3軸を補強する役割を果たした。殿の判断支援材料として priority matrix + decision gate を
+    提供することで、競争力ある運用モデルへの移行リスクを極小化できると見る。
+  risks_to_north_star:
+    - "subtask_549d 未着手のまま停滞すると cmd_549 完了しない (AC7-9 依存)"
+    - "RACE-001 型 incident が再発すると agent 運用効率が本旨と逆行"
+    - "患行案B (棚卸し 4.5d) は工数膨張リスクあり、最悪 5-7d に拡大で Phase 4 の足枷に"
+
 skill_candidate:
   found: false
-  name: null
-  description: null
   reason: |
-    cmd_530 単独では skill 化に至らないが、Phase2 圧縮の全工程
-    (設計レビュー→CONDITIONAL→FIX指摘→実装→QC)は bootstrap ファイル
-    圧縮の成功パターンとして横展開可能。cmd_530 完了後に改めて
-    skill 抽出検討推奨(suggestions 記載)。
-north_star_alignment:
-  status: aligned
-  reason: |
-    CLAUDE.md 圧縮(508→302L, -4k tokens)を情報欠損ゼロで達成。
-    FIX1-4 反映により全 agent 起動時の bootstrap 品質も維持。
-    軍師 530a CONDITIONAL 判定の全指摘が足軽実装で的確に反映され、
-    north_star「情報欠損ゼロ」を完全達成した。
-  risks_to_north_star:
-    - "push 未実行のため、本番 CLAUDE.md は未更新。
-       他 agent の起動時は依然として旧 508L 版を読む(要 karo フォロー)"
+    本査読は既存 gunshi evaluation protocol の standard execution。
+    ただし副産物として以下の skill 候補が識別された (karo/shogun 判断用):
+    - shogun-cmd-level-integrated-review: cmd 全体の AC1-AC9 整合性チェック手順
+    - shogun-decision-gate-template: patch → 大規模案の段階的実装 gate 記述テンプレ
+    - shogun-task-mutex-pattern: RACE-001 対策 (task YAML in_progress_agent_id field)
+    これらは cmd_550+ で実装時に skill 化検討価値あり。
