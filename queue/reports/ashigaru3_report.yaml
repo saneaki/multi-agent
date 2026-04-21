@@ -1,4 +1,50 @@
 worker_id: ashigaru3
+task_id: subtask_555e_a
+parent_cmd: cmd_555e
+status: done
+timestamp: "2026-04-22T08:31:22+09:00"
+
+result:
+  summary: |
+    cmd_555e Scope1 完了。scripts/statusline_with_counter.sh を新規作成。
+    Claude Code statusLine hook の stdin JSON を受け取り、
+    context_window.used_percentage / total_input_tokens / context_window_size を
+    ~/.claude/tool_call_counter/<agent_id>.json に atomic write。
+    stdout は既存 statusline.sh 互換のステータスバー表示。
+    AGENT_ID 取得失敗時は graceful skip (counter 更新せず exit 0)。
+
+  artifacts:
+    - path: "scripts/statusline_with_counter.sh"
+      change: "新規作成 (statusLine hook + counter atomic write)"
+
+  test_results:
+    - check: "手動実行: used_percentage=42.5 → counter context_pct=42.5 に更新確認"
+      status: PASS
+    - check: "count/alpha 等の既存フィールドが保持されること確認"
+      status: PASS
+    - check: "TMUX_PANE='' AGENT_ID='' で counter 変更なし (graceful skip) 確認"
+      status: PASS
+    - check: "exit 0 確認"
+      status: PASS
+
+acceptance_criteria:
+  - id: AC1
+    status: PASS
+    note: "scripts/statusline_with_counter.sh 作成済。stdin JSON parse + context_pct atomic write + exit 0"
+  - id: AC2
+    status: PASS
+    note: "手動実行: used_percentage=42.5 → counter_pct=42.5 一致確認。count/alpha 保持確認。"
+  - id: AC3
+    status: PASS
+    note: "TMUX_PANE='' AGENT_ID='' で counter 変更なし + exit 0 確認"
+
+skill_candidate:
+  found: false
+  reason: "statusLine hook スクリプト作成は単発実装。汎用スキル化には至らない。"
+
+---
+
+worker_id: ashigaru3
 task_id: subtask_556b
 parent_cmd: cmd_556
 status: done
