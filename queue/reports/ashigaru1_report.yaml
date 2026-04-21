@@ -1,4 +1,114 @@
 worker_id: ashigaru1
+task_id: subtask_552a
+parent_cmd: cmd_552
+status: done
+timestamp: "2026-04-21T13:05:49+09:00"
+
+result:
+  summary: |
+    cmd_552 subtask_552a 完了。cmd_549 成果物4ファイルを cmd_549_ prefix 付きにリネーム。
+    Notion AR (3件) + Google Drive (3件) の登録を新ファイル名に更新。
+    draft_improvements.md は成果物DB未登録のため Notion/Drive 更新対象外。
+    内部参照は cmd_551 文書内の違反記録(歴史的記録)のみで更新不要と判断。
+  files:
+    - "projects/cmd_549_system_improvement/cmd_549_report.md"
+    - "projects/cmd_549_system_improvement/cmd_549_upstream_survey.md"
+    - "projects/cmd_549_system_improvement/cmd_549_claude_code_survey.md"
+    - "projects/cmd_549_system_improvement/cmd_549_draft_improvements.md"
+  notion_updated:
+    - page_id: "349e8d62-e4aa-8141-aba3-e75a88883e9c"
+      old: "claude_code_survey.md"
+      new: "cmd_549_claude_code_survey.md"
+    - page_id: "349e8d62-e4aa-8172-9615-d506f4d48c99"
+      old: "upstream_survey.md"
+      new: "cmd_549_upstream_survey.md"
+    - page_id: "349e8d62-e4aa-81e0-9785-ec5c8075ed24"
+      old: "report.md"
+      new: "cmd_549_report.md"
+  drive_renamed:
+    - file_id: "1_NBHPjcZZ-hY7MXeSYCdAsidFDr9DOaj"
+      old: "claude_code_survey.md"
+      new: "cmd_549_claude_code_survey.md"
+      status: "PASS (HTTP 200)"
+    - file_id: "1MJwj2-FLcwCC6XcA0uczQ_Ge5VDX53tA"
+      old: "upstream_survey.md"
+      new: "cmd_549_upstream_survey.md"
+      status: "PASS (HTTP 200)"
+    - file_id: "1Ba3iIRrmi8w_l646W2zT35SIYc9a1jjO"
+      old: "report.md"
+      new: "cmd_549_report.md"
+      status: "PASS (HTTP 200)"
+  notes:
+    - "draft_improvements.md は Notion 成果物DB 未登録のため AR更新なし"
+    - "Drive rename は n8n Google Drive credential (HiB0CtyPpTNh3q0D) + OAuth2 token refresh 経由で実行"
+
+acceptance_criteria:
+  - id: AC1
+    status: PASS
+    note: "4ファイル全て cmd_549_ prefix 付きにリネーム済 (ls確認済)"
+  - id: AC2
+    status: PASS
+    note: "Notion 3件更新済 (draft_improvements.md は DB未登録のため対象外)"
+  - id: AC3
+    status: PASS
+    note: "Drive 3件リネーム済 HTTP 200確認 (draft_improvements.md は Drive未登録のため対象外)"
+  - id: AC4
+    status: PASS
+    note: "内部参照点検済: cmd_551文書の参照は歴史的違反記録のため更新不要"
+
+skill_candidate:
+  found: false
+  reason: "単発のリネーム+AR更新作業。汎用スキル化には至らない。"
+
+---
+
+worker_id: ashigaru1
+task_id: subtask_551a
+parent_cmd: cmd_551
+status: done
+timestamp: "2026-04-21T12:24:03+09:00"
+
+result:
+  summary: |
+    cmd_551 subtask_551a 完了。cmd_549 成果物命名規則違反の工程追跡調査。
+    根本原因: Shogun が cmd 発令時に cmd_{N}_ prefix なしのファイル名を明示指定。
+    Karo が検証せずに task YAML に転記。Ashigaru は指示通り実行 (責任なし)。
+    Gunshi QC・AR script いずれにも prefix 検証ゲートなし。
+    RACI表: 一次責任=Shogun (cmd発令) + Karo (decomposition検証漏れ)。
+    再発防止策3案+追加1案を策定。推奨: 案1(instructions明文化)+案2(AR validator)+案3(Gunshi QC項目)。
+  files:
+    - "projects/cmd_551_naming_convention_audit/cmd_551_investigation.md"
+  root_cause_summary: |
+    違反混入点: Shogun_to_karo.yaml の cmd_549 command に report.md/upstream_survey.md/
+    claude_code_survey.md と prefix なし名称を明示。Karo が editable_files に転記。
+    Ashigaru 4名は task YAML 指示に従い実行(自主変更不可)。
+    ガード不在: Karo decomposition チェックなし / Gunshi QC リストに命名項目なし /
+    AR script に prefix バリデーションなし / karo.md Step11.8 に確認手順記載なし。
+
+acceptance_criteria:
+  - id: AC1
+    status: PASS
+    note: "shogun_to_karo.yaml cmd_549 → karo task YAML → ashigaru → gunshi QC → AR の全工程を追跡。違反混入点=shogun cmd発令時を特定"
+  - id: AC2
+    status: PASS
+    note: "RACI表記載: Responsible=Shogun(発令)/Karo(decomposition)/Ashigaru(実行)/Gunshi(QC)/Karo(AR確認)"
+  - id: AC3
+    status: PASS
+    note: "5つのガード(Shogun発令/Karo decomp/Ashigaru実行/Gunshi QC/AR script)が全て機能しなかった理由を分析"
+  - id: AC4
+    status: PASS
+    note: "再発防止策4案(案1:instructions明文化/案2:AR validator/案3:Gunshi QC項目/案4:pre-commit hook)を提示。コスト・効果・導入工数記載"
+  - id: AC5
+    status: PASS
+    note: "projects/cmd_551_naming_convention_audit/cmd_551_investigation.md 保存済み"
+
+skill_candidate:
+  found: false
+  reason: "命名規則違反調査は一回性のインシデント調査。汎用スキル化には至らない。"
+
+---
+
+worker_id: ashigaru1
 task_id: subtask_550a
 parent_cmd: cmd_550
 status: done
