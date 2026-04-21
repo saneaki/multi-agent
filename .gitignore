@@ -136,6 +136,7 @@
 !scripts/safe_clear_check.sh
 !scripts/compact_exception_check.sh
 !scripts/shogun_context_notify.sh
+!scripts/counter_increment.sh
 !scripts/qc_auto_check.sh
 !scripts/discord_to_ntfy.py
 !scripts/start_discord_bot.sh
