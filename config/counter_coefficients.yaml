@@ -1,0 +1,43 @@
+version: 1
+description: "tool_count → context_pct 変換係数 α (context_pct = min(100, count * α))"
+methodology: "auto-compact発動時 tool_count 実測 from JSONL / context_at_compact=95%"
+generated_at: "2026-04-22T08:17:36+09:00"
+analysis_period: "2026-04-14 〜 2026-04-22 (7日間)"
+noise_threshold: 10
+min_samples_for_alpha: 3
+agents:
+  shogun:
+    alpha: 1.267
+    sample_count: 13
+    note: "実測中央値 = 75 tool_calls at compact (n=13/23)"
+  karo:
+    alpha: 0.964
+    sample_count: 36
+    note: "実測中央値 = 98.5 tool_calls at compact (n=36/54)"
+  gunshi:
+    alpha: 1.418
+    sample_count: 25
+    note: "実測中央値 = 67 tool_calls at compact (n=25/36)"
+  ashigaru1:
+    alpha: 0.779
+    sample_count: 5
+    note: "実測中央値 = 122 tool_calls at compact (n=5/20)"
+  ashigaru2:
+    alpha: 0.50
+    sample_count: 1
+    note: "サンプル不足 (n=1) — フォールバック使用"
+  ashigaru3:
+    alpha: 0.50
+    sample_count: 0
+    note: "サンプルなし — フォールバック使用"
+  ashigaru4:
+    alpha: 0.50
+    sample_count: 2
+    note: "サンプル不足 (n=2) — フォールバック使用"
+  ashigaru5:
+    alpha: 0.50
+    sample_count: 2
+    note: "サンプル不足 (n=2) — フォールバック使用"
+  default:
+    alpha: 0.50
+    note: "サンプル不足 agent 用フォールバック"
