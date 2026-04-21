@@ -4,14 +4,18 @@
 #
 # Usage:
 #   bash scripts/qc_auto_check.sh [--mode pre-report] <ashigaru_id> [task_id]
+#   bash scripts/qc_auto_check.sh naming
 #
 # Examples:
 #   bash scripts/qc_auto_check.sh ashigaru1 subtask_350a
 #   bash scripts/qc_auto_check.sh --mode pre-report ashigaru1
+#   bash scripts/qc_auto_check.sh naming
 #
 # Modes:
 #   full (default): SO-01/03/06/12/19 full check, YAML output
 #   pre-report:     SO-01 + SO-03 only, exits 0=PASS / 1=FAIL
+#   naming:         Scan projects/*/ for .md files missing cmd_{N}_ prefix
+#                   exits 0=PASS / 1=FAIL (no ashigaru_id required)
 #
 # Output: YAML-formatted check results to stdout (full mode only)
 # ============================================================
@@ -19,6 +23,31 @@
 set -euo pipefail
 
 SHOGUN_ROOT="/home/ubuntu/shogun"
+
+# --- naming mode: standalone check, no ashigaru_id required ---
+if [ "${1:-}" = "naming" ]; then
+    VIOLATIONS=0
+    echo "naming convention check: projects/*/ .md files"
+    for dir in "${SHOGUN_ROOT}/projects"/*/; do
+        [ -d "$dir" ] || continue
+        for f in "$dir"*.md; do
+            [ -f "$f" ] || continue
+            basename_f=$(basename "$f")
+            if ! echo "$basename_f" | grep -qE '^cmd_[0-9]+_'; then
+                echo "NAMING VIOLATION: ${f#${SHOGUN_ROOT}/}"
+                VIOLATIONS=$((VIOLATIONS + 1))
+            fi
+        done
+    done
+    if [ "$VIOLATIONS" -eq 0 ]; then
+        echo "naming check PASS: all projects/*.md follow cmd_{N}_ prefix"
+        exit 0
+    else
+        echo "naming check FAIL: ${VIOLATIONS} violation(s) found"
+        exit 1
+    fi
+fi
+
 MODE="full"
 if [ "${1:-}" = "--mode" ]; then
     MODE="${2:-}"
@@ -29,6 +58,7 @@ TASK_ID="${2:-}"
 
 if [ -z "$ASHIGARU_ID" ]; then
     echo "Usage: qc_auto_check.sh [--mode pre-report] <ashigaru_id> [task_id]" >&2
+    echo "       qc_auto_check.sh naming" >&2
     exit 1
 fi
 

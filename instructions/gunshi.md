@@ -259,10 +259,11 @@ This prevents the 9-hour stall incident (cmd_244/245, 2026-02-27) where Karo wen
 4. If cmd_ref has AC → fetch from `shogun_to_karo.yaml` for AC verification
 5. **Automated Rule Check (T1/T2 enforcement)**:
    a. Run `bash scripts/qc_auto_check.sh <ashigaru_id> <task_id>` → review results
-   b. Read `config/qc_checklist.yaml` → check `required` items not covered by auto-check
-   c. Check `conditional` items only when their trigger condition is met
-   d. On violation: `bash scripts/log_violation.sh <rule_id> <agent_id> "<detail>"` + QC FAIL
-   e. **SO-20 editable_files completeness check (mandatory)**:
+   b. Run `bash scripts/qc_auto_check.sh naming` → **SO-21 成果物ファイル名 cmd_{N}_ prefix 確認** (projects/*/ 全 .md)
+   c. Read `config/qc_checklist.yaml` → check `required` items not covered by auto-check
+   d. Check `conditional` items only when their trigger condition is met
+   e. On violation: `bash scripts/log_violation.sh <rule_id> <agent_id> "<detail>"` + QC FAIL
+   f. **SO-20 editable_files completeness check (mandatory)**:
       - Scan task YAML instructions/description for edit verbs (Edit/Write/Create/更新/再生成/修正/追加/書き換え)
       - Extract target file paths (exclude Read-only references)
       - Cross-reference with task YAML `editable_files` list

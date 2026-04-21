@@ -1,44 +1,43 @@
 worker_id: ashigaru3
-task_id: subtask_551c
-parent_cmd: cmd_551
+task_id: subtask_552b
+parent_cmd: cmd_552
 status: done
-timestamp: "2026-04-21T12:28:00+09:00"
+timestamp: "2026-04-21T13:06:07+09:00"
 
 result:
   summary: |
-    cmd_551 統合レポート作成+AR完了。
-    subtask_551a (investigation) + subtask_551b (horizontal_check) を統合し、
-    cmd_551_audit_report.md を作成。GitHub Issue #36 を saneaki/multi-agent に作成。
-    AR script 実行: Drive + Notion に 3件登録 (audit_report / investigation / horizontal_check)。
+    qc_auto_check.sh に命名規則チェック (naming mode) 追加。
+    config/qc_checklist.yaml に SO-21 追加。
+    instructions/gunshi.md QC手順に naming check (Step 5b) 追記。
+    GitHub Issue #36 に cmd_552 対応内容コメント追記。
 
   artifacts:
-    - path: "projects/cmd_551_naming_convention_audit/cmd_551_audit_report.md"
-      drive: "https://drive.google.com/file/d/1EVLBN0CisUXGkCOLUTPYvl9XnHgc8xwm/view?usp=drivesdk"
-      notion: "https://www.notion.so/cmd_551_audit_report-md-349e8d62e4aa81648a6fc711564be84b"
-    - path: "projects/cmd_551_naming_convention_audit/cmd_551_investigation.md"
-      drive: "https://drive.google.com/file/d/1j87NsIaURwQySLiDizY4o5AvOEnAecbJ/view?usp=drivesdk"
-      notion: "https://www.notion.so/cmd_551_investigation-md-349e8d62e4aa81519c11fcf5c101dd8b"
-    - path: "projects/cmd_551_naming_convention_audit/cmd_551_horizontal_check.md"
-      drive: "https://drive.google.com/file/d/1C7nz_axM99PyRdYjojrYzGYVQx6XYH4A/view?usp=drivesdk"
-      notion: "https://www.notion.so/cmd_551_horizontal_check-md-349e8d62e4aa81e8a972e2f808e60305"
-    - github_issue: "https://github.com/saneaki/multi-agent/issues/36"
+    - path: "scripts/qc_auto_check.sh"
+      change: "naming サブコマンド追加 (projects/*/*.md の cmd_{N}_ prefix 検査)"
+    - path: "config/qc_checklist.yaml"
+      change: "SO-21: 成果物ファイル名 cmd_{N}_ prefix 確認 追加"
+    - path: "instructions/gunshi.md"
+      change: "Autonomous QC Protocol Step 5b に naming check 追記"
+    - github_comment: "https://github.com/saneaki/multi-agent/issues/36#issuecomment-4285850953"
 
   acceptance_criteria:
-    AC1: "PASS — cmd_549 各 subtask 命名規則違反の工程と因果関係を audit_report §2 に明示"
-    AC2: "PASS — RACI表 audit_report §3 に記載。一次責任: Shogun (根本) + Karo (二次)"
-    AC3: "PASS — 違反未検出理由 audit_report §4 に5層分析 (5層全てのガード設計漏れ)"
-    AC4: "PASS — projects/ 全4ディレクトリ + output/ 6件補完 = 計10件点検。違反率 58.3% (projects/)、100% (output/多ファイル)"
-    AC5: "PASS — 再発防止策3案提示 (audit_report §6): 案1=instructions明文化, 案2=ARバリデーター, 案3=GunshiQC項目追加。各案コスト/効果/工数記載"
-    AC6: "PASS — projects/cmd_551_naming_convention_audit/cmd_551_audit_report.md 保存済み (cmd_551_ prefix遵守)"
-    AC7: "PASS — AR完了: Drive 3件 + Notion 3件登録"
-    AC8: "PASS — projects/は.gitignore対象のためgit管理外。queue/reports/ashigaru3_report.yaml をcommit"
+    AC1: "PASS — scripts/qc_auto_check.sh naming mode 追加。projects/*/ 全 .md を ^cmd_[0-9]+_ で検査"
+    AC2: "PASS — config/qc_checklist.yaml SO-21 + instructions/gunshi.md Step 5b に命名規則チェック追記"
+    AC3: "PASS — cmd_549,551 dirs: PASS確認済。artifact-standardization: FAIL検出確認済"
+    AC4: "PASS — Issue #36 に cmd_552 対応内容コメント追記 (案3採用/案1案2未採用の記録)"
+    AC5: "PASS — git commit 完了 (このレポートと一緒に commit)"
 
   notes: |
-    - projects/ は .gitignore 対象。git rm --cached dc21635 にて .gitignore に追加済み。
-      成果物は Drive + Notion で管理。
-    - GitHub Issue は saneaki/shogun ではなく saneaki/multi-agent が正しいリポジトリ。
-    - cmd_549 ファイルリネームは殿の判断事項 (audit_report §7-1 参照)。
+    - naming check は standalone コマンド。ashigaru_id 不要。
+    - 現在 4件 FAIL: artifact-standardization/ 2件、gas-mail-manager/README.md、skill-triage-cmd521/。
+      これらは protocol 制定前の古いファイルまたはサブシステム。今回の是正対象外。
+    - cmd_549 は subtask_552a でリネーム済み → PASS確認。
 
 skill_candidate:
-  found: false
-  reason: "統合レポート作成は標準作業。スキル化不要。"
+  found: true
+  name: "qc_auto_check.sh naming check pattern"
+  summary: |
+    qc_auto_check.sh に standalone サブコマンドを追加するパターン。
+    ashigaru_id 不要な横断チェックは naming mode のように
+    第1引数でモード分岐 → 0=PASS/1=FAIL で終了。
+    将来的な SO-22+ の自動チェック追加に同じパターンを適用可能。
