@@ -1,257 +1,47 @@
 worker_id: ashigaru3
-task_id: subtask_558a
-parent_cmd: cmd_558
+task_id: subtask_563b
+parent_cmd: cmd_563
 status: done
-timestamp: "2026-04-22T14:06:55+09:00"
+timestamp: "2026-04-22T14:47:39+09:00"
 
 result:
   summary: |
-    cmd_558 Scope1 完了。config/qc_checklist.yaml に SO-22 を独立登録し、
-    SO-23 の cross-reference を id: SO-22 参照に更新。
-    SO-22: n8n修正cmd 機能検証 (rerun test) — condition/check_method/description/relation/reference 全フィールド記載。
-    SO-23: relation フィールドに "id: SO-22 との AND 運用" を明示追加 (dangling防止)。
-
-  artifacts:
-    - path: "config/qc_checklist.yaml"
-      change: "SO-22 独立登録 + SO-23 relation フィールド更新"
-
-acceptance_criteria:
-  - id: AC1
-    status: PASS
-    note: "config/qc_checklist.yaml に id: SO-22 登録済。condition/check_method/description/relation/reference 全フィールド含む。"
-  - id: AC2
-    status: PASS
-    note: "SO-23 に relation: 'id: SO-22 との AND 運用 (SO-22=機能検証, SO-23=業務完遂)' 追加。description から旧 reference 行削除。dangling防止済。"
-
-skill_candidate:
-  found: false
-  reason: "qc_checklist.yaml への SO 追加は単発作業。汎用スキル化には至らない。"
-
----
-
-worker_id: ashigaru3
-task_id: subtask_555e_a
-parent_cmd: cmd_555e
-status: done
-timestamp: "2026-04-22T08:31:22+09:00"
-
-result:
-  summary: |
-    cmd_555e Scope1 完了。scripts/statusline_with_counter.sh を新規作成。
-    Claude Code statusLine hook の stdin JSON を受け取り、
-    context_window.used_percentage / total_input_tokens / context_window_size を
-    ~/.claude/tool_call_counter/<agent_id>.json に atomic write。
-    stdout は既存 statusline.sh 互換のステータスバー表示。
-    AGENT_ID 取得失敗時は graceful skip (counter 更新せず exit 0)。
-
-  artifacts:
-    - path: "scripts/statusline_with_counter.sh"
-      change: "新規作成 (statusLine hook + counter atomic write)"
-
-  test_results:
-    - check: "手動実行: used_percentage=42.5 → counter context_pct=42.5 に更新確認"
-      status: PASS
-    - check: "count/alpha 等の既存フィールドが保持されること確認"
-      status: PASS
-    - check: "TMUX_PANE='' AGENT_ID='' で counter 変更なし (graceful skip) 確認"
-      status: PASS
-    - check: "exit 0 確認"
-      status: PASS
-
-acceptance_criteria:
-  - id: AC1
-    status: PASS
-    note: "scripts/statusline_with_counter.sh 作成済。stdin JSON parse + context_pct atomic write + exit 0"
-  - id: AC2
-    status: PASS
-    note: "手動実行: used_percentage=42.5 → counter_pct=42.5 一致確認。count/alpha 保持確認。"
-  - id: AC3
-    status: PASS
-    note: "TMUX_PANE='' AGENT_ID='' で counter 変更なし + exit 0 確認"
-
-skill_candidate:
-  found: false
-  reason: "statusLine hook スクリプト作成は単発実装。汎用スキル化には至らない。"
-
----
-
-worker_id: ashigaru3
-task_id: subtask_556b
-parent_cmd: cmd_556
-status: done
-timestamp: "2026-04-22T08:08:59+09:00"
-
-result:
-  summary: |
-    cmd_556 subtask_556b 完了。COND-C/D の両実装を完了。
-    COND-C: instructions/ashigaru.md の n8n Workflow Fix Protocol に
-      resource_completion mapping table 記載義務 (step 8) を追加。
-      schema: pending_resource_id/exec_id/all_nodes_success/output_paths/verified_at。
-      n8n cmd かつ task YAML に pending_resources がある場合必須。
-    COND-D: instructions/gunshi.md の Autonomous QC Protocol step 5.g に
-      n8n cmd 用 cross-check 手順を追加。
-      pending_resources 全 file_id と resource_completion の cross-check 実施。
-      1件でも不足・false → QC FAIL。
-
-acceptance_criteria:
-  - id: AC1
-    status: PASS
-    note: "instructions/ashigaru.md n8n Workflow Fix Protocol step 8 に resource_completion table 必須化を追記済。schema 4フィールド構造明示。"
-  - id: AC2
-    status: PASS
-    note: "instructions/gunshi.md Autonomous QC Protocol step 5.g に SO-23 n8n cmd cross-check 追記済。4手順 + n8n cmd 判定条件 + SO-22 AND 運用明示。"
-  - id: AC3
-    status: PASS
-    note: "COND-C: shogun_to_karo.yaml 定義 (pending_resource_id/exec_id/all_nodes_success/output_paths/verified_at) と schema 一致。COND-D: cross-check 手順 (pending_resources 読取 → resource_completion 読取 → file_id 照合 → 1件不足で FAIL) と文言一致。"
-
-skill_candidate:
-  found: false
-  reason: "単発の instructions 更新。汎用スキル化には至らない。"
-
----
-
-worker_id: ashigaru3
-task_id: subtask_554b
-parent_cmd: cmd_554
-status: done
-timestamp: "2026-04-21T16:37:00+09:00"
-
-result:
-  summary: |
-    subtask_554b 完了。未処理2文書(山下初姫様.pdf・宮原弘子様.pdf)を修正済みWFで再処理。
-    exec 15621 (trigger): 全22ノード success 確認。
-    Issue #35 に cmd_553訂正 + cmd_554是正完了コメント追記。
-    dashboard cmd_553行を🟡補強済に更新、cmd_554✅追加。
-
-  e2e_execution:
-    exec_id: "15621"
-    mode: trigger
-    status: success
-    startedAt: "2026-04-21T07:30:44Z"
-    stoppedAt: "2026-04-21T07:32:37Z"
-    nodes_executed: 22
-    all_nodes_success: true
-    files_processed:
-      - "reprocess_20260421_162737_20260420_先方代理人から_ご連絡_宮原弘子様.pdf"
-      - "reprocess_20260421_162737_20260420_当方から_ご連絡_山下初姫様.pdf"
-
-  issue_comment:
-    url: "https://github.com/saneaki/multi-agent/issues/35#issuecomment-4286740842"
-    content: "cmd_553結論訂正 + cmd_554是正完了 + 3文書全success表 + Issue#35クローズ可能"
-
-acceptance_criteria:
-  - id: AC1
-    status: PASS
-    note: "554a切り分け(β)に基づき対処方針決定: 2文書をDrive再アップしてtrigger発火"
-  - id: AC2
-    status: PASS
-    note: "exec 15621: 山下初姫様.pdf + 宮原弘子様.pdf 全22ノード success確認"
-  - id: AC3
-    status: PASS
-    note: "dashboard cmd_553を🟡補強済に更新、cmd_554✅行追加"
-  - id: AC4
-    status: PASS
-    note: "Issue #35 cmd_553訂正+cmd_554是正コメント追記済み"
-  - id: AC5
-    status: N/A
-    note: "コード変更なし、git commitは不要"
-
-skill_candidate:
-  found: false
-  reason: "Drive credential decrypt + upload pattern は既存手順の組み合わせ"
-
----
-
-worker_id: ashigaru3
-task_id: subtask_553b
-parent_cmd: cmd_553
-status: done
-timestamp: "2026-04-21T15:08:17+09:00"
-
-result:
-  summary: |
-    subtask_553b 完了。trigger-mode E2E テスト実施。
-    実PDF (国選弁護人指名承諾書.pdf) を watched Drive folder にアップロード。
-    n8n polling trigger が発火 (exec 15605)、全22ノード success 確認。
-    Issue #35 に cmd_553 補強対応コメント追記済み。
-    切り分け (B) 再テスト範囲不足 → 修正OK/E2E完了 に更新。
-
-  e2e_execution:
-    exec_id: "15605"
-    mode: trigger
-    status: success
-    startedAt: "2026-04-21T06:06:12Z"
-    stoppedAt: "2026-04-21T06:07:01Z"
-    nodes_executed: 22
-    all_nodes_success: true
-    test_file: "test_e2e_20260421_150532_国選弁護人指名承諾書.pdf"
-    test_file_drive_id: "1_ESlfCAjnybQT_tfdUeV-5nZMIwi69ze"
-    folder_id: "1Shedqmmrt6IAg8VzZTiKex6lFCy9UG6X"
-
-  issue_comment:
-    url: "https://github.com/saneaki/multi-agent/issues/35#issuecomment-4286277845"
-    status: posted
-
-acceptance_criteria:
-  - id: AC1
-    status: PASS
-    note: "WF active: True 確認済み"
-  - id: AC2
-    status: PASS
-    note: "trigger-mode E2E 実施 (実PDF Drive アップロード→polling trigger 発火)"
-  - id: AC3
-    status: PASS
-    note: "exec 15605: 全22ノード success 確認"
-  - id: AC4
-    status: PASS
-    note: "Issue #35 に cmd_553 補強対応コメント追記済み (comment id: 4286277845)"
-
-skill_candidate:
-  found: false
-  reason: "n8n credential decrypt + Drive upload は既存パターンの組み合わせ。新規スキル化には至らない。"
-
----
-
-worker_id: ashigaru3
-task_id: subtask_552b
-parent_cmd: cmd_552
-status: done
-timestamp: "2026-04-21T13:06:07+09:00"
-
-result:
-  summary: |
-    qc_auto_check.sh に命名規則チェック (naming mode) 追加。
-    config/qc_checklist.yaml に SO-21 追加。
-    instructions/gunshi.md QC手順に naming check (Step 5b) 追記。
-    GitHub Issue #36 に cmd_552 対応内容コメント追記。
-
-  artifacts:
-    - path: "scripts/qc_auto_check.sh"
-      change: "naming サブコマンド追加 (projects/*/*.md の cmd_{N}_ prefix 検査)"
-    - path: "config/qc_checklist.yaml"
-      change: "SO-21: 成果物ファイル名 cmd_{N}_ prefix 確認 追加"
-    - path: "instructions/gunshi.md"
-      change: "Autonomous QC Protocol Step 5b に naming check 追記"
-    - github_comment: "https://github.com/saneaki/multi-agent/issues/36#issuecomment-4285850953"
+    cmd_563 Scope2 完了。全Role compact_suggestion受信時の自律対処protocol追補。
 
   acceptance_criteria:
-    AC1: "PASS — scripts/qc_auto_check.sh naming mode 追加。projects/*/ 全 .md を ^cmd_[0-9]+_ で検査"
-    AC2: "PASS — config/qc_checklist.yaml SO-21 + instructions/gunshi.md Step 5b に命名規則チェック追記"
-    AC3: "PASS — cmd_549,551 dirs: PASS確認済。artifact-standardization: FAIL検出確認済"
-    AC4: "PASS — Issue #36 に cmd_552 対応内容コメント追記 (案3採用/案1案2未採用の記録)"
-    AC5: "PASS — git commit 完了 (このレポートと一緒に commit)"
+    - id: AC4
+      status: PASS
+      detail: |
+        instructions/gunshi.md に「compact_suggestion 受信時の自律対処 (AC4)」節を追補。
+        idle タイミングで gunshi_self_clear_check.sh 実行 → C1-C2-C4 充足で自律 /clear。
+        C3(dispatch_debt) は軍師には該当なし明示。
+
+    - id: AC5
+      status: PASS
+      detail: |
+        instructions/karo.md Karo Self-/clear 節に「compact_suggestion 受信時の自律対処 (AC5)」追補。
+        dispatch_debt=0 確認を C3 として明示。dispatch_debt>0 時は skip + 殿報告。
+
+    - id: AC6
+      status: PASS
+      detail: |
+        instructions/ashigaru.md Self Clear Protocol 節に「compact_suggestion 受信時の優先順位 (AC6)」追補。
+        self_clear_check.sh (タスク完了後) が優先。cron nudge は補助として明文化。
+        重複実行しても安全（self_clear_check.sh は冪等）。
+
+    - id: AC7
+      status: PASS
+      detail: |
+        shogun_context_notify.sh 残置判断: 将軍専用スクリプトとして継続利用。
+        role_context_notify.sh は karo/gunshi/ashigaru1-7 を担当 (case 文で shogun を除外済み)。
+        住み分け明確・重複なし。merge は不要。
+
+  files_modified:
+    - instructions/gunshi.md
+    - instructions/karo.md
+    - instructions/ashigaru.md
 
   notes: |
-    - naming check は standalone コマンド。ashigaru_id 不要。
-    - 現在 4件 FAIL: artifact-standardization/ 2件、gas-mail-manager/README.md、skill-triage-cmd521/。
-      これらは protocol 制定前の古いファイルまたはサブシステム。今回の是正対象外。
-    - cmd_549 は subtask_552a でリネーム済み → PASS確認。
-
-skill_candidate:
-  found: true
-  name: "qc_auto_check.sh naming check pattern"
-  summary: |
-    qc_auto_check.sh に standalone サブコマンドを追加するパターン。
-    ashigaru_id 不要な横断チェックは naming mode のように
-    第1引数でモード分岐 → 0=PASS/1=FAIL で終了。
-    将来的な SO-22+ の自動チェック追加に同じパターンを適用可能。
+    shogun_context_notify.sh: 閾値70%、自律clear禁止(殿承認前提)、shogun inbox投函
+    role_context_notify.sh: 閾値80%、C1-C4 gate、/clear可(karo/gunshi/ashigaru)
+    両者は役割分担明確で共存が最適解。

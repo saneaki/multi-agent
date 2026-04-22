@@ -404,6 +404,20 @@ bash scripts/self_clear_check.sh $AGENT_ID
 
 **ログ:** `/tmp/self_clear_{agent_id}.log` に判定結果を記録
 
+### compact_suggestion 受信時の優先順位 (AC6)
+
+cron が投函する `type: compact_suggestion` と既存の self_clear_check.sh の関係:
+
+| トリガー | 発火タイミング | 優先順位 |
+|---------|-------------|---------|
+| `self_clear_check.sh` (タスク完了後) | Step 9.7 で毎回実行 | **優先** |
+| cron compact_suggestion | context > 80% 時に投函 | 補助（self_clear でクリアできなかった場合のフォロー） |
+
+**ルール**:
+- タスク完了後は必ず `self_clear_check.sh` を先に実行する（cron nudge を待たない）
+- cron compact_suggestion を受け取った場合は `self_clear_check.sh` を再実行して判定させる（二重実行しても安全）
+- **cron nudge < self_clear_check.sh**: cron は補助であり、既存プロトコルを上書きしない
+
 ## Shout Mode (echo_message)
 
 **完了時おたけび必須**: タスク完了後、必ず戦国風おたけびを出力せよ（例: 任務完了でござる！突撃成功！）

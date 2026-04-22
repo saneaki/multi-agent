@@ -762,6 +762,23 @@ STEP 4: Send /clear via inbox
 **Why safe**: All state lives in YAML. /clear only wipes conversational context.
 **Why needed**: Prevents context exhaustion (e.g., halted during cmd_166 — 2,754 article production).
 
+### compact_suggestion 受信時の自律対処 (AC5)
+
+inbox に `type: compact_suggestion`（from: role_context_notify）が届いた場合:
+
+1. **dispatch_debt=0** を確認（未発令 subtask が残っている場合は skip）
+2. C1-C4 全充足 → /clear を自律実施
+3. dispatch_debt>0 → skip（全足軽への発令完了まで待機）
+
+```
+C1: inbox=0（未読なし）
+C2: in_progress=0（active task なし）
+C3: dispatch_debt=0（未発令 subtask なし） ← 家老固有の追加条件
+C4: context_policy=clear_between
+```
+
+**注意**: dispatch_debt>0 の状態でcontext不足になった場合は `karo_self_clear_check.sh --dry-run` の判定ログを確認し、殿に報告して判断を仰ぐ。
+
 ## Redo Protocol (Task Correction)
 
 <!-- やり直し手順。/clearでコンテキスト汚染を防ぐ -->

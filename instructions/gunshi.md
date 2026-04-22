@@ -678,6 +678,23 @@ bash scripts/gunshi_self_clear_check.sh
 
 **ログ:** `/tmp/self_clear_gunshi.log` に判定結果を記録
 
+### compact_suggestion 受信時の自律対処 (AC4)
+
+inbox に `type: compact_suggestion`（from: role_context_notify）が届いた場合:
+
+1. 次の **idle** タイミングで `gunshi_self_clear_check.sh` を実行
+2. C1-C4 全充足 → /clear を自律実施（殿承認不要）
+3. C1-C4 未充足 → skip（次回 cron 発火まで待機、ログ記録）
+
+```
+C1: inbox=0（未読なし）
+C2: in_progress=0（active task なし）
+C3: N/A（軍師は dispatch_debt 管理なし）
+C4: context_policy=clear_between（preserve_across_stages でない）
+```
+
+**注意**: compact_suggestion を受け取っても作業中の場合は必ず完了・報告後に判定する。
+
 ## Memory MCP Write Policy
 
 See [`common/memory_policy.md`](./common/memory_policy.md).
