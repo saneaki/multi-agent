@@ -1,4 +1,35 @@
 worker_id: ashigaru3
+task_id: subtask_558a
+parent_cmd: cmd_558
+status: done
+timestamp: "2026-04-22T14:06:55+09:00"
+
+result:
+  summary: |
+    cmd_558 Scope1 完了。config/qc_checklist.yaml に SO-22 を独立登録し、
+    SO-23 の cross-reference を id: SO-22 参照に更新。
+    SO-22: n8n修正cmd 機能検証 (rerun test) — condition/check_method/description/relation/reference 全フィールド記載。
+    SO-23: relation フィールドに "id: SO-22 との AND 運用" を明示追加 (dangling防止)。
+
+  artifacts:
+    - path: "config/qc_checklist.yaml"
+      change: "SO-22 独立登録 + SO-23 relation フィールド更新"
+
+acceptance_criteria:
+  - id: AC1
+    status: PASS
+    note: "config/qc_checklist.yaml に id: SO-22 登録済。condition/check_method/description/relation/reference 全フィールド含む。"
+  - id: AC2
+    status: PASS
+    note: "SO-23 に relation: 'id: SO-22 との AND 運用 (SO-22=機能検証, SO-23=業務完遂)' 追加。description から旧 reference 行削除。dangling防止済。"
+
+skill_candidate:
+  found: false
+  reason: "qc_checklist.yaml への SO 追加は単発作業。汎用スキル化には至らない。"
+
+---
+
+worker_id: ashigaru3
 task_id: subtask_555e_a
 parent_cmd: cmd_555e
 status: done

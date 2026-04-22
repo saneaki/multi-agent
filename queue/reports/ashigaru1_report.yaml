@@ -1,4 +1,31 @@
 worker_id: ashigaru1
+task_id: subtask_558b
+parent_cmd: cmd_558
+status: done
+timestamp: "2026-04-22T14:00:54+09:00"
+
+result:
+  summary: |
+    cmd_558 Scope2 完了。instructions/common/n8n_e2e_protocol.md に
+    Section 8「適用範囲と遡及 policy」を追記した。
+    AC1: cmd_553/554 遡及非適用 policy 明文化 (Section 8.1-8.3)
+    AC2: 558全Scope統合 git commit 完了 (f3c2143)
+
+acceptance_criteria:
+  - id: AC1
+    status: PASS
+    note: "Section 8 追記: cmd_555e以降適用 / cmd_553/554遡及非適用 / 追加調査=新規subtask"
+  - id: AC2
+    status: PASS
+    note: "git commit f3c2143: Scope1(karo/shogun L012) + Scope2(n8n_e2e_protocol Section 8) 統合"
+
+skill_candidate:
+  found: false
+  reason: "単発 protocol ドキュメント追記。汎用スキル化不要。"
+
+---
+
+worker_id: ashigaru1
 task_id: subtask_557a
 parent_cmd: cmd_557
 status: done

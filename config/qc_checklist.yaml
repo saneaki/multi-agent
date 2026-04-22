@@ -209,6 +209,18 @@ checklist:
       大量削除・プロジェクト外操作・未知URL通信が発生した場合、
       停止して報告→確認を得てから実行していること
 
+  - id: SO-22
+    name: "n8n修正cmd 機能検証 (rerun test)"
+    frequency: conditional
+    condition: "n8n workflow 修正 cmd"
+    check_method: manual
+    description: |
+      直近3件以上 + 成功/失敗両方 + 失敗全件 (infra バグ除外可) を
+      修正後 WF で rerun し、全件が success することを確認 (機能検証)。
+      scope: n8n cmd 限定
+    relation: "id: SO-23 との AND 運用 (SO-22=機能検証, SO-23=業務完遂)"
+    reference: cmd_554g gunshi_report
+
   - id: SO-23
     name: "n8n修正cmd 実運用 real resource 処理完遂"
     frequency: conditional
@@ -219,6 +231,6 @@ checklist:
       trigger mode の exec で全ノード success かつ Drive output 生成確認。
       一件でも未完了なら FAIL。
       scope: n8n cmd 限定
-      reference: SO-22 との AND 運用（SO-22 が「機能検証 PASS」、SO-23 が「業務完遂」の二重防御）
       gunshi QC: ash report の resource_completion で pending_resources 全件の file_id
       cross-check を実施。1 件でも不足なら FAIL。
+    relation: "id: SO-22 との AND 運用 (SO-22=機能検証, SO-23=業務完遂)"
