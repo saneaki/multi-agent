@@ -1,0 +1,19 @@
+# fixture_c: resource_completion 4 field のみ (verified_at 欠落) → WARN 期待
+fixture_id: c
+expected: warn
+description: "resource_completion 4 field (verified_at 欠落, n8n_workflows cmd) → WARN期待"
+task:
+  project: n8n_workflows
+  pending_resources:
+    - file_id: "file_003"
+      file_name: "20260422_test_c.md"
+      observed_by: "ashigaru_test"
+      observed_at: "2026-04-22T00:00:00+09:00"
+report:
+  resource_completion:
+    - pending_resource_id: "file_003"
+      exec_id: "exec_67890"
+      all_nodes_success: true
+      output_paths:
+        - "/tmp/output/20260422_test_c.md"
+      # verified_at: 欠落(4 fieldのみ)

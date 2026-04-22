@@ -256,6 +256,12 @@ tests/specs/osato_lms_*
 !tests/e2e/mock_behaviors/*.sh
 !tests/test_helper/
 !tests/test_helper/README.md
+# cmd_557 Scope2: SO-23 回帰 fixture + test script
+!tests/qc_auto_check/
+!tests/qc_auto_check/*.yaml
+!tests/qc_auto_check/.gitkeep
+!scripts/tests/
+!scripts/tests/*.sh
 
 # CI/CD
 !.github/

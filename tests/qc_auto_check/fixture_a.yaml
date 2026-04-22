@@ -1,0 +1,19 @@
+# fixture_a: resource_completion 5 field all present → PASS 期待
+fixture_id: a
+expected: pass
+description: "resource_completion 5 field all present (n8n_workflows cmd) → PASS期待"
+task:
+  project: n8n_workflows
+  pending_resources:
+    - file_id: "file_001"
+      file_name: "20260422_test_a.md"
+      observed_by: "ashigaru_test"
+      observed_at: "2026-04-22T00:00:00+09:00"
+report:
+  resource_completion:
+    - pending_resource_id: "file_001"
+      exec_id: "exec_12345"
+      all_nodes_success: true
+      output_paths:
+        - "/tmp/output/20260422_test_a.md"
+      verified_at: "2026-04-22T00:02:00+09:00"

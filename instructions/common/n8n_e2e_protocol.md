@@ -100,6 +100,38 @@ task YAML に `pending_resources` があれば ash report 側の `resource_compl
 - **適用範囲**: n8n workflow 修正 cmd (cmd YAML に `project: n8n_workflows` または command に `n8n` を含む)。
 - **非適用**: 非 n8n cmd (shogun system 改訂、skill 整備、dashboard 整理 等)。
 
+## 5.5. resource_exempt whitelist exemption 仕様
+
+`resource_completion` field-level check を免除するための仕組み。
+
+### 適用条件
+
+| 条件 | 結果 |
+|------|------|
+| task YAML に `resource_exempt: true` が明示 かつ project が **n8n_workflows でない** | field-level check をスキップ (pass 扱い) |
+| task YAML に `resource_exempt: true` が明示 かつ project が **n8n_workflows** | **FAIL** (exempt 無効 — n8n-fix cmd は禁止) |
+| `resource_exempt` 未記載 または `resource_exempt: false` | 通常の field-level check を実施 (デフォルト) |
+
+### 適用例
+
+```yaml
+# shogun system cmd (非 n8n) — 免除可
+resource_exempt: true   # field-level check スキップ
+
+# n8n workflow 修正 cmd — 免除禁止
+project: n8n_workflows
+resource_exempt: true   # → qc_auto_check.sh が FAIL を返す
+```
+
+### 自動検査 (qc_auto_check.sh)
+
+`scripts/qc_auto_check.sh` が SO-23 判定時に以下を順番に確認する:
+
+1. `project: n8n_workflows` かつ `resource_exempt: true` → **FAIL** (exempt 無効)
+2. `resource_completion: []` (空配列) かつ `pending_resources` 宣言あり → **WARN FAIL**
+3. 各要素の 5 field (`pending_resource_id`, `exec_id`, `all_nodes_success`, `output_paths`, `verified_at`) 欠落 → **WARN**
+4. 全条件クリア → **PASS** (軍師 manual cross-check は引き続き必要)
+
 ## 6. 関連 SO / COND
 
 | 項目 | 参照 |
@@ -116,3 +148,5 @@ task YAML に `pending_resources` があれば ash report 側の `resource_compl
 
 - **2026-04-22**: cmd_556 COND-E にて新規作成 (ashigaru5)。
   cmd_553 → cmd_554 連鎖 (trigger E2E OK / 業務 NG) を再発防止する五重防御の1枚。
+- **2026-04-22**: cmd_557 Scope1 にて §5.5 whitelist exemption 仕様追記 (ashigaru1)。
+  qc_auto_check.sh field-level check 追加 (AC1: 空配列NG / AC2: 5field完全性 / AC3: n8n-fix exempt禁止) に対応。

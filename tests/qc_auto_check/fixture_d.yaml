@@ -1,0 +1,14 @@
+# fixture_d: resource_exempt: true + project: shogun_system → SKIP 期待 (exempt 有効)
+fixture_id: d
+expected: skip
+description: "resource_exempt: true + project: shogun_system → SKIP期待 (非n8n cmdでexempt有効)"
+task:
+  project: shogun_system
+  resource_exempt: true
+  pending_resources:
+    - file_id: "file_004"
+      file_name: "20260422_test_d.md"
+      observed_by: "ashigaru_test"
+      observed_at: "2026-04-22T00:00:00+09:00"
+report:
+  resource_completion: []

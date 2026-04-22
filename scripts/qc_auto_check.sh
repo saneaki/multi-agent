@@ -310,8 +310,56 @@ if [ "$IS_N8N_CMD" = "true" ]; then
         HAS_PENDING="true"
     fi
     if [ "$HAS_PENDING" = "true" ]; then
-        if [ -f "$REPORT_FILE" ] && grep -qE "^[[:space:]]*resource_completion:" "$REPORT_FILE" 2>/dev/null; then
-            add_result "SO-23" "pass" "n8n cmd: pending_resources + resource_completion both present (gunshi manual cross-check still required)"
+        # AC3: n8n-fix cmd (project: n8n_workflows) cannot use resource_exempt — always FAIL
+        IS_EXEMPT="false"
+        if [ -f "$TASK_FILE" ] && grep -qE "^[[:space:]]*resource_exempt:[[:space:]]*true" "$TASK_FILE" 2>/dev/null; then
+            IS_EXEMPT="true"
+        fi
+        if [ "$IS_EXEMPT" = "true" ]; then
+            add_result "SO-23" "fail" "resource_exempt: true is INVALID for n8n-fix cmd (project: n8n_workflows) — exempt禁止"
+        elif [ -f "$REPORT_FILE" ] && grep -qE "^[[:space:]]*resource_completion:" "$REPORT_FILE" 2>/dev/null; then
+            # AC1: Check for empty array
+            RC_COUNT=$(python3 -c "
+import yaml, sys
+try:
+    with open('${REPORT_FILE}') as f:
+        d = yaml.safe_load(f)
+    rc = d.get('resource_completion', None)
+    if rc is None:
+        print(-1)
+    elif isinstance(rc, list):
+        print(len(rc))
+    else:
+        print(0)
+except Exception:
+    print(-1)
+" 2>/dev/null || echo "-1")
+            if [ "$RC_COUNT" = "0" ] || [ "$RC_COUNT" = "-1" ]; then
+                add_result "SO-23" "warn" "resource_completion is EMPTY ARRAY: FAIL — pending_resources declared but resource_completion has 0 elements"
+            else
+                # AC2: Check 5-field completeness per element
+                FIELD_WARN=$(python3 -c "
+import yaml
+required = ['pending_resource_id', 'exec_id', 'all_nodes_success', 'output_paths', 'verified_at']
+try:
+    with open('${REPORT_FILE}') as f:
+        d = yaml.safe_load(f)
+    rc = d.get('resource_completion', [])
+    issues = []
+    for i, item in enumerate(rc if isinstance(rc, list) else []):
+        missing = [f for f in required if f not in (item or {})]
+        if missing:
+            issues.append('item[%d] missing: %s' % (i, ','.join(missing)))
+    print('|'.join(issues))
+except Exception as e:
+    print('parse_error: ' + str(e))
+" 2>/dev/null || echo "")
+                if [ -n "$FIELD_WARN" ]; then
+                    add_result "SO-23" "warn" "resource_completion field incomplete — ${FIELD_WARN}"
+                else
+                    add_result "SO-23" "pass" "n8n cmd: pending_resources + resource_completion present with all 5 fields (gunshi manual cross-check still required)"
+                fi
+            fi
         else
             add_result "SO-23" "warn" "n8n cmd: task YAML has pending_resources but ash report lacks resource_completion — SO-23 cross-check MUST be performed by gunshi"
         fi

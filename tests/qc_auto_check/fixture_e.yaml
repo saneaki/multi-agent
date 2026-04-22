@@ -1,0 +1,14 @@
+# fixture_e: resource_exempt: true + project: n8n_workflows → FAIL 期待 (exempt 無効)
+fixture_id: e
+expected: fail
+description: "resource_exempt: true + project: n8n_workflows → FAIL期待 (n8n-fix cmdでexempt禁止)"
+task:
+  project: n8n_workflows
+  resource_exempt: true
+  pending_resources:
+    - file_id: "file_005"
+      file_name: "20260422_test_e.md"
+      observed_by: "ashigaru_test"
+      observed_at: "2026-04-22T00:00:00+09:00"
+report:
+  resource_completion: []
