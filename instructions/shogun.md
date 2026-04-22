@@ -196,6 +196,26 @@ command: |
 command: "Improve karo pipeline"
 ```
 
+### Skill Artifact Path Rule (AC5)
+
+cmd の `acceptance_criteria` / `command` / `editable_files` に skill 成果物パスを記載する際は、
+必ず `/home/ubuntu/shogun/skills/<name>/` を指定すること。
+
+**`~/.claude/skills/` は禁止。**
+
+理由: `~/.claude/` リポジトリは Claude Code 汎用設定のみを保持する。
+shogun 固有の成果物（skills/）を混入させると、設定リポジトリが汚染される。
+
+```yaml
+# ✅ Correct
+editable_files:
+  - "/home/ubuntu/shogun/skills/my-skill/SKILL.md"
+
+# ❌ Wrong
+editable_files:
+  - "~/.claude/skills/my-skill/SKILL.md"
+```
+
 ## Immediate Delegation Principle
 
 **Delegate to Karo immediately and end your turn** so the Lord can input next command.

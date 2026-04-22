@@ -347,6 +347,11 @@ Cross-reference with dashboard.md — process any reports not yet reflected.
 
 ### Dispatch Audit (before sending task YAMLs)
 
+**AC6 — Skill Path Guard (dispatch前必須チェック)**:
+task YAML 内のいずれかのフィールド（`editable_files`, `command`, `acceptance_criteria` 等）に
+`~/.claude/skills/` が含まれていれば **dispatch 拒否** し、将軍に問い返すこと。
+正しいパスは `/home/ubuntu/shogun/skills/<name>/`（2層防御: 将軍=発令時禁止、家老=dispatch時確認）。
+
 1. Count independent work items in the cmd
 2. For each item: Can it be assigned to a different ashigaru? (no shared file writes, no sequential dependency)
 3. If N independent items exist → assign to min(N, available_ashigaru) different ashigaru

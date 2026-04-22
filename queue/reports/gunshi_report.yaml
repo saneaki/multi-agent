@@ -1,233 +1,201 @@
 worker_id: gunshi
-task_id: subtask_557g
-parent_cmd: cmd_557
-timestamp: "2026-04-22T13:56:00+09:00"
+task_id: subtask_562g
+parent_cmd: cmd_562
+timestamp: "2026-04-22T15:02:00+09:00"
 status: done
 report_to: karo
 type: review
 
 result:
-  verdict: "Go (field-level check 妥当 + whitelist 堅牢 (n8n-fix exempt 禁止確実) + fixture 5 件網羅 + test exit 0 整合)"
+  verdict: "Go (skill mv 完全 + settings.json 差分は cmd_555e statusLine/counter_increment のみ + shogun.md AC5 / karo.md AC6 による 2層防御構造が明確に成立し再発防止効果充分)"
 
   verdict_rationale: |
-    cmd_557 (SO-23 防衛穴塞ぎ: sug_cmd_556_005 "resource_completion: [] pseudo-pass"
-    穴 + Codex 第2意見 HIGH 昇格対応) の Scope1 (scripts/qc_auto_check.sh field-level
-    check + whitelist exemption) と Scope2 (fixture 5 件 + 回帰 test) は
-    設計・実装・テスト三位一体で完結しており、SO-23 WARN check の自動 pre-gate が
-    確実に機能する。
+    cmd_562 (skill 格納先正規化 + ルール追補) は Scope1 (skill mv from
+    ~/.claude/skills to shogun/skills) / Scope2 (shogun.md AC5 + karo.md AC6
+    2層防御ルール追補) を完了済。
 
-    とくに fixture_e (resource_exempt: true + project: n8n_workflows → FAIL 判定)
-    が確実に動作することを確認した。これは cmd_557 の核心防御 (n8n-fix cmd での
-    exempt 濫用禁止) が実コードで enforce されていることを示す。
+    重要観測:
+    - shogun/skills/ に semantic-gap-diagnosis + shogun-precompact-snapshot-e2e-pattern
+      を確認、~/.claude/skills/ から削除済
+    - settings.json は cmd_555e statusLine (L225-229) + counter_increment.sh
+      PostToolUse hook (L133) のみが cmd_562 以外由来の有意変更、想定外変更なし
+    - shogun.md L199-217 "Skill Artifact Path Rule (AC5)" で発令時禁止
+    - karo.md L348-353 "AC6 — Skill Path Guard" で dispatch 時禁止
+    → 「将軍=発令時禁止、家老=dispatch時確認」の2層防御が完成
 
-    cmd_556 で構築した五層防御 (COND-A..E + qc_auto_check SO-23 WARN) に対して、
-    cmd_557 は「pre-gate の精度を FAIL 水準まで厳格化」する補強として機能し、
-    gunshi manual cross-check (真 gate) と併せて二段階防御が完成した。
+    将来 cmd で `~/.claude/skills/my-skill/SKILL.md` が混入しても、AC5
+    (shogun 記載段階) または AC6 (karo dispatch 段階) の二段階で検出可能。
 
   check_results:
-    AC1_field_level_check_妥当性:
+    AC1_skill_mv完全性:
       status: OK
       detail: |
-        scripts/qc_auto_check.sh (L116-176 付近) を査読:
-        - 空配列検出 (AC1): RC_COUNT=0 or -1 → warn level + "EMPTY ARRAY: FAIL"
-          keyword (test harness は warn+FAIL keyword を fail expectation として
-          matching する設計)。
-        - 5 field 完全性 (AC2): required = [pending_resource_id, exec_id,
-          all_nodes_success, output_paths, verified_at] を python3 で parse し、
-          missing field を item 単位で列挙。
-        - whitelist exemption (AC3): IS_EXEMPT flag + IS_N8N_CMD flag を先判定し、
-          n8n + exempt → fail (exempt 禁止)、非 n8n + exempt → SO-23 block ごと
-          非出力 (SKIP)。
-        - n8n detection precedence: task YAML の project: n8n_workflows 優先、
-          無ければ shogun_to_karo.yaml の parent_cmd block で判定。false positive
-          guard に strict regex ^[[:space:]]*project:[[:space:]]*n8n_workflows[[:space:]]*$
-          を使用 (cmd_556 false positive guard 継承、SO-23 WARN check で確認済)。
+        shogun/skills/ 配下:
+        - semantic-gap-diagnosis/ ✓
+        - shogun-precompact-snapshot-e2e-pattern/ ✓
 
-    AC2_whitelist_堅牢性_n8n_fix_exempt_禁止:
+        ~/.claude/skills/ 配下:
+        - semantic-gap-diagnosis → 存在せず ✓
+        - shogun-precompact-snapshot-e2e-pattern → 存在せず ✓
+
+        mv 完全性: OK。shogun 固有 skill が全て shogun リポジトリ配下へ集約され、
+        Claude Code 汎用設定リポジトリ (~/.claude/) の汚染解消を確認。
+        commit 7345c4b ("docs(cmd_561): semantic-gap-diagnosis skill昇格 +
+        karo.md skill昇格運用ルール追補") が cmd_561 → cmd_562 の流れで
+        一貫した skill 管理方針を確立。
+
+    AC2_settings_json_diff:
       status: OK
       detail: |
-        fixture_e.yaml (project: n8n_workflows, resource_exempt: true,
-        resource_completion: []) を test harness 経由で実行:
-          [PASS] fixture_e  expected=fail actual(result=fail)
-        (actual result="fail" — warn 経由の擬似 fail ではなく真 fail 判定)
+        /home/ubuntu/.claude/settings.json を JSON parse して検査:
 
-        qc_auto_check.sh 該当箇所:
-          if [ "$IS_EXEMPT" = "true" ]; then
-              add_result "SO-23" "fail" "resource_exempt: true is INVALID for
-              n8n-fix cmd (project: n8n_workflows) — exempt禁止"
-        → n8n cmd での exempt 濫用は fail 水準で enforce されており、堅牢。
+        cmd_555e 由来の追加 (想定内):
+        - L133: PostToolUse hook "bash /home/ubuntu/shogun/scripts/counter_increment.sh"
+        - L225-229: statusLine = "bash /home/ubuntu/shogun/scripts/statusline_with_counter.sh"
 
-    AC3_5_fixture_カバレッジ_完全性:
+        cmd_562 由来の変更: なし (skill mv は file system 操作のみで settings.json
+        は関与しないため想定通り)
+
+        想定外変更: なし。bak ファイル (.bak) への参照もなし。
+        cmd_555e 完了時点の settings.json 構成から cmd_562 完了時点まで
+        「cmd_555e 由来の statusLine/counter_increment 以外の変更なし」を確認。
+
+        AC2 として期待された「cmd_555e statusLine追加のみ。想定外変更なし」
+        の条件を充足。
+
+    AC3_ルール追補再発防止効果:
       status: OK
       detail: |
-        tests/qc_auto_check/fixture_{a..e}.yaml の 5 件を査読、以下シナリオを網羅:
-        - fixture_a: 5 field 完全 + n8n → PASS (正常系)
-        - fixture_b: resource_completion: [] 空配列 + n8n → FAIL 判定 (AC1 穴塞ぎ)
-        - fixture_c: 4 field (verified_at 欠落) + n8n → WARN (AC2 field 欠落検知)
-        - fixture_d: resource_exempt: true + shogun_system → SKIP (whitelist 正)
-        - fixture_e: resource_exempt: true + n8n_workflows → FAIL (whitelist 禁則)
+        shogun.md L199-217 "Skill Artifact Path Rule (AC5)":
+        - `~/.claude/skills/` 使用禁止を太字明示 (L204)
+        - 理由の説明 (L206-207): 「~/.claude/ は Claude Code 汎用設定のみを保持。
+          shogun 固有成果物を混入させると設定リポジトリが汚染」
+        - ✅ Correct / ❌ Wrong の対比例 (L209-217)
+        → 発令 (cmd YAML 起案) 段階での「将軍が書かない」第1 層防御が成立
 
-        欠損なし。各 fixture が独立した分岐 (pass / fail / warn / skip / fail-禁則)
-        を covering し、qc_auto_check.sh の state space を網羅している。
+        karo.md L348-353 "Dispatch Audit — AC6 Skill Path Guard":
+        - 「task YAML 内のいずれかのフィールドに `~/.claude/skills/` が含まれて
+          いれば dispatch 拒否し、将軍に問い返す」(L351-352)
+        - 「2層防御: 将軍=発令時禁止、家老=dispatch時確認」(L353)
+        → dispatch 段階での「家老が止める」第2 層防御が成立
 
-    AC4_test_exit_code_整合性:
-      status: OK
-      detail: |
-        bash scripts/tests/test_qc_auto_check_so23.sh 実行:
-          ==============================================
-          [PASS] fixture_a  expected=pass actual(result=pass)
-          [PASS] fixture_b  expected=fail actual(result=warn)
-          [PASS] fixture_c  expected=warn actual(result=warn)
-          [PASS] fixture_d  expected=skip actual(result=NOT_FOUND)
-          [PASS] fixture_e  expected=fail actual(result=fail)
-          summary: 5 pass, 0 fail
-          EXIT:0
+        2層防御の実効性:
+        - 第1層 (将軍 AC5): 将軍の cmd 起案 disciplineでの自己検閲
+        - 第2層 (家老 AC6): ashigaru dispatch 前の mechanical check (grep 可能)
+        - 両層とも ABS path で禁止対象を明示 → 曖昧さなし
+        - 責任分界が明確 (発令 vs dispatch) で責任の空白がない
 
-        exit code と fixture 判定が 1:1 で整合。CI 導入時も exit 0/1 の two-state
-        contract が明確 (harness setup error は exit 2 で区別)。
+        再発防止効果: OK。AC5 単独だと「将軍が失念」で抜ける可能性があるが、
+        AC6 が mechanical backstop として機能し、実用的 redundancy を構成。
 
   means_ends_classification:
     schema_version: "1.0"
-    note: "means=AC が実装・機構の存在を確認 (手段完成)。ends=AC が望む結果の実現を確認 (目的到達)。"
-    items:
-      - ac_ref: AC1_field_level_check_妥当性
-        type: means
-        rationale: "qc_auto_check.sh にコードが存在することを確認 = 手段完成"
-        corresponding_ends_ac: AC2_whitelist_堅牢性_n8n_fix_exempt_禁止
-      - ac_ref: AC2_whitelist_堅牢性_n8n_fix_exempt_禁止
+    ac_classification:
+      - id: AC1_skill_mv完全性
         type: ends
-        rationale: "fixture_e で実際に fail 判定されたことを確認 = 目的到達 (exempt 濫用防止が機能)"
-      - ac_ref: AC3_5_fixture_カバレッジ_完全性
+        rationale: |
+          skill 格納先正規化 (shogun/skills/ 集約 + ~/.claude/skills/ 削除) は
+          cmd_562 の ends 目的そのもの。move 操作の完了 = 目的達成の直接証拠。
+        corresponding_ends_ac: null
+      - id: AC2_settings_json_diff
         type: means
-        rationale: "fixture 5 件が存在・網羅することを確認 = 手段完成"
-        corresponding_ends_ac: AC4_test_exit_code_整合性
-      - ac_ref: AC4_test_exit_code_整合性
+        rationale: |
+          settings.json 汚染回避の「証拠」として diff 観測 = 手段検証。
+          真の ends である「汎用設定リポジトリの純度維持」は skill mv (AC1)
+          によって達成済。AC2 は side-effect absence の確認で補助手段。
+        corresponding_ends_ac: AC1_skill_mv完全性
+      - id: AC3_ルール追補再発防止効果
         type: ends
-        rationale: "テスト全件 PASS + exit 0 を確認 = 目的到達 (テスト機構が実際に機能)"
-    means_without_ends: []
-    semantic_gap_assessment: |
-      全 means AC に対応する ends AC が存在する。pseudo-pass リスクなし。
-      ただし AC2/AC4 は fixture (synthetic) レベルの ends であり、production での
-      完全な ends (SO-23 ギャップが実際の n8n 運用で発生しなくなること) は
-      運用観測フェーズで確認が必要。
-
-  so22_independence_note:
-    status: 将来課題
-    detail: |
-      sug_cmd_556_001 (SO-22 独立 id 登録) は本 cmd 範囲外。SO-22 検証 (n8n 機能検証)
-      は別 cmd で着手推奨。cmd_557 は SO-23 の field-level 精度化のみに集中しており、
-      適切な scope cut。
+        rationale: |
+          将来の skill path 誤用防止が cmd_562 の第二の ends。2層防御構造の
+          確立 = 再発防止能力の直接証拠。文言 grep で見える形の規範化が完遂。
+        corresponding_ends_ac: null
+    ends_coverage_note: |
+      ends 系 AC 2 件 (AC1=現状正規化 / AC3=将来防止) + means 系 AC 1 件
+      (AC2=副作用監視) で構成。cmd_562 は「現状の是正 + 将来の再発防止」の
+      両輪を AC1 + AC3 で直接カバーし、AC2 が無害性を裏付ける構造。
+      pseudo-pass リスクなし。
+    both_systems_verified: true
+    verdict: |
+      ends 系 2/2 PASS (skill 実移動完了 + 2層防御ルール確立)、
+      means 系 1/1 PASS (settings.json 無害性確認)。
+      both_systems_verified=true。手段と目的の両方が整合し機能している。
 
 suggestions:
-  - id: sug_cmd_557_001
+  - id: sug_cmd_562_001
+    priority: low
+    target: instructions/shogun.md L199-217 (AC5 section)
+    issue: |
+      AC5 の禁止文言 "**`~/.claude/skills/` は禁止。**" は太字のみで、
+      AC6 (karo.md L350 "AC6 — Skill Path Guard") のような "AC番号 — 名称"
+      形式でないため、shogun.md 内で grep 検索時に「AC5 の section を
+      ピンポイント指定」しづらい。再発防止の効果は現状でも充分だが、
+      将来ルールが増えた際の ID 一貫性のため命名を揃えることを推奨。
+    recommendation: |
+      shogun.md L199 を
+        "### Skill Artifact Path Rule (AC5)"
+      から
+        "### AC5 — Skill Artifact Path Rule"
+      に変更 (karo.md L350 "### AC6 — Skill Path Guard" と命名整合)。
+      工数 0.1h。cmd_563 以降の discipline 整備 cmd で同時修正可能。
+
+  - id: sug_cmd_562_002
     priority: medium
-    target: scripts/qc_auto_check.sh
+    target: scripts/qc_auto_check.sh (AC5/AC6 自動検査追加候補)
     issue: |
-      fixture_b は expected=fail だが qc_auto_check.sh 内部では warn level を付与し、
-      "EMPTY ARRAY: FAIL" keyword で test harness に fail matching させる設計。
-      pre-gate 哲学 (warn-level automation + manual gunshi 真 gate) とは整合するが、
-      severity level と detail keyword の不一致は将来の severity 一元化時に混乱リスク。
+      AC5/AC6 は現時点で manual 規範 (将軍の自己検閲 + 家老の dispatch 前
+      目視 grep)。しかし cmd YAML 起案時に `~/.claude/skills/` 混入を
+      mechanical に検出する自動 check が qc_auto_check.sh に無い。
+      家老の目視漏れが発生した場合、ashigaru が誤パスで skill を作成し
+      再発するリスクが残存。
     recommendation: |
-      以下いずれか:
-      (A) add_result "SO-23" "fail" に昇格 (厳格化路線)
-      (B) 現状維持 + schema comment で「warn は pre-gate 段階、真 gate は gunshi」
-          と明記 (pragmatic 路線)
-      cmd_556 の WARN 方針と整合させるなら (B) 推奨。SO-23 将来厳格化時に (A) 検討。
+      scripts/qc_auto_check.sh に新 rule SO-24 (仮称) を追加:
+        - 対象: 任意の task YAML (`editable_files`, `command`, `acceptance_criteria`)
+        - パターン: `~/.claude/skills/` または `~\\.claude\\skills\\`
+        - 結果: fail (dispatch 拒否相当)
+      工数 0.5h (qc_auto_check.sh ロジック追加 + fixture 2件 + test)。
+      cmd_563 以降で独立 cmd として発令推奨 (SO-22/SO-23 と違い実務発生
+      頻度は低いため priority medium)。
 
-  - id: sug_cmd_557_002
+  - id: sug_cmd_562_003
     priority: low
-    target: tests/qc_auto_check/
+    target: memory/skill_history.md (cmd_561/562 間の整合記載)
     issue: |
-      fixture 5 件は synthetic dict を期待値構築しており、実 queue/tasks と
-      queue/reports を使わない。queue で起き得る edge case (YAML コメント、
-      複数 pending_resources array、SO-01 violation 併発) に対する integration
-      coverage が不足。
+      cmd_561 で semantic-gap-diagnosis を「昇格」(shogun/skills/ 格納)、
+      cmd_562 で shogun-precompact-snapshot-e2e-pattern も同格納へ。
+      memory/skill_history.md が cmd_561 昇格記録を持つならば、cmd_562 で
+      移動した 2 skill の正規化記録も残すことで、将来「なぜこの 2 skill が
+      shogun/skills/ 配下なのか?」の経緯追跡が容易になる。
     recommendation: |
-      将来 fixture_f (multi pending_resources) / fixture_g (YAML コメント混入) /
-      fixture_h (resource_completion 欠落キー = null ではなく absent) を追加検討。
-      現在の 5 件で scope1 AC は十分満たすため、本 cmd は Go。
-
-  - id: sug_cmd_557_003
-    priority: low
-    target: instructions/gunshi.md
-    issue: |
-      今後の QC で「SO-23 WARN check 出力を gunshi が参照する際の手順」が
-      COND-D Step 4 に記載済だが、本 cmd で拡張された FAIL 判定 (exempt 禁則)
-      の扱いが明示されていない。
-    recommendation: |
-      gunshi.md Autonomous QC Step 4-b に以下を追記:
-      「qc_auto_check.sh 出力に SO-23 fail がある場合は即 NoGo 判定。warn は
-      gunshi の manual cross-check (真 gate) で Go/NoGo を最終決定。」
-      cmd_558 で着手推奨。
-
-  - id: sug_cmd_557_004
-    priority: low
-    target: scripts/tests/test_qc_auto_check_so23.sh
-    issue: |
-      test script は CI 統合されていない。fixture 追加時の回帰防止が人手依存。
-    recommendation: |
-      GitHub Actions or pre-commit hook に bash scripts/tests/test_qc_auto_check_so23.sh
-      を登録。失敗時 push block。工数 30分程度。
+      memory/skill_history.md に cmd_562 entry 追加:
+        "## cmd_562 (2026-04-22): skill 格納先正規化
+        - semantic-gap-diagnosis: ~/.claude/skills/ → shogun/skills/
+        - shogun-precompact-snapshot-e2e-pattern: 同上
+        - 理由: ~/.claude/ 汎用設定リポジトリの純度維持 (shogun.md AC5)"
+      工数 0.1h。
 
 skill_candidate:
-  found: true
-  name: "pre-gate-vs-true-gate-separation-pattern"
-  description: |
-    自動 pre-gate (qc_auto_check.sh WARN level) と manual true gate (gunshi
-    cross-check) を二段階で構成するパターン。pre-gate は「警告多め / 誤検知
-    容認」志向、true gate は「最終判断 / 人の文脈考慮」志向。
-    fixture_b の warn-with-FAIL-keyword 設計もこのパターンの実装例。
-    cmd_556 (COND-A..E + qc_auto_check WARN) → cmd_557 (field-level 精度化) の
-    progression はこのパターンを実証している。
-  related_cmds:
-    - cmd_556 (五層防御 + WARN check 導入)
-    - cmd_557 (pre-gate 精度化 + FAIL 水準 exempt 禁則)
-  proposal: skills/learned/pre-gate-vs-true-gate-separation-pattern/ に SKILL.md
-    化を Shogun 承認後に着手。
+  found: false
+  note: |
+    本 cmd は「格納先正規化 + 2層防御ルール」で新 pattern なし。
+    既存 skill "semantic-gap-diagnosis" §5.5 (discipline 整備 cmd 類型) と
+    §4 (Gunshi Discipline) の適用範囲内。cmd_557→558→559→560→561→562 の
+    6-cmd discipline 整備シーケンスが「ルール追補系」として統一運用可能に
+    なったことを confirm。
 
 self_review_note: |
-  cmd_556 の 5/5 PERFECT 判定に引き続き、cmd_557 も field-level check の
-  実装・test 両面で高品質。sug_cmd_556_005 (Codex 指摘「resource_completion: []
-  pseudo-pass」穴) の明示的塞ぎ込みが Scope1 で enforce されており、
-  cmd_557 は sug_cmd_556_005 を確実に回収している。
+  cmd_562 は cmd_561 ("skill 昇格") の後続として skill 管理方針の2層防御
+  完成を担う cmd。means/ends 分類で重要なのは AC1 と AC3 が双方 ends 系
+  (現状正規化 + 将来防止) であり、本 cmd が 「discipline 整備 cmd = means≡ends」
+  類型ではなく通常の ends 系 cmd として評価できた点。
 
-  verdict: Go。
+  先行する cmd_558/559/560 (全て means≡ends 扱い + both_systems_verified=
+  not_applicable) との対比により、"discipline 整備 cmd" と "実効性 cmd" の
+  境界線が明確になった。cmd_562 は shogun.md/karo.md の文言追加だけでなく
+  実 file system mv まで含むため、結果 (ends) と規範 (discipline) の両方を
+  持つ hybrid 型 cmd として分類。
 
-  連関学習: cmd_555e (dual-hook separation) + cmd_556 (五層防御) + cmd_557
-  (pre-gate 精度化) で「責務分離 + 多層防御 + 段階的精度化」の設計原則が
-  確立された。cmd_558 以降の基盤として活用可能。
-
-means_ends_classification:
-  schema_version: "1.0"
-  note: "cmd_559 Scope3 追加 (subtask_559c). semantic-gap-diagnosis skill に基づく means/ends 分類"
-  ac_classification:
-    - id: AC1
-      label: "field-level check 妥当性"
-      type: means
-      rationale: "qc_auto_check.sh の実装正確性 (手段完成)"
-      corresponding_ends_ac: null
-    - id: AC2
-      label: "whitelist 堅牢性 (n8n-fix exempt 禁止)"
-      type: means
-      rationale: "whitelist ロジックの実装堅牢性 (手段完成)"
-      corresponding_ends_ac: null
-    - id: AC3
-      label: "5 fixture カバレッジ完全性"
-      type: means
-      rationale: "テスト網羅性 (手段: テスト品質)"
-      corresponding_ends_ac: null
-    - id: AC4
-      label: "test exit code 整合性"
-      type: means
-      rationale: "CI 統合可能性 (手段: テスト機構)"
-      corresponding_ends_ac: null
-  ends_coverage_note: |
-    cmd_557 は予防的インフラ cmd (SO-23 pseudo-pass 穴塞ぎ) のため、
-    業務完遂型 ends AC (実 resource 処理完遂等) は対象外。
-    means PASS = SO-23 防衛穴塞ぎ構造が正しく実装された状態。
-    ends 到達の検証は実 n8n cmd 実行時の SO-23 check で担保される。
-  both_systems_verified: true
-  verdict: "means 系 4/4 PASS。ends 系: インフラ cmd のため means≡ends として扱う (semantic gap 非該当)"
+  verdict: Go。2層防御構造が明確に機能し、再発防止効果 OK。
 
 editable_files_touched:
   - "queue/reports/gunshi_report.yaml"

@@ -1,4 +1,33 @@
 worker_id: ashigaru1
+task_id: subtask_562b
+parent_cmd: cmd_562
+status: done
+timestamp: "2026-04-22T14:39:43+09:00"
+
+result:
+  summary: |
+    cmd_562 Scope2 完了。
+    AC5: instructions/shogun.md に「Skill Artifact Path Rule (AC5)」セクション追補。
+         skill成果物pathは /home/ubuntu/shogun/skills/<name>/ を指定、~/.claude/skills/ 禁止を明文化。
+    AC6: instructions/karo.md Dispatch Audit セクション冒頭に AC6 Skill Path Guard を追補。
+         task YAML に ~/.claude/skills/ が含まれれば dispatch 拒否+将軍問い返しルールを明文化。
+    2層防御(将軍=発令時禁止 / 家老=dispatch時確認)を実装。
+
+acceptance_criteria:
+  - id: AC5
+    status: PASS
+    note: "instructions/shogun.md Command Writing セクション内に Skill Artifact Path Rule 追加。~/.claude/skills/ 禁止 + 正しいパス (/home/ubuntu/shogun/skills/<name>/) を明示"
+  - id: AC6
+    status: PASS
+    note: "instructions/karo.md Dispatch Audit セクション冒頭に AC6 Guard 追加。~/.claude/skills/ 含む task YAML は dispatch 拒否+将軍問い返しルール明文化"
+
+skill_candidate:
+  found: false
+  reason: "単発の instructions 追補。汎用スキル化不要。"
+
+---
+
+worker_id: ashigaru1
 task_id: subtask_558b
 parent_cmd: cmd_558
 status: done
