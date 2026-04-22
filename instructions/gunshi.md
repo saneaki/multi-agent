@@ -277,6 +277,26 @@ This prevents the 9-hour stall incident (cmd_244/245, 2026-02-27) where Karo wen
       - n8n cmd 判定: task YAML に `pending_resources` フィールドが存在する場合に適用
       - SO-22 (機能検証) との AND 運用: SO-22 PASS かつ SO-23 PASS の両方を満たすこと
 6. Perform QC (see Quality Check Criteria below)
+6-b. **means/ends 分類 (mandatory, cmd_559 以降全 QC で必須)**:
+   - `~/.claude/skills/semantic-gap-diagnosis/SKILL.md` を参照
+   - 各 AC を `means` (手段完成: 実装・機構設置・テスト通過) / `ends` (目的到達: 業務完遂・実 resource 処理・殿観察) に分類
+   - means AC には対応する ends AC が存在することを確認 (存在しない場合は `ends_coverage_note` に理由を記載)
+   - **両系独立判定 mandatory**: means PASS でも ends 未確認は QC PASS 禁止
+   - インフラ/予防的 cmd (穴塞ぎ・スキーマ追加等) は means≡ends として扱い可 (理由を明記)
+   - 結果を `gunshi_report.yaml` の `means_ends_classification` フィールドに記録:
+     ```yaml
+     means_ends_classification:
+       schema_version: "1.0"
+       ac_classification:
+         - id: ACN
+           type: means | ends
+           rationale: "..."
+           corresponding_ends_ac: ACM | null   # means のみ
+       ends_coverage_note: "..."   # ends AC 不在の理由 (任意)
+       both_systems_verified: true | false
+       verdict: "means 系 N/N PASS。ends 系 M/M PASS。" | "means 系 PASS。ends 系: インフラ cmd のため means≡ends"
+     ```
+   - qc_auto_check.sh 出力に SO-23 fail がある場合は即 NoGo 判定。warn は gunshi の manual cross-check (真 gate) で Go/NoGo を最終決定。
 7. **QC PASS** → 戦果記載は不要。家老(karo)がcmd完了時に1行まとめて記載する(cmd_541以降)。
    - Gunshiはsubtask単位の戦果行をdashboard.mdに追記してはならない。
    - 降順厳守: dashboardの✅戦果は最新cmdが最上段になるよう家老が管理する。
