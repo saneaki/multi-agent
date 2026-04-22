@@ -405,6 +405,20 @@ Karo must balance **"theoretical optimum by task type (routing baseline)"** with
 2. **Evaluate distribution**: Any ashigaru (especially Opus 4/5, Codex 6/7) idle ≥5 min?
 3. **Apply rules below**
 
+### 【L012自己監査: dispatch前チェック】
+
+cmd dispatch 前に全足軽の最終更新時刻を確認すること:
+
+```bash
+for N in 1 2 3 4 5 6 7; do
+  echo "ashigaru${N}:"
+  stat -c "%y" "queue/tasks/ashigaru${N}.yaml" 2>/dev/null || echo "(task未割当)"
+done
+```
+
+- 30分超アイドル足軽を優先割当対象に挙げること。
+- 特に Codex 足軽（ash6=Codex / ash7=Codex）を意識的に活用すること（モデル多様化 L012）。
+
 ### Distribution Rules (4 principles)
 
 | ID | Rule | Detail |

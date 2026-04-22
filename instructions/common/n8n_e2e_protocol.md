@@ -150,3 +150,26 @@ resource_exempt: true   # → qc_auto_check.sh が FAIL を返す
   cmd_553 → cmd_554 連鎖 (trigger E2E OK / 業務 NG) を再発防止する五重防御の1枚。
 - **2026-04-22**: cmd_557 Scope1 にて §5.5 whitelist exemption 仕様追記 (ashigaru1)。
   qc_auto_check.sh field-level check 追加 (AC1: 空配列NG / AC2: 5field完全性 / AC3: n8n-fix exempt禁止) に対応。
+
+## 8. 適用範囲と遡及 policy
+
+本 protocol (test_executions / resource_completion 分離 schema) の適用範囲を明示する。
+
+### 8.1 新規 cmd への適用
+
+- cmd_555e 実装完了 (2026-04-22) 以降に発令された新規 n8n cmd から適用する。
+- Karo が task YAML に `pending_resources` field を記載し、ashigaru が `resource_completion` mapping table を report に含める。
+
+### 8.2 既存 cmd への遡及非適用
+
+- **cmd_553 / cmd_554 の既存 report は新 schema に遡及更新しない。**
+  - 理由: cmd_554 にて実運用 NG の是正は完了済。遡及更新は工数対効果が低く、混乱を招くリスクがある。
+- 既存 cmd の追加調査が必要な場合は、当該 cmd の新規 subtask として発令する (既存 report は変更しない)。
+
+### 8.3 適用対象まとめ
+
+| cmd | 適用 | 備考 |
+|-----|------|------|
+| cmd_553 | 非適用 | 遡及更新なし。是正は cmd_554 で完了 |
+| cmd_554 | 非適用 | 遡及更新なし。是正完了済 |
+| cmd_555e 以降 | **適用** | 本 protocol 全 schema 必須 |

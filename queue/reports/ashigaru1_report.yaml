@@ -1,4 +1,39 @@
 worker_id: ashigaru1
+task_id: subtask_557a
+parent_cmd: cmd_557
+status: done
+timestamp: "2026-04-22T13:37:33+09:00"
+
+result:
+  summary: |
+    cmd_557 Scope1 完了。qc_auto_check.sh の SO-23 WARN check セクションに
+    field-level check 3点を追加。n8n_e2e_protocol.md に §5.5 whitelist exemption 仕様を追記。
+    AC1: resource_completion=[] → WARN FAIL (python3 len=0 判定)
+    AC2: 5 field (pending_resource_id/exec_id/all_nodes_success/output_paths/verified_at) 欠落 → WARN
+    AC3: resource_exempt: true + project: n8n_workflows → FAIL (exempt 禁止)
+    AC4: n8n_e2e_protocol.md §5.5 に適用条件・禁止条件・自動検査手順を明文化
+
+acceptance_criteria:
+  - id: AC1
+    status: PASS
+    note: "qc_auto_check.sh: RC_COUNT=0/-1 → warn 'resource_completion is EMPTY ARRAY: FAIL' 追加済"
+  - id: AC2
+    status: PASS
+    note: "python3 で 5 field 欠落チェック → warn 'resource_completion field incomplete' 追加済"
+  - id: AC3
+    status: PASS
+    note: "resource_exempt=true + IS_N8N_CMD=true → fail 'resource_exempt: true is INVALID for n8n-fix cmd' 追加済"
+  - id: AC4
+    status: PASS
+    note: "instructions/common/n8n_e2e_protocol.md §5.5 whitelist exemption 仕様追記済 (適用条件表+例+自動検査手順)"
+
+skill_candidate:
+  found: false
+  reason: "qc スクリプトへの単発追加。汎用スキル化には至らない。"
+
+---
+
+worker_id: ashigaru1
 task_id: subtask_555d_b
 parent_cmd: cmd_555d
 status: done

@@ -286,6 +286,7 @@ After Context Loading completes:
 
 1. **Read dashboard.md** — current state, action items, pending work
 1.5. **Update 🏯 待機中の足軽** — `shc status` を実行し、各足軽の実際のCLI種別・モデルをダッシュボードの🏯セクションに反映する（Sonnet/Opus/Codex等）。陣形変更後にセッションを跨ぐとダッシュボード表記が古くなるため、セッション開始時に将軍が必ず同期する。
+1.6. **30分超アイドル足軽の特定** — `for N in 1 2 3 4 5 6 7; do stat -c "%y %n" "queue/tasks/ashigaru${N}.yaml" 2>/dev/null; done` で各足軽 task YAML の最終更新時刻を確認し、30分超アイドルの `ashigaruN` を次回 cmd dispatch の優先割当候補として記録する。Codex 足軽 (`ashigaru6`/`ashigaru7`) を含む全足軽を対象とする（L012 準拠）。
 2. **Read most recent daily log** (`logs/daily/YYYY-MM-DD.md`) — previous session outcomes
 3. **Extract Gunshi proposals** from each cmd's `軍師提案:` line in the daily log
 4. **Evaluate proposals by priority**:

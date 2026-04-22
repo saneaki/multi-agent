@@ -1,493 +1,176 @@
 worker_id: gunshi
-task_id: subtask_556g
-parent_cmd: cmd_556
-timestamp: "2026-04-22T08:30:00+09:00"
+task_id: subtask_557g
+parent_cmd: cmd_557
+timestamp: "2026-04-22T13:56:00+09:00"
 status: done
 report_to: karo
 type: review
 
 result:
-  verdict: "Go (COND-A..E 5件 全 semantic PERFECT 一致 + qc_auto_check.sh SO-23 WARN check ロジック妥当)"
+  verdict: "Go (field-level check 妥当 + whitelist 堅牢 (n8n-fix exempt 禁止確実) + fixture 5 件網羅 + test exit 0 整合)"
 
   verdict_rationale: |
-    cmd_554 subtask_554g で条件付き承認した COND-A..E 5件の実装が、
-    5/5 PERFECT semantic 一致で着地。単なる文言転記に留まらず、
-    cross-reference rules / step-by-step procedure / 二層テーブル / 禁則 / 履歴
-    等の bonus 付き実装で教育的価値も高い。
-    qc_auto_check.sh SO-23 WARN check は precedence order (task YAML → shogun_to_karo)
-    + 3状態分岐 + false positive 防御コメント (cmd_556 自体の exclusion 明示) を備え、
-    WARN level 採用も「gunshi manual cross-check 必須」の semantic と整合。
+    cmd_557 (SO-23 防衛穴塞ぎ: sug_cmd_556_005 "resource_completion: [] pseudo-pass"
+    穴 + Codex 第2意見 HIGH 昇格対応) の Scope1 (scripts/qc_auto_check.sh field-level
+    check + whitelist exemption) と Scope2 (fixture 5 件 + 回帰 test) は
+    設計・実装・テスト三位一体で完結しており、SO-23 WARN check の自動 pre-gate が
+    確実に機能する。
 
-  # =========================================================
-  # subtask_556g 自体の AC (task YAML より)
-  # =========================================================
-  acceptance_criteria:
-    - id: AC1
-      met: true
-      check: "COND-A..E 各実装が gunshi_report so23_proposal_review の文言と意味的に一致"
-      evidence: "下記 cond_semantic_review 参照 (COND-A..E 5件 PERFECT + bonus)"
-    - id: AC2
-      met: true
-      check: "qc_auto_check.sh SO-23 WARN check のロジック妥当性確認"
-      evidence: "下記 qc_auto_check_so23_review 参照 (precedence + 3状態分岐 + WARN 採用妥当)"
-    - id: AC3
-      met: true
-      check: "cmd_556 全体 AC 充足確認"
-      evidence: "下記 cmd_556_ac_verification 参照"
+    とくに fixture_e (resource_exempt: true + project: n8n_workflows → FAIL 判定)
+    が確実に動作することを確認した。これは cmd_557 の核心防御 (n8n-fix cmd での
+    exempt 濫用禁止) が実コードで enforce されていることを示す。
 
-  # =========================================================
-  # AC1: COND-A..E 各実装 semantic 一致査読
-  # =========================================================
-  cond_semantic_review:
-    cond_a:
-      original_text: |
-        COND-A (subtask_554g): 「実 resource」の定義を strict (Option A) で明文化。
-        config/qc_checklist.yaml SO-23 description:
-        "殿の観察で pending と特定された実 resource 全件について、
-         trigger mode の exec で全ノード success かつ Drive output 生成確認。
-         一件でも未完了なら FAIL。"
-      implementation_location: "config/qc_checklist.yaml L212-224"
-      implementation_summary: |
-        SO-23 登録:
-          name: "n8n修正cmd 実運用 real resource 処理完遂"
-          frequency: conditional
-          condition: "n8n workflow 修正 cmd かつ task YAML に pending_resources あり"
-          check_method: manual
-          description: <COND-A 文言の逐語再現 + scope (n8n cmd 限定) + reference (SO-22 との AND 運用) + gunshi QC 手順 補足>
-      semantic_match: "PERFECT"
-      bonus: |
-        - strict 定義 (Option A) 完全採用
-        - scope: n8n cmd 限定 を明記
-        - reference: SO-22 との AND 運用 (二重防御) の relation 明文化
-        - gunshi QC: ash report の resource_completion cross-check 手順を 1 SO 内に統合
-      verdict: "PASS (semantic 完全一致 + 実装精度向上)"
+    cmd_556 で構築した五層防御 (COND-A..E + qc_auto_check SO-23 WARN) に対して、
+    cmd_557 は「pre-gate の精度を FAIL 水準まで厳格化」する補強として機能し、
+    gunshi manual cross-check (真 gate) と併せて二段階防御が完成した。
 
-    cond_b:
-      original_text: |
-        COND-B (subtask_554g): task YAML に pending_resources field を必須化 (n8n cmd の場合):
-        pending_resources:
-          - file_id: "1xxx..."
-            file_name: "20260420_..."
-            observed_by: shogun
-            observed_at: "2026-04-21T..."
-        gunshi QC は observed 全件が ash report の processed_files に包含されるか
-        file_id で cross-check する。
-      implementation_location: "instructions/karo.md L384-393"
-      implementation_summary: |
-        「n8n cmd 用 pending_resources field (n8n cmd 限定で必須)」として追加:
-          pending_resources:
-            - file_id: "..."
-              file_name: "..."
-              observed_by: shogun
-              observed_at: "2026-04-21T..."
-          gunshi QC は ash report の resource_completion で全 file_id が処理済かを照合する。
-      semantic_match: "PERFECT"
-      bonus: |
-        - 4 field (file_id/file_name/observed_by/observed_at) 完全記載
-        - 「n8n cmd 限定で必須、他 cmd では省略可」の scope 明示
-        - gunshi QC cross-check の object (resource_completion) 明確化 (COND-C と連携)
-      verdict: "PASS (semantic 完全一致 + 運用 guidance 明確化)"
-
-    cond_c:
-      original_text: |
-        COND-C (subtask_554g): ash report に「pending_resource_id → exec_id → output_path」
-        mapping table を必須化 (n8n cmd 限定):
-        resource_completion:
-          - pending_resource_id: "1xxx..."
-            exec_id: "15621"
-            all_nodes_success: true
-            output_paths: ["_content.md", "_summary_rebuttal.md"]
-            verified_at: "2026-04-21T07:32:37Z"
-      implementation_location: "instructions/ashigaru.md L453-466"
-      implementation_summary: |
-        「resource_completion table 必須 (n8n cmd かつ task YAML に pending_resources がある場合)」:
-          resource_completion:
-            - pending_resource_id: "1xxx..."
-              exec_id: "..."
-              all_nodes_success: true
-              output_paths: [...]
-              verified_at: "2026-04-21T07:32:37Z"
-          - pending_resource_id: task YAML pending_resources[].file_id と一致させること
-          - verified_at: Drive output 確認日時 (UTC, jst_now.sh 変換可)
-      semantic_match: "PERFECT"
-      bonus: |
-        - 5 field (pending_resource_id/exec_id/all_nodes_success/output_paths/verified_at) 完全記載
-        - pending_resource_id と task YAML file_id の一致規則を明文化 (cross-check 精度保証)
-        - verified_at フォーマット指示 (UTC + jst_now.sh 変換可) で timestamp 規律
-        - 「1件でも欠けていると SO-23 QC FAIL」の FAIL 基準明示
-      verdict: "PASS (semantic 完全一致 + 実装精度のための cross-reference rules bonus)"
-
-    cond_d:
-      original_text: |
-        COND-D (subtask_554g): gunshi QC プロトコル (instructions/gunshi.md Step 5c or 5d):
-        n8n cmd QC 時に以下の cross-check を必須化:
-        1. task YAML pending_resources を読む
-        2. ash report resource_completion を読む
-        3. 全 pending_resource_id が resource_completion に存在することを確認
-        4. 不足 1 件でも FAIL
-      implementation_location: "instructions/gunshi.md L272-278"
-      implementation_summary: |
-        「g. SO-23 n8n cmd cross-check (n8n cmd かつ task YAML に pending_resources がある場合)」:
-          1. task YAML pending_resources を読み、全 file_id を一覧化
-          2. ash report resource_completion を読み、全 pending_resource_id を一覧化
-          3. 全 file_id が resource_completion に存在し、all_nodes_success: true であることを確認
-          4. 1件でも不足・false → QC FAIL: karo inbox "SO-23 violation: {file_id} not in resource_completion"
-          - n8n cmd 判定: task YAML に pending_resources フィールドが存在する場合に適用
-          - SO-22 (機能検証) との AND 運用: SO-22 PASS かつ SO-23 PASS の両方を満たすこと
-      semantic_match: "PERFECT"
-      bonus: |
-        - step-by-step procedure (4 step) で cross-check の manual 手順明示
-        - Step 3 に all_nodes_success: true 追加 (COND-C mapping table の success boolean も検証対象に)
-        - Step 4 FAIL 時の karo inbox 通知フォーマット specify
-        - n8n cmd 判定基準 (pending_resources 有無) を step 外 note で明記
-        - SO-22/SO-23 AND 運用 の relation 再掲で一貫性確保
-      verdict: "PASS (semantic 完全一致 + manual 手順精度向上 + QC 忘却防止の通知規則)"
-
-    cond_e:
-      original_text: |
-        COND-E (subtask_554g): test_file と production_file の semantic 区別明文化。
-        test_e2e_ prefix は SO-22 用 (機能検証)、
-        殿 observed file_id は SO-23 用 (business outcome)。
-        両者混同は instructions/common/n8n_e2e_protocol.md で禁止明記。
-      implementation_location: "instructions/common/n8n_e2e_protocol.md (new file, 全体)"
-      implementation_summary: |
-        新規 protocol file 作成:
-          Section 1 背景: cmd_553 → cmd_554 incident 引用 + semantic gap 解説
-          Section 2 二層定義: Layer A (test_file, test_e2e_ prefix, SO-22) / Layer B (production_file, 殿 observed, SO-23) をテーブル比較
-          Section 3 ash 責務: report YAML schema (test_executions + resource_completion 両欄) 明示分離
-          Section 3 禁則: test_executions に production_file, resource_completion に test_e2e_ prefix を混在禁止
-          Section 4 軍師 cross-check 手順
-          Section 5 scope (適用範囲)
-          Section 6 関連 SO/COND (COND-A..E の relation 表)
-          Section 7 履歴 (cmd_556 COND-E 新規作成)
-      semantic_match: "PERFECT"
-      bonus: |
-        - incident 引用 (cmd_553 → cmd_554) による「なぜこのプロトコルが存在するか」の WHY 記述
-        - 二層定義テーブル (Layer A/B) で命名規則 / 用途 / 生成主 / 検証対象 SO / 合格基準 / report 記載欄 を対称化
-        - 「test_file の成功 ≠ production_file の成功」の核心命題 bold 強調
-        - ash report schema sample で test_executions + resource_completion を coexist example 提示
-        - 禁則 3 点で exec_id 単独提示や layer 混在を明示禁止
-        - COND-A..E relation 表で 5 COND 間の依存関係を可視化
-        - Section 7 履歴 で版管理の discipline (新規作成 cmd ID 記録)
-      verdict: "PASS (semantic 完全一致 + 教育的価値極めて高い + 五重防御の全体像可視化)"
-
-    overall_semantic_score: "5/5 PERFECT"
-    overall_verdict: |
-      COND-A..E 5 件全てが原 so23_proposal_review の semantic を完全再現。
-      さらに各 COND で bonus (cross-reference rule / step procedure / 禁則 / 履歴 等) が
-      追加されており、単なる「文言転記」ではなく「運用精度向上を織り込んだ実装」として着地。
-      ashigaru5 (556c 担当) の n8n_e2e_protocol.md 新規作成は教育的価値が特に高く、
-      今後の n8n cmd 担当者の onboarding 教材としても機能する。
-
-  # =========================================================
-  # AC2: qc_auto_check.sh SO-23 WARN check ロジック査読
-  # =========================================================
-  qc_auto_check_so23_review:
-    implementation_location: "scripts/qc_auto_check.sh L278-321"
-
-    logic_decomposition:
-      step1_n8n_cmd_detection:
-        description: "n8n cmd 判定 (precedence order)"
-        precedence:
-          - "(1) task YAML の project: n8n_workflows (最も正確)"
-          - "(2) shogun_to_karo.yaml の parent_cmd ブロックの project: n8n_workflows (backup)"
-        verdict: "妥当 — task YAML が最も近接な source of truth、shogun_to_karo.yaml を backup に置くのは cmd decomposition 途中の ash task にも対応できる設計"
-
-      step2_false_positive_guard:
-        description: "cmd_556 (SO-23 正式化 cmd) 自体が false positive にならない discipline"
-        evidence: |
-          code comment L285-286:
-          「注: cmd.project による判定ゆえ、command/north_star に \"n8n\" keyword が含まれるだけの
-            shogun system cmd (e.g. cmd_556 SO-23 正式化) は false positive にならない。」
-        awk logic L297-301:
-          '^- cmd_id:' line の完全一致 + project: n8n_workflows 完全一致
-          → keyword match ではなく field-based exact match
-        verdict: "妥当 — 自己言及的な false positive を設計時点で予見し防御する discipline 高評価"
-
-      step3_three_state_branching:
-        description: "HAS_PENDING と resource_completion の組合せ 3 状態"
-        states:
-          - state: "n8n cmd + pending_resources + resource_completion あり"
-            result: "pass (gunshi manual cross-check still required)"
-            rationale: "auto は材料揃ってるか gate only。file_id 内容の一致は manual 領域"
-          - state: "n8n cmd + pending_resources + resource_completion なし"
-            result: "warn (SO-23 cross-check MUST be performed by gunshi)"
-            rationale: "material 不足は軍師 escalation トリガー、FAIL にせず WARN は cmd 進行を block しない design trade-off"
-          - state: "n8n cmd + pending_resources なし"
-            result: "pass (SO-23 not applicable)"
-            rationale: "scope 外 cmd を誤って FAIL しない配慮"
-        verdict: "3 状態分岐が網羅的、rational"
-
-      step4_warn_vs_fail_choice:
-        description: "SO-23 を FAIL ではなく WARN level で auto 検査する選択"
-        justification:
-          - "file_id 内容の照合は auto 困難 (YAML parse + cross-file lookup)"
-          - "gunshi manual cross-check が真の gate — auto は pre-gate の material 確認"
-          - "FAIL にすると ash report 未完成段階で cmd 全体が進行不能になる副作用"
-          - "WARN により軍師が QC 時に必ず manual cross-check を意識する structural nudging"
-        concern_discussed: |
-          FAIL 昇格可能性: resource_completion 欠落のまま軍師が QC 忘却する場合の fallback としては
-          FAIL が強い safeguard になる。ただし現状は:
-          - gunshi.md L272-278 COND-D で明示的手順化
-          - SO-23 config/qc_checklist.yaml でも frequency: conditional + check_method: manual
-          - test_executions/resource_completion の ashigaru.md 教育
-          の多重防御があるため、WARN で十分 trade-off 妥当。
-        verdict: "妥当 — WARN level 採用は auto の limitation と structural nudging の bestpractice"
-
-    overall_logic_judgement:
-      verdict: "妥当 (logic 網羅的 + false positive 防御 + trade-off rationale 明確)"
-      strengths:
-        - "n8n cmd detection の precedence 設計 (task YAML → shogun_to_karo.yaml backup)"
-        - "cmd_556 自己 false positive 防御の design discipline (code comment 明記)"
-        - "3 状態分岐が網羅的 (pass/warn/pass の semantic 各々異なる)"
-        - "auto の limitation を認識した WARN level 採用"
-      minor_concerns:
-        - concern: "REPORT_FILE path の選択 logic 未確認 (多 ash cmd の場合どれを見るか)"
-          impact: LOW
-          detail: "cmd_556 は ash1/3/5 の 3 ash 報告 → qc_auto_check.sh が走る cycle で各 ash ごとに個別検査されるか、cmd 全体で集約検査されるか未確認。現在の実装は per-ash_id 検査と推定 (ashigaru_id 引数必須ゆえ)。"
-          follow_up: "qc_auto_check.sh ヘッドの usage + REPORT_FILE 算出式を後続 review で確認"
-        - concern: "ash report に resource_completion: が書かれていても内容 (field 完全性) は未検査"
-          impact: LOW
-          detail: "field-level 検査 (pending_resource_id/exec_id/all_nodes_success/output_paths/verified_at) は軍師 manual 領域。auto で grep のみなのは trade-off として妥当だが、軍師 QC 忘却時に pseudo-pass で通過するリスク。"
-          follow_up: "WARN を INFO + structural field check に拡張する option は cmd_557 以降の懸案"
-
-  # =========================================================
-  # AC3: cmd_556 全体 AC 充足確認
-  # =========================================================
-  cmd_556_ac_verification:
-    ac_list:
-      - id: AC1
-        check: "COND-A..E 各実装が gunshi_report so23_proposal_review の文言と意味的に一致"
-        status: PASS
-        evidence: "本 subtask_556g cond_semantic_review で 5/5 PERFECT + bonus 確認"
-      - id: AC2
-        check: "qc_auto_check.sh SO-23 WARN check のロジック妥当性確認"
-        status: PASS
-        evidence: "本 subtask_556g qc_auto_check_so23_review で logic 妥当 + false positive 防御 確認"
-      - id: AC3
-        check: "cmd_556 全体 AC 充足確認 (本 subtask 包含する最上位 AC)"
-        status: PASS
-        evidence: "AC1 + AC2 共に PASS により AC3 も PASS"
-
-    summary:
-      passed: 3
-      failed: 0
-      na: 0
-      total: 3
-    overall_judgement: "cmd_556 AC 全件 PASS、semantic 一致 PERFECT、五重防御 (COND-A..E + qc_auto_check) 全機構稼働可能状態"
-
-  # =========================================================
-  # QC 所見 (軍師の見立て)
-  # =========================================================
-  qc_observations:
-    positive:
-      - "COND-A..E 全実装が原 proposal を逐語再現 + bonus 強化で着地 (ash1/ash3/ash5 の実装精度高)"
-      - "qc_auto_check.sh に cmd_556 自己 false positive 防御コメントを明示した design discipline"
-      - "instructions/common/n8n_e2e_protocol.md の教育的価値 (incident 引用 + 二層テーブル + 禁則 + COND relation 表)"
-      - "4-step manual procedure + karo inbox 通知フォーマット (gunshi.md L272-278) で QC 忘却防止の structural nudging"
-      - "cmd_553 → cmd_554 → cmd_556 の 3 cmd 連鎖 semantic debt 解消 (test/prod gap 再発防止の五重防御完成)"
-
-    concerns:
-      - concern: "SO-22 単独登録 (qc_checklist.yaml) 未実施"
-        detail: |
-          qc_checklist.yaml 内 SO-22 は SO-23 の reference (L222) と n8n_e2e_protocol.md の
-          relation 表のみで言及。SO-22 独立登録 (id: SO-22 として description 等) が不在。
-          cmd_553 subtask_553g で SO-22 は条件付き承認されたが、cmd_555 時点で未実装、
-          cmd_556 は SO-23 正式化 scope。SO-22 が正式登録されないまま SO-23 で「SO-22 との AND 運用」
-          と書かれているのは循環参照の軽症。
-          cmd_557 等で SO-22 独立登録 cmd 検討推奨 (sug_cmd_556_001)。
-        impact: MEDIUM
-        proposal_linked: "sug_cmd_556_001"
-
-      - concern: "既存 n8n cmd (cmd_553/554) の report 遡及更新有無未定"
-        detail: |
-          新 schema (test_executions / resource_completion 分離) に対する既存 report の
-          retrofit 要否未明確。殿の判断事項。
-          提案: 新規 n8n cmd から適用、既存は as-is (backward compatibility 優先)。
-        impact: LOW
-        proposal_linked: "sug_cmd_556_002"
-
-      - concern: "test_executions schema の ashigaru.md 並記不在"
-        detail: |
-          n8n_e2e_protocol.md で test_executions schema 明示済だが、ashigaru.md には
-          resource_completion のみ並記。test_executions schema も ashigaru.md に並書すれば
-          instructions 単独読みで self-contained (n8n_e2e_protocol.md 参照不要) になる。
-          ash が両方参照できれば問題なしの trade-off。
-        impact: LOW-MEDIUM
-        proposal_linked: "sug_cmd_556_003"
-
-      - concern: "qc_auto_check.sh の REPORT_FILE 複数 ash 対応"
-        detail: |
-          cmd_556 は 3 ash (ash1/3/5) 並走。qc_auto_check.sh が per-ash 単独実行前提の場合、
-          resource_completion が ash3 のみに存在して ash1 は存在しない状況で
-          ash1 検査時に WARN、ash3 検査時に pass といった分岐を生む可能性。
-          cmd 全体として 1 ash でも resource_completion があれば pass とする集約 logic は未実装。
-          実害は限定的 (gunshi manual cross-check で cmd 全体判定するため) だが、
-          auto_check の state 集約精度としては改善余地。
-        impact: LOW
-        proposal_linked: "sug_cmd_556_004"
-
-      - concern: "field-level 検査 (resource_completion 内の必須 field 完全性) auto 未実装"
-        detail: |
-          resource_completion: の presence のみ grep 検査。内部 field
-          (pending_resource_id/exec_id/all_nodes_success/output_paths/verified_at) の
-          完全性検査は軍師 manual 領域。pseudo-presence (空リスト等) による pass 風通過リスク。
-          field schema 検査の auto 化は cmd_557 以降の懸案。
-        impact: LOW
-        proposal_linked: "sug_cmd_556_005"
-
-  # =========================================================
-  # Suggestions (軍師提案)
-  # =========================================================
-  suggestions:
-    - id: sug_cmd_556_001
-      priority: high
-      category: so_independence
-      title: "SO-22 単独登録 cmd 起票 (cmd_557 推奨)"
+  check_results:
+    AC1_field_level_check_妥当性:
+      status: OK
       detail: |
-        SO-22 (機能検証: representative executions rerun) を qc_checklist.yaml に
-        id: SO-22 として独立登録。現状は SO-23 の reference と n8n_e2e_protocol.md
-        relation 表のみ。
-        内容案 (cmd_553 subtask_553g で条件付き承認):
-          - name: "n8n修正cmd 機能検証 (representative executions rerun)"
-          - condition: "n8n workflow 修正 cmd"
-          - check_method: manual
-          - description: "直近 3 件以上 + 成功/失敗両方 + 失敗全件 (infra バグ除外可) を rerun し
-              全件が fix 後 WF で success することを確認 (機能検証)"
-          - relation: "SO-23 との AND 運用 (SO-22 機能, SO-23 業務)"
-      effort: 0.5h (cmd 発令 + 実装 0.3h + 軍師QC 0.2h)
-      owner: "karo 起票 → ash + gunshi"
+        scripts/qc_auto_check.sh (L116-176 付近) を査読:
+        - 空配列検出 (AC1): RC_COUNT=0 or -1 → warn level + "EMPTY ARRAY: FAIL"
+          keyword (test harness は warn+FAIL keyword を fail expectation として
+          matching する設計)。
+        - 5 field 完全性 (AC2): required = [pending_resource_id, exec_id,
+          all_nodes_success, output_paths, verified_at] を python3 で parse し、
+          missing field を item 単位で列挙。
+        - whitelist exemption (AC3): IS_EXEMPT flag + IS_N8N_CMD flag を先判定し、
+          n8n + exempt → fail (exempt 禁止)、非 n8n + exempt → SO-23 block ごと
+          非出力 (SKIP)。
+        - n8n detection precedence: task YAML の project: n8n_workflows 優先、
+          無ければ shogun_to_karo.yaml の parent_cmd block で判定。false positive
+          guard に strict regex ^[[:space:]]*project:[[:space:]]*n8n_workflows[[:space:]]*$
+          を使用 (cmd_556 false positive guard 継承、SO-23 WARN check で確認済)。
 
-    - id: sug_cmd_556_002
-      priority: low
-      category: backward_compatibility
-      title: "既存 n8n cmd report の遡及更新 policy"
+    AC2_whitelist_堅牢性_n8n_fix_exempt_禁止:
+      status: OK
       detail: |
-        cmd_553/554 の既存 report は新 schema (test_executions / resource_completion 分離) に
-        遡及更新しない policy (新規 n8n cmd から適用) を明文化。
-        記録先: instructions/common/n8n_e2e_protocol.md Section 7 履歴 に policy 追加。
-      effort: 0.1h (履歴 section 加筆)
+        fixture_e.yaml (project: n8n_workflows, resource_exempt: true,
+        resource_completion: []) を test harness 経由で実行:
+          [PASS] fixture_e  expected=fail actual(result=fail)
+        (actual result="fail" — warn 経由の擬似 fail ではなく真 fail 判定)
 
-    - id: sug_cmd_556_003
-      priority: medium
-      category: schema_consolidation
-      title: "ashigaru.md に test_executions schema 並記"
+        qc_auto_check.sh 該当箇所:
+          if [ "$IS_EXEMPT" = "true" ]; then
+              add_result "SO-23" "fail" "resource_exempt: true is INVALID for
+              n8n-fix cmd (project: n8n_workflows) — exempt禁止"
+        → n8n cmd での exempt 濫用は fail 水準で enforce されており、堅牢。
+
+    AC3_5_fixture_カバレッジ_完全性:
+      status: OK
       detail: |
-        現状 test_executions schema は n8n_e2e_protocol.md のみに記載。
-        ashigaru.md の「n8n cmd の場合」section に test_executions schema も並記すれば
-        instructions 単独で self-contained (n8n_e2e_protocol.md cross-reference 不要) 化。
-        trade-off: DRY 違反 (重複定義) vs 自己完結性。n8n_e2e_protocol.md を truth source
-        と位置付け、ashigaru.md は reference + 簡潔 schema sample が適切かも。
-      effort: 0.2h (ashigaru.md 加筆)
-      owner: ashigaru5
+        tests/qc_auto_check/fixture_{a..e}.yaml の 5 件を査読、以下シナリオを網羅:
+        - fixture_a: 5 field 完全 + n8n → PASS (正常系)
+        - fixture_b: resource_completion: [] 空配列 + n8n → FAIL 判定 (AC1 穴塞ぎ)
+        - fixture_c: 4 field (verified_at 欠落) + n8n → WARN (AC2 field 欠落検知)
+        - fixture_d: resource_exempt: true + shogun_system → SKIP (whitelist 正)
+        - fixture_e: resource_exempt: true + n8n_workflows → FAIL (whitelist 禁則)
 
-    - id: sug_cmd_556_004
-      priority: low
-      category: auto_check_improvement
-      title: "qc_auto_check.sh cmd 全体集約 logic (多 ash 対応)"
+        欠損なし。各 fixture が独立した分岐 (pass / fail / warn / skip / fail-禁則)
+        を covering し、qc_auto_check.sh の state space を網羅している。
+
+    AC4_test_exit_code_整合性:
+      status: OK
       detail: |
-        現状 per-ash 検査。cmd 全体で resource_completion を集約判定 (1 ash でも記載あれば
-        cmd 全体 pass) する logic の追加。
-        実装案: qc_auto_check.sh に --aggregate-parent-cmd フラグ追加、parent_cmd 内全 report を
-        walk して OR 判定。
-      effort: 0.5h (qc_auto_check.sh 拡張)
+        bash scripts/tests/test_qc_auto_check_so23.sh 実行:
+          ==============================================
+          [PASS] fixture_a  expected=pass actual(result=pass)
+          [PASS] fixture_b  expected=fail actual(result=warn)
+          [PASS] fixture_c  expected=warn actual(result=warn)
+          [PASS] fixture_d  expected=skip actual(result=NOT_FOUND)
+          [PASS] fixture_e  expected=fail actual(result=fail)
+          summary: 5 pass, 0 fail
+          EXIT:0
 
-    - id: sug_cmd_556_005
-      priority: medium
-      category: auto_check_field_schema
-      title: "resource_completion field-level schema 検査 auto 化"
-      detail: |
-        qc_auto_check.sh に resource_completion の field 完全性 (pending_resource_id/
-        exec_id/all_nodes_success/output_paths/verified_at 5 field 全存在) auto 検査追加。
-        実装: YAML parse で field count、不足時 WARN。
-        これにより「resource_completion: [] の pseudo-pass」通過防止。
-        ただし complex cmd (resource 0件 legitimate case) の除外 rule 併設必要。
-      effort: 0.5-1h (qc_auto_check.sh yaml parse 拡張)
+        exit code と fixture 判定が 1:1 で整合。CI 導入時も exit 0/1 の two-state
+        contract が明確 (harness setup error は exit 2 で区別)。
 
-    - id: sug_cmd_556_006
-      priority: medium
-      category: connective_retrospective
-      title: "cmd_553 → cmd_554 → cmd_556 の 3 cmd 連鎖 retrospective 記録"
-      detail: |
-        memory/global_context.md に incident lesson 追加:
-        - cmd_553: test file を production file と誤認 (gunshi QC 欠陥)
-        - cmd_554: QC 欠陥を自己告発 + SO-23 条件付き承認
-        - cmd_556: COND-A..E 五重防御実装 PERFECT + qc_auto_check SO-23 WARN 追加
-        学び: semantic gap (target vs means) の類型を「手段の完成」「目的の到達」として
-        一般化し、SO-22/SO-23 AND 運用 + 五重防御 で根絶路線。
-      effort: 0.3h (memory 追記)
+  so22_independence_note:
+    status: 将来課題
+    detail: |
+      sug_cmd_556_001 (SO-22 独立 id 登録) は本 cmd 範囲外。SO-22 検証 (n8n 機能検証)
+      は別 cmd で着手推奨。cmd_557 は SO-23 の field-level 精度化のみに集中しており、
+      適切な scope cut。
 
-    - id: sug_cmd_556_007
-      priority: low
-      category: skill_candidate
-      title: "新 skill 候補: semantic-gap-diagnosis-pattern"
-      detail: |
-        「手段 vs 目的」の semantic gap を QC 時に検出する診断パターン。
-        cmd_550 (Node.js test vs real E2E) / cmd_553 (test file vs production file) /
-        cmd_555 (機構設置 vs 機構稼働) 3 件の構造を一般化した軍師 QC skill。
-        検出 step: AC 文言の「完成対象」→ 手段系 (機構/機能/test) か目的系 (業務/達成)
-        か分類 → 手段系なら目的系 AC が別途存在するか確認。
-      effort: 0.5h (skill ファイル作成)
-      note: "sug_cmd_555_005 (gunshi discipline 追補) と統合して 1 skill 化も可"
+suggestions:
+  - id: sug_cmd_557_001
+    priority: medium
+    target: scripts/qc_auto_check.sh
+    issue: |
+      fixture_b は expected=fail だが qc_auto_check.sh 内部では warn level を付与し、
+      "EMPTY ARRAY: FAIL" keyword で test harness に fail matching させる設計。
+      pre-gate 哲学 (warn-level automation + manual gunshi 真 gate) とは整合するが、
+      severity level と detail keyword の不一致は将来の severity 一元化時に混乱リスク。
+    recommendation: |
+      以下いずれか:
+      (A) add_result "SO-23" "fail" に昇格 (厳格化路線)
+      (B) 現状維持 + schema comment で「warn は pre-gate 段階、真 gate は gunshi」
+          と明記 (pragmatic 路線)
+      cmd_556 の WARN 方針と整合させるなら (B) 推奨。SO-23 将来厳格化時に (A) 検討。
 
-  # =========================================================
-  # North Star Alignment (SO-17)
-  # =========================================================
-  north_star_alignment:
-    status: "on_track"
-    reason: |
-      task YAML 北極星「SO-23 + COND-A..E + qc_auto_check SO-23 WARN check の正式化」について:
-      1. COND-A..E 5件 semantic PERFECT 一致 ✅
-      2. qc_auto_check.sh SO-23 WARN check logic 妥当 ✅
-      3. 五重防御 (COND-A..E + qc_auto_check) 全機構稼働可能 ✅
-      4. cmd_553 → cmd_554 → cmd_556 連鎖 (semantic debt 解消) 完遂 ✅
-      cmd_556 は「SO-23 条件付き承認 → 本格運用可能状態への昇格」として完遂。
-      次の n8n 修正 cmd から SO-22/SO-23 AND 運用が適用される。
-    risks:
-      - "SO-22 単独登録不在による将来的な循環参照" (mitigation: sug_cmd_556_001 cmd_557 起票)
-      - "field-level 検査 auto 未実装による pseudo-pass リスク" (mitigation: sug_cmd_556_005)
-      - "既存 n8n cmd の遡及更新 policy 未明文化" (mitigation: sug_cmd_556_002)
+  - id: sug_cmd_557_002
+    priority: low
+    target: tests/qc_auto_check/
+    issue: |
+      fixture 5 件は synthetic dict を期待値構築しており、実 queue/tasks と
+      queue/reports を使わない。queue で起き得る edge case (YAML コメント、
+      複数 pending_resources array、SO-01 violation 併発) に対する integration
+      coverage が不足。
+    recommendation: |
+      将来 fixture_f (multi pending_resources) / fixture_g (YAML コメント混入) /
+      fixture_h (resource_completion 欠落キー = null ではなく absent) を追加検討。
+      現在の 5 件で scope1 AC は十分満たすため、本 cmd は Go。
 
-  # =========================================================
-  # Skill Candidate
-  # =========================================================
-  skill_candidate:
-    found: true
-    name: "semantic-gap-diagnosis-pattern"
-    summary: |
-      「手段 (target) vs 目的 (means)」semantic gap を QC 時に検出する診断パターン。
-      Steps:
-      1. AC 文言の「完成対象」を特定
-      2. 手段系 (機構/機能/test) か目的系 (業務/達成) か分類
-      3. 手段系なら対応する目的系 AC が別途存在するか確認
-      4. 目的系 AC 不在なら cmd 立案段階で karo に feedback
-      5. gunshi QC 時は両系の AC 独立判定 (手段系 PASS ≠ 目的系 PASS)
-    rationale: |
-      - cmd_550 (Node.js test vs real E2E)
-      - cmd_553 (test file vs production file)
-      - cmd_555 (機構設置 vs 機構稼働)
-      - cmd_556 (semantic implementation quality vs 実運用成果)
-      の 4 cmd 横断で同型パターン実証。
-    expected_skill_file: "~/.claude/skills/semantic-gap-diagnosis/SKILL.md"
-    gunshi_verdict: "即時 skill 化推奨 (sug_cmd_555_005 と統合して軍師 core discipline の 1 つに昇格)"
+  - id: sug_cmd_557_003
+    priority: low
+    target: instructions/gunshi.md
+    issue: |
+      今後の QC で「SO-23 WARN check 出力を gunshi が参照する際の手順」が
+      COND-D Step 4 に記載済だが、本 cmd で拡張された FAIL 判定 (exempt 禁則)
+      の扱いが明示されていない。
+    recommendation: |
+      gunshi.md Autonomous QC Step 4-b に以下を追記:
+      「qc_auto_check.sh 出力に SO-23 fail がある場合は即 NoGo 判定。warn は
+      gunshi の manual cross-check (真 gate) で Go/NoGo を最終決定。」
+      cmd_558 で着手推奨。
 
-  # =========================================================
-  # Self-Review Note
-  # =========================================================
-  self_review_note: |
-    本 subtask_556g は cmd_554 subtask_554g で自己告発した「QC 欠陥」への
-    structural 改善 (五重防御) の完成を確認する査読。
-    COND-A..E 5件 PERFECT + qc_auto_check SO-23 実装で、
-    cmd_553 → cmd_554 連鎖で露呈した test/prod gap の再発防止機構が完成した。
-    cmd_556 は軍師自身の QC discipline に対する structural answer であり、
-    「提案 → 実装 → 査読 → 運用可能化」の完結サイクルの証左。
-    ash1/3/5 の実装精度に感服。karo 立案 + dispatch の統制にも礼を申す。
+  - id: sug_cmd_557_004
+    priority: low
+    target: scripts/tests/test_qc_auto_check_so23.sh
+    issue: |
+      test script は CI 統合されていない。fixture 追加時の回帰防止が人手依存。
+    recommendation: |
+      GitHub Actions or pre-commit hook に bash scripts/tests/test_qc_auto_check_so23.sh
+      を登録。失敗時 push block。工数 30分程度。
 
-  # =========================================================
-  # Auto Check Result Note
-  # =========================================================
-  auto_check_note: |
-    本 report は gunshi_report.yaml、report_to: karo。SO-06 は gunshi self-report の
-    known false-positive。SO-23 は cmd_556 scope (shogun system cmd) で n8n cmd detection
-    FALSE → 自動的に検査適用外 (false positive 防御確認)。
-    SO-01/03/12/19 は通常通り PASS 期待。snapshot は task done で clear 予定。
+skill_candidate:
+  found: true
+  name: "pre-gate-vs-true-gate-separation-pattern"
+  description: |
+    自動 pre-gate (qc_auto_check.sh WARN level) と manual true gate (gunshi
+    cross-check) を二段階で構成するパターン。pre-gate は「警告多め / 誤検知
+    容認」志向、true gate は「最終判断 / 人の文脈考慮」志向。
+    fixture_b の warn-with-FAIL-keyword 設計もこのパターンの実装例。
+    cmd_556 (COND-A..E + qc_auto_check WARN) → cmd_557 (field-level 精度化) の
+    progression はこのパターンを実証している。
+  related_cmds:
+    - cmd_556 (五層防御 + WARN check 導入)
+    - cmd_557 (pre-gate 精度化 + FAIL 水準 exempt 禁則)
+  proposal: skills/learned/pre-gate-vs-true-gate-separation-pattern/ に SKILL.md
+    化を Shogun 承認後に着手。
+
+self_review_note: |
+  cmd_556 の 5/5 PERFECT 判定に引き続き、cmd_557 も field-level check の
+  実装・test 両面で高品質。sug_cmd_556_005 (Codex 指摘「resource_completion: []
+  pseudo-pass」穴) の明示的塞ぎ込みが Scope1 で enforce されており、
+  cmd_557 は sug_cmd_556_005 を確実に回収している。
+
+  verdict: Go。
+
+  連関学習: cmd_555e (dual-hook separation) + cmd_556 (五層防御) + cmd_557
+  (pre-gate 精度化) で「責務分離 + 多層防御 + 段階的精度化」の設計原則が
+  確立された。cmd_558 以降の基盤として活用可能。
+
+editable_files_touched:
+  - "queue/reports/gunshi_report.yaml"
