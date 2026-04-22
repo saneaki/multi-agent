@@ -243,6 +243,7 @@ Refs ${cmd_id}"
             date +%s > "$RATE_TS_FILE"
             echo "$cmd_id" >> "$STATE_FILE"
             log "squash_and_pub done: $cmd_id"
+            bash "$SCRIPT_DIR/update_dashboard.sh" >/dev/null 2>&1 || log "update_dashboard.sh call failed (non-fatal)"
             return 0
             ;;
         1)
