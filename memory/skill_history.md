@@ -7,6 +7,7 @@ dashboard.md 🛠️スキル欄から溢れた全エントリ。最新順（上
 
 | スキル名 | 出典 |
 |----------|------|
+| **semantic-gap-diagnosis** ✅実装済み | cmd_559 ash5(Sonnet): `~/.claude/skills/semantic-gap-diagnosis/SKILL.md`(188行)。means(手段完成) vs ends(目的到達) 乖離を検出する4ステップ診断パターン。4cmd実証事例(cmd_550/553/555/556)+gunshi QC discipline(Step 6-b)+gunshi_report means_ends_classification schema統合。gunshi 559g QC Go(2026-04-22)。 |
 | **shift-left-validation-pattern** ✅実装済み | cmd_528d→cmd_547(2026-04-20): 軍師(Opus+T) `~/.claude/skills/shift-left-validation-pattern/SKILL.md`(140行/--mode validate/run case分岐+exit code規約+stderr詳細出力+実装テンプレート+適用事例)。足軽1号(Sonnet)作成。 |
 | **shogun-precompact-snapshot-e2e-pattern** ✅実装済み | cmd_468c4→cmd_547(2026-04-20): 足軽5号(Opus+T) `~/.claude/skills/shogun-precompact-snapshot-e2e-pattern/SKILL.md`(150行/4シナリオ構造+TMUX_PANE切替+diff -q安全復元+PostToolUse/SessionStart横展開)。足軽1号(Sonnet)作成。 |
 | **codex-cli-poc-verification** ✅実装済み | cmd_446→cmd_472a1(2026-04-08): 足軽6号(Codex) `~/.claude/skills/codex-cli-poc-verification/SKILL.md`(75行/フロントマター完備/検証手順+典型エラー対処)。AC3/3 PASS。 |

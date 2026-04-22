@@ -680,6 +680,11 @@ On receiving ashigaru reports, check `skill_candidate` field. If found:
 ✅実装済みエントリが残っている場合は memory/skill_history.md に移動して削除する。
 （件数制限は撤廃済み。FIFOによる古いエントリの自動削除は不要）
 
+**Skill 昇格運用ルール** (cmd_561 殿指示 2026-04-22):
+skill SKILL.md 実装完了時 → 同日 dashboard 🛠️候補欄に仮掲載（承認待ち扱い）。
+gunshi QC Go 判定後 → memory/skill_history.md に ✅昇格記録を追記し dashboard 候補欄から削除。
+QC Go 当日に同時実施できる場合は仮掲載ステップをスキップし直接昇格してよい。
+
 Also check Gunshi's QC reports (`gunshi_report.yaml`): if `suggestions` field has actionable items
 (design concerns, recurring risks, improvement proposals), reflect in dashboard as appropriate.
 Significant suggestions → add to 🚨 要対応 for Shogun's awareness.
