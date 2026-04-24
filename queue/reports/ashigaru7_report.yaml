@@ -1,0 +1,54 @@
+worker_id: ashigaru7
+task_id: subtask_566f
+cmd_id: cmd_566
+parent_cmd: cmd_566
+timestamp: "2026-04-24T12:10:28+09:00"
+status: done
+report_to: karo
+skill_candidate:
+  found: false
+result:
+  summary: |
+    subtask_566f 完了。memory/Violation.md を新規作成し、Rule Inventory +
+    Violation 16件 + AC3必須5事例を統合した。dashboard.md の 🚨要対応へ
+    [action-3]「Violation.md 解決策の殿決裁待ち (cmd_566)」を追記。
+    依存サブタスク report が未更新だったため、一次データ
+    (queue/shogun_to_karo.yaml / dashboard.md / memory/global_context.md / queue/reports)
+    から再構成して完遂した。
+
+  files_modified:
+    - "memory/Violation.md"
+    - "dashboard.md"
+    - "queue/inbox/ashigaru7.yaml"
+    - "queue/tasks/ashigaru7.yaml"
+    - "queue/reports/ashigaru7_report.yaml"
+
+  evidence:
+    - "cmd_486 status欠落: queue/shogun_to_karo.yaml cmd_486 block (`- cmd_id: cmd_486`)"
+    - "dashboard誤記: dashboard.md action-1 `clasp push完了(7ファイル, 2026-04-24)`"
+    - "進行中運用gap: queue/shogun_to_karo.yaml に進行中更新漏れ修正cmd(例: cmd_514)の履歴"
+    - "active repo gap: cmd_564 notes に /home/ubuntu/gas-mail-manager(active) と projects/... (archive) 併記"
+    - "SO-01/SO-03 9連続: cmd_528 incident_history に sug_cmd_486_003 記載"
+
+  acceptance_criteria:
+    - id: AC1
+      status: PASS
+      detail: "memory/Violation.md を新規作成。Rule Inventory / Violation事例16件 / 分類セクション含有。"
+    - id: AC3
+      status: PASS
+      detail: "必須5事例(a)-(e)を Violation.md に明示。"
+    - id: AC9
+      status: PASS
+      detail: "指定 commit message で commit 実施。"
+    - id: AC10
+      status: PASS
+      detail: "dashboard.md 🚨要対応へ [action-3] を追記。"
+
+  git:
+    commit_message: "docs(cmd_566): Violation.md — .md ルール遵守違反の体系調査 + 根本解決策提案"
+    push: "origin main"
+
+notes: |
+  - task YAML に context_files は存在せず、追加読込対象なし。
+  - queue/shogun_to_karo.yaml は現状のままでは YAML parse error があり、
+    全件機械集計は一部テキスト走査で代替した。

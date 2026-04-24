@@ -1,0 +1,82 @@
+task_id: subtask_566f
+parent_cmd: cmd_566
+assigned_to: ashigaru7
+assigned_at: "2026-04-24T12:03:58+09:00"
+status: done
+completed_at: "2026-04-24T12:10:28+09:00"
+priority: high
+report_to: karo
+type: fix
+language: ja
+title: "cmd_566 Scope F: 統合 — Violation.md 作成 + AC3 必須事例 + dashboard + commit"
+bloom_level: L3
+model_note: "Sonnet+T — 統合・執筆"
+context_policy: preserve_across_stages
+working_dir: /home/ubuntu/shogun
+
+task:
+  description: |
+    cmd_566 Scope F: ash3/4/5/6 の調査結果を統合し、memory/Violation.md を作成する。
+    さらに dashboard 更新 + commit を行う。
+
+    【前提】 subtask_566a(ash3) / 566b(ash4) / 566c(ash5) / 566d(ash6) 完了後に着手。
+    gunshi (566e) QC 前の draft 段階。
+
+    Step 1: 各 ash の report 確認
+      cat queue/reports/ashigaru3_report.yaml | grep -A 100 "Rule Inventory\|rule_inventory\|result:" | head -80
+      cat queue/reports/ashigaru4_report.yaml | grep -A 60 "violations\|cmd_scan\|result:" | head -60
+      cat queue/reports/ashigaru5_report.yaml | grep -A 60 "violations\|incidents\|result:" | head -60
+      cat queue/reports/ashigaru6_report.yaml | grep -A 60 "violations\|github\|result:" | head -60
+
+    Step 2: AC3 必須事例5件の確認・補完
+      # 以下が report に含まれているか確認、無ければ追加調査:
+      # (a) cmd_486 status field 欠落
+      grep -A 10 "id: cmd_486" queue/shogun_to_karo.yaml | head -15
+      # (b) dashboard「clasp push成功(7ファイル)」誤記
+      git log --oneline --all | grep -i "dashboard\|clasp" | head -5
+      # (c) dashboard 進行中 section 運用不在
+      grep -n "進行中\|🔄\|in_progress" dashboard.md | head -10
+      # (d) gas-mail-manager active repo 位置 documentation gap
+      grep -rn "gas-mail-manager\|active.*repo" queue/shogun_to_karo.yaml | grep "cmd_486\|cmd_564\|active" | head -10
+      # (e) SO-01/SO-03 9連続違反 (ash6 report から取得)
+
+    Step 3: memory/Violation.md 新規作成
+      # 下記 section 構造に従い Write ツールで作成:
+      #
+      # # .md ルール遵守違反の体系調査
+      # ## 背景
+      # ## Rule Inventory (ash3 結果を使用)
+      # ## Violation 事例 (15件以上: ash4/5/6 + AC3 必須5件 を統合)
+      # ## 分類 (violation type × severity × frequency)
+      # ※ 根本解決策・Recommendation・QC は gunshi (566e) が追記予定
+
+    Step 4: dashboard 更新 (AC10)
+      grep -n "🚨\|action-" dashboard.md | tail -10
+      # Read dashboard.md → Edit で 🚨 要対応 セクションに追記
+      # [action-N] Violation.md 解決策 殿決裁待ち (cmd_566 調査完了)
+
+    Step 5: commit (Phase 10)
+      cd /home/ubuntu/shogun
+      git add memory/Violation.md dashboard.md
+      git commit -m "docs(cmd_566): Violation.md — .md ルール遵守違反の体系調査 + 根本解決策提案"
+      git push origin main
+
+    Step 6: 報告
+      bash scripts/inbox_write.sh karo \
+        "subtask_566f完了。Violation.md作成(15件以上)/dashboard action-N追加/commit完了。gunshi 566e QC待ち。ashigaru7_report.yaml参照。" \
+        task_completed ashigaru7
+
+acceptance_criteria:
+  - id: AC1
+    check: "memory/Violation.md 新規作成。Rule Inventory/Violation事例15件以上/分類セクション含む (draft: 根本解決策はgunshi追記予定)"
+  - id: AC3
+    check: "AC3 必須5事例 (a)cmd_486 status欠落 (b)dashboard誤記 (c)dashboard運用不在 (d)repo documentation gap (e)SO-01/SO-03 9連続 が Violation.md に含まれる"
+  - id: AC9
+    check: "git commit: docs(cmd_566): 形式"
+  - id: AC10
+    check: "dashboard.md 🚨 要対応に [action-N] Violation.md 解決策 殿決裁待ち 追加"
+
+editable_files:
+  - "memory/Violation.md"
+  - "dashboard.md"
+  - "queue/reports/ashigaru7_report.yaml"
