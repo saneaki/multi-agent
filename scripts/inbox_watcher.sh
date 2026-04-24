@@ -544,6 +544,21 @@ send_cli_command() {
         return 0
     fi
 
+    # Pane existence guard: detect stale pane IDs and attempt lightweight re-detect.
+    if ! tmux list-panes -a -F '#{pane_id}' 2>/dev/null | grep -qF "$PANE_TARGET"; then
+        echo "[$(date)] [WARN] pane $PANE_TARGET not found. Re-detecting..." >&2
+        if [ -x "${SCRIPT_DIR}/scripts/tmux_target.sh" ]; then
+            local recovered_pane
+            recovered_pane=$(bash "${SCRIPT_DIR}/scripts/tmux_target.sh" "$AGENT_ID" 2>/dev/null | tail -n 1)
+            if [ -n "$recovered_pane" ] && tmux list-panes -a -F '#{pane_id}' 2>/dev/null | grep -qF "$recovered_pane"; then
+                echo "[$(date)] [INFO] Recovered pane target for $AGENT_ID: $recovered_pane" >&2
+                PANE_TARGET="$recovered_pane"
+            else
+                echo "[$(date)] [WARN] Pane re-detect failed for $AGENT_ID. Continuing with current target." >&2
+            fi
+        fi
+    fi
+
     # Safety: never inject CLI commands into the shogun pane.
     # Shogun is controlled by the Lord; keystroke injection can clobber human input.
     if [ "$AGENT_ID" = "shogun" ]; then
@@ -619,11 +634,11 @@ send_cli_command() {
         sleep 0.5
     fi
     timeout 5 tmux send-keys -t "$PANE_TARGET" "$actual_cmd" 2>/dev/null || true
-    # /clear needs longer gap before Enter — CLI prompt may not be ready at 0.3s
+    # Wait for idle before Enter to avoid Enter-loss race while the agent turns busy.
     if [[ "$actual_cmd" == "/clear" || "$actual_cmd" == "/new" ]]; then
-        sleep 1.0
+        wait_until_idle 30
     else
-        sleep 0.3
+        wait_until_idle 5
     fi
     timeout 5 tmux send-keys -t "$PANE_TARGET" Enter 2>/dev/null || true
 
@@ -823,6 +838,25 @@ agent_is_busy() {
         # 従来のpane解析（Codex等フォールバック）
         agent_is_busy_check "$PANE_TARGET"
     fi
+}
+
+# ─── Wait until agent becomes idle ───
+# Poll every 0.5s until idle or timeout. On timeout, proceed with WARN fallback.
+wait_until_idle() {
+    local timeout_sec="${1:-30}"
+    local poll_interval=0.5
+    local elapsed_tenths=0
+    local timeout_tenths=$((timeout_sec * 10))
+
+    while agent_is_busy; do
+        sleep "$poll_interval"
+        elapsed_tenths=$((elapsed_tenths + 5))
+        if [ "$elapsed_tenths" -ge "$timeout_tenths" ]; then
+            echo "[$(date)] [WARN] wait_until_idle: timeout ${timeout_sec}s — sending Enter anyway (pane=$PANE_TARGET)" >&2
+            return 0
+        fi
+    done
+    return 0
 }
 
 # ─── Pane focus detection (human safety) ───
