@@ -1,4 +1,79 @@
 worker_id: ashigaru3
+task_id: subtask_568e
+parent_cmd: cmd_568
+status: done
+timestamp: "2026-04-24T16:14:54+09:00"
+report_to: karo
+type: fix
+
+result:
+  summary: |
+    cmd_568 Scope E: clasp run 再検証完了。
+
+    【実行結果】
+    bash scripts/gas_run.sh processAllCustomers cmd_568_recheck 実行済。
+
+    最新ログ (P2+P3 guard 適用済実行):
+    - 圓真諒様: "顧客: 圓真諒 - 新着メール: 0件" → regression なし ✅
+    - 寺地淳子様: "SKIP: 寺地淳子様 — folderId未設定。元帳D列を確認してください。" → P3 guard 発動 ✅
+    - "全顧客処理完了。" → エラー終了なし ✅
+
+    古いログ (P2/P3 適用前、同セッション):
+    - 93件すべて "メール処理エラー: ... getFolderById on object DriveApp" → 修正前の状態記録
+
+    【仮説確定】
+    仮説ε確定 (ash2 subtask_568a と一致):
+    - D列 folderId = '' (空文字) → getFolderById エラー → P3 guard が SKIP に変換
+    - 修正後は 93件エラーが "SKIP" 1件に圧縮される
+
+    【軽微な表示バグ】
+    "顧客処理完了: 寺地淳子様 - undefined件処理" — processCustomer が
+    { skipped: true } を返す場合、main.gs の result.processed が undefined になる。
+    機能的影響なし。次 cmd で修正候補。
+
+    【殿アクション必要】
+    元帳スプレッドシート D列に寺地淳子様の正しい Google Drive フォルダID を設定すれば
+    93件の PDF 保管処理が再開される。
+
+  acceptance_criteria:
+    AC7:
+      status: PASS
+      note: |
+        P3 guard 動作確認。"SKIP: 寺地淳子様 — folderId未設定" ログ確認済。
+        getFolderById エラーは発生せず (P2+P3 guard が空文字を早期ブロック)。
+        clasp push (commit e5cc7d1) 適用済。
+    AC8:
+      status: PASS
+      note: |
+        圓真諒様: "新着メール: 0件" — regression なし確認済。
+        processAllCustomers が2顧客とも正常終了。
+
+  clasp_log_evidence:
+    latest_run:
+      - "顧客: 圓真諒 - 新着メール: 0件"
+      - "顧客処理完了: 圓真諒 - 0件処理"
+      - "SKIP: 寺地淳子様 — folderId未設定。元帳D列を確認してください。"
+      - "顧客処理完了: 寺地淳子様 - undefined件処理"
+      - "全顧客処理完了。"
+    conclusion: "P3 guard 正常動作 + 圓真諒 regression なし"
+
+  files_modified:
+    - "queue/reports/ashigaru3_report.yaml"
+    - "queue/tasks/ashigaru3.yaml (status→done)"
+
+  minor_bugs_found:
+    - id: minor_1
+      description: "main.gs: processCustomer が skipped:true を返す場合、result.processed が undefined になり '〇〇 - undefined件処理' と表示される"
+      impact: 表示のみ。機能的影響なし。
+      suggestion: "if (result.skipped) { Logger.log('SKIP: ...'); continue; }" パターンに変更推奨
+
+skill_candidate:
+  found: false
+  reason: "単発の clasp run 検証。パターン化は shogun-gas-automated-verification skill に統合済み"
+
+---
+
+worker_id: ashigaru3
 task_id: subtask_566a
 parent_cmd: cmd_566
 status: done
@@ -176,3 +251,107 @@ skill_candidate:
   description: |
     shogunシステム全ルールID棚卸パターン。grep戦略(F/SO/L/RACE/D系別パターン) +
     qc_checklist.yaml読取 + 役割別バリアント整理。Violation Detection基盤に転用可能。
+
+---
+
+worker_id: ashigaru3
+task_id: subtask_567c
+parent_cmd: cmd_567
+status: in_progress
+timestamp: "2026-04-24T14:21:37+09:00"
+
+result:
+  summary: |
+    cmd_567 Scope C: getCustomerList() 顧客数 1 vs 2 bug の root cause 特定 + 修正 + clasp push完了。
+    [AC6] Root cause: H列ステータス厳密比較 (data[i][7] !== 'active') — activeフラグ型揺れ(b)。
+    key衝突仮説は不適: customers.push() は配列追加のため key collision 不可。
+    [AC7] 修正 (sheets.gs) + commit(ec0744f) + clasp push(7ファイル, 成功)。
+    gas_run.sh 再検証(BLK1解消後): FAIL — 新P0 "Authorization is required" NOTICE。
+    [AC8] SPREADSHEET_ID 不明(GAS ScriptProperty格納のみ) + gas_run.sh P0未解決 → pending。
+    BLK3(新規): GASスクリプト再認証必要 — oauthScopesに新スコープ追加後の再authorization未実施。
+
+  root_cause:
+    hypothesis: "(b) activeフラグ型揺れ"
+    detail: |
+      getCustomerList() の H列チェック: `if (data[i][7] !== 'active') continue;`
+      厳密比較のため、以下の場合に顧客がスキップされる:
+        - boolean true (チェックボックス列)
+        - 'Active', 'ACTIVE' (大文字小文字違い)
+        - ' active ' (前後空白)
+      顧客1: 'active'(exact) → 通過 ✓
+      顧客2: 上記いずれかの型揺れ → スキップ ✗
+
+  key_collision_hypothesis:
+    verdict: "NOT APPLICABLE"
+    reason: "customers.push({...}) は配列append。objectキー使用なし。2件目が上書きされる構造的余地なし。"
+
+  fix_applied:
+    file: "/home/ubuntu/gas-mail-manager/src/sheets.gs"
+    change: |
+      Before: if (data[i][7] !== 'active') continue;
+      After:  const rawStatus = data[i][7];
+              const isActive = rawStatus === true ||
+                (typeof rawStatus === 'string' && rawStatus.trim().toLowerCase() === 'active');
+              if (!isActive) continue;
+    commit: "ec0744f"
+    clasp_push: "7ファイル push 成功 (2026-04-24T13:20 JST)"
+
+  p0_investigation:
+    timestamp: "2026-04-24T14:21:37+09:00"
+    trigger: "karo msg_20260424_051600_41934564 — P0指示"
+    gas_run_result: |
+      bash gas_run.sh processAllCustomers cmd_567_recheck 実行:
+      - clasp run 戻り値: No response
+      - Stackdriver NOTICE: "processAllCustomers Authorization is required to perform that action."
+      - Stackdriver ERROR(既存): "SpreadsheetApp.openById permission denied" x3 (旧セッション分)
+      - PAST INFOログ(顧客数: 1): GASエディタ手動実行分(ec0744f適用前)
+    oauth_scope_check: |
+      clasprc.json refresh_token → access_token: SUCCESS
+      granted scopes: ...spreadsheets...drive...gmail.modify... (全スコープ含有 ✓)
+      clasprcトークン自体のscopeフィールドは欠落(格納されていないだけ、実際は有効)
+    sheets_api_direct_test: |
+      Drive API でスプレッドシート一覧取得: 20件ヒット
+      候補3件(新メール管理シート/メール管理/メール管理（圓単独）) → 全件 403 Forbidden
+      → clasprc.json アカウントはスプレッドシートにアクセス不可(別アカウント所有)
+    root_cause_p0: |
+      仮説α確定: clasp run のOAuthアカウント ≠ スプレッドシート所有者アカウント。
+      GASスクリプト本体はスクリプトオーナー(殿の本アカウント)として実行されるが、
+      appsscript.json に新スコープ追加(spreadsheets)後にGASエディタ経由で再authorization未実施。
+      結果: GASランタイムが "Authorization is required" で関数実行をブロック。
+
+  blockers:
+    - id: BLK1
+      status: RESOLVED
+      description: "gas_run.sh再検証 blocked: .clasp.json に projectId 未設定 + creds.json未配置"
+      resolved_at: "2026-04-24T13:55 JST (殿 action-4)"
+    - id: BLK2
+      description: "AC8(圓真諒 email 0件判定): SPREADSHEET_ID 未取得のため gas_verify.py 未実行"
+      action_required: "殿: SPREADSHEET_ID をスクリプトプロパティまたはGASエディタから取得して提供"
+    - id: BLK3
+      description: "新P0: GASスクリプト再authorization未実施 — clasp run で 'Authorization is required'"
+      action_required: |
+        殿アクション必要:
+        1. https://script.google.com でgas-mail-managerスクリプトを開く
+        2. processAllCustomers を手動実行 → Google OAuth ダイアログ承認
+        3. 承認完了後に gas_run.sh 再実行可能
+
+acceptance_criteria:
+  - id: AC6
+    status: PASS
+    note: |
+      Root cause: H列 'active' 厳密比較によるactiveフラグ型揺れ(b)。
+      key衝突仮説(b2)は構造上発生不能(配列push)。
+      gas_verify.py実行は SPREADSHEET_ID 不明のため未実施。静的コード解析で確定。
+  - id: AC7
+    status: FAIL
+    note: |
+      修正完了+commit(ec0744f)+clasp push(7ファイル)。
+      gas_run.sh 再実行: BLK3(GAS再authorization未実施)により FAIL。
+      BLK3解消後(殿のGASエディタ承認)に再実行必要。
+  - id: AC8
+    status: PENDING
+    note: "BLK2(SPREADSHEET_ID)+BLK3(GAS auth)解消後に実施。"
+
+skill_candidate:
+  found: false
+  reason: "単発のGAS getCustomerList修正。汎用スキル化不要。"
