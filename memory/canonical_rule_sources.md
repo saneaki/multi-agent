@@ -38,6 +38,50 @@ Consequence: edits to `common/*.md` propagate to every generated composite on ne
 
 ## 2. Canonical Source Table
 
+### Classification Criteria (SO scope)
+
+- `cross-file rule`: the same SO rule is defined or referenced in 2 or more authoritative files.
+- `qc-only rule`: the SO rule is listed only in `config/qc_checklist.yaml`.
+- Decision procedure for newly added SO rules:
+  1. Search `config/qc_checklist.yaml`, `instructions/common/shogun_mandatory.md`, and `CLAUDE.md` for the SO ID.
+  2. If matches are found in 2 or more files, classify as `cross-file`; if only `qc_checklist.yaml` matches, classify as `qc-only`.
+  3. Add or update the rule row in the SO scope table below.
+
+### SO-01 to SO-24 Scope Table
+
+| Rule | Topic | Canonical File | Location | Scope | Notes |
+|------|-------|----------------|----------|-------|-------|
+| **SO-01** | 報告YAML必須フィールド確認 | `config/qc_checklist.yaml` | Entry at line 10 | `qc-only` | QC checklist-only standing order. |
+| **SO-02** | inbox処理プロトコル | `config/qc_checklist.yaml` | Entry at line 109 | `qc-only` | Conditional QC checklist rule. |
+| **SO-03** | タイムスタンプJST形式 | `config/qc_checklist.yaml` | Entry at line 19 | `qc-only` | QC checklist-only standing order. |
+| **SO-04** | ダッシュボード更新分担 | `config/qc_checklist.yaml` | Entry at line 118 | `qc-only` | Conditional QC checklist rule. |
+| **SO-05** | 要対応ルール | `config/qc_checklist.yaml` | Entry at line 128 | `qc-only` | Conditional QC checklist rule. |
+| **SO-06** | 報告フロー遵守(report_to: gunshi) | `config/qc_checklist.yaml` | Entry at line 28 | `qc-only` | QC checklist-only standing order. |
+| **SO-07** | コマンドキュー管理 | `config/qc_checklist.yaml` | Entry at line 137 | `qc-only` | Conditional QC checklist rule. |
+| **SO-08** | acceptance_criteria対応表 | `config/qc_checklist.yaml` | Entry at line 37 | `qc-only` | QC checklist-only standing order. |
+| **SO-09** | Batch Processing Protocol | `config/qc_checklist.yaml` | Entry at line 146 | `qc-only` | Conditional QC checklist rule. |
+| **SO-10** | テストSKIP=FAIL | `config/qc_checklist.yaml` | Entry at line 46 | `qc-only` | QC checklist-only standing order. |
+| **SO-11** | suggestions永続化 | `config/qc_checklist.yaml` | Entry at line 155 | `qc-only` | Conditional QC checklist rule. |
+| **SO-12** | コンテキストスナップショットclear | `config/qc_checklist.yaml` | Entry at line 164 | `qc-only` | Conditional QC checklist rule. |
+| **SO-13** | Pre-Commit Gate | `config/qc_checklist.yaml` | Entry at line 173 | `qc-only` | Conditional QC checklist rule. |
+| **SO-14** | Web検索義務 | `config/qc_checklist.yaml` | Entry at line 182 | `qc-only` | Conditional QC checklist rule. |
+| **SO-15** | Stop-and-Report | `config/qc_checklist.yaml` | Entry at line 203 | `qc-only` | Conditional QC checklist rule. |
+| **SO-16** | Report Delegation | `instructions/common/shogun_mandatory.md` | Rule 9 (line 13) | `cross-file` | Also in `config/qc_checklist.yaml:55` and `CLAUDE.md:212`. |
+| **SO-17** | North Star Alignment | `instructions/common/shogun_mandatory.md` | Rule 10 (line 14) | `cross-file` | Also in `config/qc_checklist.yaml:64` and `CLAUDE.md:213`. |
+| **SO-18** | Bug Fix Issue Tracking | `instructions/common/shogun_mandatory.md` | Rule 11 (line 15) | `cross-file` | Also in `config/qc_checklist.yaml:74` and `CLAUDE.md:214`. |
+| **SO-19** | Completed Item Cleanup | `instructions/common/shogun_mandatory.md` | Rule 12 (line 16) | `cross-file` | Also in `config/qc_checklist.yaml:191` and `CLAUDE.md:215`. |
+| **SO-20** | editable_files 完全性 | `config/qc_checklist.yaml` | Entry at line 84 | `qc-only` | Not in Shogun Mandatory list. Distinct from SO-24 despite historical typo. |
+| **SO-21** | 成果物ファイル名prefix確認 | `config/qc_checklist.yaml` | Entry at line 95 | `qc-only` | Artifact naming check in QC only. |
+| **SO-22** | n8n 機能検証 | `instructions/common/n8n_e2e_protocol.md` | §Layer A (line 23) | `cross-file` | Also in `config/qc_checklist.yaml:212`. AND-operated with SO-23. |
+| **SO-23** | n8n 業務成果 | `instructions/common/n8n_e2e_protocol.md` | §Layer B (line 34) | `cross-file` | Also in `config/qc_checklist.yaml:224`. AND-operated with SO-22. |
+| **SO-24** | Verification Before Report | `instructions/common/shogun_mandatory.md` | Rule 14 (line 18) | `cross-file` | Also in `CLAUDE.md:217`. |
+
+### Dashboard Rule Registry
+
+| Target | Rule Topic | Canonical Source | Status | Reference |
+|--------|------------|------------------|--------|-----------|
+| `dashboard.md` | dashboard記載ルール | `output/cmd_576_dashboard_rules.md` | `active` | See §2 "Dashboard Rule Registry" |
+
 | Topic | Canonical File | Location | Notes |
 |-------|----------------|----------|-------|
 | **F001–F003** (role-specific forbidden actions) | `instructions/common/forbidden_actions.md` | §Shogun / §Karo / §Ashigaru tables (lines 12–34) | Each role has a different F001/F002/F003 meaning; the table is the single source. |
@@ -50,6 +94,7 @@ Consequence: edits to `common/*.md` propagate to every generated composite on ne
 | **SO-18** Bug Fix Issue Tracking | `instructions/common/shogun_mandatory.md` | Rule 11 (line 15) | Also `config/qc_checklist.yaml:74`. |
 | **SO-19** Completed Item Cleanup | `instructions/common/shogun_mandatory.md` | Rule 12 (line 16) | Also `config/qc_checklist.yaml:191`. |
 | **SO-20** editable_files 完全性 | `config/qc_checklist.yaml` | Entry at line 84 | QC-only rule — not in Shogun Mandatory list. Distinct from SO-24 despite historical typo. |
+| **SO-21** 成果物ファイル名prefix確認 | `config/qc_checklist.yaml` | Entry at line 95 | Artifact filenames must use `cmd_{N}_` prefix per QC naming check. |
 | **SO-22** n8n 機能検証 | `instructions/common/n8n_e2e_protocol.md` | §Layer A (line 23) | Also `config/qc_checklist.yaml:212`. AND-operated with SO-23. |
 | **SO-23** n8n 業務成果 | `instructions/common/n8n_e2e_protocol.md` | §Layer B (line 34) | Also `config/qc_checklist.yaml:224`. AND-operated with SO-22. |
 | **SO-24** Verification Before Report | `instructions/common/shogun_mandatory.md` | Rule 14 (line 18) | Defines Shogun's three-way pre-report verification (inbox / artifact / content). |
