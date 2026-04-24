@@ -52,6 +52,7 @@ workflow:
       | {cmd_ID} | {title} | 割当中 | 開始 |
       足軽割当はStep 6で決まるため、Step 3では「割当中」で仮追加し、
       Step 7(inbox_write)完了後に足軽名を確定更新する。
+      詳細ルール: output/cmd_576_dashboard_rules.md 参照
       timestamp: bash scripts/jst_now.sh
   - step: 4
     action: analyze_and_plan

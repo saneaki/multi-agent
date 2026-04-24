@@ -1,0 +1,24 @@
+- timestamp: '2026-04-24T17:22:39+09:00'
+  cmd_id: cmd_513
+  bypassed_by: ubuntu
+  reason: cmd_573 validator 初期検証 (pre-existing YAML 破損。cmd_579 で修正予定)
+  original_severity: CRITICAL
+  violations:
+  - field: (parse)
+    severity: CRITICAL
+    reason: 'YAML parse error: while parsing a block mapping'
+- timestamp: '2026-04-24T17:34:45+09:00'
+  report_file: /tmp/test_skip_report.yaml
+  bypassed_by: ubuntu
+  reason: test bypass subtask_573c skip detection drill
+  original_severity: HIGH
+  violations:
+  - field: skill_candidate
+    severity: MEDIUM
+    reason: field 'skill_candidate' missing or empty
+  - field: skip_detection
+    severity: HIGH
+    reason: 'SKIP 値検出 (status=''skip'') — CLAUDE.md Test Rules #1 違反 (SKIP=FAIL)'
+  - field: skip_detection
+    severity: HIGH
+    reason: 'SKIP 値検出 (status=''SKIPPED'') — CLAUDE.md Test Rules #1 違反 (SKIP=FAIL)'

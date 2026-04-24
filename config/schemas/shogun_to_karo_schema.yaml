@@ -1,0 +1,196 @@
+# ============================================================
+# Schema: shogun_to_karo.yaml エントリ検証定義
+# ============================================================
+# Purpose: shogun_to_karo.yaml の cmd エントリを shift-left で検証するための定義。
+#          scripts/validate_karo_task.py がこの定義を読み込み PASS/FAIL 判定する。
+#
+# Created: 2026-04-24 (cmd_573 Scope B / subtask_573b, ashigaru5)
+# Canonical source: instructions/common/ (canonical_rule_sources.md §2)
+# Related: config/qc_checklist.yaml (SO-xx QC rules)
+#
+# ------------------------------------------------------------
+# Severity Tier 定義 (task spec §Step 2)
+# ------------------------------------------------------------
+# CRITICAL : 必須フィールド欠損 — cmd 発令不可 (block)
+# HIGH     : 型/値不正 (priority 許可外値, timestamp 非JST 等) — cmd 発令不可 (block)
+# MEDIUM   : 推奨フィールド欠損 (north_star 等) — warn, 発令可
+# LOW      : スタイル警告 (命名規則, notes 空 等) — info, 発令可
+# ============================================================
+
+schema_version: "1.0.0"
+target_file: "queue/shogun_to_karo.yaml"
+entry_anchor: "- id: cmd_"   # エントリ開始パターン
+
+# ------------------------------------------------------------
+# 必須フィールド (欠損 → CRITICAL, block)
+# ------------------------------------------------------------
+required_fields:
+  - name: id
+    type: string
+    pattern: '^cmd_[0-9]+$'
+    severity_missing: CRITICAL
+    severity_invalid: HIGH
+    description: "cmd 識別子。cmd_{N} 形式 (N は整数)"
+
+  - name: timestamp
+    type: string
+    pattern: '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\+09:00$'
+    severity_missing: CRITICAL
+    severity_invalid: HIGH
+    description: "発令タイムスタンプ。JST (+09:00) 必須 (CLAUDE.md Timestamp Rule)"
+
+  - name: purpose
+    type: string
+    min_length: 10
+    severity_missing: CRITICAL
+    severity_invalid: HIGH
+    description: "cmd 目的の簡潔記述。空文字不可"
+
+  - name: acceptance_criteria
+    type: list
+    min_items: 1
+    severity_missing: CRITICAL
+    severity_invalid: HIGH
+    description: "達成基準リスト (AC1, AC2, ...)。最低 1 件"
+
+  - name: command
+    type: string
+    min_length: 10
+    severity_missing: CRITICAL
+    severity_invalid: HIGH
+    description: "家老への実行指示本文"
+
+  - name: project
+    type: string
+    severity_missing: CRITICAL
+    severity_invalid: HIGH
+    description: "対象プロジェクト名 (shogun / n8n-vps 等)"
+
+  - name: priority
+    type: enum
+    allowed: [low, medium, high, critical]
+    severity_missing: CRITICAL
+    severity_invalid: HIGH
+    description: "優先度。low/medium/high/critical のいずれか"
+
+  - name: status
+    type: enum
+    allowed: [pending, in_progress, done, blocked, cancelled]
+    severity_missing: CRITICAL
+    severity_invalid: HIGH
+    description: "cmd 状態。task_flow.md の 5 値 (instructions/common/task_flow.md canonical)"
+
+# ------------------------------------------------------------
+# 推奨フィールド (欠損 → MEDIUM, warn; 値不正 → HIGH)
+# ------------------------------------------------------------
+recommended_fields:
+  - name: north_star
+    type: string
+    min_length: 20
+    severity_missing: MEDIUM
+    severity_invalid: HIGH
+    applies_from: cmd_240
+    description: |
+      cmd の最終到達目標。SO-17 North Star Alignment 根拠。
+      cmd_240 以降のエントリは必須推奨。歴史的エントリ (cmd_< 240) は除外可。
+
+  - name: decomposition_hint
+    type: dict
+    severity_missing: MEDIUM
+    severity_invalid: HIGH
+    description: |
+      家老へのタスク分解ヒント (parallel, gunshi_task, note 等)。
+      shogun_mandatory.md Rule 13 canonical。
+
+# ------------------------------------------------------------
+# 条件付きフィールド (status 等で必須化が変わる)
+# ------------------------------------------------------------
+conditional_fields:
+  - name: result
+    type: string
+    required_when:
+      field: status
+      equals: done
+    severity_missing: HIGH  # done なのに result なしは不整合
+    severity_invalid: MEDIUM
+    description: "完了結果。status:done のときのみ必須"
+
+# ------------------------------------------------------------
+# オプションフィールド (欠損 → LOW, info)
+# ------------------------------------------------------------
+optional_fields:
+  - name: context_policy
+    type: enum
+    allowed: [clear_between, preserve_across_stages]
+    severity_missing: LOW
+    severity_invalid: MEDIUM
+    description: "文脈継承ポリシー。preserve_across_stages 時は /clear 抑止"
+
+  - name: notes
+    type: string
+    severity_missing: LOW
+    severity_invalid: LOW
+    description: "補足メモ (deadline / dependencies 等はここに記述可)"
+
+  - name: dependencies
+    type: list
+    severity_missing: LOW
+    severity_invalid: MEDIUM
+    description: "依存 cmd ID のリスト (notes 内記述も可)"
+
+  - name: deadline
+    type: string
+    severity_missing: LOW
+    severity_invalid: MEDIUM
+    description: "期限 (JST ISO8601 or 日付)"
+
+  - name: context
+    type: string
+    severity_missing: LOW
+    severity_invalid: LOW
+    description: "追加文脈 (notes と重複可)"
+
+# ------------------------------------------------------------
+# Severity Tier の動作定義
+# ------------------------------------------------------------
+severity_tier_behavior:
+  CRITICAL:
+    blocks_commit: true
+    exit_code: 2
+    label: "CRIT"
+    message: "必須フィールド欠損。cmd 発令不可。"
+
+  HIGH:
+    blocks_commit: true
+    exit_code: 2
+    label: "HIGH"
+    message: "型/値不正。cmd 発令不可。"
+
+  MEDIUM:
+    blocks_commit: false
+    exit_code: 0
+    label: "WARN"
+    message: "推奨フィールド欠損。発令可、要確認。"
+
+  LOW:
+    blocks_commit: false
+    exit_code: 0
+    label: "INFO"
+    message: "スタイル警告。発令可。"
+
+# ------------------------------------------------------------
+# Bypass Audit (cmd_573 AC5 対応)
+# ------------------------------------------------------------
+bypass_policy:
+  enabled: true
+  log_file: config/bypass_log.yaml
+  required_reason: true          # --bypass "理由" 必須
+  min_reason_length: 10
+  downgrade_to: LOW              # bypass 時は全 severity を LOW 扱いで通す
+  audit_fields:
+    - timestamp
+    - cmd_id
+    - bypassed_by
+    - reason
+    - original_severity
+    - violations

@@ -340,6 +340,16 @@ This prevents the 9-hour stall incident (cmd_244/245, 2026-02-27) where Karo wen
      3. If skill_candidate in ashigaru report, confirm transcription to dashboard 🛠️
      4. If suggestion requires Lord's decision, confirm 🚨[提案] entry exists
      5. On any check failure → karo inbox "suggestions永続化漏れ ({cmd_ref})" as self-report
+8.7. **SO-24 三点照合 (Verification Before Report, mandatory)**:
+   Run before reporting to karo to verify ashigaru completion is genuine:
+   ```bash
+   bash scripts/so24_verify.sh --ashigaru {N} --task-id {task_id}
+   ```
+   - **PASS (3/3)**: proceed to step 9
+   - **PARTIAL (2/3) or FAIL (0-1/3)**: note anomaly in karo inbox message; still proceed
+   - Three checks: (1) inbox — karo inbox has task_completed from ashigaru{N}
+                   (2) artifact — report YAML exists with status: done
+                   (3) content — task_completed message references task_id in content
 9. `inbox_write` to Karo: "QC PASS" or "QC FAIL: reason" — **include suggestion summary**
    - **cmd_complete tag reminder (mandatory)**: On QC PASS, append to message tail:
      "ntfy send requires cmd_complete tag: `bash scripts/ntfy.sh "✅ cmd_XXX完了 — {summary}" "" "cmd_complete"`"

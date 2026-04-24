@@ -1,0 +1,283 @@
+# ============================================================
+# Schema: queue/reports/ashigaru{N}_report.yaml エントリ検証定義
+# ============================================================
+# Purpose: ashigaru report YAML を shift-left で検証するための定義。
+#          scripts/validate_ashigaru_report.py がこの定義を読み込み PASS/WARN/FAIL を判定する。
+#          P1.3 (cmd_573) 成果物。V005/V006/V008 予防を目的とする。
+#
+# Created: 2026-04-24 (cmd_573 Scope C / subtask_573c, ashigaru5)
+# Canonical source: instructions/common/ (canonical_rule_sources.md §2)
+# Related:
+#   - config/schemas/shogun_to_karo_schema.yaml  (P1.2 同形式)
+#   - scripts/validate_ashigaru_report.py        (validator 本体)
+#   - memory/Violation.md                        (No.5 / No.6 / No.8 定義)
+#   - CLAUDE.md Test Rules #1 "SKIP = FAIL"      (SKIP 検出ポリシー出典)
+#
+# ------------------------------------------------------------
+# Severity Tier 定義 (P1.2 同一ポリシー)
+# ------------------------------------------------------------
+# CRITICAL : 必須フィールド欠損 — report 受理不可 (block)
+# HIGH     : 型/値不正 (JST タイムスタンプ逸脱, SKIP 混入 等) — block
+# MEDIUM   : 推奨フィールド欠損 (parent_cmd 等) — warn, 受理可
+# LOW      : スタイル警告 (type 欠落, notes 空 等) — info, 受理可
+#
+# ------------------------------------------------------------
+# Warn-Only Phase (P1.3 初期 2 週間)
+# ------------------------------------------------------------
+# warn_only_phase が true のあいだは CRITICAL/HIGH でも exit=0 で通過し
+# diagnostics のみ出力する。false positive 収集後に error へ promote。
+# ============================================================
+
+schema_version: "1.0.0"
+target_glob: "queue/reports/ashigaru*_report.yaml"
+coverage:
+  - V005  # SO-01 report schema 違反 (sug_cmd_486_003)      — schema_omission / high / systemic
+  - V006  # SO-03 timestamp 形式違反 (cmd_528 incident)    — schema_omission / high / systemic
+  - V008  # YAML 構文ゆらぎで safe_load 失敗               — schema_omission / high / recurring
+
+# ------------------------------------------------------------
+# 必須フィールド (欠損 → CRITICAL, block)
+# cmd_573 AC6: worker_id / task_id / status / timestamp / result
+# ------------------------------------------------------------
+required_fields:
+  - name: worker_id
+    type: string
+    pattern: '^ashigaru[1-8]$'
+    severity_missing: CRITICAL
+    severity_invalid: HIGH
+    description: "足軽識別子。ashigaru1..ashigaru8"
+
+  - name: task_id
+    type: string
+    min_length: 3
+    severity_missing: CRITICAL
+    severity_invalid: HIGH
+    description: "担当 task ID (subtask_NNNx 等)"
+
+  - name: timestamp
+    type: string
+    # V006 対策: JST (+09:00) を強く推奨。
+    # レガシー互換: +09:00 なしの ISO 形式も許容 (WARN で surface は別 rule)。
+    pattern: '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\+09:00)?$|^\d{4}-\d{2}-\d{2} \d{2}:\d{2}(:\d{2})?( JST)?$'
+    severity_missing: CRITICAL
+    severity_invalid: HIGH
+    description: "timestamp。JST 必須 (CLAUDE.md Timestamp Rule)。`jst_now.sh --yaml` 出力形式を推奨"
+
+  - name: status
+    type: enum
+    allowed: [pending, in_progress, done, blocked, cancelled]
+    severity_missing: CRITICAL
+    severity_invalid: HIGH
+    description: "report 状態。task_flow.md の 5 値 (instructions/common/task_flow.md canonical)"
+
+  - name: result
+    type: dict
+    severity_missing: CRITICAL
+    severity_invalid: HIGH
+    description: "実行結果。summary / changes / verification 等を含む dict"
+
+# ------------------------------------------------------------
+# 推奨フィールド (欠損 → MEDIUM, warn)
+# ------------------------------------------------------------
+recommended_fields:
+  - name: parent_cmd
+    type: string
+    pattern: '^cmd_\d+$'
+    severity_missing: MEDIUM
+    severity_invalid: HIGH
+    description: "親 cmd ID (cmd_NNN 形式)。トレーサビリティ確保"
+
+  - name: report_to
+    type: enum
+    allowed: [karo]
+    severity_missing: MEDIUM
+    severity_invalid: HIGH
+    description: "報告先。ashigaru は常に karo (chain of command)"
+
+  - name: skill_candidate
+    type: dict
+    severity_missing: MEDIUM
+    severity_invalid: HIGH
+    description: |
+      skill 化候補 (found: bool, name, description) または (flag: bool)。
+      shogun_mandatory.md Rule 6 に基づき全 report で判定する
+
+# ------------------------------------------------------------
+# 条件付きフィールド (status 等で必須化が変わる)
+# ------------------------------------------------------------
+conditional_fields:
+  - name: blockers
+    type: list
+    required_when:
+      field: status
+      equals: blocked
+    severity_missing: HIGH
+    severity_invalid: MEDIUM
+    description: "status=blocked のときのみ必須。ブロック理由一覧"
+
+# ------------------------------------------------------------
+# オプションフィールド (欠損 → LOW, info)
+# ------------------------------------------------------------
+optional_fields:
+  - name: type
+    type: enum
+    allowed: [feat, fix, refactor, docs, test, chore, perf, ci]
+    severity_missing: LOW
+    severity_invalid: MEDIUM
+    description: "commit type 相当 (git-workflow.md 準拠)"
+
+  - name: cmd_id
+    type: string
+    pattern: '^cmd_\d+$'
+    severity_missing: LOW
+    severity_invalid: MEDIUM
+    description: "旧 schema 互換 (parent_cmd 同義)。併記する場合あり"
+
+  - name: files_modified
+    type: list
+    severity_missing: LOW
+    severity_invalid: LOW
+    description: "変更ファイル一覧 (出力の再現性確保)"
+
+  - name: files_created
+    type: list
+    severity_missing: LOW
+    severity_invalid: LOW
+
+  - name: notes
+    type: string
+    severity_missing: LOW
+    severity_invalid: LOW
+
+  - name: acceptance_criteria
+    type: list
+    severity_missing: LOW
+    severity_invalid: MEDIUM
+    description: "AC 充足状況一覧。各 AC に status/met/note を記載"
+
+  - name: context_loaded
+    type: list
+    severity_missing: LOW
+    severity_invalid: MEDIUM
+
+  - name: agent_tool_usage
+    type: dict
+    severity_missing: LOW
+    severity_invalid: MEDIUM
+
+  - name: verification
+    type: dict
+    severity_missing: LOW
+    severity_invalid: LOW
+
+  - name: north_star_alignment
+    type: dict
+    severity_missing: LOW
+    severity_invalid: LOW
+
+  - name: language
+    type: string
+    severity_missing: LOW
+    severity_invalid: LOW
+
+  - name: output
+    type: dict
+    severity_missing: LOW
+    severity_invalid: LOW
+
+  - name: decisions
+    type: list
+    severity_missing: LOW
+    severity_invalid: LOW
+
+  - name: verification_commands
+    type: list
+    severity_missing: LOW
+    severity_invalid: LOW
+
+  - name: next_action
+    type: string
+    severity_missing: LOW
+    severity_invalid: LOW
+
+# ------------------------------------------------------------
+# SKIP=FAIL 検出 (CLAUDE.md Test Rules #1)
+# ------------------------------------------------------------
+# 仕様: acceptance_criteria[*].status / .result (大文字小文字不問) に
+#       'skip' / 'skipped' / 'SKIP' / 'SKIPPED' が 1 件でもあれば HIGH violation。
+#       理由: テスト SKIP は「未完了」であり report の status=done と矛盾。
+# ------------------------------------------------------------
+skip_detection:
+  enabled: true
+  severity: HIGH
+  inspect_paths:
+    - "acceptance_criteria[*].status"
+    - "acceptance_criteria[*].result"
+    - "result.acceptance_criteria[*].status"
+    - "result.verification[*]"
+  forbidden_values_ci: [skip, skipped]
+  rationale: "CLAUDE.md Test Rules #1: SKIP count >= 1 は tests incomplete。done として報告不可。"
+
+# ------------------------------------------------------------
+# Severity Tier の動作定義 (P1.2 と同一)
+# ------------------------------------------------------------
+severity_tier_behavior:
+  CRITICAL:
+    blocks_commit: true
+    exit_code: 2
+    label: "CRIT"
+    message: "必須フィールド欠損。report 受理不可。"
+
+  HIGH:
+    blocks_commit: true
+    exit_code: 2
+    label: "HIGH"
+    message: "型/値不正。report 受理不可。"
+
+  MEDIUM:
+    blocks_commit: false
+    exit_code: 0
+    label: "WARN"
+    message: "推奨フィールド欠損。受理可、要確認。"
+
+  LOW:
+    blocks_commit: false
+    exit_code: 0
+    label: "INFO"
+    message: "スタイル警告。受理可。"
+
+# ------------------------------------------------------------
+# Warn-Only Phase (初期 2 週間)
+# ------------------------------------------------------------
+# 挙動:
+#   enabled=true のあいだは CRITICAL/HIGH を検出しても exit_code=0 で通過する。
+#   diagnostics は通常どおり stderr に出力される。
+#   false positive を observe する soak 期間として使用し、期間終了後に enabled=false
+#   に変更して hard block に promote する。
+# ------------------------------------------------------------
+warn_only_phase:
+  enabled: true
+  start_date: "2026-04-24"
+  duration_weeks: 2
+  promotion_date: "2026-05-08"
+  exit_override: 0
+  note: |
+    cmd_573 AC7 方針。2w soak 後 cmd_(次期) で enabled:false に promote し、
+    false positive 累積を踏まえて scope / pattern を調整する。
+
+# ------------------------------------------------------------
+# Bypass Audit (P1.2 と同一仕組み)
+# ------------------------------------------------------------
+bypass_policy:
+  enabled: true
+  log_file: config/bypass_log.yaml
+  required_reason: true
+  min_reason_length: 10
+  downgrade_to: LOW
+  audit_fields:
+    - timestamp
+    - report_file
+    - bypassed_by
+    - reason
+    - original_severity
+    - violations

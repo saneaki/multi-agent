@@ -53,6 +53,7 @@ workflow:
       | {cmd_ID} | {title} | 割当中 | 開始 |
       足軽割当はStep 6で決まるため、Step 3では「割当中」で仮追加し、
       Step 7(inbox_write)完了後に足軽名を確定更新する。
+      詳細ルール: output/cmd_576_dashboard_rules.md 参照
       timestamp: bash scripts/jst_now.sh
   - step: 4
     action: analyze_and_plan
@@ -540,6 +541,16 @@ Execute ALL six steps before moving to next cmd:
 6. `bash scripts/update_dashboard.sh` — move completed ashigaru from 🔄 to 🏯
 
 ⚠️ Do NOT dispatch new cmds in inbox before all six steps finish. Karo self-completion follows the same checklist (inbox_write step 5 is easy to forget without the Ashigaru→Gunshi→Karo flow).
+
+#### SO-24 三点照合チェックリスト (Verification Before Report)
+
+ashigaru 報告受領後、殿への報告前に以下 3点を確認する:
+- [ ] (1) `inbox check`: `ashigaru{N}` から `karo` に `task_completed` が届いているか
+- [ ] (2) `artifact check`: `queue/reports/ashigaru{N}_report.yaml` が存在し `status: done` か
+- [ ] (3) `content check`: report の `task_id` が指示した `task_id` と一致するか
+
+3点全て PASS → 殿に報告  
+1点でも FAIL → 該当 ashigaru に再確認依頼
 
 ### Step 11.8 Artifact Register
 
