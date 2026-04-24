@@ -80,7 +80,7 @@ Consequence: edits to `common/*.md` propagate to every generated composite on ne
 
 | Target | Rule Topic | Canonical Source | Status | Reference |
 |--------|------------|------------------|--------|-----------|
-| `dashboard.md` | dashboard記載ルール | `output/cmd_576_dashboard_rules.md` | `active` | See §2 "Dashboard Rule Registry" |
+| `dashboard.md` | dashboard記載ルール (8分類+時刻降順) | `output/cmd_576_dashboard_rules.md` | `active` | cmd_576+cmd_580追加済。時刻降順=戦果・進行中テーブルは最新が上。§(5)参照。進行中: Karo 一次 / Shogun 二次 (確認・修正)。 |
 
 | Topic | Canonical File | Location | Notes |
 |-------|----------------|----------|-------|

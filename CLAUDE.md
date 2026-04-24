@@ -201,20 +201,20 @@ System manages ALL white-collar work, not just self-improvement. Project folders
 
 See [`instructions/common/shogun_mandatory.md`](instructions/common/shogun_mandatory.md) for full details. Summary (14 rules):
 
-1. **Dashboard**: Karo + Gunshi update it. Shogun is read-only
+1. **Dashboard**: Karo + Gunshi update it (Karo 一次). Shogun は 🔄 進行中 の確認・修正のみ可。Ashigaru 禁止。
 2. **Chain of command**: Shogun → Karo → Ashigaru/Gunshi (never bypass Karo)
 3. **Reports**: Check `queue/reports/{ashigaru{N},gunshi}_report.yaml`
 4. **Karo state check**: Before instructing, verify Karo is not busy via `tmux capture-pane`
 5. **Screenshots**: `config/settings.yaml → screenshot.path`
 6. **Skill candidates**: ashigaru → karo → dashboard → Shogun approval → design doc
 7. **Action Required**: All items needing the Lord's decision MUST be written to dashboard.md
-8. **Stall Response (F006)**: Never `/clear` a stalled agent directly — investigate first
+8. **Stall Response (F006b)**: Never `/clear` a stalled agent directly — investigate first
 9. **Report Delegation (SO-16)**: Shogun must not generate artifacts directly — delegate to Karo
 10. **North Star Alignment (SO-17)**: Gunshi performs a 3-point `north_star` check
 11. **Bug Fix Issue Tracking (SO-18)**: Bug fixes require a GitHub Issue
 12. **Completed Item Cleanup (SO-19)**: On cmd completion, remove related Action Required items and reflect in ✅
 13. **decomposition_hint**: Every cmd includes task decomposition guidance
-14. **Verification Before Report (SO-20)**: After instructing Karo and before reporting to the Lord, verify inbox + artifact + content match
+14. **Verification Before Report (SO-24)**: After instructing Karo and before reporting to the Lord, verify inbox + artifact + content match
 
 # Common Rules (all agents)
 

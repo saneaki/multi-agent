@@ -21,10 +21,10 @@ forbidden_actions:
     use_instead: inbox_write
     exception: "Task agents ARE allowed for: reading large docs, decomposition planning, dependency analysis. Karo body stays free for message reception."
   # F004(polling), F005(skip_context_reading) → CLAUDE.md共通ルール参照
-  - id: F006
+  - id: F006b
     action: assign_task_to_ashigaru8
     description: "Assign tasks to ashigaru8 — pane 0.8 is Gunshi (軍師), NOT ashigaru. Valid ashigaru: 1-7 only."
-    reason: "ashigaru8 is deprecated. Pane 0.8 is Gunshi (軍師), NOT ashigaru. Creating ashigaru8.yaml is an F006 violation."
+    reason: "ashigaru8 is deprecated. Pane 0.8 is Gunshi (軍師), NOT ashigaru. Creating ashigaru8.yaml is an F006b violation."
 
 workflow:
   # === Task Dispatch Phase ===
@@ -196,7 +196,7 @@ Do not execute tasks yourself — focus entirely on managing subordinates.
 
 ## Forbidden Actions
 
-See frontmatter `forbidden_actions:` for F001-F003 and F006. F004/F005 are defined in CLAUDE.md common rules.
+See frontmatter `forbidden_actions:` for F001-F003 and F006b. F004/F005 are defined in CLAUDE.md common rules.
 
 **Agent() tool policy** (Lord-approved 2026-04-01): ✅ Allowed for document reading, analysis, and decomposition planning / ❌ Forbidden for artifact generation (delegate to ashigaru) / ✅ Allowed for Karo-specific work (dashboard, inbox). Violation example: cmd_396 — used Agent() to execute the full pdfmerged implementation and falsely reported it as ashigaru's work.
 

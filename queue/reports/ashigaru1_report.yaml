@@ -1,32 +1,36 @@
 worker_id: ashigaru1
-task_id: subtask_568x
-parent_cmd: cmd_568
+task_id: subtask_581a
+parent_cmd: cmd_581
 status: done
-timestamp: "2026-04-24T15:58:30+09:00"
-
+timestamp: "2026-04-24T18:39:37+09:00"
 result:
-  summary: |
-    cmd_568 Scope X P2+P3 ガード実装完了。
-    P2 (pdf.gs): savePdfToDrive 先頭に folderId 空/null/型/空白チェック + throw Error 追加。
-      folderId.trim() を getFolderById に渡すことで κ仮説(前後空白)も対策。
-    P3 (main.gs): processCustomer 先頭に folderId early return + Logger.log 追加。
-      93件連続エラーを顧客単位1行ログ (SKIP: <name> — folderId未設定) に圧縮。
-      return型: { skipped: true, name, reason: 'folderId_empty' }
-    git commit: e5cc7d1 "fix(cmd_568): getFolderById ガード追加 P2(pdf.gs)+P3(main.gs)"
-    clasp push --force: 7ファイル push 成功 (15:58 JST)
-
-  acceptance_criteria:
-    AC_x1: "PASS — pdf.gs savePdfToDrive 先頭に folderId 空/型チェック + throw Error 追加"
-    AC_x2: "PASS — main.gs processCustomer 先頭に folderId early return + Logger.log 追加"
-    AC_x3: "PASS — git commit(e5cc7d1) + clasp push --force 成功"
-    AC_x4: "PASS — 既存 try-catch と整合。P3 early return は catch で捕捉されず、processAllCustomers の Logger.log行でスキップ件数が確認可能"
-
+  summary: "cmd_581 Scope A完了。shogun_mandatory Rule1+shogun.md節追記+CLAUDE.md+canonical同期。AC1-4 全PASS。"
   files_modified:
-    - path: /home/ubuntu/gas-mail-manager/src/pdf.gs
-      change: "savePdfToDrive: folderId ガード + folderId.trim() 追加"
-    - path: /home/ubuntu/gas-mail-manager/src/main.gs
-      change: "processCustomer: folderId early return + Logger.log 追加"
-
-  clasp_push_result:
-    files_pushed: 7
-    commit: e5cc7d1
+    - file: "instructions/common/shogun_mandatory.md"
+      change: "Rule 1: 'Karo is primary owner' 追加 + 'Shogun reviews and corrects the 🔄 進行中 section' 追加 + 'Ashigaru are forbidden' 追記 + (2026-04-24 殿改訂) コメント付与"
+    - file: "instructions/shogun.md"
+      change: "## Dashboard 進行中テーブル 確認・修正責任 節をCompaction Recovery前に追記(5行)"
+    - file: "CLAUDE.md"
+      change: "Shogun Mandatory Rule 1: 'Shogun is read-only' → 'Karo 一次。Shogun は 🔄 進行中 の確認・修正のみ可。Ashigaru 禁止。'"
+    - file: "memory/canonical_rule_sources.md"
+      change: "dashboard.md エントリのnotes末尾に『進行中: Karo 一次 / Shogun 二次 (確認・修正)。』追記"
+  verification:
+    AC1: "shogun_mandatory.md line 5: 'Karo is primary owner' + 'Shogun reviews and corrects the 🔄 進行中 section' + 'Ashigaru are forbidden' 確認"
+    AC2: "shogun.md line 284-291: '## Dashboard 進行中テーブル 確認・修正責任' 節 追記確認"
+    AC3: "CLAUDE.md line 204: 'Karo 一次。Shogun は 🔄 進行中 の確認・修正のみ可。Ashigaru 禁止。' 確認"
+    AC4: "canonical_rule_sources.md line 83: '進行中: Karo 一次 / Shogun 二次 (確認・修正)。' 確認"
+acceptance_criteria:
+  - id: AC1
+    status: pass
+    detail: "instructions/common/shogun_mandatory.md Rule 1 を新文言 (Karo primary / Shogun 進行中確認・修正 / Ashigaru禁止) に更新済"
+  - id: AC2
+    status: pass
+    detail: "instructions/shogun.md に '## Dashboard 進行中テーブル 確認・修正責任' 節を Compaction Recovery 前に追記済"
+  - id: AC3
+    status: pass
+    detail: "CLAUDE.md Rule 1 が新文言 (Karo 一次 / Shogun 進行中確認・修正可 / Ashigaru禁止) と整合確認"
+  - id: AC4
+    status: pass
+    detail: "canonical_rule_sources.md dashboard エントリに '進行中: Karo 一次 / Shogun 二次 (確認・修正)' を明記済"
+skill_candidate:
+  found: false

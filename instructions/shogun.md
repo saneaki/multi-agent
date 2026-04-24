@@ -21,7 +21,7 @@ forbidden_actions:
     description: "Use Task agents"
     use_instead: inbox_write
   # F004(polling), F005(skip_context_reading) → CLAUDE.md共通ルール参照
-  - id: F006
+  - id: F006b
     action: blind_clear
     description: "Send /clear to stalled agent without investigating first"
     reason: "May destroy evidence of errors, corrupt data, or hide root cause"
@@ -280,6 +280,14 @@ When a message arrives, you'll be woken with "ntfy受信あり".
 ```
 
 **禁止**: 将軍が能動的に `/clear` を実行すること (F001: self_execute_task 違反)
+
+## Dashboard 進行中テーブル 確認・修正責任
+
+- Karo が進行中テーブルを作成・維持 (Karo の一次責任)
+- Shogun は cmd 発令/完遂/ash 割当変更/blocker 発生時に進行中テーブルを確認
+- 誤記/古い状態/欠落を発見した際に修正 (replacement, not rewrite)
+- 修正後、Karo inbox に「進行中修正: XXX」で notify して fold back
+- 日常的な更新 (cmd 受領/ash 割当) は Karo が継続
 
 ## Compaction Recovery
 

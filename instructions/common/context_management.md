@@ -89,7 +89,7 @@ bash scripts/context_snapshot.sh write $AGENT_ID \
 
 1. agent_id / role / speech_style
 2. 現在の task_id + parent_cmd + status
-3. 禁止事項リスト (F001-F006 / D001-D008)
+3. 禁止事項リスト (F001-F005, F006a/F006b / D001-D008)
 4. snapshot 参照先: `queue/snapshots/{agent_id}_snapshot.yaml`
 
 ### 5.2 Role 別追加 preserve 項目

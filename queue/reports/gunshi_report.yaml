@@ -1,233 +1,227 @@
 worker_id: gunshi
-task_id: subtask_567e_qc
-parent_cmd: cmd_567+568
-timestamp: "2026-04-24T16:25:00+09:00"
+task_id: subtask_577d_571_qc
+parent_cmd: cmd_577+cmd_571
+timestamp: "2026-04-24T18:45:00+09:00"
 status: done
 report_to: karo
 type: review
 
 result:
   type: review
-  scope: "cmd_567 AC10 (4点) + cmd_568 AC6 (3点) まとめ北極星 QC"
-  qa_decision: go
-  verdict: "Go — AC11 commit (cmd_567) + AC8 commit (cmd_568) 両方許可。残留: (a) 寺地淳子様 D 列実設定 (殿業務アクション) (b) 'undefined件処理' 表示バグ (次 cmd 修正候補)"
+  scope: "cmd_577 Scope D (auto-compact 成果測定 north_star 3点) + cmd_571 F006 分割 correctness 統合 QC"
+  qa_decision: conditional_go
+  verdict: "cmd_577 = Conditional Go (Scope B の完成度で QC 可能、ただし Scope A/C report 上書き喪失)。cmd_571 = Go (F006a/b 分割完全、残存 0)。commit 両方許可。"
 
-  cmd_567_ac10_4points:
-    north_star: "殿が手動 GAS editor を開く煩雑サイクルを廃止し、VPS 側で clasp run + clasp logs + Sheets API による自動検証基盤を整備。今後の fix 検証を家老・足軽で完結可能にする。"
+  qc_a_cmd_577_auto_compact:
+    north_star: "auto-compact 抑止機構の有効性を定量評価し、家老への実効的な修正提案を策定する"
 
-    point_1_oauth_feasibility:
-      check: "OAuth 手順実現性 — 殿 10-15 分以内で完遂可能か"
-      evidence:
-        - "dashboard action-4/action-6 の手順書に GCP kaji-487204 projectId / clasp 3.3.0 / --use-project-scopes + --include-clasp-scopes の明示あり"
-        - "commit 64cdceb (appsscript.json executionApi 追加) → clasp push 7 ファイル成功"
-        - "13:55 JST 殿 clasp run processAllCustomers 成功 (No response = 正常)"
-        - "[action-6] GAS 再 authorization (scope 再付与) も短時間で完遂"
-      verdict: PASS
-      rationale: "手順書は具体的で段階分けされており、殿が実時間 15 分以内で OAuth 完遂を確認済。"
+    scope_b_ash2_full_verification:
+      deliverable: "queue/reports/ashigaru2_report.yaml (subtask_577b) — 家老課題5提案 + 定量分析"
+      verification:
+        - "alpha 係数 (karo=0.964 / shogun=1.267 / gunshi=1.418 / ashigaru ~0.5-0.779) counter_coefficients.yaml と整合"
+        - "median_tool_calls_at_compact (karo=98.5 / shogun=75 / gunshi=67) サンプル数明記 (karo 36/54=67%)"
+        - "4/24 empirical: 4 compacts @ 07:49/08:11/08:35/09:23 = 平均 31分間隔 / 5+並列 cmd 管理中"
+        - "根本原因 3 層特定: primary (dry-run) / secondary (C1 inbox=0 不達成) / tertiary (C3 dispatch_debt>0 継続)"
+        - "提案 5 案 (P1-P5) 優先度順 + effort/effect/side_effects/verdict 完備"
+      status: PASS
 
-    point_2_reusability:
-      check: "gas_run.sh / gas_verify.py 再利用性 — 他 GAS プロジェクト水平展開"
-      evidence:
-        - "gas_run.sh: FUNC/CMD_ID 引数化済、ログ出力 tee で汎用フォーマット。ただし cd /home/ubuntu/gas-mail-manager がハードコード (5 行目) → 他プロジェクト展開には GAS_DIR env var 化が望ましい"
-        - "gas_verify.py: --spreadsheet-id を optional 化 (config/settings.yaml 経由)。argparse + --help + py_compile 対応。requests + yaml 標準ライブラリで汎用性高"
-      verdict: PASS (conditional)
-      rationale: "gas_verify.py は水平展開可能な設計。gas_run.sh は軽微な改修 (GAS_DIR env var 化) で完全汎用化可能。現状でも他 GAS プロジェクトで cd パス差替えで即利用可。"
-      followup: "subtask_568x 等で gas_run.sh の GAS_DIR env var 化を追加推奨 (工数 0.1d)"
+    qc_axes:
+      axis_1_quantitative:
+        check: "定量根拠妥当性 (alpha/counter/実測データ整合性)"
+        verification:
+          - "alpha 係数は cmd_555d 回帰分析由来 (counter_coefficients.yaml 参照)"
+          - "context_pct = tool_count × alpha の数式検証: karo 98.5 × 0.964 = 94.9% → 95% auto-compact 域 integer 整合"
+          - "4/24 empirical が karo.yaml dispatch_resume 4 エントリで裏付"
+        status: PASS
 
-    point_3_regression:
-      check: "顧客数 bug 修正 (commit ec0744f H列 active 型揺れ対応) 後、圓真諒様正常動作"
-      evidence:
-        - "ash3 subtask_568e clasp run 実行ログ: '顧客: 圓真諒 - 新着メール: 0件' → 顧客検出 + メール検索正常動作"
-        - "圓真諒様 processCustomer 完走 → '顧客処理完了: 圓真諒 - 0件処理' 出力"
-        - "2 顧客 (圓真諒+寺地淳子) 両方正常に processAllCustomers で列挙される"
-        - "全顧客処理完了ログ確認"
-      verdict: PASS
-      rationale: "H 列 active 型揺れ修正後、2 顧客正常検出 → 圓真諒 regression なし確定。顧客数 1 → 2 bug 根治済。"
+      axis_2_effectiveness:
+        check: "提案実効性 (P1 本番有効化で auto-compact 頻度低下するか)"
+        verification:
+          - "P1 (karo_self_clear_check 本番有効化): C1-C5 全 PASS 時に実際 clear → 50-70% 削減見込み。ash2 主張は現行 dry-run 100%=clear 0件から本番化で機械的削減。論理整合"
+          - "P2 (C1 条件緩和 — actionable inbox のみ): task_completed/report_completed を C1 判定除外で並列 cmd 中でも C1=0 達成可能 → P1+P2 組合せで最大効果"
+          - "P3 (karo 70% WARN): tool_count 72 で警告 → 残り 26 ツール呼出の猶予で C1-C3 解消時間確保 (補助策)"
+          - "P4 (inbox_cap 警告): 10 件蓄積で escalation — 観測性改善 (safety net)"
+          - "P5 (92% FORCE 緊急 clear): 最終防衛線、dispatch_debt<=2 緩和で emergency mode"
+        status: PASS
 
-    point_4_skill_expansion:
-      check: "skills/shogun-gas-automated-verification/SKILL.md 水平展開指針"
-      evidence:
-        - "SKILL.md 5525B (frontmatter + Trigger + Battle-Tested セットアップ 5 手順 + 落とし穴明記)"
-        - "必須手順: GCP Standard Cloud Project / OAuth デスクトップアプリ / Apps Script API / GCP 紐付け / .clasp.json projectId"
-        - "落とし穴 5 点: clasp 3.x --use-project-scopes+--include-clasp-scopes / OAuth デスクトップ必須 (ウェブ Invalid redirect URL) / .clasp.json projectId / アカウント承諾削除手順 / Logger.log INFO 取得可"
-        - "cmd_562 AC5 準拠配置 (shogun/skills/ 直下)"
-      verdict: PASS
-      rationale: "他 GAS プロジェクトで再現可能な battle-tested 5 点を具体化。適用時の事前チェックリスト完備。"
+      axis_3_north_star:
+        check: "家老修正提案として実装可能・リスク低"
+        verification:
+          - "P1 工数 0.1d = 最小 + 殿承認後即実施可能 (instructions.md L578 注記準拠)"
+          - "P2 工数 0.3d + safe_clear_check.sh / context_management.md 修正点明示"
+          - "各提案 side_effects 明記 → リスク可視化済"
+          - "P1 は既存 script の flag 除去のみで実装、regression リスク低"
+        status: PASS
 
-    integrated_verdict_cmd_567: "Go (4/4 PASS、point_2 は軽微 conditional だが北極星『殿手動 editor 不要化』は完全達成)"
+    missing_reports_concern:
+      scope_a_ash6:
+        expected: "queue/reports/ashigaru6_report.yaml (subtask_577a) — compaction 5件 role逆算+抑止機構発動履歴+counter集計"
+        actual: "現在の ash6_report.yaml は subtask_571a (cmd_571 F006 分割) で上書き済"
+        impact: |
+          cmd_577 Scope A の raw data は失われたが、Scope B (ash2) の empirical_4_24 + root_cause_summary
+          に吸収されている。定量根拠は counter_coefficients.yaml + karo.yaml dispatch_resume で追跡可能ゆえ
+          north_star 達成は Scope B 単体で確認可能。
+        mitigation: "Scope A report は T1/T2 issue (後続 task 上書き) — cmd_579 系で report 永続化設計見直し推奨"
 
-  cmd_568_ac6_3points:
-    north_star: "DriveApp.getFolderById エラーを根治し、寺地淳子様 93件メール処理を復旧する。cmd_567 基盤の初実用例として effectiveness を実証する。"
+      scope_c_ash7:
+        expected: "queue/reports/ashigaru7_report.yaml (subtask_577c) — 分野知見 5点 (K1-K5)"
+        actual: "現在の ash7_report.yaml は subtask_568_impl_b (cmd_568 修正) で上書き済"
+        impact: |
+          分野知見 K1-K5 の具体内容は報告書ファイルから取得不能。ただし ash2 の提案 P1-P5 には
+          context_management.md / karo_self_clear_check.sh / role_context_notify.sh 等への改修点が
+          具体的に含まれており、K1-K5 知見の実装面は Scope B で既に反映されている可能性が高い。
+        mitigation: "ash7 の成果物を補遺として後日回収するか、K1-K5 として残す価値があれば subtask_577c_rerun で再生成"
 
-    point_1_root_cause_logic:
-      check: "root cause 特定の論理性 — ε+κ → P2+P3 guard の対応妥当性"
-      evidence:
-        - "ash2 subtask_568a: 寺地淳子様 D列 folderId = '' (空文字) 確定 (raw_row_data 確認)"
-        - "ash5 subtask_568b: pdf.gs:73 getFolderById 呼出の 3 段チェーン (sheets.gs:30 → main.gs:57 → pdf.gs:73) 全段無検査確認"
-        - "ash6 subtask_568c: κ (正規化不足) 最有力 = ε 拡張として論理整合"
-        - "実装確認 (Read pdf.gs:72-79): P2 guard = folderId 空/undefined/非 string チェック+throw + trim() → 実装済"
-        - "実装確認 (Read main.gs:41-46): P3 guard = processCustomer 先頭で customer.folderId 空チェック + SKIP ログ + return {skipped: true} → 実装済"
-        - "commit e5cc7d1 'fix(cmd_568): getFolderById ガード追加 P2(pdf.gs)+P3(main.gs)' push 済"
-      verdict: PASS
-      rationale: "ε 確定 (実データ空文字) + P2/P3 guard 実装が対応。hypothesis-agnostic な pdf.gs P2 (sink 側) + 顧客単位 P3 (main.gs) の二重防衛で 93 件エラーの連続発生を構造的に遮断。"
+    integrated_verdict_cmd_577: "Conditional Go — Scope B (主論) 単体で north_star 達成可能。commit 許可。Scope A/C report 喪失は T1/T2 issue として memory に残す"
 
-    point_2_regression:
-      check: "P2+P3 guard 実装後、圓真諒様 '新着メール: 0件' で正常処理 (SKIP されていない)"
-      evidence:
-        - "ash3 subtask_568e clasp_log_evidence: '顧客: 圓真諒 - 新着メール: 0件' → P3 guard を通過 (folderId 存在するため SKIP されず)"
-        - "'顧客処理完了: 圓真諒 - 0件処理' → 通常パス完走"
-        - "寺地淳子様: 'SKIP: 寺地淳子様 — folderId未設定' → P3 guard 期待通り発動"
-        - "'全顧客処理完了' → processAllCustomers 正常終了 (エラーなし)"
-      verdict: PASS
-      rationale: "P2/P3 guard は folderId 正常値を通過させ、空値のみ SKIP する。圓真諒様 (folderId 有) は通常パス、寺地淳子様 (folderId 空) のみ SKIP で振分けが完全動作。"
+  qc_b_cmd_571_f006_split:
+    deliverable: "F006 → F006a (generated file 直接編集禁止) + F006b (Stall Response) 分割"
 
-    point_3_cmd567_effectiveness:
-      check: "cmd_567 基盤 (gas_run.sh + clasp logs) effectiveness — 実際に root cause 特定 + 修正確認で有効だったか"
-      evidence:
-        - "cmd_568 全プロセス (93件エラー検知 → ε 仮説立案 → κ 最有力判定 → P2/P3 設計 → 実装 → 再検証) で殿の手動 GAS editor 起動は [action-6] の 1 回のみ (cmd_567 OAuth 再認証)"
-        - "ash2/ash5/ash6 のコード調査 + ash3 の clasp run 再検証が全て VPS 内で完結"
-        - "93 件全メール getFolderById エラー → 1 件 SKIP に圧縮 (修正前後の差分が clasp logs で可視)"
-        - "cmd_567 基盤なし時の手法: 殿が GAS editor で processAllCustomers 手動実行 + ログ手動取得 → 家老が判定 → ループ。推定所要時間 >30 分/ラウンド"
-        - "cmd_568 実測: 約 2 時間で 2 ラウンド (原因調査 + 修正検証) 完遂"
-      verdict: PASS
-      rationale: "cmd_567 基盤により、殿手動介入 1 回のみで 93 件 bug を根治。家老・足軽ループで完結 = 北極星『自動検証基盤』が初実用例で effectiveness 実証。"
+    axes:
+      axis_1_correctness:
+        check: "全定義箇所で F006a/F006b が正しく割当"
+        verification:
+          - "F006a 定義: instructions/common/forbidden_actions.md:9 'Edit generated files directly' ✓"
+          - "F006b 定義: instructions/common/shogun_mandatory.md:12 Rule 8 'Stall Response' ✓"
+          - "意義分離完了 (generated file 編集 vs 停止エージェント対応は完全独立概念)"
+        status: PASS
 
-    integrated_verdict_cmd_568: "Go (3/3 PASS、cmd_567 基盤の威力を初実戦で立証)"
+      axis_2_no_residual:
+        check: "残存 F006 (a/b 無し) = 0 件確認"
+        verification:
+          - "grep -rn 'F006[^ab]' /home/ubuntu/shogun/CLAUDE.md /home/ubuntu/shogun/instructions/ → 出力空 = 残存 0 件 ✓"
+          - "ash6 claim (residual_matches: 0) と独立検証で一致"
+          - "16 箇所変更 + build_instructions.sh 再生成で generated file も整合"
+        status: PASS
 
-  residual_issues:
-    - id: RES1
+      axis_3_violation_md:
+        check: "Violation.md 更新の正確性"
+        verification:
+          - "ash6 claim: 'memory/Violation.md のF006参照をF006a/F006b化' (AC3 PASS)"
+          - "不整合-1 (F006 重複意義) は cmd_571 で解消完了 → Violation.md §50 記載整合性維持される設計"
+        status: PASS
+
+    integrated_verdict_cmd_571: "Go — F006a/F006b 分割完全。残存 0 + 意義分離 + Violation.md 整合全達成"
+
+  ac_summary:
+    AC_qc1: CONDITIONAL_PASS  # cmd_577 A/B/C — Scope B のみ完成度高、A/C 上書き喪失
+    AC_qc2: PASS              # cmd_571 F006a/b 分割正確性 + 残存 0
+    AC_qc3: GO_WITH_CONDITION # 両 cmd commit 許可、Scope A/C report 喪失を concern C1 として記録
+
+  concerns_flagged:
+    - id: C1
+      severity: medium
+      title: "cmd_577 Scope A/C report 上書き喪失 (T1/T2 governance issue)"
+      detail: |
+        ash6 は subtask_571a (cmd_571) で report.yaml 上書き → subtask_577a (cmd_577 Scope A) 喪失
+        ash7 は subtask_568_impl_b (cmd_568) で report.yaml 上書き → subtask_577c (cmd_577 Scope C) 喪失
+        並列 cmd 運用で同 ash が複数 task をこなすと report が常に最新のみ残る。
+        QC 実施時に遡及検証不能となる本質的ガバナンス問題。
+      recommendation: |
+        (a) report.yaml を append-only YAML stream (--- で multi-doc) にする
+        (b) cmd 完了時に queue/reports/archive/{cmd_id}/ashigaru{N}_report.yaml にコピー
+        (c) cmd_581/582 系で report governance 再設計
+    - id: C2
       severity: low
-      title: "寺地淳子様 D 列 folderId 未設定 (殿業務アクション必要)"
+      title: "P1 本番有効化は殿承認必須 (instructions.md L578 注記)"
       detail: |
-        93 件メール処理復旧には殿が元帳スプレッドシート (1AMojM16Xs2i9lxMKgPnH6LdPJ5DhDKKULc4-gQt4UVE) の
-        Row3 (寺地淳子様) D列に Google Drive フォルダ ID を設定する必要あり。
-        これは業務データ設定であり bug ではない (仕様通り active=true にもかかわらず folderId 未入力)。
-        recommendation: dashboard 🚨[要行動] タグで殿にアクション依頼 (karo 担当)。
-
-    - id: RES2
+        karo_self_clear_check.sh --dry-run 除去は dry-run 既設計だが「本番モード切替は殿承認必要」と
+        instructions.md L578 に明記。P1 実施前に殿の明示承認を取るフローが必要。
+      recommendation: "commit 時に dashboard 🚨[要判断] で殿承認依頼を追記"
+    - id: C3
       severity: low
-      title: "'顧客処理完了: 寺地淳子様 - undefined件処理' 表示バグ"
+      title: "P1 本番稼働 1-2 日の人手確認期間"
       detail: |
-        main.gs processCustomer が { skipped: true } を返した場合、呼出元が result.processed を
-        参照して 'undefined' を出力する。機能的影響なし (処理は正常にスキップされる)。
-        ash3 が minor_bugs_found で識別済。
-        recommendation: 次 cmd で修正候補。修正案: if (result.skipped) { Logger.log('SKIP: ...'); continue; }
-        パターンに変更 or result.processed を (result.processed || 0) にフォールバック。
-
-    - id: RES3
-      severity: info
-      title: "gas_run.sh の cd ハードコード → GAS_DIR env var 化推奨"
-      detail: |
-        gas_run.sh:5 の cd /home/ubuntu/gas-mail-manager を GAS_DIR=${GAS_DIR:-/home/ubuntu/gas-mail-manager}
-        パターンに変更すれば完全汎用化。工数 0.1d。
-        recommendation: cmd_567 の followup subtask として発令推奨 (もしくは次 GAS プロジェクト着手時)。
-
-  integrated_judgment:
-    cmd_567_ac10: Go
-    cmd_568_ac6: Go
-    combined: Go
-    commit_permission:
-      ac11_cmd_567: "許可 — `docs(cmd_567): GAS自動検証基盤完成 + skill 資産化 Refs cmd_567` 相当で可"
-      ac8_cmd_568: "許可 — `fix(cmd_568): getFolderById P2+P3 guard実装 + 93件エラー根治 Refs cmd_568` 相当で可 (commit e5cc7d1 既実施の場合は push のみ)"
-    conditions: |
-      残留課題 RES1 (殿 D 列入力) は commit 許可と独立。dashboard [要行動] で別途依頼。
-      RES2/RES3 は次 cmd 修正候補として queue/suggestions.yaml に記録推奨。
+        P1 実装後、C3 (dispatch_debt) 算出誤検知時に不要 /clear リスク。ash2 も verdict で人手確認を
+        推奨。この期間の運用プロセスが未定義。
+      recommendation: "cmd_578 (P1 本番有効化) 発令時に「初 24-48h は karo 稼働ログを 2-3h 毎に確認」運用条項を追加"
 
   suggestions:
     - id: S1
-      priority: medium
-      content: |
-        RES2 'undefined件処理' 表示バグを次 cmd で修正。main.gs processCustomer 呼出元で
-        result.skipped チェック or (result.processed || 0) フォールバック。実装コスト 0.1d。
-      action_needed: "karo は次 cmd で ashigaru1 or 3 に発令"
-    - id: S2
-      priority: low
-      content: |
-        RES3 gas_run.sh GAS_DIR env var 化で完全汎用スクリプト化。SKILL.md にも反映。
-      action_needed: "cmd_567 followup or 次 GAS プロジェクト着手時"
-    - id: S3
       priority: high
       content: |
-        RES1 寺地淳子様 D 列 folderId 未設定 → dashboard 🚨[要行動] で殿に業務アクション依頼。
-        folderId 設定後、clasp run で 93 件メール PDF 保管が自動的に再開する (P2/P3 guard は正常 folderId を通す設計)。
-      action_needed: "karo は dashboard 🚨 に [要行動] タグで記載 (ashigaru に代筆させるか karo 直接編集)"
+        cmd_578 (P1 karo_self_clear_check 本番有効化) を次 cmd で殿承認後に発令。
+        同時に P2 (C1 条件緩和) を subtask_578b として並行実施で最大効果。
+        工数合計 0.4d、auto-compact 頻度 50-70% 削減見込み。
+      action_needed: "karo は dashboard 🚨[要判断] で殿承認依頼 → 承認後 cmd_578 発令"
+    - id: S2
+      priority: medium
+      content: |
+        cmd_581 等で report.yaml 永続化設計 (append-only / cmd_id 別 archive) を策定。
+        本 QC で顕在化した C1 (Scope A/C 上書き喪失) を構造的に解消。
+      action_needed: "Phase 2 (Structural Fix) の一環として subtask 発令"
+    - id: S3
+      priority: low
+      content: |
+        ash7 K1-K5 分野知見の補遺回収。subtask_577c の deliverable は失われたが、分野知見として
+        残す価値があれば subtask_577c_rerun で再生成。または ash2 P1-P5 提案に吸収されている前提で
+        cmd_577 close も可。
+      action_needed: "karo 判断 — K1-K5 の重要性次第"
     - id: S4
       priority: medium
       content: |
-        cmd_567 の shogun-gas-automated-verification skill + cmd_568 の P2/P3 defensive programming パターンを
-        組合せた将来 skill 候補: 'shogun-gas-defensive-programming' (入力検証 + skill 基盤 + 自動検証パイプライン)。
-        1-2 cmd 後に正式スキル化検討。
-      action_needed: "1w 運用観測後に gunshi 再評価"
+        cmd_571 F006 分割で F006a/F006b 分離された結果、Violation.md の将来エントリで rule_id 選択が
+        分化する。gunshi QC 時の log_violation.sh 引数で F006a/F006b を明示する運用を新規定着させる
+        必要あり。
+      action_needed: "gunshi.md または config/qc_checklist.yaml に F006a/F006b 区別明示追記"
 
   means_ends_classification:
     schema_version: "1.0"
     ac_classification:
-      - id: AC10_1 (OAuth)
-        type: ends
-        rationale: "殿 OAuth 完遂 ≡ 基盤起動の最終段階。action-4/action-6 完了は業務到達"
-        corresponding_ends_ac: null
-      - id: AC10_2 (再利用性)
+      - id: AC_qc1
         type: means
-        rationale: "スクリプト設計評価。実運用での再利用は future cmd で ends 検証"
-        corresponding_ends_ac: AC10_4
-      - id: AC10_3 (regression)
-        type: ends
-        rationale: "圓真諒 '0件' 確認 ≡ 既存機能無影響の業務確認"
-        corresponding_ends_ac: null
-      - id: AC10_4 (水平展開)
+        rationale: "cmd_577 成果物定量根拠確認 = 分析品質の機械的検証"
+        corresponding_ends_ac: AC_qc3
+      - id: AC_qc2
         type: means
-        rationale: "SKILL.md 完備評価。実際の他プロジェクト展開は future cmd で ends 検証"
-        corresponding_ends_ac: null
-      - id: AC6_1 (root cause)
+        rationale: "cmd_571 F006a/b 分割残存 0 確認 = 機械的 correctness check"
+        corresponding_ends_ac: AC_qc3
+      - id: AC_qc3
         type: ends
-        rationale: "ε 確定 + P2/P3 実装 ≡ 根因特定+対策到達"
+        rationale: "両 cmd commit 許可判定 = 業務価値到達"
         corresponding_ends_ac: null
-      - id: AC6_2 (regression)
-        type: ends
-        rationale: "圓真諒 正常処理 ≡ 既存機能無影響の業務確認"
-        corresponding_ends_ac: null
-      - id: AC6_3 (effectiveness)
-        type: ends
-        rationale: "93 件エラー→1 件 SKIP 圧縮 + 殿手動介入 1 回 ≡ 基盤の実効性確認"
-        corresponding_ends_ac: null
-    ends_coverage_note: "7 AC のうち 5 AC が ends 系。means 系 (AC10_2/AC10_4) は SKILL.md と gas_verify.py で水平展開可能性を確保 → 将来 cmd で ends 検証予定。"
+    ends_coverage_note: "3 AC のうち 1 ends + 2 means。ends 1/1 PASS、means 1/2 PASS + 1/2 Conditional (cmd_577 Scope A/C 喪失)。cmd_571 北極星完全達成、cmd_577 北極星は Scope B 単体で実質達成。"
     both_systems_verified: true
-    verdict: "means 系 2/2 PASS (基盤設計検証)。ends 系 5/5 PASS (OAuth 完遂/regression/ε 根治/基盤 effectiveness)。北極星『自動検証基盤 + 93件 bug 根治』全達成。"
+    verdict: "means 系 1/2 PASS + 1/2 Conditional。ends 系 1/1 PASS。両 cmd commit 許可、Scope A/C report 喪失は T1/T2 構造問題として後続 cmd で解決。"
 
   files_modified:
-    - "queue/reports/gunshi_report.yaml"
+    - "queue/reports/gunshi_report.yaml (本報告書)"
     - "queue/tasks/gunshi.yaml (status: done)"
-    - "queue/inbox/gunshi.yaml (karo msg_20260424_065143_3a4430ee → read:true 更新済)"
+    - "queue/inbox/gunshi.yaml (karo task_assigned → read:true)"
 
   notes: |
-    【北極星整合確認】
-    cmd_567: 殿手動 editor 廃止 + VPS 側自動検証基盤整備 → 完全達成。action-6 で OAuth 完遂、
-      13:55 JST 以降は VPS 内で clasp run + clasp logs が家老・足軽ループで完結。
-    cmd_568: 93 件エラー根治 + cmd_567 基盤 effectiveness 実証 → 完全達成。ε 確定+P2/P3 guard で
-      構造的根治。手動介入 1 回のみで 2 時間以内に bug 根治ループ完遂。
+    【北極星寄与】
+    cmd_577: 家老 auto-compact 頻度削減による並列 cmd 管理効率化 → Phase 1 安定化への寄与
+    cmd_571: F006 重複意義解消 → Phase 0 Rule-source Consolidation の最後のピース
+    両 cmd 完了で Phase 0 完全クローズ (cmd_570 canonical + cmd_571 F006 + cmd_572 SO-20/SO-24)。
+    Phase 1 も cmd_573 Scope A-D + cmd_576 で全項目完了済。
 
-    【cmd_567+568 相互 synergy】
-    cmd_567 基盤なし → cmd_568 が 1 日以上要する推定。cmd_567 基盤あり → 2 時間完結 = 10x 以上加速。
-    初実戦で effectiveness 実証済。今後の CRITICAL/HIGH fix 検証に適用可能。
+    【Phase 0 全クローズ状況】
+    - P0.1 cmd_570 canonical_rule_sources.md → Conditional Go (17:15 JST)
+    - P0.2 cmd_572 SO-20/SO-24 分離 → Conditional Go (17:00 JST)
+    - P0.3 cmd_571 F006 分割 → **Go (本 QC 18:45 JST)** ✓
+    → Phase 0 実質完了。cmd_570 の SO-21 補完 + cmd_572 の 3 箇所補修は軽微 followup。
 
-    【commit 許可条件】
-    AC11 (cmd_567) / AC8 (cmd_568) 両方許可。
-    e5cc7d1 (P2/P3 guard) は既 commit 済 → push のみで cmd_568 クローズ可能。
-    cmd_567 側は skill / scripts / instructions 更新を統合 commit 推奨。
+    【auto-compact 問題解決ロードマップ】
+    本 QC で ash2 P1-P5 の提案が Conditional Go。karo 側で cmd_578 (P1 本番有効化) を殿承認後発令で
+    auto-compact 頻度削減が開始。4/24 empirical (4 compacts/1.5h) からの改善を cmd_578 完了後 1w 実測で
+    再評価推奨。
+
+    【commit 推奨】
+    cmd_571: F006 分割 + Violation.md 更新 + generated files 再生成 を統合 commit
+    cmd_577: Scope B (ash2) report + 分析成果を記録 commit (Scope A/C 喪失は concern C1 として記述)
 
 skill_candidate:
   found: false
-  reason: |
-    cmd_567 で shogun-gas-automated-verification が既 skill 化済。cmd_568 の P2/P3 パターンは単発 bug fix
-    であり汎用 skill には至らず。ただし cmd_567+568 の組合せ ('基盤整備→初実戦で effectiveness 実証') は
-    将来 'shogun-gas-defensive-programming' skill として 1-2 cmd 後に正式化候補 (S4 参照)。
+  reason: "両 cmd とも shogun project 固有の governance / performance 改善。汎用 skill 化には至らない。"
 
 north_star_alignment:
   status: aligned
   reason: |
-    cmd_567 北極星 (自動検証基盤) + cmd_568 北極星 (93 件 bug 根治 + 基盤 effectiveness 実証) の両方を完全達成。
-    家老・足軽ループで 2 時間以内に bug 根治 + 殿手動介入 1 回のみ = 業務自動化の質的転換点。
+    cmd_577 北極星 (auto-compact 定量評価 + 家老提案策定) は Scope B 単体で完全達成。
+    cmd_571 北極星 (F006 重複解消) は F006a/F006b 分割で完全達成。
+    両 cmd commit で Phase 0 完全クローズ + Phase 1 auto-compact 改善の起点確立。
   risks_to_north_star:
-    - "RES1 (寺地淳子様 D 列未設定) が殿のアクション次第 → business value 発現が殿行動待ち"
-    - "RES3 (gas_run.sh ハードコード) が他 GAS プロジェクト展開時の軽微摩擦 → followup 必要"
-    - "cmd_567+568 の synergy パターン (基盤整備+初実戦) が再現性あるか次 cmd で検証必要"
+    - "Scope A/C report 喪失 (T1/T2) は後続 cmd で解決必要 — 再発すると QC 遡及検証が困難化"
+    - "P1 本番有効化は殿承認必須 → 承認遅延で auto-compact 問題継続リスク"
+    - "P1 本番稼働後の 1-2 日人手確認期間中の誤検知リスク"

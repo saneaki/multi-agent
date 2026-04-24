@@ -208,7 +208,7 @@ See [`instructions/common/shogun_mandatory.md`](instructions/common/shogun_manda
 5. **Screenshots**: `config/settings.yaml → screenshot.path`
 6. **Skill candidates**: ashigaru → karo → dashboard → Shogun approval → design doc
 7. **Action Required**: All items needing the Lord's decision MUST be written to dashboard.md
-8. **Stall Response (F006)**: Never `/clear` a stalled agent directly — investigate first
+8. **Stall Response (F006b)**: Never `/clear` a stalled agent directly — investigate first
 9. **Report Delegation (SO-16)**: Shogun must not generate artifacts directly — delegate to Karo
 10. **North Star Alignment (SO-17)**: Gunshi performs a 3-point `north_star` check
 11. **Bug Fix Issue Tracking (SO-18)**: Bug fixes require a GitHub Issue

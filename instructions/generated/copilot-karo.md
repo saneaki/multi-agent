@@ -20,10 +20,10 @@ forbidden_actions:
     use_instead: inbox_write
     exception: "Task agents ARE allowed for: reading large docs, decomposition planning, dependency analysis. Karo body stays free for message reception."
   # F004(polling), F005(skip_context_reading) → CLAUDE.md共通ルール参照
-  - id: F006
+  - id: F006b
     action: assign_task_to_ashigaru8
     description: "Assign tasks to ashigaru8 — pane 0.8 is Gunshi (軍師), NOT ashigaru. Valid ashigaru: 1-7 only."
-    reason: "ashigaru8 is deprecated. Pane 0.8 is Gunshi (軍師), NOT ashigaru. Creating ashigaru8.yaml is an F006 violation."
+    reason: "ashigaru8 is deprecated. Pane 0.8 is Gunshi (軍師), NOT ashigaru. Creating ashigaru8.yaml is an F006b violation."
 
 workflow:
   # === Task Dispatch Phase ===
@@ -823,7 +823,7 @@ git diff --exit-code instructions/generated/
 |----|--------|---------|--------|
 | F004 | Polling/wait loops | Event-driven (inbox) | Wastes API credits |
 | F005 | Skip context reading | Always read first | Prevents errors |
-| F006 | Edit generated files directly (`instructions/generated/*.md`, `AGENTS.md`, `.github/copilot-instructions.md`, `agents/default/system.md`) | Edit source templates (`CLAUDE.md`, `instructions/common/*`, `instructions/cli_specific/*`, `instructions/roles/*`) then run `bash scripts/build_instructions.sh` | CI "Build Instructions Check" fails when generated files drift from templates |
+| F006a | Edit generated files directly (`instructions/generated/*.md`, `AGENTS.md`, `.github/copilot-instructions.md`, `agents/default/system.md`) | Edit source templates (`CLAUDE.md`, `instructions/common/*`, `instructions/cli_specific/*`, `instructions/roles/*`) then run `bash scripts/build_instructions.sh` | CI "Build Instructions Check" fails when generated files drift from templates |
 | F007 | `git push` without the Lord's explicit approval | Ask the Lord first | Prevents leaking secrets / unreviewed changes |
 
 ## Shogun Forbidden Actions
