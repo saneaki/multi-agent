@@ -146,6 +146,7 @@
 !scripts/artifact_register.sh
 !scripts/session_start_checklist.sh
 !scripts/cmd_squash_pub_hook.sh
+!scripts/gas_run.sh
 
 # cmd_544: 3 安全装置 state files (kill-switch/rate-limit/pending/daily-metric)
 !logs/cmd_squash_pub_hook.disabled

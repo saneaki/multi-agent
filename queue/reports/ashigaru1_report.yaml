@@ -1,4 +1,44 @@
 worker_id: ashigaru1
+task_id: subtask_567a
+parent_cmd: cmd_567
+status: phase1_done
+timestamp: "2026-04-24T12:30:08+09:00"
+
+result:
+  summary: |
+    cmd_567 Scope A Phase 1 完了。
+    AC2: appsscript.json に executionApi: {access: MYSELF} 追加 → commit(64cdceb) → clasp push --force済(7ファイル)。
+    Phase 2: scripts/gas_run.sh 新規作成済(実行可能)。殿のGAS API有効化待ち。
+    clasp run テスト: API未有効化エラー確認済(想定通り)。
+    dashboard.md [action-4] に殿向け手順書追記済。
+
+  clasp_push_result:
+    files_pushed: 7
+    push_flag: "--force"
+    commit: "64cdceb"
+    log_path: /tmp/clasp_push_567_force.log
+    script_id: "1a7zxw0jBja2hzR6BPnkX2XT_z9ys19Afrat6PK3TovSuVqQWkTBdkzkS"
+
+  gas_run_sh:
+    path: /home/ubuntu/shogun/scripts/gas_run.sh
+    status: created
+    test_status: pending_api_activation
+
+acceptance_criteria:
+  - id: AC2
+    status: PASS
+    note: "appsscript.json executionApi追加 → commit 64cdceb → clasp push --force (7ファイル送信)"
+  - id: AC4
+    status: PENDING
+    note: "scripts/gas_run.sh 作成済。殿のGAS API有効化([action-4])後にclasp run動作確認が必要"
+
+skill_candidate:
+  found: false
+  reason: "単発のappsscript.json設定追加+gas_run.sh。汎用スキル化不要。"
+
+---
+
+worker_id: ashigaru1
 task_id: subtask_565a
 parent_cmd: cmd_565
 status: done
