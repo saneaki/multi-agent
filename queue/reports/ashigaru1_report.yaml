@@ -1,4 +1,53 @@
 worker_id: ashigaru1
+task_id: subtask_565a
+parent_cmd: cmd_565
+status: done
+timestamp: "2026-04-24T11:59:36+09:00"
+
+result:
+  summary: |
+    cmd_565 Scope1 完了。
+    AC1: /home/ubuntu/.clasprc.json 確認済み (更新: 2026-04-24T11:49 JST)。
+         tokens.default.refresh_token 存在確認 (値非表示)。
+    AC2/AC3: clasp push 成功 (7ファイル, exit 0)。
+         appsscript.json/src/config.gs/gmail.gs/main.gs/pdf.gs/sheets.gs/summary.gs
+    AC5: shogun inbox に殿向け手順書送信済み。
+         GAS editor URL + processAllCustomers + OAuth承認手順を記載。
+    AC8: dashboard.md action-1 を「clasp push完了(7ファイル, 2026-04-24)/殿 GAS editor実行 + OAuth承認待ち」に更新済み。
+
+  clasp_push_result:
+    files_pushed: 7
+    exit_code: 0
+    log_path: /tmp/clasp_push_565.log
+    script_id: "1a7zxw0jBja2hzR6BPnkX2XT_z9ys19Afrat6PK3TovSuVqQWkTBdkzkS"
+
+acceptance_criteria:
+  - id: AC1
+    status: PASS
+    note: ".clasprc.json tokens.default.refresh_token 存在確認済 (値非表示)"
+  - id: AC2
+    status: PASS
+    note: "clasp push 実行済。/tmp/clasp_push_565.log に結果保存"
+  - id: AC3
+    status: PASS
+    note: "'Pushed 7 files.' + exit 0 確認済"
+  - id: AC4
+    status: N/A
+    note: "clasp push 成功のため失敗時対応不要"
+  - id: AC5
+    status: PASS
+    note: "shogun inbox に送信済 (GAS editor URL + processAllCustomers + OAuth承認手順)"
+  - id: AC8
+    status: PASS
+    note: "dashboard.md action-1 更新済み"
+
+skill_candidate:
+  found: false
+  reason: "単発の clasp push 実行タスク。汎用スキル化不要。"
+
+---
+
+worker_id: ashigaru1
 task_id: subtask_562b
 parent_cmd: cmd_562
 status: done
