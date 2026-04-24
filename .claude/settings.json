@@ -11,6 +11,10 @@
           {
             "type": "command",
             "command": "bash /home/ubuntu/shogun/scripts/hooks/ir1_editable_files_check.sh"
+          },
+          {
+            "type": "command",
+            "command": "python3 /home/ubuntu/shogun/scripts/dashboard_lint.py"
           }
         ]
       },

@@ -147,6 +147,7 @@
 !scripts/session_start_checklist.sh
 !scripts/cmd_squash_pub_hook.sh
 !scripts/gas_run.sh
+!scripts/dashboard_lint.py
 
 # cmd_544: 3 安全装置 state files (kill-switch/rate-limit/pending/daily-metric)
 !logs/cmd_squash_pub_hook.disabled
