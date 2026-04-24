@@ -1,0 +1,170 @@
+# suggestions.yaml エントリ スキーマ定義
+# このファイルは queue/suggestions.yaml の各エントリの構造を定義する
+# 新規エントリはこのスキーマに従うこと
+# ---
+# 作成: 2026-04-24 (cmd_584 AC6)
+
+schema_version: "1.0"
+document: "queue/suggestions.yaml"
+description: "軍師QCサジェスト蓄積ファイル — エントリスキーマ定義"
+
+entry_schema:
+  required:
+    - field: id
+      type: string
+      pattern: "sug_{source}_{seq}"
+      example: "sug_cmd_486_001"
+      description: "一意識別子。source + 連番で構成"
+
+    - field: status
+      type: string
+      enum:
+        - pending    # 未対応（デフォルト）
+        - accepted   # 採用済み
+        - deferred   # 保留（将来対応候補）
+        - rejected   # 却下
+        - resolved   # 解決済み（acceptedの完了版）
+      default: pending
+      description: "対応状況"
+
+    - field: priority
+      type: string
+      enum:
+        - critical
+        - high
+        - medium
+        - low
+        - info
+      default: medium
+      description: "対応優先度"
+
+    - field: content
+      type: string
+      description: "提案内容の詳細説明（マルチライン可）"
+
+  recommended:
+    - field: id
+      note: "id は全エントリ必須"
+
+    - field: from
+      type: string
+      aliases: [source_agent]
+      example: "gunshi"
+      description: "提案元エージェント識別子"
+
+    - field: cmd_ref
+      type: string
+      aliases: [source_cmd, parent_cmd]
+      example: "cmd_486"
+      description: "関連コマンド番号"
+
+    - field: task_ref
+      type: string
+      example: "subtask_486a"
+      description: "関連サブタスク識別子"
+
+    - field: created_at
+      type: string
+      format: "ISO 8601 + JST offset"
+      example: "2026-04-09T02:46:00+09:00"
+      description: "作成日時（JST）"
+
+    - field: action_needed
+      type: string
+      description: "家老への具体的アクション指示"
+
+  optional:
+    - field: title
+      type: string
+      description: "短い件名（オプション）"
+
+    - field: decided_at
+      type: string
+      format: "ISO 8601 + JST offset"
+      description: "decision を記録した日時"
+
+    - field: decision_note
+      type: string
+      description: "採用/却下/保留の理由を記録"
+
+    - field: promoted_to_cmd
+      type: string
+      example: "cmd_570"
+      description: "このsuggestionを元に作成されたcmd番号"
+
+    - field: timestamp
+      type: string
+      format: "ISO 8601 + JST offset"
+      description: "作成日時の別名（created_at 推奨）"
+
+    - field: source
+      type: string
+      description: "提案元の詳細識別子（from の補足）"
+
+    - field: karo_decision
+      type: string
+      description: "家老による処理判断の記録"
+
+    - field: karo_note
+      type: string
+      description: "家老コメント"
+
+    - field: resolved_at
+      type: string
+      format: "ISO 8601 + JST offset"
+      description: "解決日時"
+
+    - field: resolved_by
+      type: string
+      description: "解決したエージェント/コマンド"
+
+    - field: rejected_at
+      type: string
+      format: "ISO 8601 + JST offset"
+      description: "却下日時"
+
+    - field: rejected_reason
+      type: string
+      description: "却下理由"
+
+    - field: summary
+      type: string
+      description: "スキル提案等の要約"
+
+    - field: source_cmd
+      type: string
+      description: "source/skill 提案でのコマンド参照"
+
+top_level_structure:
+  key: suggestions
+  type: list
+  indent: 2
+  note: "全エントリは 'suggestions:' キー配下に 2-space インデントでリスト化すること"
+
+validation_commands:
+  check_yaml: |
+    python3 -c "
+    import yaml
+    with open('queue/suggestions.yaml') as f:
+        data = yaml.safe_load(f)
+    print(f'entries: {len(data.get(\"suggestions\", []))}')
+    print('YAML valid')
+    "
+  check_schema: |
+    python3 -c "
+    import yaml
+    with open('queue/suggestions.yaml') as f:
+        data = yaml.safe_load(f)
+    required = {'id', 'status', 'priority', 'content'}
+    missing = []
+    for e in data.get('suggestions', []):
+        for r in required:
+            if r not in e:
+                missing.append(f'{e.get(\"id\",\"?\")}: missing {r}')
+    if missing:
+        for m in missing[:10]:
+            print(m)
+        print(f'Total issues: {len(missing)}')
+    else:
+        print('All entries OK')
+    "

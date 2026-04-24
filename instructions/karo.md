@@ -714,16 +714,20 @@ grep -A3 "status: pending" queue/suggestions.yaml
 ```
 
 For each pending suggestion, decide:
+- **promoted_to_cmd_NNN**: Already converted into a concrete cmd/task plan
 - **accepted**: Implement or schedule → update status + add to dashboard ❓伺い if lord's input needed
 - **deferred**: Valid but not now → update status with reason
 - **rejected**: Not applicable → update status with reason
+- **pending_high_impact**: Not yet resolved but high impact → reflect in dashboard 🚨要対応 as `[提案-N]`
 
 Update status in the file:
 ```yaml
-status: accepted  # or deferred / rejected
+status: promoted_to_cmd_584  # or accepted / deferred / rejected
 decided_at: "2026-03-01T02:45:00+09:00"
 decision_note: "理由"
 ```
+
+If reflected to dashboard 🚨要対応, add a stable `[提案-N]` tag so the pending suggestion can be traced back from dashboard to `queue/suggestions.yaml`.
 
 ## /clear Protocol (Ashigaru Task Switching)
 

@@ -334,12 +334,20 @@ This prevents the 9-hour stall incident (cmd_244/245, 2026-02-27) where Karo wen
        action_needed: "{concrete action for Karo}"
      ```
    - Include suggestion summary in karo inbox message (do not omit)
+   - If concerns are present, include explicit count in karo inbox message:
+     `"concerns {X}件 suggestions.yaml に追記"`
+   - Persist concerns in `gunshi_report.yaml` under `concerns_flagged` (in addition to `suggestions`)
    - **Enforcement check (self-report on violation)**:
      1. Verify ≥1 suggestion exists (mandatory even on QC PASS)
      2. Confirm append to suggestions.yaml
      3. If skill_candidate in ashigaru report, confirm transcription to dashboard 🛠️
      4. If suggestion requires Lord's decision, confirm 🚨[提案] entry exists
      5. On any check failure → karo inbox "suggestions永続化漏れ ({cmd_ref})" as self-report
+8.6. **Concerns → suggestions.yaml 運用 (cmd_584 追加)**:
+   - On QC completion, if concerns exist, append each concern to `queue/suggestions.yaml` with the same schema as step 8.5:
+     `id/from/cmd_ref/task_ref/created_at/status/priority/content/action_needed`
+   - Keep append-only policy (no overwrite), and notify karo immediately after append.
+   - Continue to record concerns in report YAML as the audit trail.
 8.7. **SO-24 三点照合 (Verification Before Report, mandatory)**:
    Run before reporting to karo to verify ashigaru completion is genuine:
    ```bash
