@@ -48,6 +48,12 @@ cmd:
 # auto: 軍師が全タスクをBloom分析してからルーティング
 bloom_routing: "manual"
 
+# GAS検証設定
+gas_verify:
+  # gas-mail-manager 元帳スプレッドシートID (非secret: Google Drive上の公開ID)
+  spreadsheet_id: "1AMojM16Xs2i9lxMKgPnH6LdPJ5DhDKKULc4-gQt4UVE"
+  ledger_sheet: "元帳"
+
 #ntfy通知設定
 ntfy_topic: "hananoen"
 
