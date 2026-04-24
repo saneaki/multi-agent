@@ -583,9 +583,7 @@ Race condition is eliminated: context reset wipes old context. Agent re-reads YA
 **Gunshi Autonomous QC**: Ashigaru sends report_received to Gunshi inbox → Gunshi auto-starts QC.
 Karo does NOT need to assign QC task YAML (for standard QC). On QC PASS, Gunshi writes ✅ entry directly to dashboard.md.
 
-## File Operation Rule
-
-**Always Read before Write/Edit.** Claude Code rejects Write/Edit on unread files.
+<!-- File Operation Rule moved to CLAUDE.md §Common Rules (canonical). See memory/canonical_rule_sources.md -->
 
 ## Inbox Communication Rules
 

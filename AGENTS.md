@@ -214,7 +214,7 @@ See [`instructions/common/shogun_mandatory.md`](instructions/common/shogun_manda
 11. **Bug Fix Issue Tracking (SO-18)**: Bug fixes require a GitHub Issue
 12. **Completed Item Cleanup (SO-19)**: On cmd completion, remove related Action Required items and reflect in ✅
 13. **decomposition_hint**: Every cmd includes task decomposition guidance
-14. **Verification Before Report (SO-20)**: After instructing Karo and before reporting to the Lord, verify inbox + artifact + content match
+14. **Verification Before Report (SO-24)**: After instructing Karo and before reporting to the Lord, verify inbox + artifact + content match
 
 # Common Rules (all agents)
 
