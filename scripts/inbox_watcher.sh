@@ -302,6 +302,22 @@ normalize_special_command() {
             # Emit a marker so the main loop can call switch_cli.sh.
             echo "__CLI_RESTART__:${raw_content}"
             ;;
+        context_advisory)
+            # Extract recommendation from content (推奨: /clear or /compact).
+            # Falls back to context_pct threshold (>=85 → compact, else → clear).
+            local recommend
+            recommend=$(echo "$raw_content" | grep -oE '推奨: /(clear|compact)' | grep -oE '[a-z]+$' 2>/dev/null || echo "")
+            if [ -z "$recommend" ]; then
+                local pct
+                pct=$(echo "$raw_content" | grep -oE 'context_pct=[0-9]+' | cut -d= -f2 2>/dev/null || echo "0")
+                if [ "${pct:-0}" -ge 85 ] 2>/dev/null; then
+                    recommend="compact"
+                else
+                    recommend="clear"
+                fi
+            fi
+            echo "/${recommend}"
+            ;;
     esac
 }
 
@@ -488,7 +504,7 @@ try:
 
     messages = data.get("messages", []) or []
     unread = [m for m in messages if not m.get("read", False)]
-    special_types = ("clear_command", "model_switch", "cli_restart")
+    special_types = ("clear_command", "model_switch", "cli_restart", "context_advisory")
     specials = [m for m in unread if m.get("type") in special_types]
 
     if specials:
@@ -1111,6 +1127,14 @@ for s in data.get('specials', []):
                 # Sending /clear during active work destroys in-progress context.
                 if agent_is_busy && [[ "$AGENT_ID" != "shogun" ]]; then
                     echo "[$(date)] [SKIP] Agent $AGENT_ID is busy — /clear (clear_command) deferred to next cycle" >&2
+                    continue
+                fi
+            fi
+            if [ "$msg_type" = "context_advisory" ]; then
+                clear_seen=1  # treat as clear-class to suppress context-reset below
+                # Busy guard: never send /clear or /compact during active processing.
+                if agent_is_busy && [[ "$AGENT_ID" != "shogun" ]]; then
+                    echo "[$(date)] [SKIP] Agent $AGENT_ID is busy — context_advisory deferred to next cycle" >&2
                     continue
                 fi
             fi

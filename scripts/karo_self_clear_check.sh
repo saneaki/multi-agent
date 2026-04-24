@@ -220,19 +220,66 @@ if [ "$TOOL_COUNT" -le "$TOOL_THRESHOLD" ] 2>/dev/null; then
     _skip "cond_5 NG: tool_count(${TOOL_COUNT}) <= threshold(${TOOL_THRESHOLD})"
 fi
 
-# ── 全 PASS → clear_command 発射 ──
-_log "ALL CONDITIONS PASSED. Issuing clear_command to ${AGENT_ID}."
+# ── 全 PASS → safe_window_judge.sh 連携 → context_advisory or clear_command ──
+_log "ALL CONDITIONS PASSED."
 
-if [ "$DRY_RUN" = true ]; then
-    _log "DRY-RUN: would send clear_command to ${AGENT_ID} (tool_count=${TOOL_COUNT}) — not sent."
+SAFE_WINDOW_JUDGE="$SCRIPT_DIR/scripts/safe_window_judge.sh"
+if [ -f "$SAFE_WINDOW_JUDGE" ]; then
+    # safe_window_judge.sh 実装済 → APPROVE/SKIP + recommendation を取得
+    JUDGE_OUTPUT=$(bash "$SAFE_WINDOW_JUDGE" --agent-id karo 2>/dev/null || echo "SKIP:error")
+    JUDGE_VERDICT=$(echo "$JUDGE_OUTPUT" | head -1 | grep -oE '^(APPROVE|SKIP)' || echo "SKIP")
+    _log "safe_window_judge verdict: ${JUDGE_OUTPUT:-SKIP}"
+
+    if [ "$JUDGE_VERDICT" = "APPROVE" ]; then
+        JUDGE_PCT=$(echo "$JUDGE_OUTPUT" | grep -oE 'context_pct=[0-9]+' | cut -d= -f2 || echo "")
+        JUDGE_RECOMMEND=$(echo "$JUDGE_OUTPUT" | grep -oE 'recommend=(clear|compact)' | cut -d= -f2 || echo "clear")
+
+        # dedup: 30min 以内に context_advisory 送信済みなら skip
+        DEDUP_MARKER="/tmp/karo_context_advisory_last_sent"
+        SEND_ADVISORY=true
+        if [ -f "$DEDUP_MARKER" ]; then
+            LAST_SENT=$(cat "$DEDUP_MARKER" 2>/dev/null | tr -d '[:space:]' || echo "0")
+            NOW_EPOCH=$(date +%s)
+            if echo "$LAST_SENT" | grep -qE '^[0-9]+$'; then
+                ELAPSED=$((NOW_EPOCH - LAST_SENT))
+                if [ "$ELAPSED" -lt 1800 ]; then
+                    _log "context_advisory dedup: last sent ${ELAPSED}s ago (< 1800s) — skip"
+                    SEND_ADVISORY=false
+                fi
+            fi
+        fi
+
+        if [ "$SEND_ADVISORY" = true ]; then
+            PCT_PART=""
+            [ -n "$JUDGE_PCT" ] && PCT_PART="context_pct=${JUDGE_PCT}%。"
+            RECOMMEND="${JUDGE_RECOMMEND:-clear}"
+            ADV_MSG="safe window 到達。${PCT_PART}推奨: /${RECOMMEND}。全条件PASS(cond_1-5)。"
+            if [ "$DRY_RUN" = true ]; then
+                _log "DRY-RUN: would send context_advisory: ${ADV_MSG}"
+            else
+                bash "$SCRIPT_DIR/scripts/inbox_write.sh" \
+                    "$AGENT_ID" "$ADV_MSG" "context_advisory" "karo_self_judge"
+                date +%s > "$DEDUP_MARKER"
+                _log "context_advisory sent (recommend=/${RECOMMEND})"
+            fi
+        fi
+    else
+        _log "safe_window_judge did not APPROVE — no context_advisory sent"
+    fi
 else
-    bash "$SCRIPT_DIR/scripts/inbox_write.sh" \
-        "$AGENT_ID" \
-        "auto self-clear: tool count ${TOOL_COUNT} exceeded threshold ${TOOL_THRESHOLD}" \
-        "clear_command" \
-        "$AGENT_ID"
-    _log "clear_command sent."
+    # safe_window_judge.sh 未実装 → 旧来の clear_command フォールバック
+    _log "safe_window_judge.sh not found — fallback: clear_command (tool_count=${TOOL_COUNT})"
+    if [ "$DRY_RUN" = true ]; then
+        _log "DRY-RUN: would send clear_command to ${AGENT_ID} (tool_count=${TOOL_COUNT}) — not sent."
+    else
+        bash "$SCRIPT_DIR/scripts/inbox_write.sh" \
+            "$AGENT_ID" \
+            "auto self-clear: tool count ${TOOL_COUNT} exceeded threshold ${TOOL_THRESHOLD}" \
+            "clear_command" \
+            "$AGENT_ID"
+        _log "clear_command sent."
+    fi
 fi
 
-_log "=== karo_self_clear_check END (CLEAR) ==="
+_log "=== karo_self_clear_check END ==="
 exit 0
