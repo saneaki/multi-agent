@@ -1,21 +1,20 @@
 worker_id: ashigaru1
 task_id: subtask_567a
 parent_cmd: cmd_567
-status: blocked_pending_action
-timestamp: "2026-04-24T13:18:00+09:00"
+status: done
+timestamp: "2026-04-24T14:16:29+09:00"
 
 result:
   summary: |
-    cmd_567 Scope A Phase 1 完了。
+    cmd_567 Scope A 全フェーズ完了。
     AC2: appsscript.json に executionApi: {access: MYSELF} 追加 → commit(64cdceb) → clasp push --force済(7ファイル)。
-    Phase 2: scripts/gas_run.sh 新規作成済(実行可能)。殿のGCP OAuth設定完了待ち。
-    clasp run テスト: API未有効化エラー確認済(想定通り)。
-    dashboard.md [action-4] に殿向け手順書追記済。
-    SUP2/3/5a 反映済 (2026-04-24T13:18 JST):
-      SUP2: dashboard [action-4] に Standard Cloud Project 関連付け確認ステップ(⓪)追加。
-      SUP3: 所要時間を 10-15分 に修正 (dashboard [action-4])。
-      SUP5a: gas_run.sh に Logger.log/console.log 互換性ノート追記。
-             clasp logs = console.log() のみ対応。Logger.log() は GAS editor(表示>ログ)またはStackdriver要確認。
+    AC4: scripts/gas_run.sh 新規作成済。殿GCP OAuth設定完了後にclasp run processAllCustomers動作確認済。
+    SUP5a (Logger.log互換性確認): clasp logs --simplified で Logger.log が INFO レベルで取得可能と判明。
+      console.log への置換は不要。
+    Phase2追加指示:
+      .clasp.json の projectId: kaji-487204 → 既に設定済み(前セッションで投入済み)。
+      skills/shogun-gas-automated-verification/SKILL.md 新規作成完了。
+        battle-tested セクションに clasp 3.x 5点知見を記載。
 
   clasp_push_result:
     files_pushed: 7
@@ -27,25 +26,44 @@ result:
   gas_run_sh:
     path: /home/ubuntu/shogun/scripts/gas_run.sh
     status: created
-    test_status: pending_api_activation
+    test_status: confirmed_working
+
+  clasp_logs_sup5a:
+    command: "clasp logs --simplified"
+    logger_log_captured: true
+    level: INFO
+    sample_output:
+      - "INFO  unknown  処理開始。顧客数: 1、再開インデックス: 0"
+      - "INFO  unknown  顧客: 圓真諒 - 新着メール: 0件"
+      - "INFO  unknown  全顧客処理完了。"
+    console_log_replacement_required: false
+    note: "Logger.log は Cloud Logging 経由で INFO レベルで記録。clasp 3.x + GCP projectId 設定で取得可能。"
+
+  skill_created:
+    path: "/home/ubuntu/shogun/skills/shogun-gas-automated-verification/SKILL.md"
+    battle_tested_points:
+      - "clasp 3.x + --creds は --use-project-scopes + --include-clasp-scopes 必須"
+      - "OAuthクライアントは『デスクトップアプリ』必須(ウェブアプリはInvalid redirect URL)"
+      - ".clasp.json に projectId 追加必須(clasp logs使用時)"
+      - "Google アカウント承諾は myaccount.google.com/permissions で削除可"
+      - "Logger.log は clasp 3.x + Cloud Logging 経由でINFOレベル記録(console.log置換不要)"
 
 acceptance_criteria:
   - id: AC2
     status: PASS
     note: "appsscript.json executionApi追加 → commit 64cdceb → clasp push --force (7ファイル送信)"
   - id: AC4
-    status: BLOCKED
+    status: PASS
     note: |
-      scripts/gas_run.sh 作成済。clasp run テスト実行済み → FAIL。
-      エラー: "Unable to run script function. Please make sure you have permission to run the script function."
-      根本原因: clasp run はGCPプロジェクト連携 + OAuth2デスクトップ認証(creds.json)が別途必要。
-      .clasp.json に projectId 未設定。clasp login --creds 未実施。
-      必要アクション: dashboard [action-4] 参照(GCPコンソールOAuth2設定+creds.json配置+clasp login --creds)。
-      clasp logs エラー: "GCP project ID is not set, unable to continue."
+      scripts/gas_run.sh 作成済。殿GCP設定完了後に clasp run processAllCustomers 動作確認済。
+      clasp logs --simplified で Logger.log (INFO) 取得確認済。
+      .clasp.json の projectId: kaji-487204 設定済み確認。
 
 skill_candidate:
-  found: false
-  reason: "単発のappsscript.json設定追加+gas_run.sh。汎用スキル化不要。"
+  found: true
+  name: "shogun-gas-automated-verification"
+  description: "GAS clasp 3.x 自動検証基盤 (clasp run + clasp logs) の Ubuntu VPS セットアップ手順と落とし穴 5点"
+  reason: "同パターンが将来の GAS タスクで再利用可能。clasp 3.x の罠(デスクトップOAuth必須/projectId必須/Logger.log互換性)は非自明で繰り返しハマる。"
 
 ---
 
