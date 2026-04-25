@@ -9276,3 +9276,25 @@ suggestions:
       P1 実装後、C3 (dispatch_debt) 算出誤検知時に不要 /clear リスク。
       初 24-48h は karo 稼働ログを 2-3h 毎に確認する運用条項が必要。
     action_needed: "cmd_578 (P1 本番有効化) 発令時に運用条項を AC に含める"
+
+  - id: sug_subtask_585d
+    from: ashigaru5
+    cmd_ref: cmd_585
+    task_ref: subtask_585d
+    created_at: "2026-04-24T20:15:30+09:00"
+    status: pending
+    priority: medium
+    title: "gas-sheet-name-auto-generation"
+    summary: "GAS + Sheets: 顧客名から慣用シート名を導出し空欄時のみ元帳書戻し"
+    content: |
+      元帳のメタ列 (sheetName 等) 手動入力 workaround は多くの業務 GAS に共通する anti-pattern。
+      「顧客名→シート名」のような derivable value は getter 関数 (getCustomerList) で
+      on-the-fly 生成+sheet 書戻しすれば、以降の手動入力は不要化できる。
+      - ポイント1: 既存値は尊重 (上書き禁止) で breaking change 回避
+      - ポイント2: 一箇所 (データ取得関数) で補完 → 下流全エントリで DRY 有効化
+      - ポイント3: sheet.getRange().setValue() で永続化し次回以降は自動生成不要
+      subtask_585d で「殿 F3 手動入力」workaround を根本解消した実装パターン。
+      他 GAS プロジェクト (案件管理・会計等) でも再利用価値高い。
+    action_needed: |
+      skills/ 配下に "gas-spreadsheet-derivable-column-autofill" 等として SKILL.md 化検討。
+      proposed_trigger: GAS 元帳型 Spreadsheet でメタ列が手動入力運用されている場合。

@@ -1,86 +1,105 @@
-task_id: subtask_568_impl_b
-parent_cmd: cmd_568
+task_id: subtask_589d_cost_skill
+parent_cmd: cmd_589
 assigned_to: ashigaru7
-assigned_at: "2026-04-24T18:20:00+09:00"
+assigned_at: "2026-04-26T05:53:00+09:00"
 status: done
 priority: high
 report_to: karo
-type: fix
+type: research
 language: ja
-title: "cmd_568 延長: pdf.gs DriveApp.getFolderById → Drive.Files.insert 置換 (案B)"
-bloom_level: L2
-model_note: "Codex5.3"
+title: "cmd_589 Scope D: Gemini コスト見積 + skill 拡張 (AC5/AC7)"
+bloom_level: L3
+model_note: "Codex — L012"
 context_policy: clear_between
 working_dir: /home/ubuntu/shogun
 
 task:
   description: |
-    [action-8] 案B実装。仮説τ棄却確定 (OAuth consent 済み)。
-    pdf.gs:76 の DriveApp.getFolderById を Drive Advanced Service v2 の
-    Drive.Files.insert に置換し、Shared Drive 対応も含めてフォルダへの
-    ファイル保存を実現する。
+    cmd_589: Gemini thinking token 食い尽くし修正。
+    Scope D: Gemini 2.5 Flash API コスト見積 + shogun-gemini-thinking-token-guard skill 拡張。
 
-    【背景】
-    - appsscript.json に Advanced Drive Service v2 は既に有効化済み
-    - pdf.gs:49,60 で既に Drive.Files.insert/trash を使用中
-    - 問題箇所: pdf.gs:76 の `DriveApp.getFolderById(folderId.trim())`
+    north_star: "殿が API コストを把握できる + 将来の skill 適用漏れを防ぐ。"
 
-    Step 1: 対象確認
-      cat /home/ubuntu/gas-mail-manager/src/pdf.gs | head -90
+    Step 1: summary.gs 確認 (現状把握)
+      Read /home/ubuntu/gas-mail-manager/src/summary.gs
+      # 修正前後の maxOutputTokens と Gemini model 名を確認
 
-    Step 2: savePdfToDrive 関数を修正
-      # Read /home/ubuntu/gas-mail-manager/src/pdf.gs
-      # pdf.gs の savePdfToDrive 関数 (line 73-79付近) を以下に置換:
-      #
-      # Before:
-      #   var folder = DriveApp.getFolderById(folderId.trim());
-      #   var file = folder.createFile(pdfBlob.setName(fileName));
-      #   return file.getUrl();
-      #
-      # After:
-      #   var metadata = {
-      #     title: fileName,
-      #     parents: [{ id: folderId.trim() }]
-      #   };
-      #   var file = Drive.Files.insert(metadata, pdfBlob.setName(fileName),
-      #                                 { supportsAllDrives: true });
-      #   return 'https://drive.google.com/file/d/' + file.id + '/view';
-      #
-      # supportsAllDrives: true で Shared Drive (フォルダ所有者が別組織) にも対応
+    Step 2: Gemini コスト見積 (AC5)
+      Gemini 2.5 Flash の料金 (知識ベース + ウェブ検索で確認):
+        - 入力: $0.075 / 1M tokens (1M = 1,000,000)
+        - 出力: $0.30 / 1M tokens
+        - thinking: 入力扱い or 追加コストか確認
 
-    Step 3: 同一ファイル内の他の DriveApp 使用箇所確認
-      grep -n "DriveApp" /home/ubuntu/gas-mail-manager/src/pdf.gs
-      # DriveApp.getFileById (line 56) は tempDoc 取得用 → Drive.Files.get に置換
-      # Before: var pdfBlob = DriveApp.getFileById(tempDoc.id)
-      # After:  var pdfMeta = Drive.Files.get(tempDoc.id);
-      #         var pdfBlob = DriveApp.getFileById(tempDoc.id)  ← Blob取得はDriveApp経由でOK
-      # ※ getFileById は Blob 取得用途なので置換不要
+      寺地 93 件の処理コスト試算:
+        - 入力: メール本文 (1件あたり推定 1000-3000 tokens) × 93 + prompt overhead
+        - 出力 (修正後): 1件あたり推定 500-1000 tokens × 93
+        - thinking (thinkingBudget=0 設定後): 0
+        - 合計コスト概算 (USD + JPY)
 
-    Step 4: shogun/projects 側にも同期
-      # /home/ubuntu/shogun/projects/gas-mail-manager/src/pdf.gs も同じ変更を適用
+    Step 3: skill 拡張 (AC7)
+      対象: /home/ubuntu/shogun/skills/shogun-gemini-thinking-token-guard/SKILL.md
+      ファイルが存在しない場合: 新規作成
 
-    Step 5: clasp push
-      cd /home/ubuntu/gas-mail-manager && clasp push 2>&1 | tail -10
+      Write /home/ubuntu/shogun/skills/shogun-gemini-thinking-token-guard/SKILL.md
+      内容:
+      ---
+      name: shogun-gemini-thinking-token-guard
+      description: Gemini 2.5 Flash/Pro の thinking token 食い尽くし問題の回避パターン
+      type: skill
+      ---
 
-    Step 6: 動作確認 (clasp run)
-      bash /home/ubuntu/shogun/scripts/gas_run.sh processAllCustomers cmd_568_b 2>&1 | tail -20
-      # 93件処理 + 寺地淳子様 PDF生成成功確認
+      # Gemini Thinking Token Guard
 
-    Step 7: 報告
+      ## 問題
+      Gemini 2.5 Flash / Pro は "thinking" モードで内部推論 token を消費する。
+      maxOutputTokens が小さいと thinking token が予算を食い尽くし、
+      実際の出力が数 token しか残らず切断される (finishReason=MAX_TOKENS)。
+
+      ## 症状
+      - finishReason: MAX_TOKENS
+      - thoughtsTokenCount: 100-200 (消費済)
+      - candidatesTokenCount: 5-10 (ほぼゼロ)
+      - 出力: 10 字程度で切断
+
+      ## 解決策
+
+      ### 方法 A: maxOutputTokens を大きく設定 (推奨)
+      generationConfig: {
+        maxOutputTokens: 2000,  // Gemini 2.5 Flash: 2000+
+        temperature: 0.3
+      }
+      推奨値: Gemini 2.5 Flash = 2000, Gemini 2.5 Pro = 3000
+
+      ### 方法 B: thinkingBudget を 0 に設定 (thinking 無効化)
+      generationConfig: {
+        maxOutputTokens: 2000,
+        thinkingConfig: {
+          thinkingBudget: 0
+        }
+      }
+      // 要約・分類タスクでは thinking 不要なため推奨
+
+      ## Battle-tested
+      | cmd | 状況 | 解決策 |
+      |-----|------|--------|
+      | cmd_589 | 寺地 backfill 28 件で maxOutputTokens=200 → 10 字切断 | 2000 + thinkingBudget=0 |
+
+      ## 適用タイミング
+      GAS (Apps Script) で Gemini 2.5 系 API を呼ぶ実装時に必ず確認。
+      UrlFetchApp.fetch で生成 API を呼ぶ全てのスクリプトが対象。
+
+    Step 4: 報告
       bash /home/ubuntu/shogun/scripts/inbox_write.sh karo \
-        "subtask_568_impl_b完了。DriveApp.getFolderById→Drive.Files.insert置換+clasp push済。clasp run結果=[成功/失敗]。ashigaru7_report.yaml参照。" \
+        "subtask_589d完了。コスト見積=[N]円相当+skill shogun-gemini-thinking-token-guard拡張(新規作成or追記)。AC5/AC7 PASS。ashigaru7_report.yaml参照。" \
         task_completed ashigaru7
 
 acceptance_criteria:
-  - id: AC1
-    check: "pdf.gs:76 の DriveApp.getFolderById が Drive.Files.insert (supportsAllDrives:true) に置換されている"
-  - id: AC2
-    check: "clasp push 成功"
-  - id: AC3
-    check: "clasp run processAllCustomers で 寺地淳子様 PDF保存成功 (または エラー内容の特定)"
+  - id: AC5
+    check: "寺地 93 件 Gemini 2.5 Flash 処理コスト概算。USD + JPY で殿報告。"
+  - id: AC7
+    check: "skills/shogun-gemini-thinking-token-guard/SKILL.md 作成 or 更新。cmd_589 battle-tested 追記 + 推奨値表。"
 
 editable_files:
-  - "/home/ubuntu/gas-mail-manager/src/pdf.gs"
-  - "/home/ubuntu/shogun/projects/gas-mail-manager/src/pdf.gs"
+  - "/home/ubuntu/shogun/skills/shogun-gemini-thinking-token-guard/SKILL.md"
   - "queue/reports/ashigaru7_report.yaml"
   - "queue/tasks/ashigaru7.yaml"

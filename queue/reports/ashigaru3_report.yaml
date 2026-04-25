@@ -1,78 +1,283 @@
 worker_id: ashigaru3
-task_id: subtask_568e
-parent_cmd: cmd_568
+task_id: subtask_578e
+parent_cmd: cmd_578
 status: done
-timestamp: "2026-04-24T16:14:54+09:00"
+timestamp: "2026-04-24T20:00:45+09:00"
 report_to: karo
-type: fix
+type: implement
 
 result:
   summary: |
-    cmd_568 Scope E: clasp run 再検証完了。
+    cmd_578 Scope E 完了。
+    output/cmd_578_autonomous_context_hygiene_design.md 作成 (290行) + commit + push 完了。
+    Scope A/B/C 統合設計 doc: north_star/empirical 分析/多変量基準/分野知見/AC_draft。
+    cmd_578 全 Scope 完了。
 
-    【実行結果】
-    bash scripts/gas_run.sh processAllCustomers cmd_568_recheck 実行済。
+  files_created:
+    - "output/cmd_578_autonomous_context_hygiene_design.md (290行)"
 
-    最新ログ (P2+P3 guard 適用済実行):
-    - 圓真諒様: "顧客: 圓真諒 - 新着メール: 0件" → regression なし ✅
-    - 寺地淳子様: "SKIP: 寺地淳子様 — folderId未設定。元帳D列を確認してください。" → P3 guard 発動 ✅
-    - "全顧客処理完了。" → エラー終了なし ✅
-
-    古いログ (P2/P3 適用前、同セッション):
-    - 93件すべて "メール処理エラー: ... getFolderById on object DriveApp" → 修正前の状態記録
-
-    【仮説確定】
-    仮説ε確定 (ash2 subtask_568a と一致):
-    - D列 folderId = '' (空文字) → getFolderById エラー → P3 guard が SKIP に変換
-    - 修正後は 93件エラーが "SKIP" 1件に圧縮される
-
-    【軽微な表示バグ】
-    "顧客処理完了: 寺地淳子様 - undefined件処理" — processCustomer が
-    { skipped: true } を返す場合、main.gs の result.processed が undefined になる。
-    機能的影響なし。次 cmd で修正候補。
-
-    【殿アクション必要】
-    元帳スプレッドシート D列に寺地淳子様の正しい Google Drive フォルダID を設定すれば
-    93件の PDF 保管処理が再開される。
+  commit:
+    hash: "81e3b0e"
+    msg: "docs(cmd_578): 自律判断支援設計doc作成 (north_star/経験分析/多変量基準/知見/AC_draft)"
+    pushed: true
 
   acceptance_criteria:
-    AC7:
+    - id: AC11
       status: PASS
-      note: |
-        P3 guard 動作確認。"SKIP: 寺地淳子様 — folderId未設定" ログ確認済。
-        getFolderById エラーは発生せず (P2+P3 guard が空文字を早期ブロック)。
-        clasp push (commit e5cc7d1) 適用済。
-    AC8:
-      status: PASS
-      note: |
-        圓真諒様: "新着メール: 0件" — regression なし確認済。
-        processAllCustomers が2顧客とも正常終了。
-
-  clasp_log_evidence:
-    latest_run:
-      - "顧客: 圓真諒 - 新着メール: 0件"
-      - "顧客処理完了: 圓真諒 - 0件処理"
-      - "SKIP: 寺地淳子様 — folderId未設定。元帳D列を確認してください。"
-      - "顧客処理完了: 寺地淳子様 - undefined件処理"
-      - "全顧客処理完了。"
-    conclusion: "P3 guard 正常動作 + 圓真諒 regression なし"
-
-  files_modified:
-    - "queue/reports/ashigaru3_report.yaml"
-    - "queue/tasks/ashigaru3.yaml (status→done)"
-
-  minor_bugs_found:
-    - id: minor_1
-      description: "main.gs: processCustomer が skipped:true を返す場合、result.processed が undefined になり '〇〇 - undefined件処理' と表示される"
-      impact: 表示のみ。機能的影響なし。
-      suggestion: 'if (result.skipped) { Logger.log(''SKIP: ...''); continue; } パターンに変更推奨'
+      note: "output/cmd_578_autonomous_context_hygiene_design.md 作成 (290行, Scope A/B/C 統合) + commit 81e3b0e + git push 完了"
 
 skill_candidate:
   found: false
-  reason: "単発の clasp run 検証。パターン化は shogun-gas-automated-verification skill に統合済み"
+  reason: "設計 doc 作成のみ。実装は cmd_586。"
 
-# cmd_579 subtask_579a (ashigaru5) consolidation note:
-#   Prior multi-document entries (subtask_566a done / subtask_567c in_progress) were
-#   archived to git history on 2026-04-24. subtask_567c superseded by cmd_567 completion
-#   (dashboard ✅ commit 304edfc). Single-document form restored to match validator
-#   convention (validate_ashigaru_report.py uses yaml.safe_load, not safe_load_all).
+---
+
+worker_id: ashigaru3
+task_id: subtask_584a
+parent_cmd: cmd_584
+status: done
+timestamp: "2026-04-24T19:37:27+09:00"
+report_to: karo
+type: edit
+
+result:
+  summary: |
+    cmd_584 Scope A: suggestions.yaml 遡及転記 + 古分監査 完了。
+    AC1: 本日 gunshi concerns 7件 append 済。
+    AC2: cmd_485/486 古 pending 6件 監査・status 更新済。
+
+  ac1_details:
+    appended_count: 7
+    entries:
+      - id: sug_cmd_582_001
+        title: "K4 socket整合未実装"
+        status: pending
+        priority: low
+      - id: sug_cmd_582_002
+        title: "K3 exponential backoff 未採用"
+        status: pending
+        priority: low
+      - id: sug_cmd_582_003
+        title: "通常 cmd 5s timeout 観測必要"
+        status: pending
+        priority: low
+      - id: sug_cmd_573_001
+        title: "dashboard_lint.py 未実装 (cmd_583 で解消済)"
+        status: accepted
+        decision_note: "dashboard_lint.py が scripts/ に存在確認 → promoted_to_cmd_583"
+      - id: sug_cmd_577_qc_001
+        title: "cmd_577 Scope A/C report 上書き喪失"
+        status: pending
+        priority: medium
+      - id: sug_cmd_577_qc_002
+        title: "P1 本番有効化は殿承認必須"
+        status: pending
+        priority: low
+      - id: sug_cmd_577_qc_003
+        title: "P1 本番稼働 1-2 日の人手確認期間未定義"
+        status: pending
+        priority: low
+
+  ac2_details:
+    audited_count: 6
+    entries:
+      - id: sug_cmd_485_001
+        old_status: pending
+        new_status: accepted
+        reason: "qc_auto_check.sh --mode pre-report 実装済 (cmd_552)"
+      - id: sug_cmd_485_002
+        old_status: pending
+        new_status: deferred
+        reason: "context_snapshot task metadata update 未実装。複雑機能、Phase 2 以降で再評価"
+      - id: sug_cmd_486_001
+        old_status: pending
+        new_status: deferred
+        reason: "3週間以上経過。後続 GAS cmd で gas-mail-manager 継続運用中"
+      - id: sug_cmd_486_002
+        old_status: pending
+        new_status: accepted
+        reason: "qc_auto_check.sh + SO-01 強化で報告精度を構造的に対処済"
+      - id: sug_cmd_486_003
+        old_status: pending
+        new_status: accepted
+        reason: "SO-01 pre-report guard 実装済 (sug_cmd_485_001 と統合対処)"
+      - id: sug_cmd_486_004
+        old_status: pending
+        new_status: deferred
+        reason: "cmd_486 固有 gas commit タイミング提案。context 古く不適用"
+    unchanged_pending:
+      - id: sug_cmd_485_003
+        reason: "ntfy.sh regex 明文化 karo.md 未追加 → pending 維持"
+      - id: sug_cmd_485_004
+        reason: "静的トレース原則 未追加 → pending 維持"
+
+  yaml_check:
+    status: "FAIL (pre-existing)"
+    detail: |
+      queue/suggestions.yaml には 2026-03-11 以前の古いエントリ (sug_cmd_310_001 等)
+      が top-level (0インデント) で混在する pre-existing 構文エラーあり (line 977)。
+      本タスクの追加分 (lines 9179-9280) は正しい 2-space インデントで問題なし。
+      既存エラーの修正は本タスクスコープ外。karo に別途修正依頼推奨。
+
+  files_modified:
+    - "queue/suggestions.yaml (7件 append + 6件 status 更新)"
+    - "queue/reports/ashigaru3_report.yaml"
+    - "queue/tasks/ashigaru3.yaml (status→done)"
+
+  acceptance_criteria:
+    AC1:
+      status: PASS
+      note: "cmd_582 C1/C2/C3 + cmd_573 C3(accepted) + cmd_577_qc C1/C2/C3 = 7件 append"
+    AC2:
+      status: PASS
+      note: "sug_cmd_485_001/002 + sug_cmd_486_001/002/003/004 = 6件 監査・更新"
+
+skill_candidate:
+  found: false
+  reason: "suggestions.yaml 管理は標準 ashigaru 業務。パターン化対象外"
+
+---
+
+worker_id: ashigaru3
+task_id: subtask_586c
+parent_cmd: cmd_586
+status: done
+timestamp: "2026-04-24T20:35:20+09:00"
+report_to: karo
+type: implement
+
+result:
+  summary: |
+    cmd_586 Scope C 統合テスト完了。AC3 PASS。
+    safe_window_judge(3パターン)/karo self-notify/inbox_watcher context_advisory/足軽regression 全 PASS。
+
+  test_results:
+    safe_window_judge_karo:
+      input: "context_pct=75, tool_count=10"
+      output: "SAFE_WINDOW_RESULT=false, RECOMMENDATION=/compact"
+      reason: "in_progress=3(C3NG) + idle=23s(C5NG) → /compact"
+      status: PASS
+    safe_window_judge_gunshi:
+      input: "context_pct=65, tool_count=5"
+      output: "SAFE_WINDOW_RESULT=true, RECOMMENDATION=/clear"
+      reason: "G1-G4 全成立(QC cycle 区切り)"
+      status: PASS
+    safe_window_judge_ashigaru:
+      input: "context_pct=80, tool_count=20"
+      output: "SAFE_WINDOW_RESULT=false, RECOMMENDATION=wait"
+      reason: "safe_clear_check委譲→C4NG(preserve_across_stages cmd検出)"
+      status: PASS
+    karo_self_notify:
+      output: "SKIP(C1NG: in_progress=12) → context_advisory 未送信"
+      note: "正常動作。safe_window未到達時は送信しない設計通り"
+      status: PASS
+    inbox_watcher_context_advisory:
+      grep_lines: "305, 507, 1133-1137"
+      note: "context_advisory: special_types 登録済 + busy時 deferred 処理あり"
+      status: PASS
+    regression_ashigaru:
+      cmd: "bash scripts/self_clear_check.sh ashigaru3"
+      output: "SKIP: active task (status=assigned)"
+      note: "既存動作変更なし"
+      status: PASS
+
+  acceptance_criteria:
+    - id: AC3
+      status: PASS
+      note: "統合テスト: safe_window_judge 3パターン + self-notify フロー + inbox_watcher 処理 + 足軽 regression なし — 全 PASS"
+
+skill_candidate:
+  found: false
+  reason: "統合テストのみ。実装は Scope A/B 担当"
+
+---
+
+worker_id: ashigaru3
+task_id: subtask_587a
+parent_cmd: cmd_587
+status: done
+timestamp: "2026-04-25T04:42:54+09:00"
+report_to: karo
+type: implement
+
+result:
+  summary: |
+    cmd_587 Scope A 完了。
+    GitHub Issue #38 作成: Gemini API 403 API_KEY_SERVICE_BLOCKED 根本解消調査。
+    仮説遷移 (ι/σ/π) + 次アクション候補 (AR2/AR4/Vertex AI) を記録。
+    重複 Issue なし (事前検索確認済)。
+
+  issue:
+    url: "https://github.com/saneaki/multi-agent/issues/38"
+    title: "Gemini API 403 API_KEY_SERVICE_BLOCKED 根本解消調査 (kaji-487204 / grace-law.jp)"
+    number: 38
+
+  acceptance_criteria:
+    - id: AC_587a
+      status: PASS
+      note: "GitHub Issue #38 作成 + URL取得完了"
+
+skill_candidate:
+  found: false
+  reason: "Issue作成のみ。パターン化対象外"
+
+---
+
+worker_id: ashigaru3
+task_id: subtask_585j_issue_update
+parent_cmd: cmd_585
+status: done
+timestamp: "2026-04-25T13:02:36+09:00"
+report_to: karo
+type: implement
+
+result:
+  summary: |
+    cmd_585 Scope J 完了。
+    GitHub Issue #38 に真因確定コメント追加済。
+    真因: kaji-487204 で Generative Language API 未 enable + Code Assist API (cloudaicompanion.googleapis.com) 誤選択
+    → キー制限が Code Assist API のみ → Gemini Developer API 呼出が 403 API_KEY_SERVICE_BLOCKED。
+
+  issue_comment:
+    url: "https://github.com/saneaki/multi-agent/issues/38#issuecomment-4317960355"
+    comment_id: 4317960355
+    content_summary: "真因確定 / 仮説遷移最終結論 (π確定) / 解決手順 / 関連commit"
+
+  acceptance_criteria:
+    - id: AC_585j
+      status: PASS
+      note: "Issue #38 に真因確定コメント (Generative Language API 未 enable + Code Assist 誤選択) 追加完了"
+
+skill_candidate:
+  found: false
+  reason: "IssueコメントのみGitHub操作。パターン化対象外"
+
+---
+
+worker_id: ashigaru3
+task_id: subtask_585l_rapt_issue
+parent_cmd: cmd_585
+status: done
+timestamp: "2026-04-25T13:32:56+09:00"
+report_to: karo
+type: implement
+
+result:
+  summary: |
+    cmd_585 Scope L 完了。
+    GitHub Issue #39 作成: clasp run RAPT 8h 期限切れ — VPS 自動実行 reliability 課題。
+    将来 cmd 起案用 TODO として記録。
+
+  issue:
+    url: "https://github.com/saneaki/multi-agent/issues/39"
+    title: "clasp run RAPT 8h 期限切れ — VPS 自動実行 reliability 課題"
+    number: 39
+
+  acceptance_criteria:
+    - id: AC_585l
+      status: PASS
+      note: "GitHub Issue #39 作成 + URL 取得完了"
+
+skill_candidate:
+  found: false
+  reason: "Issue 作成のみ。パターン化対象外"

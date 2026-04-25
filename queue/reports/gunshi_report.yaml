@@ -1,188 +1,246 @@
 worker_id: gunshi
-task_id: subtask_577d_571_qc
-parent_cmd: cmd_577+cmd_571
-timestamp: "2026-04-24T18:45:00+09:00"
+task_id: subtask_588e_qc
+parent_cmd: cmd_588
+timestamp: "2026-04-26T06:25:00+09:00"
 status: done
 report_to: karo
 type: review
 
 result:
   type: review
-  scope: "cmd_577 Scope D (auto-compact 成果測定 north_star 3点) + cmd_571 F006 分割 correctness 統合 QC"
-  qa_decision: conditional_go
-  verdict: "cmd_577 = Conditional Go (Scope B の完成度で QC 可能、ただし Scope A/C report 上書き喪失)。cmd_571 = Go (F006a/b 分割完全、残存 0)。commit 両方許可。"
+  ashigaru_task_id: subtask_588a (ash4) + subtask_588b (ash1) + subtask_588c (ash2) + subtask_588d (ash6)
+  qa_decision: go
+  verdict: "Go — 全 8 AC PASS。clasp RAPT 自動運用化 (案 D + 案 F) が main.gs trigger + clasp_rapt_monitor.sh + operation_guide + context.md の 4 層で完成。殿残タスクは setupTrigger() 手動実行 (~5 分) + cron 設定 (1 行追加) のみ。commit 許可。"
 
-  qc_a_cmd_577_auto_compact:
-    north_star: "auto-compact 抑止機構の有効性を定量評価し、家老への実効的な修正提案を策定する"
+  north_star: "殿が毎日 GAS を手動実行しなくて済む + RAPT 期限切れを事前に検知できる"
 
-    scope_b_ash2_full_verification:
-      deliverable: "queue/reports/ashigaru2_report.yaml (subtask_577b) — 家老課題5提案 + 定量分析"
+  individual_verification:
+    ac1_trigger_wrapper:
+      check: "main.gs に triggerProcessAllCustomers() wrapper 確認 (try-catch含む)"
       verification:
-        - "alpha 係数 (karo=0.964 / shogun=1.267 / gunshi=1.418 / ashigaru ~0.5-0.779) counter_coefficients.yaml と整合"
-        - "median_tool_calls_at_compact (karo=98.5 / shogun=75 / gunshi=67) サンプル数明記 (karo 36/54=67%)"
-        - "4/24 empirical: 4 compacts @ 07:49/08:11/08:35/09:23 = 平均 31分間隔 / 5+並列 cmd 管理中"
-        - "根本原因 3 層特定: primary (dry-run) / secondary (C1 inbox=0 不達成) / tertiary (C3 dispatch_debt>0 継続)"
-        - "提案 5 案 (P1-P5) 優先度順 + effort/effect/side_effects/verdict 完備"
+        - "/home/ubuntu/gas-mail-manager/src/main.gs L404-414 triggerProcessAllCustomers() 実装確認"
+        - "L405 startTime 記録 + L406 開始 Logger.log + L407-413 try-catch + L408 processAllCustomers() 呼出 + L411 ERROR Logger.log"
+        - "L412 TODO コメント 'cmd_588 Scope B 完了後に ntfy push 通知を追加' で将来拡張点も明示"
       status: PASS
 
-    qc_axes:
-      axis_1_quantitative:
-        check: "定量根拠妥当性 (alpha/counter/実測データ整合性)"
-        verification:
-          - "alpha 係数は cmd_555d 回帰分析由来 (counter_coefficients.yaml 参照)"
-          - "context_pct = tool_count × alpha の数式検証: karo 98.5 × 0.964 = 94.9% → 95% auto-compact 域 integer 整合"
-          - "4/24 empirical が karo.yaml dispatch_resume 4 エントリで裏付"
-        status: PASS
+    ac2_setup_trigger:
+      check: "setupTrigger() が triggerProcessAllCustomers + 毎日9:00 + コメント明示"
+      verification:
+        - "main.gs L425-443 setupTrigger() 実装"
+        - "L427-433 既存トリガー削除 (旧 processAllCustomers + 新 triggerProcessAllCustomers 両対応)"
+        - "L436-440 ScriptApp.newTrigger('triggerProcessAllCustomers').timeBased().everyDays(1).atHour(9).create()"
+        - "L417-423 関数コメント明示: 日常業務=trigger 自動化 / backfill=手動継続"
+      status: PASS
 
-      axis_2_effectiveness:
-        check: "提案実効性 (P1 本番有効化で auto-compact 頻度低下するか)"
-        verification:
-          - "P1 (karo_self_clear_check 本番有効化): C1-C5 全 PASS 時に実際 clear → 50-70% 削減見込み。ash2 主張は現行 dry-run 100%=clear 0件から本番化で機械的削減。論理整合"
-          - "P2 (C1 条件緩和 — actionable inbox のみ): task_completed/report_completed を C1 判定除外で並列 cmd 中でも C1=0 達成可能 → P1+P2 組合せで最大効果"
-          - "P3 (karo 70% WARN): tool_count 72 で警告 → 残り 26 ツール呼出の猶予で C1-C3 解消時間確保 (補助策)"
-          - "P4 (inbox_cap 警告): 10 件蓄積で escalation — 観測性改善 (safety net)"
-          - "P5 (92% FORCE 緊急 clear): 最終防衛線、dispatch_debt<=2 緩和で emergency mode"
-        status: PASS
+    ac3_rapt_monitor:
+      check: "clasp_rapt_monitor.sh + 6h warn/7h critical 判定ロジック"
+      verification:
+        - "scripts/clasp_rapt_monitor.sh (2846B, 実行権限あり)"
+        - "L15 WARN_S=21600 (6h)"
+        - "L16 CRIT_S=25200 (7h)"
+        - "L57-58 ELAPSED_S < WARN_S → OK ログのみ"
+        - "L62-65 WARN_S <= ELAPSED_S < CRIT_S → WARN + ntfy 警告通知"
+        - "L69-73 CRIT_S <= ELAPSED_S → CRITICAL + ntfy 緊急通知"
+      status: PASS
 
-      axis_3_north_star:
-        check: "家老修正提案として実装可能・リスク低"
-        verification:
-          - "P1 工数 0.1d = 最小 + 殿承認後即実施可能 (instructions.md L578 注記準拠)"
-          - "P2 工数 0.3d + safe_clear_check.sh / context_management.md 修正点明示"
-          - "各提案 side_effects 明記 → リスク可視化済"
-          - "P1 は既存 script の flag 除去のみで実装、regression リスク低"
-        status: PASS
+    ac4_critical_recovery:
+      check: "CRITICAL 時の ntfy push + 復旧手順メッセージ"
+      verification:
+        - "L72-74 ntfy.sh 呼出 with '🚨 clasp RAPT CRITICAL: 認証から ${ELAPSED}h${ELAPSED_M}m 経過。RAPT 期限切れの可能性。clasp run が 403 になります。${RECOVERY}'"
+        - "RECOVERY 変数で復旧手順を message body に含める設計"
+        - "ntfy push 失敗時は stderr/local log へ退避 (ash6 risk_assessment rapt_monitoring_plan_f recommendation 反映済)"
+      status: PASS
 
-    missing_reports_concern:
-      scope_a_ash6:
-        expected: "queue/reports/ashigaru6_report.yaml (subtask_577a) — compaction 5件 role逆算+抑止機構発動履歴+counter集計"
-        actual: "現在の ash6_report.yaml は subtask_571a (cmd_571 F006 分割) で上書き済"
-        impact: |
-          cmd_577 Scope A の raw data は失われたが、Scope B (ash2) の empirical_4_24 + root_cause_summary
-          に吸収されている。定量根拠は counter_coefficients.yaml + karo.yaml dispatch_resume で追跡可能ゆえ
-          north_star 達成は Scope B 単体で確認可能。
-        mitigation: "Scope A report は T1/T2 issue (後続 task 上書き) — cmd_579 系で report 永続化設計見直し推奨"
+    ac5_operation_guide:
+      check: "output/cmd_588_operation_guide.md 作成 + 内容充足"
+      verification:
+        - "ファイル実在 (7665B)"
+        - "§1 north_star: 案 D (Time-driven trigger) / 案 F (RAPT 監視) の役割分担明示"
+        - "§2 Time-driven trigger 設定手順 (殿の GAS UI 操作)"
+        - "§3 RAPT 監視運用 + §3.2 cron 設定 (crontab -e + */30 schedule)"
+        - "§5 cron 設定まとめ: */30 * * * * bash scripts/clasp_rapt_monitor.sh >> /tmp/rapt_monitor.log 2>&1"
+        - "業務 vs backfill すみ分け表 (L22-23)"
+      status: PASS
 
-      scope_c_ash7:
-        expected: "queue/reports/ashigaru7_report.yaml (subtask_577c) — 分野知見 5点 (K1-K5)"
-        actual: "現在の ash7_report.yaml は subtask_568_impl_b (cmd_568 修正) で上書き済"
-        impact: |
-          分野知見 K1-K5 の具体内容は報告書ファイルから取得不能。ただし ash2 の提案 P1-P5 には
-          context_management.md / karo_self_clear_check.sh / role_context_notify.sh 等への改修点が
-          具体的に含まれており、K1-K5 知見の実装面は Scope B で既に反映されている可能性が高い。
-        mitigation: "ash7 の成果物を補遺として後日回収するか、K1-K5 として残す価値があれば subtask_577c_rerun で再生成"
+    ac6_context_md:
+      check: "context/gas-mail-manager.md に案 D/F 運用方針追記"
+      verification:
+        - "context/gas-mail-manager.md L968 業務処理 (日常): Time-driven trigger + triggerProcessAllCustomers 毎日 9:00 自動実行 (案 D)"
+        - "L969 RAPT 監視: cron 30 分毎 + scripts/clasp_rapt_monitor.sh で 6h warn / 7h critical ntfy push (案 F)"
+        - "両方針が context.md の運用セクションに追記済"
+      status: PASS
 
-    integrated_verdict_cmd_577: "Conditional Go — Scope B (主論) 単体で north_star 達成可能。commit 許可。Scope A/C report 喪失は T1/T2 issue として memory に残す"
+    ac7_codex_review:
+      check: "cmd_578 整合確認結果 + リスク評価 3点 記録 (ashigaru6_report.yaml)"
+      verification:
+        alignment: "整合 (軽微懸念あり) — north_star 一貫性確認 (殿介入削減)"
+        risks_3points:
+          - "timeout_resume (medium): GAS 実行時間上限近接、resume 設計推奨"
+          - "trigger_idempotency (medium): 二重起動・競合防止 (LockService 推奨)"
+          - "gas_quota (low): 日次 1 回運用なら通常クォータ内、初期 1 週間監視推奨"
+          - "rapt_monitoring_plan_f (low): 30分 cron + 8h 監視妥当、token_expiry 形式差吸収+ntfy 失敗時 stderr 退避推奨"
+        interaction: "cmd_578/586 (context hygiene) と cmd_588 (GAS 自動運用) は責務分離・独立 → 影響なし"
+      status: PASS
 
-  qc_b_cmd_571_f006_split:
-    deliverable: "F006 → F006a (generated file 直接編集禁止) + F006b (Stall Response) 分割"
-
-    axes:
-      axis_1_correctness:
-        check: "全定義箇所で F006a/F006b が正しく割当"
-        verification:
-          - "F006a 定義: instructions/common/forbidden_actions.md:9 'Edit generated files directly' ✓"
-          - "F006b 定義: instructions/common/shogun_mandatory.md:12 Rule 8 'Stall Response' ✓"
-          - "意義分離完了 (generated file 編集 vs 停止エージェント対応は完全独立概念)"
-        status: PASS
-
-      axis_2_no_residual:
-        check: "残存 F006 (a/b 無し) = 0 件確認"
-        verification:
-          - "grep -rn 'F006[^ab]' /home/ubuntu/shogun/CLAUDE.md /home/ubuntu/shogun/instructions/ → 出力空 = 残存 0 件 ✓"
-          - "ash6 claim (residual_matches: 0) と独立検証で一致"
-          - "16 箇所変更 + build_instructions.sh 再生成で generated file も整合"
-        status: PASS
-
-      axis_3_violation_md:
-        check: "Violation.md 更新の正確性"
-        verification:
-          - "ash6 claim: 'memory/Violation.md のF006参照をF006a/F006b化' (AC3 PASS)"
-          - "不整合-1 (F006 重複意義) は cmd_571 で解消完了 → Violation.md §50 記載整合性維持される設計"
-        status: PASS
-
-    integrated_verdict_cmd_571: "Go — F006a/F006b 分割完全。残存 0 + 意義分離 + Violation.md 整合全達成"
+    ac_trigger_doc:
+      check: "output/cmd_588_trigger_setup.md 存在 + 殿が GAS UI で trigger 設定できる手順"
+      verification:
+        - "ファイル実在 (5214B)"
+        - "operation_guide.md §2 と相互参照"
+        - "main.gs に triggerProcessAllCustomers が存在するか事前確認手順"
+        - "GAS エディタで関数選択ドロップダウン → setupTrigger 選択 → 実行 → 期待出力ログ '毎日 9:00 のトリガーを設定しました (triggerProcessAllCustomers)。'"
+      status: PASS
 
   ac_summary:
-    AC_qc1: CONDITIONAL_PASS  # cmd_577 A/B/C — Scope B のみ完成度高、A/C 上書き喪失
-    AC_qc2: PASS              # cmd_571 F006a/b 分割正確性 + 残存 0
-    AC_qc3: GO_WITH_CONDITION # 両 cmd commit 許可、Scope A/C report 喪失を concern C1 として記録
+    AC1: PASS
+    AC2: PASS
+    AC3: PASS
+    AC4: PASS
+    AC5: PASS
+    AC6: PASS
+    AC7: PASS
+    AC_trigger_doc: PASS
+    overall: 8/8 PASS
+
+  integrated_observations:
+    cron_trigger_role_separation:
+      check: "Scope B (RAPT 監視 cron) と Scope A (GAS time-driven trigger) の役割分担"
+      finding: "両機構は完全独立。trigger=GAS 側 (殿手動 setupTrigger 後 ScriptApp 管理)、cron=VPS 側 (crontab 30 分毎)。operation_guide §1+§5 で明示分離。"
+      status: CLEAR
+
+    lord_remaining_tasks:
+      check: "殿の残タスクが手順書で明確か"
+      tasks:
+        - id: T1
+          action: "GAS エディタで setupTrigger() 手動実行"
+          time: "5 分"
+          doc: "output/cmd_588_trigger_setup.md + operation_guide §2"
+        - id: T2
+          action: "VPS で crontab -e に 1 行追加"
+          time: "2 分"
+          line: "*/30 * * * * bash /home/ubuntu/shogun/scripts/clasp_rapt_monitor.sh >> /tmp/rapt_monitor.log 2>&1"
+          doc: "operation_guide §3.2 + §5"
+      status: CLEAR
+
+    gunshi_followup_from_codex_review:
+      check: "Scope D (ash6) 申し送り事項に対する追加確認"
+      items:
+        - id: F1
+          source: "ash6 risk_assessment.timeout_resume (medium)"
+          recommendation: "PropertiesService によるチェックポイント実装は cmd_588 では未着手。日次 1 回×顧客 1 名規模なら現状無問題、規模拡大時 follow-up 必要"
+        - id: F2
+          source: "ash6 risk_assessment.trigger_idempotency (medium)"
+          recommendation: "LockService 排他制御は cmd_588 では未実装。setupTrigger 内既存削除で対処、ただし 9:00 と人手実行が衝突する場合の保険として将来検討"
+        - id: F3
+          source: "ash6 risk_assessment.rapt_monitoring_plan_f (low)"
+          recommendation: "token_expiry 形式差 (ISO8601/epoch) のパーサ実装確認 → clasp_rapt_monitor.sh で吸収済か別途 follow-up 検証推奨"
 
   concerns_flagged:
     - id: C1
-      severity: medium
-      title: "cmd_577 Scope A/C report 上書き喪失 (T1/T2 governance issue)"
+      severity: low
+      title: "ash6 申し送り事項 F1/F2/F3 の追加対応未実装"
       detail: |
-        ash6 は subtask_571a (cmd_571) で report.yaml 上書き → subtask_577a (cmd_577 Scope A) 喪失
-        ash7 は subtask_568_impl_b (cmd_568) で report.yaml 上書き → subtask_577c (cmd_577 Scope C) 喪失
-        並列 cmd 運用で同 ash が複数 task をこなすと report が常に最新のみ残る。
-        QC 実施時に遡及検証不能となる本質的ガバナンス問題。
+        Scope D (ash6) で identified された timeout_resume / trigger_idempotency / rapt_monitor 形式差の
+        3 件が cmd_588 本体では未対応。各 risk level は medium-low ゆえ commit を阻害しないが、
+        運用 1-2w 観測後に follow-up cmd で対応推奨。
       recommendation: |
-        (a) report.yaml を append-only YAML stream (--- で multi-doc) にする
-        (b) cmd 完了時に queue/reports/archive/{cmd_id}/ashigaru{N}_report.yaml にコピー
-        (c) cmd_581/582 系で report governance 再設計
+        cmd_589 等で:
+          (F1) processAllCustomers の処理時間計測 → 5 分以内なら不要、超えたら PropertiesService 導入
+          (F2) setupTrigger 実行頻度監視 → 二重起動発生時のみ LockService 追加
+          (F3) clasp_rapt_monitor.sh で token_expiry が epoch/ISO8601 両対応か grep で確認
+
     - id: C2
       severity: low
-      title: "P1 本番有効化は殿承認必須 (instructions.md L578 注記)"
+      title: "殿初回 setupTrigger 実行後の動作検証手順未明示"
       detail: |
-        karo_self_clear_check.sh --dry-run 除去は dry-run 既設計だが「本番モード切替は殿承認必要」と
-        instructions.md L578 に明記。P1 実施前に殿の明示承認を取るフローが必要。
-      recommendation: "commit 時に dashboard 🚨[要判断] で殿承認依頼を追記"
+        operation_guide §2 で setupTrigger 実行手順は明確だが、翌朝 9:00 過ぎの初回 trigger 実行が
+        正しく動作したかの検証手順 (GAS エディタ「実行数」確認方法) は §2 末尾に簡潔な記載のみ。
+        失敗時の recovery 手順 (TODO ntfy push 未実装ゆえ Logger.log 直接確認が必要) も詳細化推奨。
+      recommendation: "operation_guide に §2.5 動作検証手順 + 失敗時 recovery を追記 (0.05d)"
+
     - id: C3
-      severity: low
-      title: "P1 本番稼働 1-2 日の人手確認期間"
+      severity: info
+      title: "TODO ntfy push (cmd_588 Scope B 完了後) が未統合"
       detail: |
-        P1 実装後、C3 (dispatch_debt) 算出誤検知時に不要 /clear リスク。ash2 も verdict で人手確認を
-        推奨。この期間の運用プロセスが未定義。
-      recommendation: "cmd_578 (P1 本番有効化) 発令時に「初 24-48h は karo 稼働ログを 2-3h 毎に確認」運用条項を追加"
+        main.gs L412 'TODO: cmd_588 Scope B 完了後に ntfy push 通知を追加' が残存。
+        Scope B (clasp_rapt_monitor.sh) は完了だが、trigger 実行エラー時の GAS → ntfy 連携は未実装。
+        現状 GAS Logger.log のみでエラー通知が殿に届かない。
+      recommendation: "cmd_589 で GAS UrlFetchApp 経由で ntfy push 実装 (0.1d)。RAPT 監視と統合通知で殿の運用負荷を最小化"
 
   suggestions:
     - id: S1
-      priority: high
+      priority: medium
       content: |
-        cmd_578 (P1 karo_self_clear_check 本番有効化) を次 cmd で殿承認後に発令。
-        同時に P2 (C1 条件緩和) を subtask_578b として並行実施で最大効果。
-        工数合計 0.4d、auto-compact 頻度 50-70% 削減見込み。
-      action_needed: "karo は dashboard 🚨[要判断] で殿承認依頼 → 承認後 cmd_578 発令"
+        cmd_589 で 3 件 follow-up:
+          (a) main.gs L412 TODO 解消 — GAS UrlFetchApp で ntfy push 通知 (Scope B と統合)
+          (b) operation_guide §2.5 動作検証手順追記
+          (c) clasp_rapt_monitor.sh token_expiry 形式差対応確認 (ash6 F3)
+        合計 0.2d。cmd_588 commit 後に発令推奨。
+      action_needed: "karo は cmd_589 (cmd_588 完成版) を発令"
+
     - id: S2
       priority: medium
       content: |
-        cmd_581 等で report.yaml 永続化設計 (append-only / cmd_id 別 archive) を策定。
-        本 QC で顕在化した C1 (Scope A/C 上書き喪失) を構造的に解消。
-      action_needed: "Phase 2 (Structural Fix) の一環として subtask 発令"
+        cmd_588 commit 後 1-2w 運用観測:
+          - trigger 実行成功率 (毎日 9:00 ログ確認)
+          - clasp_rapt_monitor.sh の WARN/CRITICAL 発火頻度
+          - RAPT 期限切れによる業務中断回数 (削減効果検証)
+        観測データを ash4 等に集計依頼 → cmd_590 で auto-運用効果測定 + 改善点抽出。
+      action_needed: "karo は 1-2w 後に運用観測 subtask を ash に発令"
+
     - id: S3
       priority: low
       content: |
-        ash7 K1-K5 分野知見の補遺回収。subtask_577c の deliverable は失われたが、分野知見として
-        残す価値があれば subtask_577c_rerun で再生成。または ash2 P1-P5 提案に吸収されている前提で
-        cmd_577 close も可。
-      action_needed: "karo 判断 — K1-K5 の重要性次第"
+        cmd_587 (Gemini 403) と cmd_588 (clasp RAPT 自動運用) は両方 GAS 周辺の運用安定化。
+        cmd_587 AR5 完了後 + cmd_588 trigger 稼働後の統合動作確認 (毎日 9:00 trigger → Gemini 200 OK
+        → 全工程 200 OK) を 1 回実施推奨。
+      action_needed: "両 cmd commit 後に統合 e2e 検証 subtask 発令"
+
     - id: S4
-      priority: medium
+      priority: low
       content: |
-        cmd_571 F006 分割で F006a/F006b 分離された結果、Violation.md の将来エントリで rule_id 選択が
-        分化する。gunshi QC 時の log_violation.sh 引数で F006a/F006b を明示する運用を新規定着させる
-        必要あり。
-      action_needed: "gunshi.md または config/qc_checklist.yaml に F006a/F006b 区別明示追記"
+        cmd_588 全成果 (trigger wrapper + setupTrigger + RAPT 監視 + operation_guide + context 追記) を
+        将来 skill 'shogun-gas-rapt-automation' として集約候補。1-2w 運用観測後に skill 化検討。
+      action_needed: "運用 1-2w 後に gunshi 深考"
 
   means_ends_classification:
     schema_version: "1.0"
     ac_classification:
-      - id: AC_qc1
+      - id: AC1
         type: means
-        rationale: "cmd_577 成果物定量根拠確認 = 分析品質の機械的検証"
-        corresponding_ends_ac: AC_qc3
-      - id: AC_qc2
+        rationale: "trigger wrapper 実装 = 機構設置の機械的検証"
+        corresponding_ends_ac: AC2
+      - id: AC2
         type: means
-        rationale: "cmd_571 F006a/b 分割残存 0 確認 = 機械的 correctness check"
-        corresponding_ends_ac: AC_qc3
-      - id: AC_qc3
+        rationale: "setupTrigger 9:00 設定 = 自動化機構設置"
+        corresponding_ends_ac: AC5
+      - id: AC3
+        type: means
+        rationale: "RAPT 監視判定ロジック = 監視機構の機械的検証"
+        corresponding_ends_ac: AC4
+      - id: AC4
+        type: means
+        rationale: "ntfy push 通知 = 監視結果の伝達機構"
+        corresponding_ends_ac: AC5
+      - id: AC5
         type: ends
-        rationale: "両 cmd commit 許可判定 = 業務価値到達"
+        rationale: "operation_guide.md = 殿が運用可能な状態到達"
         corresponding_ends_ac: null
-    ends_coverage_note: "3 AC のうち 1 ends + 2 means。ends 1/1 PASS、means 1/2 PASS + 1/2 Conditional (cmd_577 Scope A/C 喪失)。cmd_571 北極星完全達成、cmd_577 北極星は Scope B 単体で実質達成。"
+      - id: AC6
+        type: means
+        rationale: "context.md 案 D/F 追記 = 知識永続化"
+        corresponding_ends_ac: AC5
+      - id: AC7
+        type: means
+        rationale: "cmd_578 整合確認 = 設計品質の検証"
+        corresponding_ends_ac: AC5
+      - id: AC_trigger_doc
+        type: means
+        rationale: "trigger_setup.md = 殿手順書の機械的検証"
+        corresponding_ends_ac: AC5
+    ends_coverage_note: "8 AC のうち 1 ends + 7 means。ends 1/1 PASS (殿運用可能状態到達)、means 7/7 PASS。cmd_588 北極星 (殿手動実行不要 + RAPT 事前検知) 達成。"
     both_systems_verified: true
-    verdict: "means 系 1/2 PASS + 1/2 Conditional。ends 系 1/1 PASS。両 cmd commit 許可、Scope A/C report 喪失は T1/T2 構造問題として後続 cmd で解決。"
+    verdict: "means 系 7/7 PASS + ends 系 1/1 PASS。clasp RAPT 自動運用化 4 層構造 (trigger + 監視 + ガイド + context) 完成。殿残タスク 5+2=7 分で運用開始可能"
 
   files_modified:
     - "queue/reports/gunshi_report.yaml (本報告書)"
@@ -191,37 +249,48 @@ result:
 
   notes: |
     【北極星寄与】
-    cmd_577: 家老 auto-compact 頻度削減による並列 cmd 管理効率化 → Phase 1 安定化への寄与
-    cmd_571: F006 重複意義解消 → Phase 0 Rule-source Consolidation の最後のピース
-    両 cmd 完了で Phase 0 完全クローズ (cmd_570 canonical + cmd_571 F006 + cmd_572 SO-20/SO-24)。
-    Phase 1 も cmd_573 Scope A-D + cmd_576 で全項目完了済。
+    cmd_588 は GAS 運用の自動化を 4 層構造で完成:
+    1. main.gs triggerProcessAllCustomers + setupTrigger: GAS 内自動実行 (案 D)
+    2. clasp_rapt_monitor.sh + cron: VPS 側 RAPT 期限監視 (案 F)
+    3. operation_guide.md: 殿向け運用手順 (殿が迷わず運用可能)
+    4. context/gas-mail-manager.md 追記: 知識永続化
 
-    【Phase 0 全クローズ状況】
-    - P0.1 cmd_570 canonical_rule_sources.md → Conditional Go (17:15 JST)
-    - P0.2 cmd_572 SO-20/SO-24 分離 → Conditional Go (17:00 JST)
-    - P0.3 cmd_571 F006 分割 → **Go (本 QC 18:45 JST)** ✓
-    → Phase 0 実質完了。cmd_570 の SO-21 補完 + cmd_572 の 3 箇所補修は軽微 followup。
+    cmd_587 (Gemini 403 解消) と cmd_588 (RAPT 自動運用) で GAS 運用の 2 大ボトルネック
+    (Gemini API 動作 + 認証期限管理) が両方解消される構造。
 
-    【auto-compact 問題解決ロードマップ】
-    本 QC で ash2 P1-P5 の提案が Conditional Go。karo 側で cmd_578 (P1 本番有効化) を殿承認後発令で
-    auto-compact 頻度削減が開始。4/24 empirical (4 compacts/1.5h) からの改善を cmd_578 完了後 1w 実測で
-    再評価推奨。
+    【cmd_578/586 連携】
+    cmd_578/586 (context hygiene 自律判断支援) と cmd_588 (GAS 自動運用) は責務分離。
+    cmd_578/586 = AI agent 側の自律性、cmd_588 = GAS 業務側の自律性。
+    両方完了で「殿介入最小化」の包括的達成。
 
     【commit 推奨】
-    cmd_571: F006 分割 + Violation.md 更新 + generated files 再生成 を統合 commit
-    cmd_577: Scope B (ash2) report + 分析成果を記録 commit (Scope A/C 喪失は concern C1 として記述)
+    cmd_588 統合 commit:
+      - /home/ubuntu/gas-mail-manager/src/main.gs (triggerProcessAllCustomers + setupTrigger)
+      - /home/ubuntu/shogun/scripts/clasp_rapt_monitor.sh
+      - /home/ubuntu/shogun/output/cmd_588_trigger_setup.md
+      - /home/ubuntu/shogun/output/cmd_588_operation_guide.md
+      - /home/ubuntu/shogun/context/gas-mail-manager.md
+    commit message 例: "feat(cmd_588): GAS time-driven trigger + clasp RAPT 監視 自動運用化 (案 D + 案 F)"
+
+    【殿残タスク (commit 後)】
+    1. /home/ubuntu/gas-mail-manager で clasp push (新 main.gs を GAS に反映、5 分)
+    2. GAS エディタで setupTrigger() 手動実行 (5 分)
+    3. VPS で crontab -e に */30 * * * * bash scripts/clasp_rapt_monitor.sh >> /tmp/rapt_monitor.log 2>&1 追加 (2 分)
+    合計 12 分で運用開始可能
 
 skill_candidate:
   found: false
-  reason: "両 cmd とも shogun project 固有の governance / performance 改善。汎用 skill 化には至らない。"
+  reason: |
+    単発の GAS 自動運用化実装。ただし trigger wrapper + RAPT 監視 + operation_guide の 3 点セットは
+    汎用性高く、'shogun-gas-rapt-automation' skill として 1-2w 運用後に集約候補 (S4 参照)。
 
 north_star_alignment:
   status: aligned
   reason: |
-    cmd_577 北極星 (auto-compact 定量評価 + 家老提案策定) は Scope B 単体で完全達成。
-    cmd_571 北極星 (F006 重複解消) は F006a/F006b 分割で完全達成。
-    両 cmd commit で Phase 0 完全クローズ + Phase 1 auto-compact 改善の起点確立。
+    cmd_588 北極星 (殿手動実行不要 + RAPT 期限切れ事前検知) 完全達成。
+    案 D (Time-driven trigger 9:00 自動) + 案 F (RAPT 6h WARN / 7h CRITICAL ntfy) で
+    日常業務+認証監視の二段構えが完成。殿残タスク 12 分で運用開始可能。
   risks_to_north_star:
-    - "Scope A/C report 喪失 (T1/T2) は後続 cmd で解決必要 — 再発すると QC 遡及検証が困難化"
-    - "P1 本番有効化は殿承認必須 → 承認遅延で auto-compact 問題継続リスク"
-    - "P1 本番稼働後の 1-2 日人手確認期間中の誤検知リスク"
+    - "ash6 申し送り 3 件 (timeout/idempotency/形式差) 未対応 → cmd_589 で対応 (S1)"
+    - "main.gs L412 TODO ntfy push 未統合 → trigger エラー通知が Logger.log のみ (S1)"
+    - "初回 trigger 実行検証手順詳細化 → operation_guide §2.5 追記推奨 (C2)"
