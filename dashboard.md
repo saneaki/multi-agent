@@ -1,5 +1,5 @@
 # 📊 戦況報告
-最終更新: 2026-04-26 21:57 JST
+最終更新: 2026-04-26 22:46 JST
 
 ## 📋 記載ルール (Self-Documentation)
 > **更新者必読**: このセクションのルールを遵守して dashboard を更新すること。
@@ -23,7 +23,7 @@
 | 今日のFrog | 未設定 |
 | Frog状態 | 🐸 未撃破 |
 | ストリーク | 🔥 32日目継続中 (最長: 32日) |
-| 今日の完了 | 6 |
+| 今日の完了 | 7 |
 | VFタスク残り | 0件（うち今日期限: 0件） |
 
 ## 🚨 要対応 - 殿のご判断をお待ちしております
@@ -49,7 +49,7 @@
 
 | cmd | 内容 | 担当 | 状態 |
 |-----|------|------|------|
-| cmd_596 | suggestions 定期消化機構 | gunshi:QC中 | A✅+B✅(19:47)+C✅(19:57:[提案]反映)+D✅(19:57:karo.md hard check)+E(gunshi:QC発令中) |
+| (なし) | 全 cmd 完遂 | — | — |
 
 ## 🏯 待機中の構成員
 
@@ -62,13 +62,14 @@
 | 足軽5号(Opus+T) | 待機 | subtask_596cd完了(19:57): karo.md Step11.7→7step+Suggestions hard check + dashboard[提案-1][提案-2]反映 AC3/AC4 PASS ✅ |
 | 足軽6号(Codex5.3) | 待機 | subtask_595c完了(19:50): 案C Hybrid second opinion=APPROVE_WITH_CONCERNS(履歴肥大化/cleanup未定義) ✅ |
 | 足軽7号(Codex5.3) | 待機 | subtask_593h完了(14:02): get_context_pct.sh作成(実測54%)+crontab動的取得更新 ✅ |
-| 軍師(Opus+T) | QC中 | subtask_596e_qc発令(20:00): cmd_596 Scope E QC (suggestions機構 総合判定) |
+| 軍師(Opus+T) | 待機 | subtask_596e_qc完了(22:00): cmd_596 QC=Go (5/5 PASS) north_star 3点 aligned。governance 13点完成 ✅ |
 
 ## ✅ 本日の戦果（4/26 JST）
 
 | 時刻 | 戦場 | 任務 | 結果 |
 |------|------|------|------|
-| 20:00 | instructions/shogun | cmd_595完遂(ash5/ash6/gunshi): report.yaml history機構(案C Hybrid)導入。twin QC=Go+north_star 3点 aligned。commit 9b875c5 | ✅ ends完了 |
+| 22:00 | queue/instructions/shogun | cmd_596完遂(ash1/5/6/gunshi): suggestions定期消化機構。triage 553件→pending=0+digest.sh cron+karo.md hard check+dashboard[提案]反映。gunshi QC=Go commit TBD | ✅ ends完了 |
+| 20:00 | instructions/shogun | cmd_595完遂(ash5/ash6/gunshi): report.yaml history機構(案C Hybrid)導入。twin QC=Go+north_star 3点 aligned。commit d550795 | ✅ ends完了 |
 | 19:33 | GAS/shogun | cmd_585完遂(ash3/5/gunshi)+cmd_568連鎖完遂: 寺地11年分全93thread backfill完了(processed=43/skipped=50/errors=0)。5x並列化稼働3m47s完遂 | ✅ ends完了 |
 | 17:00 | scripts/shogun | cmd_593完遂(ash1/2/5/6/7/gunshi): shelf-ware監査51件+防止体系(deploy&verify/KPI observer/context_pct動的化) commit b2ec328。gunshi QC=Go | ✅ ends完了 |
 | 14:27 | scripts/shogun | cmd_592完遂(ash1/2/7/gunshi): shelf-ware解消 cron実稼働(compact_observer/safe_window動的/karo_self_clear) commit 02bb5d7 | ✅ ends完了 |

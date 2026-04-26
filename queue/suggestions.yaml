@@ -12347,7 +12347,7 @@ suggestions:
   cmd_ref: cmd_577+cmd_571
   task_ref: subtask_577d_571_qc
   created_at: '2026-04-24T18:45:00+09:00'
-  status: deferred
+  status: resolved
   priority: medium
   content: "cmd_577 Scope A/C report 上書き喪失 (T1/T2 governance issue)。\nash6 は subtask_571a\
     \ (cmd_571) で report.yaml 上書き → subtask_577a (cmd_577 Scope A) 喪失。\nash7 は subtask_568_impl_b\
@@ -12357,6 +12357,9 @@ suggestions:
     \ queue/reports/archive/{cmd_id}/ashigaru{N}_report.yaml にコピー\n"
   action_needed: Phase 2 (Structural Fix) の一環として subtask 発令 (cmd_581/582 系)
   decided_at: '2026-04-26T19:41:26+09:00'
+  resolved_by: cmd_595
+  resolved_at: '2026-04-26T20:00:00+09:00'
+  resolution: "案C Hybrid (top-level=最新 + history[]=過去 append-only) を採用。instructions/ashigaru.md §History Mechanism 追記。gunshi twin QC Go。"
   decision_note: 有効だが即時性が低いため、次フェーズ再評価前提で deferred へ移行。
 - id: sug_cmd_577_qc_002
   from: gunshi
