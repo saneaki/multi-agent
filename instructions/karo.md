@@ -565,7 +565,7 @@ Executed at Step 11.7 after cmd completion. Karo owns streaks + notifications.
 
 ### Step 11.7 Completion Processing (Atomic)
 
-Execute ALL six steps before moving to next cmd:
+Execute ALL seven steps before moving to next cmd:
 
 1. `shogun_to_karo.yaml`: status → done
 2. `saytask/streaks.yaml`: `today.completed += 1`, update `last_date`
@@ -573,8 +573,12 @@ Execute ALL six steps before moving to next cmd:
 4. **🚨 cleanup (SO-19)**: `bash scripts/cmd_complete.sh {cmd_id}` — on WARNING, delete matching item and reflect as resolved in ✅戦果
 5. `inbox_write shogun` (dashboard updated)
 6. `bash scripts/update_dashboard.sh` — move completed ashigaru from 🔄 to 🏯
+7. **Suggestions hard check (cmd_596 Scope D)**: `bash scripts/suggestions_digest.sh --dry-run`
+   - `pending >= 1` → inbox 確認 → high/medium を accepted/deferred/rejected/promoted_to_cmd_NNN に triage
+   - `accepted high/medium` のうち未解決のものを dashboard 🚨要対応 [提案-N] として反映 (詳細は §Suggestions Review)
+   - `pending == 0` → skip 可
 
-⚠️ Do NOT dispatch new cmds in inbox before all six steps finish. Karo self-completion follows the same checklist (inbox_write step 5 is easy to forget without the Ashigaru→Gunshi→Karo flow).
+⚠️ Do NOT dispatch new cmds in inbox before all seven steps finish. Karo self-completion follows the same checklist (inbox_write step 5 is easy to forget without the Ashigaru→Gunshi→Karo flow).
 
 #### SO-24 三点照合チェックリスト (Verification Before Report)
 
@@ -739,13 +743,21 @@ Also check Gunshi's QC reports (`gunshi_report.yaml`): if `suggestions` field ha
 (design concerns, recurring risks, improvement proposals), reflect in dashboard as appropriate.
 Significant suggestions → add to 🚨 要対応 for Shogun's awareness.
 
-### Suggestions Review (Mandatory at cmd completion)
+### Suggestions Review (Mandatory at cmd completion) — cmd_596 Scope D hard check
 
-After each cmd completes (after dashboard 戦果 update), check `queue/suggestions.yaml`:
+After each cmd completes (after dashboard 戦果 update), run the digest script as a **hard check** (mandatory, not optional):
 
 ```bash
-grep -A3 "status: pending" queue/suggestions.yaml
+bash scripts/suggestions_digest.sh --dry-run
 ```
+
+判定基準:
+- `pending == 0` → skip 可 (digest 出力で確認)
+- `pending >= 1` → inbox 通知が飛ぶ。high/medium 各件を必ず triage (accepted/deferred/rejected/promoted_to_cmd_NNN)
+- `accepted high/medium` 未解決分は dashboard 🚨要対応 [提案-N] に反映
+
+なお Scope B (cmd_596) で daily cron `5 9 * * *` 登録済 (`crontab -l | grep suggestions_digest`)。
+cron は floor 監視、Step 11.7-7 は cmd 完了直後の即時 hard check として両輪で機能する。
 
 For each pending suggestion, decide:
 - **promoted_to_cmd_NNN**: Already converted into a concrete cmd/task plan

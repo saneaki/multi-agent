@@ -1,5 +1,5 @@
 # 📊 戦況報告
-最終更新: 2026-04-26 19:51 JST
+最終更新: 2026-04-26 21:57 JST
 
 ## 📋 記載ルール (Self-Documentation)
 > **更新者必読**: このセクションのルールを遵守して dashboard を更新すること。
@@ -23,7 +23,7 @@
 | 今日のFrog | 未設定 |
 | Frog状態 | 🐸 未撃破 |
 | ストリーク | 🔥 32日目継続中 (最長: 32日) |
-| 今日の完了 | 5 |
+| 今日の完了 | 6 |
 | VFタスク残り | 0件（うち今日期限: 0件） |
 
 ## 🚨 要対応 - 殿のご判断をお待ちしております
@@ -35,6 +35,8 @@
 | [action-7] | **difference.md 5日間未更新** — cmd_593 Scope E で hook登録完了 | 次の 🏆🏆 commit で自動再生成予定。急ぐなら VPS で `bash scripts/cmd_squash_pub_hook.sh` 手動実行。 |
 | [action-5] | cmd_588 運用開始 — 殿 12分作業 | gunshi QC=Go(06:19)確認済。(1)**GAS エディタ** script.google.com→gas-mail-manager→`setupTrigger()` 手動実行→毎日9:00 trigger登録(5分) 手順書: output/cmd_588_trigger_setup.md (2)**crontab設定** `crontab -e` で `*/30 * * * * bash /home/ubuntu/shogun/scripts/clasp_rapt_monitor.sh >> /tmp/rapt_monitor.log 2>&1` 追加(2分) 完了後 家老 inbox に「action-5完了」通知。 |
 | [info-1] | Claude Code .claude/skills パーミッションバグ | **2026-04-24 16:10 将軍確認**: anthropics/claude-code#37157 (bug/has repro/area:skills, 最終更新 4/20) + #38806 (enhancement/area:permissions, 最終更新 4/2) 共に **OPEN** (公式修正なし)。暫定対処: 選択肢2で手動承認を継続。将軍が週次で修正状況を確認する。 |
+| [提案-1] | clasp RAPT 月次再認証定期化 (sug_cmd_564_001) | cmd_486→cmd_564 の 1週間サイクルで RAPT 再認証境界越えが顕在化。bi-weekly〜monthly 再発可能性高。(a) 月初 RAPT refresh cmd を SayTask 化 or (b) clasp_rapt_monitor.sh で残日数自動通知。殿のご判断: 採否+方式選択。 |
+| [提案-2] | F006/SO-20 重複定義の整理 (sug_cmd_566_001/002) | cmd_566 ash3 調査で発見。F006 は karo.md 他で「generated file 直編集禁止」、別 .md で「Stall Response 違反」の 2 義併存。SO-20 も「editable_files 完全性 check」と「Verification Before Report」の 2 義。Violation 検出時に責務不明確化リスク。F006a/F006b と SO-20a/SO-20b に分割改名 or どちらかを別番号に移管が必要。殿のご判断待ち。 |
 
 ## 📊 運用指標
 
@@ -47,8 +49,7 @@
 
 | cmd | 内容 | 担当 | 状態 |
 |-----|------|------|------|
-| cmd_595 | report.yaml per-subtask history 機構 | gunshi:QC中 | A✅+C✅(19:50:APPROVE_WITH_CONCERNS)+D(gunshi:QC発令中) |
-| cmd_596 | suggestions 定期消化機構 | ash5:Scope C+D中 | A✅+B✅(19:47:digest.sh+cron)+C+D(ash5:dashboard反映+karo.md hard check中) |
+| cmd_596 | suggestions 定期消化機構 | gunshi:QC中 | A✅+B✅(19:47)+C✅(19:57:[提案]反映)+D✅(19:57:karo.md hard check)+E(gunshi:QC発令中) |
 
 ## 🏯 待機中の構成員
 
@@ -58,15 +59,16 @@
 | 足軽2号(Sonnet+T) | 待機 | subtask_592b完了(12:12): compact_observer.sh新規作成 ✅ |
 | 足軽3号(Sonnet+T) | 待機 | subtask_585m完了(19:46): reality check OK。clasp logs確認 processed=43/total=93。cmd_585/cmd_568完遂=可 ✅ |
 | 足軽4号(Opus+T) | 待機 | subtask_588a完了(06:15): clasp push 7files成功 AC1/AC2/AC_trigger_doc 全PASS ✅ |
-| 足軽5号(Opus+T) | 作業中 | subtask_596cd発令(19:50): cmd_596 Scope C+D dashboard[提案]反映+instructions/karo.md hard check |
+| 足軽5号(Opus+T) | 待機 | subtask_596cd完了(19:57): karo.md Step11.7→7step+Suggestions hard check + dashboard[提案-1][提案-2]反映 AC3/AC4 PASS ✅ |
 | 足軽6号(Codex5.3) | 待機 | subtask_595c完了(19:50): 案C Hybrid second opinion=APPROVE_WITH_CONCERNS(履歴肥大化/cleanup未定義) ✅ |
 | 足軽7号(Codex5.3) | 待機 | subtask_593h完了(14:02): get_context_pct.sh作成(実測54%)+crontab動的取得更新 ✅ |
-| 軍師(Opus+T) | QC中 | subtask_595d_qc発令(19:51): cmd_595 Scope D QC (Hybrid design 総合判定) |
+| 軍師(Opus+T) | QC中 | subtask_596e_qc発令(20:00): cmd_596 Scope E QC (suggestions機構 総合判定) |
 
 ## ✅ 本日の戦果（4/26 JST）
 
 | 時刻 | 戦場 | 任務 | 結果 |
 |------|------|------|------|
+| 20:00 | instructions/shogun | cmd_595完遂(ash5/ash6/gunshi): report.yaml history機構(案C Hybrid)導入。twin QC=Go+north_star 3点 aligned。commit 9b875c5 | ✅ ends完了 |
 | 19:33 | GAS/shogun | cmd_585完遂(ash3/5/gunshi)+cmd_568連鎖完遂: 寺地11年分全93thread backfill完了(processed=43/skipped=50/errors=0)。5x並列化稼働3m47s完遂 | ✅ ends完了 |
 | 17:00 | scripts/shogun | cmd_593完遂(ash1/2/5/6/7/gunshi): shelf-ware監査51件+防止体系(deploy&verify/KPI observer/context_pct動的化) commit b2ec328。gunshi QC=Go | ✅ ends完了 |
 | 14:27 | scripts/shogun | cmd_592完遂(ash1/2/7/gunshi): shelf-ware解消 cron実稼働(compact_observer/safe_window動的/karo_self_clear) commit 02bb5d7 | ✅ ends完了 |

@@ -201,7 +201,7 @@ System manages ALL white-collar work, not just self-improvement. Project folders
 
 See [`instructions/common/shogun_mandatory.md`](instructions/common/shogun_mandatory.md) for full details. Summary (14 rules):
 
-1. **Dashboard**: Karo + Gunshi update it. Shogun is read-only
+1. **Dashboard**: Karo + Gunshi update it (Karo 一次). Shogun は 🔄 進行中 の確認・修正のみ可。Ashigaru 禁止。
 2. **Chain of command**: Shogun → Karo → Ashigaru/Gunshi (never bypass Karo)
 3. **Reports**: Check `queue/reports/{ashigaru{N},gunshi}_report.yaml`
 4. **Karo state check**: Before instructing, verify Karo is not busy via `tmux capture-pane`

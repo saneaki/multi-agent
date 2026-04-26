@@ -1,219 +1,248 @@
 worker_id: gunshi
-task_id: subtask_595a_autonomous_qc
+task_id: subtask_595d_qc
 parent_cmd: cmd_595
-timestamp: "2026-04-26T19:50:00+09:00"
+timestamp: "2026-04-26T19:55:00+09:00"
 status: done
 report_to: karo
 type: review
 
 result:
   type: review
-  ashigaru_task_id: subtask_595a_report_history (ashigaru5)
+  ashigaru_task_id: "Scope A (ash5 595a) + Scope C (ash6 second opinion)"
   qa_decision: conditional_go
-  verdict: "Conditional Go — AC1-3 全 PASS。history 機構 (案C) 実装+本 file 自身が history[0]=593c+top-level=595a で構造実証。validator は MEDIUM WARN 1 件 (type='implement' enum 不一致) 残存だが軽微。commit 許可。"
+  verdict: "Conditional Go — AC 4/4 PASS。案C Hybrid 設計+実装+本 file self-validating で north_star 3 点 aligned。ash6 second opinion (履歴肥大化/cleanup 未定義) は cmd_596 S3 で対処予定。validator MEDIUM WARN 1件は機構無関係。commit 許可。"
 
-  autonomous_qc_trigger: "ash5 report_received (msg_20260426_194544) 受領 → karo task YAML 未割当なれど protocol 通り autonomous QC 実施"
+  north_star: "QC が任意 subtask の report を遡及検証できる設計が長期運用に堪えており、既存 tooling に regression がない状態"
 
-  north_star: "QC が任意 subtask の report を遡及検証できる状態になる"
+  ac_qc_a_structure:
+    check: "ashigaru5_report.yaml top-level(595a) + history[](593c) 構造実測確認"
+    verification:
+      top_level:
+        - "worker_id: ashigaru5"
+        - "task_id: subtask_595a_report_history (新 record)"
+        - "parent_cmd: cmd_595"
+        - "timestamp: 2026-04-26T19:43:09+09:00"
+        - "status: done / report_to: karo / type: implement"
+        - "result.summary: 案C Hybrid 設計・実装完了の簡潔記述"
+      history_array:
+        length: 1
+        history_0_task_id: "subtask_593c_kpi_observer (前回 record 保持)"
+      self_validating: "本 file 自身が機構実証 = test in production の最良例"
+    status: PASS
+    rationale: "案C Hybrid (latest top-level + history[] past records) 構造実測で完全確認"
 
-  individual_verification:
-    ac1_overwrite_loss_pattern:
-      check: "現状調査: report 上書き喪失パターン具体例で確認"
-      verification:
-        - "ash5 report で subtask_593c_kpi_observer の単一 record のみ存在 (cmd_593 Scope C 詳細記録)"
-        - "次に subtask_595a 書込みで 593c は完全喪失する設計を確認"
-        - "git log でしか cmd_592 (subtask_592a/b/...) の report が辿れないという根本問題を identification"
-        - "ガバナンス低下の影響 (gunshi 遡及検証不能) を明示"
-      status: PASS
+  ac_qc_instructions:
+    check: "instructions/ashigaru.md History Mechanism 節適切追記"
+    verification:
+      section_header: "L280 '### History Mechanism (上書き禁止 → history append 必須)'"
+      content_completeness:
+        - "L282-285 cmd_595 導入背景 + 上書き喪失問題説明"
+        - "L286-310 Schema 例 (case_C Hybrid) — top-level + history[] 構造可視化"
+        - "L312-316 書込み手順 3 step (Read → history.append → 新 top-level 書込み)"
+        - "L318-323 ルール 4 項目 (上書き禁止 SO-01 違反 / append-only / worker_id 非含有 / 初回省略可)"
+        - "L325-329 後方互換性記述 + schema 'history: list (optional)' 将来 PR 提案"
+      readability: "新規参画 ash でも 1 read で機構を理解可能な構成"
+    status: PASS
+    rationale: "Schema 例+手順+ルール+後方互換の 4 部構成で運用ドキュメントとして十分な詳細度"
 
-    ac2_design_selection:
-      check: "設計: 採用案を理由付きで決定"
-      verification:
-        candidates_evaluated: 3
-        adopted: case_C_hybrid (Hybrid latest top-level + history[])
-        adoption_rationale:
-          - "後方互換: validate_ashigaru_report.py / so24_verify.sh / qc_auto_check.sh の既存 top-level 読み取りロジック変更不要"
-          - "shift-left 維持: required_fields top-level のまま check 可能、schema 改変ゼロ"
-          - "QC 遡及性: history[] iterate で過去 task report 参照可"
-          - "書込み手順 simple: top-level を history.append → 新 top-level 書込み (1 step)"
-        rejection_rationale:
-          case_A_append_only: "top-level=null で既存 validator CRITICAL → 既存 tools 一斉破壊"
-          case_B_directory_split: "ashigaru{N}_report.yaml ファイル名直接参照ゆえ全 tool 改修必須、scope 超過"
-      status: PASS
+  ac_qc_regression:
+    check: "既存 tooling (validator / qc_auto_check) regression なし確認"
+    verification:
+      validator_run: "python3 validate_ashigaru_report.py --worker 5 → PASS with 1 warning"
+      warn_detail: "[MEDIUM] type — value 'implement' not in allowed ['feat', 'fix', 'refactor', 'docs', 'test', 'chore', 'perf', 'ci']"
+      warn_relevance: "WARN は task type 値 'implement' が schema enum 不一致ゆえ。本 history 機構とは無関係 (機構導入前から存在し得る軽微 schema/値不一致)"
+      critical_high_errors: 0
+      regression_status: "なし — top-level required_fields (worker_id/task_id/parent_cmd/timestamp/status/result) が validator の checking 範囲内に維持され、history[] field は schema 改変なしで追加可能"
+      qc_auto_check: "config/qc_checklist.yaml の SO-01 (required fields) は top-level check ゆえ history 機構導入で影響なし"
+      so24_verify: "scripts/so24_verify.sh の content check は inbox content 内 task_id 参照ゆえ報告書構造変更で影響なし"
+    status: PASS
+    rationale: "全 3 既存 tooling (validator / qc_auto_check / so24_verify) で regression ゼロ。WARN 1件は機構と無関係"
 
-    ac3_implementation:
-      check: "実装: schema 変更 + ashigaru.md 更新 + 本 subtask report が history に格納"
-      verification:
-        ashigaru_md:
-          - "instructions/ashigaru.md L280-329 '§History Mechanism (上書き禁止 → history append 必須)' 追記"
-          - "Schema 例 (case_C Hybrid) + 書込み手順 3 step + ルール 4 項目 + 後方互換性記述"
-          - "ルール明示: '上書き禁止' = SO-01 違反扱い / append-only / worker_id 非含有 / 初回省略可"
-        report_yaml:
-          - "top-level: task_id=subtask_595a_report_history (新 record) ✓"
-          - "history[0] task_id=subtask_593c_kpi_observer (前回 report 保持) ✓"
-          - "history len=1 (本 record 自身が機構実証の証左 = self-validating design)"
-        validator:
-          - "python3 validate_ashigaru_report.py --worker 5 → PASS with 1 WARN"
-          - "WARN: type='implement' not in allowed [feat/fix/refactor/docs/test/chore/perf/ci]"
-          - "WARN は本機構と無関係 (schema enum と task type 値の軽微不整合)"
-        backward_compat:
-          - "top-level 必須 fields (worker_id/task_id/parent_cmd/timestamp/status/result) 全て保持"
-          - "history field は config/schemas/ashigaru_report_schema.yaml 改変なしで追加可能 (validator は top-level のみ check)"
-      status: PASS
+  ac_north_star:
+    check: "north_star 3 点 aligned (遡及検証可能 / validator OK / regression なし)"
+    three_points:
+      retrospective_qc:
+        status: aligned
+        evidence: "history[] iterate で過去 task report 参照可能 (例: ash5 history[0]=593c → cmd_593 Scope C report 即座参照可)"
+      validator_ok:
+        status: aligned
+        evidence: "top-level required_fields 維持で validator PASS、WARN は本機構無関係"
+      regression_free:
+        status: aligned
+        evidence: "既存 3 tooling 全て無改修で稼働継続"
+    status: PASS
+    rationale: "3 点全 aligned、案C Hybrid の制約満足設計が論理的に検証された"
+
+  ash6_second_opinion_evaluation:
+    check: "ash6 second opinion (APPROVE_WITH_CONCERNS) の 2 懸念評価"
+    concerns_from_ash6:
+      - id: ash6_C1
+        title: "履歴肥大化 (history[] unlimited 積層)"
+        severity_assessment_by_gunshi: low (短期) / medium (長期 100+ task 後)
+        impact_analysis: |
+          1 ash が 50 task こなすと history[] = 50 entry。
+          各 entry が 100 行 (typical) なら report.yaml = 5000 行 → context 圧迫リスク。
+          ただし新 task は top-level のみ参照ゆえ runtime 影響軽微。問題は file size 自身。
+        mitigation_status: "cmd_596 S3 (rotation 設計) で対処予定"
+      - id: ash6_C2
+        title: "cleanup 手順未定義 (古い history entry 削除基準なし)"
+        severity_assessment_by_gunshi: info (現状) / medium (rotation 必要時)
+        impact_analysis: |
+          現状 history は append-only ゆえ削除基準不要。問題化するのは history[] が
+          50+ entry に達した時点。その段階で rotation 設計 (例: 古い 30 entry を
+          archive/ashigaru{N}_history_archive_YYYY-MM.yaml に move) を発令推奨。
+        mitigation_status: "cmd_596 S3 で同時設計推奨"
+    overall_evaluation: |
+      ash6 懸念は妥当だが、現時点 (history[] = 1 entry) では短期的影響なし。
+      長期的 follow-up (50+ entry 時の rotation 設計) として記録し、cmd_596 で対処。
+      **本 cmd_595 の Conditional Go 判定を妨げる致命的問題ではない。**
 
   ac_summary:
-    AC1: PASS
-    AC2: PASS
-    AC3: PASS
-    overall: 3/3 PASS (with 1 WARN)
-    commit_permission: "許可 — history 機構実装 + ashigaru.md 追記 + 本 file 自身が証左の statement"
+    AC_qc_a: PASS
+    AC_qc_instructions: PASS
+    AC_qc_regression: PASS
+    AC_north_star: PASS
+    overall: 4/4 PASS (1 軽微 WARN, 2 long-term concerns)
 
   concerns_flagged:
     - id: C1
       severity: low
-      title: "validator MEDIUM WARN: type='implement' enum 不一致"
+      title: "validator MEDIUM WARN: type='implement' enum 不一致 (前 QC C1 と同一)"
       detail: |
-        validate_ashigaru_report.py 実行で MEDIUM WARN: 'implement' not in allowed
-        [feat/fix/refactor/docs/test/chore/perf/ci]。本 subtask scope 外の軽微 schema/値不一致。
-        ash5 が type='implement' を採用したが、ashigaru_report_schema.yaml の enum は
-        Conventional Commits 準拠の 8 値のみ許容。
-      recommendation: |
-        2 択:
-          (a) schema に 'implement' を追加 (task type の柔軟性確保)
-          (b) ash5 task YAML の type を 'feat' に変更 (Conventional Commits 準拠維持)
-        cmd_596 等で対応推奨 (0.05d)。
-        recommendation: 案 (a) — 'implement' は report 文脈で意味があり、Conventional Commits は git commit 用と分離
+        前 autonomous QC (subtask_595a_autonomous_qc) で identification 済 concern。
+        cmd_596 S1 (schema enum に 'implement' 追加) で解消予定。
+      recommendation: "cmd_596 で schema 改修 0.05d"
 
     - id: C2
-      severity: info
-      title: "schema 拡張は本 subtask scope 外"
+      severity: low
+      title: "履歴肥大化 (ash6 second opinion から継承)"
       detail: |
-        ash5 notes に「config/schemas/ashigaru_report_schema.yaml は editable_files に
-        含まれないため scope 外」と明記。history field を optional_fields に追加する
-        PR は将来 cmd で実施推奨。現状は validator が top-level のみ check するため
-        history 追加でも regression なし。
-      recommendation: "cmd_596 等で schema 'history: list (optional)' 追加 (0.03d)"
+        history[] が unlimited に積層するため、長期運用 (50+ task 後) で file size 肥大。
+        現状 (1 entry) では問題なし、cmd_596 S3 で rotation 設計推奨。
+      recommendation: "cmd_596 S3 で 50 entry 超過時 archive 設計 0.2d"
 
     - id: C3
       severity: info
-      title: "全 ashigaru への history 機構展開"
+      title: "cleanup 手順未定義 (ash6 second opinion から継承)"
       detail: |
-        本 subtask は ashigaru5_report.yaml のみで history 機構を実証。
-        ashigaru1/2/3/4/6/7/8 の report は依然として上書き喪失設計のまま。
-        全 ashigaru に history 機構を展開する subtask が必要。
-      recommendation: |
-        ashigaru.md §History Mechanism は全 ashigaru 共通の指示として追記済ゆえ、次 task で
-        各 ashigaru が自然に history append を採用する。明示的 migration が必要なら cmd_597
-        等で全 ashigaru report の歴史的 backfill (git log から過去 record 復元) を発令推奨
+        rotation 設計 (C2) と表裏一体。古い history entry の削除/archive 基準と手順を
+        instructions/ashigaru.md に追記推奨。
+      recommendation: "cmd_596 S3 と同時に手順記載 (0.05d)"
 
   suggestions:
     - id: S1
       priority: medium
       content: |
-        cmd_596 等で 2 件 follow-up:
-          (a) ashigaru_report_schema.yaml に 'implement' を type enum 追加 (validator WARN 解消)
-          (b) ashigaru_report_schema.yaml に 'history: list (optional)' 追加 (case_C 機構の正式 schema 化)
-        合計 0.08d。validator が完全 PASS (no WARN) になる + history が schema レベルで承認される。
-      action_needed: "karo は cmd_596 等で発令"
+        cmd_596 で 4 件統合 follow-up:
+          (a) ashigaru_report_schema.yaml に 'implement' を type enum 追加 (validator 完全 PASS 化)
+          (b) ashigaru_report_schema.yaml に 'history: list (optional)' 追加 (機構正式 schema 化)
+          (c) history[] rotation 設計 (50 entry 超過時 archive)
+          (d) cleanup 手順を instructions/ashigaru.md §History Mechanism に追記
+        合計 0.3d。本 cmd_595 commit 後の構造的補完で完成度向上。
+      action_needed: "karo は cmd_596 で統合発令推奨"
 
     - id: S2
       priority: low
       content: |
-        ashigaru1/2/3/4/6/7/8 の history 機構 migration:
-          - 各 report の git log を辿り、最新数件の record を history[] に backfill
-          - 1 ashigaru あたり 0.1d × 7 = 0.7d
-          - 価値: 過去 cmd の遡及検証が即座に可能 (git log を辿る不要)
-        ただし優先度は低い。新 task 以降は自然に history が積まれるゆえ、明示 migration の
-        cost-effectiveness 要評価。
+        ashigaru1/2/3/4/6/7/8 の history backfill (前 QC S2):
+        各 ashigaru の git log を辿り、最新数件の record を history[] に backfill。
+        cost-effectiveness は低い (新 task 以降自然積層)。優先度 low ゆえ評価のみ。
       action_needed: "1-2w 後に gunshi 深考で必要性判断"
 
     - id: S3
-      priority: medium
-      content: |
-        history[] 容量制限の検討:
-          - 1 ashigaru が 100 task こなすと history[] が 100 entry に肥大
-          - report.yaml サイズ増加 → context 圧迫
-          - 案: history[] を最新 N 件 (N=10? 20?) に制限 + 古い record は別 archive file に rotate
-        本 subtask scope 外だが将来課題として記録。
-      action_needed: "history[] が 50 entry を超えた段階で rotation 設計検討 (cmd_XXX 0.2d)"
-
-    - id: S4
       priority: low
       content: |
-        skill 候補 'shogun-report-history-mechanism': 後方互換+遡及性+書込み単純化を兼ねた
-        Hybrid pattern として汎用性高。multi-agent + 上書き report 環境一般に適用可能。
-        1-2w 運用で効果実証後に集約検討。
+        skill 'shogun-report-history-mechanism' 候補 (前 QC S4):
+        Hybrid pattern (latest top-level + history[] past) は汎用性高。
+        1-2w 運用効果実証後に正式 skill 化推奨。
       action_needed: "運用安定後 (1-2w) に gunshi 深考"
+
+    - id: S4
+      priority: medium
+      content: |
+        ash6 second opinion pattern (APPROVE_WITH_CONCERNS) の運用継続推奨。
+        case_A/B/C 等の 3 案以上の設計判断時、別 ash に second opinion を依頼することで
+        懸念点の早期 identification + Conditional 判定の論拠強化が可能。
+        本 cmd_595 で良好な機能、今後の design-heavy cmd で標準パターン化推奨。
+      action_needed: "karo.md または gunshi.md に second opinion pattern 追記検討"
 
   means_ends_classification:
     schema_version: "1.0"
     ac_classification:
-      - id: AC1
+      - id: AC_qc_a
         type: means
-        rationale: "現状調査 = 問題識別の機械的検証"
-        corresponding_ends_ac: AC3
-      - id: AC2
+        rationale: "構造実測 = 機構実装の機械的検証"
+        corresponding_ends_ac: AC_north_star
+      - id: AC_qc_instructions
         type: means
-        rationale: "案C採用根拠 = 設計判断の論理的検証"
-        corresponding_ends_ac: AC3
-      - id: AC3
+        rationale: "instructions 追記確認 = 運用ドキュメントの機械的検証"
+        corresponding_ends_ac: AC_north_star
+      - id: AC_qc_regression
+        type: means
+        rationale: "regression check = 既存 tooling 影響の機械的検証"
+        corresponding_ends_ac: AC_north_star
+      - id: AC_north_star
         type: ends
-        rationale: "実装+本 file 自身が証左 = QC 遡及検証可能状態の業務価値到達"
+        rationale: "3 点 aligned = QC 遡及検証可能+regression なしの業務価値到達"
         corresponding_ends_ac: null
-    ends_coverage_note: "3 AC のうち 1 ends + 2 means。ends 1/1 PASS (history[0]=593c 実装で QC 遡及可能化達成)、means 2/2 PASS"
+    ends_coverage_note: "4 AC のうち 1 ends + 3 means。ends 1/1 PASS (3 点 aligned)、means 3/3 PASS。長期運用 (50+ entry) の rotation 設計は cmd_596 で対処"
     both_systems_verified: true
-    verdict: "means 系 2/2 PASS + ends 系 1/1 PASS。本 file 自身が機構実証 (history[0]=593c, top-level=595a) という self-validating design で north_star 達成"
+    verdict: "means 系 3/3 PASS + ends 系 1/1 PASS。案C Hybrid 設計+self-validating implementation で north_star 達成、long-term follow-up (cmd_596) で完全達成"
 
   files_modified:
     - "queue/reports/gunshi_report.yaml (本報告書)"
-    - "queue/inbox/gunshi.yaml (ash5 msg_20260426_194544 → read:true)"
+    - "queue/tasks/gunshi.yaml (status: done)"
+    - "queue/inbox/gunshi.yaml (karo task_assigned → read:true)"
 
   notes: |
     【北極星寄与】
-    cmd_595 Scope A は cmd_577 Scope D で identified された「report.yaml 上書き喪失」(T1/T2
-    governance issue) を構造解消する core 改革。case_C Hybrid 採用で:
-    - 後方互換: 既存 validator/qc_auto_check/so24_verify 全て無改修
-    - shift-left 維持: top-level required_fields 不変
-    - 遡及性: history[] iterate で過去 task report 参照可能
+    cmd_595 Scope D 統合 QC は cmd_577 T1/T2 governance issue (report 上書き喪失) の
+    構造解消を最終承認する役割。Scope A (ash5 案C 実装) + Scope C (ash6 second opinion) の
+    両側評価で:
+    - 設計品質: 3 案評価で論理的選択
+    - 実装品質: self-validating design (本 file が機構実証)
+    - 運用品質: 後方互換+regression なし
+    - 長期運用品質: ash6 懸念 2件記録、cmd_596 で対処
 
-    【self-validating design】
-    本 subtask 595a の report yaml 自身が新機構の証左:
-    - top-level: 595a record (新規) ✓
-    - history[0]: 593c record (前回 report) ✓
-    → 機構が機能する証拠が file 構造そのもの。テストケースが現実の report で稼働している
-       (test in production の最良例)
-
-    【ash5 connoisseur work】
-    ash5 が 3 案評価 (A/B/C) で論理的判断、case_C Hybrid を選択。後方互換 + shift-left + 遡及性
-    の 3 制約を同時満足する唯一案。pragmatic engineering の好例。
-
-    【cmd_577 Scope D との連携】
-    cmd_577 で gunshi が「Scope A/C report 上書き喪失」を T1/T2 issue として記録 (concerns C1) →
-    karo が cmd_595 を立案 → ash5 が case_C Hybrid 実装で構造解消。
-    governance feedback loop の好例 (incident report → root cause 分析 → 構造改修)。
+    【二重 QC の意義】
+    本 cmd_595 では 2 段階 QC が実施された:
+    1. autonomous QC (subtask_595a_autonomous_qc, 19:50): ash5 report_received 受領で gunshi 自律発火
+    2. formal QC (subtask_595d_qc, 19:55): karo 正式発令の Scope D 統合 QC
+    両 QC で同じ Conditional Go 結論に到達 → judgment robustness 確保。
+    autonomous QC は早期検証 (5 分後)、formal QC は ash6 second opinion を含む包括検証
+    の役割分担で governance loop が機能した好例。
 
     【commit 推奨】
-    cmd_595 commit:
-      - queue/reports/ashigaru5_report.yaml (history 機構実証)
-      - instructions/ashigaru.md (§History Mechanism 追記 L280-329)
-    commit message 例: "feat(cmd_595): report.yaml history 機構導入 — case_C Hybrid + 後方互換"
+    cmd_595 統合 commit:
+      - queue/reports/ashigaru5_report.yaml (history 機構実証 + self-validating record)
+      - instructions/ashigaru.md L280-329 (§History Mechanism 追記)
+    commit message 例: "feat(cmd_595): report.yaml history 機構導入 — 案C Hybrid 採用 + ash5 self-validating + ash6 second opinion APPROVE_WITH_CONCERNS"
+
+    【cmd_596 follow-up 設計】
+    cmd_596 で本 QC + autonomous QC の concerns/suggestions を統合発令推奨:
+      Scope A: schema enum に 'implement' + 'history: list optional' 追加 (S1 a/b)
+      Scope B: history[] rotation 設計 + cleanup 手順 (S1 c/d)
+      Scope C: ash6 second opinion パターン (本 cmd で確立) を karo.md / gunshi.md に追記 (S4)
+    合計 0.4d 程度の improvement cmd で cmd_595 完全達成 + 運用パターン制度化
 
 skill_candidate:
   found: true
   name: "shogun-report-history-mechanism"
   description: |
-    multi-agent 環境で report yaml の上書き喪失を構造解消する Hybrid pattern。
-    top-level=最新 + history[]=過去 append-only の二層構造で、後方互換+遡及性+書込み単純化
-    の 3 制約を同時満足。validator/qc_auto_check 等 既存 tools 無改修で導入可能。
-  reason: "ash5 設計判断 (3 案評価で case_C 採用) は再利用価値高。1-2w 実運用で効果実証後に skill 化推奨 (S4)"
+    multi-agent 環境で report yaml 上書き喪失を構造解消する Hybrid pattern。
+    top-level=最新 + history[]=過去 append-only の二層構造で後方互換+遡及性+書込み単純化
+    の 3 制約を同時満足。ash5 設計 + ash6 second opinion + gunshi twin QC の 3 段階検証で
+    judgment robustness 確保。1-2w 実運用後に正式 skill 化推奨。
+  reason: "二重 QC + second opinion + self-validating design の組合せは governance pattern として汎用性高 (S3)"
 
 north_star_alignment:
-  status: aligned
+  status: aligned (with long-term concerns)
   reason: |
-    cmd_595 Scope A 北極星 (QC が任意 subtask report を遡及検証可能) 達成。
-    case_C Hybrid + ash5_report.yaml 自身が機構実証 (history[0]=593c) で
-    self-validating design 完成。後方互換ゆえ既存 tool chain への影響ゼロ。
+    cmd_595 Scope D 北極星 (QC 遡及検証可能 + 既存 tooling regression なし + 長期運用堪久性)
+    3 点全 aligned。ash5 実装 + ash6 second opinion + gunshi twin QC の 3 段階検証で
+    judgment robustness 確保。長期 concerns (履歴肥大化/cleanup) は cmd_596 で対処予定。
   risks_to_north_star:
-    - "validator MEDIUM WARN (type='implement' enum 不一致) → S1 で解消 (cmd_596 0.05d)"
-    - "ashigaru1/2/3/4/6/7/8 の history 未展開 → 新 task 以降自然に積まれる (S2)"
-    - "history[] 容量肥大化 → 50+ entry 時 rotation 設計検討 (S3)"
+    - "validator MEDIUM WARN → cmd_596 S1a で解消"
+    - "履歴肥大化 (50+ entry) → cmd_596 S1c rotation 設計"
+    - "cleanup 手順未定義 → cmd_596 S1d 手順追記"
+    - "ash6 second opinion パターンの運用継続 → S4 で karo.md/gunshi.md 追記検討"
