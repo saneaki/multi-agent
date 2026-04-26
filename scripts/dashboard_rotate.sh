@@ -16,6 +16,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DASHBOARD="$SCRIPT_DIR/dashboard.md"
+DASHBOARD_YAML="$SCRIPT_DIR/dashboard.yaml"
 STREAKS="$SCRIPT_DIR/saytask/streaks.yaml"
 LOG_PREFIX="[$(TZ=Asia/Tokyo date '+%Y-%m-%d %H:%M:%S JST')]"
 DRY_RUN=false
@@ -38,17 +39,18 @@ trim_skill_entries() {
     local SKILL_HISTORY="$SCRIPT_DIR/memory/skill_history.md"
     local MAX_ENTRIES=5
 
-    # Count skill entries in 🛠️ section only
+    # Count skill entries in 🛠️ section only (match both header variants)
     local SKILL_LINES
-    SKILL_LINES=$(sed -n '/^## 🛠️ 生成されたスキル/,/^## /p' "$DASHBOARD" \
-        | grep -c '^| \*\*' || echo "0")
+    SKILL_LINES=$(sed -n '/^## 🛠️/,/^## /p' "$DASHBOARD" | grep -c '^| \*\*' 2>/dev/null; true)
+    SKILL_LINES=$(printf '%s' "$SKILL_LINES" | head -1 | tr -cd '0-9')
+    SKILL_LINES=${SKILL_LINES:-0}
 
     if [[ "$SKILL_LINES" -le "$MAX_ENTRIES" ]]; then
         log "スキル欄: ${SKILL_LINES}件 (上限${MAX_ENTRIES}件以内) — トリム不要"
         return 0
     fi
 
-    local EXCESS=$((SKILL_LINES - MAX_ENTRIES))
+    local EXCESS=$(( SKILL_LINES - MAX_ENTRIES ))
     log "スキル欄: ${SKILL_LINES}件 (超過${EXCESS}件) — トリム開始"
 
     # Ensure skill_history.md exists
@@ -68,7 +70,7 @@ HEREDOC
 
     # Get the line range of the skill section in dashboard
     local SECTION_START SECTION_END
-    SECTION_START=$(grep -n '^## 🛠️ 生成されたスキル' "$DASHBOARD" | head -1 | cut -d: -f1)
+    SECTION_START=$(grep -n '^## 🛠️' "$DASHBOARD" | head -1 | cut -d: -f1)
     SECTION_END=$(awk -v start="$SECTION_START" 'NR>start && /^## /{print NR; exit}' "$DASHBOARD")
     if [[ -z "$SECTION_END" ]]; then
         SECTION_END=$(wc -l < "$DASHBOARD")
@@ -123,11 +125,20 @@ HEREDOC
 TODAY_JST=$(TZ='Asia/Tokyo' date +"%Y-%m-%d")
 TODAY_MD=$(TZ='Asia/Tokyo' date +"%-m/%-d")
 
-# Extract current date from 「本日の戦果（M/D JST）」
-CURRENT_MD=$(grep -oP '## ✅ 本日の戦果（\K[0-9]+/[0-9]+' "$DASHBOARD" || echo "")
+# Extract current date from dashboard.yaml metadata.last_updated
+CURRENT_MD=$(python3 -c "
+import yaml, re, sys
+try:
+    d = yaml.safe_load(open('$DASHBOARD_YAML'))
+    lu = (d.get('metadata') or {}).get('last_updated', '')
+    m = re.match(r'(\d{4})-(\d{2})-(\d{2})', lu)
+    print(f'{int(m.group(2))}/{int(m.group(3))}') if m else sys.exit(1)
+except Exception:
+    sys.exit(1)
+" 2>/dev/null || echo "")
 
 if [[ -z "$CURRENT_MD" ]]; then
-    die "「本日の戦果」セクションが見つからない"
+    die "dashboard.yaml の metadata.last_updated から日付を取得できなかった"
 fi
 
 log "Current dashboard date: $CURRENT_MD, Today JST: $TODAY_MD"
@@ -141,112 +152,77 @@ fi
 
 log "日付不一致を検出: $CURRENT_MD → $TODAY_MD ローテーション開始"
 
-# Count completed items in current 「本日の戦果」
-# Count rows in the table (lines starting with |, excluding header rows)
-COMPLETED_COUNT=0
-IN_TODAY=false
-while IFS= read -r line; do
-    if [[ "$line" =~ ^"## ✅ 本日の戦果" ]]; then
-        IN_TODAY=true
-        continue
-    fi
-    if $IN_TODAY && [[ "$line" =~ ^"## " ]]; then
-        break
-    fi
-    if $IN_TODAY && [[ "$line" =~ ^\|[[:space:]][0-9] ]]; then
-        COMPLETED_COUNT=$((COMPLETED_COUNT + 1))
-    fi
-done < "$DASHBOARD"
-
-log "本日の戦果エントリ数: $COMPLETED_COUNT"
-
 if $DRY_RUN; then
-    log "[DRY-RUN] 以下の変更を実行予定:"
-    log "  1. 「本日の戦果（$CURRENT_MD JST）」→「昨日の戦果（$CURRENT_MD JST）— ${COMPLETED_COUNT}cmd完了」"
-    log "  2. 既存「昨日の戦果」セクション削除"
-    log "  3. 新規「本日の戦果（$TODAY_MD JST）」セクション作成"
-    log "  4. Frog欄 → 未設定、Frog状態 → 🐸 未撃破"
-    log "  5. 今日の完了 → 0"
-    log "  6. streaks.yaml: today.completed → 0, today.frog → \"\""
+    log "[DRY-RUN] dashboard.yaml achievements をローテーション予定:"
+    log "  today → yesterday（${CURRENT_MD} JST）"
+    log "  yesterday → day_before"
+    log "  today ← 空リスト（${TODAY_MD} JST）"
+    log "  frog/completed_today → リセット"
     exit 0
 fi
 
-# Create temp file for atomic write
-TMPFILE=$(mktemp "${DASHBOARD}.tmp.XXXXXX")
-trap 'rm -f "$TMPFILE"' EXIT
+# dashboard.yaml achievements rotation + dashboard.md 再生成
+python3 - "$DASHBOARD_YAML" "$TODAY_JST" "$CURRENT_MD" "$STREAKS" <<'PYEOF'
+import yaml, sys, subprocess, os
+from pathlib import Path
 
-# Process dashboard.md
-# Strategy: read line by line, transform sections
-SKIP_YESTERDAY=false
-WROTE_NEW_TODAY=false
+dashboard_yaml, today_jst, current_md, streaks_path = sys.argv[1:5]
 
-while IFS= read -r line; do
-    # Skip old 「昨日の戦果」 section entirely
-    if [[ "$line" =~ ^"## ✅ 昨日の戦果" ]]; then
-        SKIP_YESTERDAY=true
-        continue
-    fi
-    if $SKIP_YESTERDAY && [[ "$line" =~ ^"## " ]]; then
-        SKIP_YESTERDAY=false
-        # Fall through to process this line normally
-    elif $SKIP_YESTERDAY; then
-        continue
-    fi
+with open(dashboard_yaml) as f:
+    d = yaml.safe_load(f) or {}
 
-    # Rename 「本日の戦果」 → 「昨日の戦果」
-    if [[ "$line" =~ ^"## ✅ 本日の戦果" ]]; then
-        # First write the new empty 「本日の戦果」
-        echo "## ✅ 本日の戦果（${TODAY_MD} JST）" >> "$TMPFILE"
-        echo "" >> "$TMPFILE"
-        echo "| 時刻 | 戦場 | 任務 | 結果 |" >> "$TMPFILE"
-        echo "|------|------|------|------|" >> "$TMPFILE"
-        echo "| （まだなし） | | | |" >> "$TMPFILE"
-        echo "" >> "$TMPFILE"
-        WROTE_NEW_TODAY=true
+ach = d.get('achievements', {})
 
-        # Then write renamed section as 「昨日の戦果」
-        # Determine streak info for summary
-        STREAK_INFO=""
-        if [[ -f "$STREAKS" ]]; then
-            CURRENT_STREAK=$(grep -A1 'streak:' "$STREAKS" | grep 'current:' | awk '{print $2}' || echo "?")
-            STREAK_INFO=" 🔥ストリーク${CURRENT_STREAK}日目"
-        fi
-        echo "## ✅ 昨日の戦果（${CURRENT_MD} JST）— ${COMPLETED_COUNT}cmd完了${STREAK_INFO}" >> "$TMPFILE"
-        continue
-    fi
+# Count today's completed items
+today_items = ach.get('today', [])
+if isinstance(today_items, list):
+    items_list = today_items
+else:
+    items_list = today_items.get('items', []) if isinstance(today_items, dict) else []
+completed_count = len(items_list)
 
-    # Update Frog section
-    if [[ "$line" =~ "| 今日のFrog |" ]]; then
-        echo "| 今日のFrog | 未設定 |" >> "$TMPFILE"
-        continue
-    fi
-    if [[ "$line" =~ "| Frog状態 |" ]]; then
-        echo "| Frog状態 | 🐸 未撃破 |" >> "$TMPFILE"
-        continue
-    fi
-    if [[ "$line" =~ "| 今日の完了 |" ]]; then
-        echo "| 今日の完了 | 0 |" >> "$TMPFILE"
-        continue
-    fi
+# Read streak info
+streak_info = ''
+if os.path.exists(streaks_path):
+    try:
+        st = yaml.safe_load(open(streaks_path)) or {}
+        current_streak = (st.get('streak') or {}).get('current', 0)
+        if current_streak:
+            streak_info = f' 🔥ストリーク{current_streak}日目'
+    except Exception:
+        pass
 
-    echo "$line" >> "$TMPFILE"
-done < "$DASHBOARD"
+yesterday_header = f'{current_md} JST — {completed_count}cmd完了{streak_info}'
 
-# Atomic replace
-mv "$TMPFILE" "$DASHBOARD"
-trap - EXIT
+# Rotate: day_before ← yesterday, yesterday ← today, today ← []
+ach['day_before'] = ach.get('yesterday', {'header': '', 'items': []})
+ach['yesterday'] = {'header': yesterday_header, 'items': items_list}
+ach['today'] = []
+
+# Reset frog
+frog = d.get('frog', {})
+frog['today'] = None
+frog['status'] = '🐸 未撃破'
+frog['completed_today'] = 0
+d['frog'] = frog
+d['achievements'] = ach
+
+with open(dashboard_yaml, 'w') as f:
+    yaml.dump(d, f, allow_unicode=True, default_flow_style=False)
+
+# Regenerate dashboard.md
+subprocess.run(['python3', 'scripts/generate_dashboard_md.py'], check=True,
+               cwd=str(Path(dashboard_yaml).parent))
+print(f'achievements rotated: {current_md} → {today_jst} ({completed_count}件)')
+PYEOF
 
 # Update streaks.yaml if it exists
 if [[ -f "$STREAKS" ]]; then
-    # Update last_date and reset today counters
     sed -i "s/last_date:.*/last_date: \"$TODAY_JST\"/" "$STREAKS"
     sed -i "s/^\(  *\)frog:.*/\1frog: \"\"/" "$STREAKS"
     sed -i "s/^\(  *\)completed:.*/\1completed: 0/" "$STREAKS"
     log "streaks.yaml更新: last_date=$TODAY_JST, frog='', completed=0"
 fi
-
-# Update dashboard timestamp
-sed -i "s/^最終更新:.*/最終更新: $(TZ='Asia/Tokyo' date '+%Y-%m-%d %H:%M') JST/" "$DASHBOARD"
 
 log "ローテーション完了: $CURRENT_MD → $TODAY_MD"
 
