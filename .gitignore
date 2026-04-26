@@ -176,8 +176,12 @@
 !saytask/streaks.yaml.sample
 
 # n8n workflow definitions (OSS — workflow JSON only, no secrets)
-!queue/n8n/
-!queue/n8n/feedback-system.json
+!n8n/
+!n8n/feedback-system.json
+
+# Schema definitions (OSS)
+!schemas/
+!schemas/suggestions_schema.yaml
 
 # Reports (private — not tracked)
 
