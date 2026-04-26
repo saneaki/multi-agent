@@ -1,5 +1,5 @@
 # 📊 戦況報告
-最終更新: 2026-04-26 19:48 JST
+最終更新: 2026-04-26 19:51 JST
 
 ## 📋 記載ルール (Self-Documentation)
 > **更新者必読**: このセクションのルールを遵守して dashboard を更新すること。
@@ -47,21 +47,21 @@
 
 | cmd | 内容 | 担当 | 状態 |
 |-----|------|------|------|
-| cmd_595 | report.yaml per-subtask history 機構 | ash6:Scope C中 | A✅(19:43:案C Hybrid)+B待機+C(ash6:second opinion中)+D(gunshi:QC待機) |
-| cmd_596 | suggestions 定期消化機構 | ash1:Scope B作業中 | A✅(19:42:resolved71/accepted169)+B(ash1:digest.sh中) |
+| cmd_595 | report.yaml per-subtask history 機構 | gunshi:QC中 | A✅+C✅(19:50:APPROVE_WITH_CONCERNS)+D(gunshi:QC発令中) |
+| cmd_596 | suggestions 定期消化機構 | ash5:Scope C+D中 | A✅+B✅(19:47:digest.sh+cron)+C+D(ash5:dashboard反映+karo.md hard check中) |
 
 ## 🏯 待機中の構成員
 
 | 構成員 | 状態 | 最終タスク |
 |------|------|-----------|
-| 足軽1号(Sonnet+T) | 作業中 | subtask_596b発令(19:45): cmd_596 Scope B suggestions_digest.sh新規作成+cron登録 |
+| 足軽1号(Sonnet+T) | 待機 | subtask_596b完了(19:47): suggestions_digest.sh新規作成+cron登録(5 9 * * *) dry-run OK AC2 PASS ✅ |
 | 足軽2号(Sonnet+T) | 待機 | subtask_592b完了(12:12): compact_observer.sh新規作成 ✅ |
 | 足軽3号(Sonnet+T) | 待機 | subtask_585m完了(19:46): reality check OK。clasp logs確認 processed=43/total=93。cmd_585/cmd_568完遂=可 ✅ |
 | 足軽4号(Opus+T) | 待機 | subtask_588a完了(06:15): clasp push 7files成功 AC1/AC2/AC_trigger_doc 全PASS ✅ |
-| 足軽5号(Opus+T) | 待機 | subtask_595a完了(19:43): report history機構 案C Hybrid実装+instructions/ashigaru.md更新 AC1/AC2/AC3 PASS ✅ |
-| 足軽6号(Codex5.3) | 作業中 | subtask_595c発令(19:47): cmd_595 Scope C 案C Hybrid設計 second opinion |
+| 足軽5号(Opus+T) | 作業中 | subtask_596cd発令(19:50): cmd_596 Scope C+D dashboard[提案]反映+instructions/karo.md hard check |
+| 足軽6号(Codex5.3) | 待機 | subtask_595c完了(19:50): 案C Hybrid second opinion=APPROVE_WITH_CONCERNS(履歴肥大化/cleanup未定義) ✅ |
 | 足軽7号(Codex5.3) | 待機 | subtask_593h完了(14:02): get_context_pct.sh作成(実測54%)+crontab動的取得更新 ✅ |
-| 軍師(Opus+T) | 待機 | subtask_593i_qc完了(17:00): cmd_593 QC=Go 6/6 PASS。north_star 5点 aligned ✅ |
+| 軍師(Opus+T) | QC中 | subtask_595d_qc発令(19:51): cmd_595 Scope D QC (Hybrid design 総合判定) |
 
 ## ✅ 本日の戦果（4/26 JST）
 

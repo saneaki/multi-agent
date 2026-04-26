@@ -369,7 +369,7 @@ skill_candidate:
 task_id: subtask_588f_commit
 parent_cmd: cmd_588
 status: done
-completed_at: "2026-04-26T06:24:53+09:00"
+timestamp: "2026-04-26T06:24:53+09:00"
 assigned_to: ashigaru1
 
 summary: |
@@ -446,3 +446,49 @@ acceptance_criteria:
 skill_candidate:
   found: false
   reason: "crontab 登録のみ。スクリプト自体は cmd_586 で実装済み。"
+
+---
+worker_id: ashigaru1
+task_id: subtask_596b_suggestions_digest
+parent_cmd: cmd_596
+status: done
+timestamp: "2026-04-26T19:46:59+09:00"
+report_to: karo
+type: implement
+
+result:
+  summary: |
+    cmd_596 Scope B 完了。suggestions_digest.sh 新規作成 + cron 登録 (毎日09:05)。
+    pending=0 (ash6 Scope A triage 完了済) を確認。dry-run エラーなし。AC2 PASS。
+
+  files_created:
+    - file: "scripts/suggestions_digest.sh"
+      description: |
+        pending suggestions の定期通知スクリプト。
+        - pending=0 → ログのみ (inbox 通知なし)
+        - pending>=1 かつ high or medium → karo inbox へ digest 通知
+        - pending>=1 だが low のみ → ログのみ
+        - --dry-run オプション: inbox 書込みなし stdout 出力のみ
+        - PyYAML で suggestions.yaml を安全にパース
+
+  cron_entry:
+    schedule: "5 9 * * *"
+    command: "bash /home/ubuntu/shogun/scripts/suggestions_digest.sh >> /home/ubuntu/shogun/logs/suggestions_digest.log 2>&1"
+    purpose: "毎日09:05に pending suggestions を自動チェック + karo通知"
+
+  test_results:
+    - check: "dry-run 実行: pending=0 → exit 0 正常"
+      status: PASS
+    - check: "crontab -l | grep suggestions_digest: エントリ確認"
+      status: PASS
+    - check: "bash -n syntax check (set -euo pipefail)"
+      status: PASS
+
+acceptance_criteria:
+  - id: AC2
+    status: PASS
+    note: "scripts/suggestions_digest.sh 新規作成 + dry-run OK (pending=0 正常終了) + cron 5 9 * * * 登録確認済"
+
+skill_candidate:
+  found: false
+  reason: "一般的な YAML ダイジェスト通知パターン。shogun 専用ゆえ汎用スキル化不要。"
