@@ -12461,3 +12461,17 @@ suggestions:
     cmd_593 Scope B (subtask_593b) で AC4 (karo.md/gunshi.md 追記) + AC8 (本 sug 追加) 同時実装完了。
 
     '
+- id: sug_cmd_596_dispatch_automation_001
+  from: shogun
+  cmd_ref: cmd_595+cmd_596
+  task_ref: karo
+  created_at: '2026-04-26T22:00:00+09:00'
+  status: pending
+  priority: medium
+  content: |
+    家老 cmd 完遂時の gunshi QC dispatch 自動化。
+    本日2度の同型 dispatch 漏れ (cmd_595 21:56→即解消 / cmd_596 21:56→22:00解消) = 構造問題。
+    家老 cmd 完了 hook で gunshi.yaml + inbox 自動投入する仕組みが必要。
+    cmd_597 候補: karo.md Step 11.7-7.5 に「gunshi dispatch チェック」追加 or
+    cmd_complete_notifier.sh に gunshi dispatch logic 組込み。
+  action_needed: "cmd_596 完遂後に cmd_597 として発令。家老が自 dispatch 漏れを起こさない構造解消。"

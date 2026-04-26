@@ -1,5 +1,5 @@
 # 📊 戦況報告
-最終更新: 2026-04-26 22:46 JST
+最終更新: 2026-04-26 22:48 JST
 
 ## 📋 記載ルール (Self-Documentation)
 > **更新者必読**: このセクションのルールを遵守して dashboard を更新すること。
@@ -68,7 +68,7 @@
 
 | 時刻 | 戦場 | 任務 | 結果 |
 |------|------|------|------|
-| 22:00 | queue/instructions/shogun | cmd_596完遂(ash1/5/6/gunshi): suggestions定期消化機構。triage 553件→pending=0+digest.sh cron+karo.md hard check+dashboard[提案]反映。gunshi QC=Go commit TBD | ✅ ends完了 |
+| 22:00 | queue/instructions/shogun | cmd_596完遂(ash1/5/6/gunshi): suggestions定期消化機構。triage 553件→pending=0+digest.sh cron+karo.md hard check+dashboard[提案]反映。gunshi QC=Go commit 66c29bd | ✅ ends完了 |
 | 20:00 | instructions/shogun | cmd_595完遂(ash5/ash6/gunshi): report.yaml history機構(案C Hybrid)導入。twin QC=Go+north_star 3点 aligned。commit d550795 | ✅ ends完了 |
 | 19:33 | GAS/shogun | cmd_585完遂(ash3/5/gunshi)+cmd_568連鎖完遂: 寺地11年分全93thread backfill完了(processed=43/skipped=50/errors=0)。5x並列化稼働3m47s完遂 | ✅ ends完了 |
 | 17:00 | scripts/shogun | cmd_593完遂(ash1/2/5/6/7/gunshi): shelf-ware監査51件+防止体系(deploy&verify/KPI observer/context_pct動的化) commit b2ec328。gunshi QC=Go | ✅ ends完了 |
