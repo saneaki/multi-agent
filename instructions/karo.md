@@ -504,6 +504,39 @@ Gunshi MUST refuse research tasks while QC queue has unprocessed items (reply to
 - Also assigned additional research to Gunshi → QC queue stalled → report pipeline halted (1h22m)
 - Lesson: priority order "Opus ashigaru first → Gunshi only when Opus full" would have avoided the stall.
 
+## Investigation Tasks — Dual-Model Parallel Rule (L016)
+
+<!-- Established cmd_597 (2026-04-27). Extends L013 dual-review principle to design/analysis tasks. -->
+<!-- Incident: cmd_597 家老役割問題 design report assigned to ash5(Opus) only → Lord pointed out Codex perspective missing. -->
+
+**調査・設計分析・second opinion 系タスクは Opus 足軽 と Codex 足軽 の両方に並列発令すること (L016)。**
+
+### 対象タスク種別 (dual-model 必須)
+
+| 種別 | 例 |
+|------|-----|
+| 設計分析/design review | アーキテクチャ・役割分担・ロードマップ評価 |
+| 問題調査/root cause | 技術・運用問題の原因調査 |
+| second opinion | 既存判断の再検証 |
+| 複数アプローチ比較 | A/B/C/D 方向性評価 |
+| 長文レポート (1500字+) | 方針・戦略・設計系 |
+
+### 例外
+
+- 単純実装系 (script 書き、file 移動) → single model OK
+- 明確な1成果物タスク → single model OK
+- tight deadline + 両モデル稼働中 → 単系統可、但し理由を task YAML に記録
+
+### 実装パターン
+
+```
+Step 1: Opus ashigaru (ash4 or ash5) → 主レポート作成
+Step 2: Codex ashigaru (ash6 or ash7) → Second Opinion (主レポートを読んでから独立分析)
+Step 3: Gunshi → 両レポート統合 QC + 差分・補完点整理 → integrated report
+```
+
+Task YAML notes フィールド: `"L016 dual-model: Opus=ash5, Codex=ash6"` を明記すること。
+
 ## Task Dependencies (blocked_by)
 
 ```
