@@ -9,6 +9,13 @@
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# kill-switch: logs/clasp_rapt_monitor.disabled が存在する間は通知を停止
+KILL_SWITCH="$SCRIPT_DIR/../logs/clasp_rapt_monitor.disabled"
+if [[ -f "$KILL_SWITCH" ]]; then
+    echo "$(date '+%Y-%m-%d %H:%M:%S UTC') [rapt_monitor] kill-switch active — notifications paused. Remove $KILL_SWITCH to re-enable."
+    exit 0
+fi
 CLASPRC="$HOME/.clasprc.json"
 LOG_PREFIX="[rapt_monitor $(date '+%Y-%m-%d %H:%M:%S UTC')]"
 
