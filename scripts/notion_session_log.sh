@@ -730,26 +730,8 @@ else:
     print('')
 " 2>/dev/null || echo "")
 
-# フォールバック: 1日前の日付でも検索（日記ページ作成日ずれ対応）
-if [[ -z "${DIARY_PAGE_ID}" ]]; then
-  YESTERDAY=$(TZ=Asia/Tokyo date -d "${TODAY} -1 day" +%Y-%m-%d)
-  echo "[WARN] ${TODAY}の日記が見つからず。フォールバック: ${YESTERDAY}日記を検索"
-  DIARY_QUERY_FB=$(curl -s -X POST \
-    "${NOTION_API}/databases/${DIARY_DB_ID}/query" \
-    -H "Authorization: Bearer ${NOTION_TOKEN}" \
-    -H "Content-Type: application/json" \
-    -H "Notion-Version: ${NOTION_VERSION}" \
-    -d "{\"filter\": {\"property\": \"タスク名\", \"title\": {\"contains\": \"${YESTERDAY}\"}}}")
-  DIARY_PAGE_ID=$(echo "${DIARY_QUERY_FB}" | python3 -c "
-import json, sys
-data = json.load(sys.stdin)
-results = data.get('results', [])
-if results:
-    print(results[0].get('id', ''))
-else:
-    print('')
-" 2>/dev/null || echo "")
-fi
+# フォールバック廃止: 当日日記が未作成の場合はスキップし次回 cron で再試行する
+# (前日日記への誤書込み防止 — 根本原因: cron が JST 日付変更直後に前日ページを上書きしていた)
 
 if [[ -z "${DIARY_PAGE_ID}" ]]; then
   echo "[INFO] ${TODAY}の日記タスクが見つかりません。日記追記スキップ。"

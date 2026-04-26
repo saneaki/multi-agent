@@ -41,6 +41,30 @@ if [ "$CONTEXT_PCT" -le "$THRESHOLD" ]; then
     exit 0
 fi
 
+# 鮮度チェック: last_updated が 30分超古い場合はスキップ (/clear後のstaleデータ防止)
+STALE=$("${SCRIPT_DIR}/.venv/bin/python3" -c "
+import json
+from datetime import datetime, timedelta, timezone
+try:
+    with open('$COUNTER_FILE') as f:
+        data = json.load(f)
+    last = data.get('last_updated', '')
+    if not last:
+        print('yes')
+    else:
+        ts = datetime.fromisoformat(last)
+        if ts.tzinfo is None:
+            ts = ts.replace(tzinfo=timezone.utc)
+        age = (datetime.now(timezone.utc) - ts).total_seconds()
+        print('yes' if age > 1800 else 'no')
+except Exception:
+    print('no')
+" 2>/dev/null)
+
+if [ "${STALE:-no}" = "yes" ]; then
+    exit 0
+fi
+
 # shogun_to_karo.yaml にin_progress cmdがあるか確認
 HAS_IN_PROGRESS=$("${SCRIPT_DIR}/.venv/bin/python3" -c "
 import yaml, sys
