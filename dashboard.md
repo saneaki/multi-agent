@@ -1,5 +1,5 @@
 # 📊 戦況報告
-最終更新: 2026-04-26 22:54 JST
+最終更新: 2026-04-26 23:15 JST
 
 ## 📋 記載ルール (Self-Documentation)
 > **更新者必読**: このセクションのルールを遵守して dashboard を更新すること。
@@ -34,6 +34,7 @@
 | [action-7] | **difference.md 5日間未更新** — cmd_593 Scope E で hook登録完了 | 次の 🏆🏆 commit で自動再生成予定。急ぐなら VPS で `bash scripts/cmd_squash_pub_hook.sh` 手動実行。 |
 | [info-1] | Claude Code .claude/skills パーミッションバグ | **2026-04-24 16:10 将軍確認**: anthropics/claude-code#37157 (bug/has repro/area:skills, 最終更新 4/20) + #38806 (enhancement/area:permissions, 最終更新 4/2) 共に **OPEN** (公式修正なし)。暫定対処: 選択肢2で手動承認を継続。将軍が週次で修正状況を確認する。 |
 | [提案-1] | clasp RAPT 月次再認証定期化 (sug_cmd_564_001) | cmd_486→cmd_564 の 1週間サイクルで RAPT 再認証境界越えが顕在化。bi-weekly〜monthly 再発可能性高。(a) 月初 RAPT refresh cmd を SayTask 化 or (b) clasp_rapt_monitor.sh で残日数自動通知。殿のご判断: 採否+方式選択。 |
+| [提案-3] | cmd 完遂時 gunshi QC dispatch 自動化 (sug_cmd_596_dispatch_automation_001) | 本日2度の同型 dispatch 漏れ (cmd_595/596)。cmd_597 候補: Step 11.7-7.5 に gunshi dispatch チェック追加 or cmd_complete_notifier.sh 組込み。gunshi QC S1 [medium] 0.17d。殿のご判断: cmd_597 発令採否。 |
 
 ## 📊 運用指標
 
