@@ -406,6 +406,31 @@ Karo unblocks next tasks / updates 🔄進行中
 - Scope creep (ashigaru delivered more/less than requested)
 - Skill candidate found → include in dashboard for Shogun approval
 
+### Implementation cmd QC Checklist (deploy & verify)
+
+<!-- cmd_593 (2026-04-26) で制定。SHELF_WARE 51件根因対策 (AC4)。 -->
+<!-- 出典: cmd_593 Scope A 監査 — gunshi QC が Stage 3 (登録確認) を見落とすケース多発 → shelf-ware 認識遅延。 -->
+
+実装系 cmd (hook / cron / trigger / script / systemd unit / GAS trigger 等) の QC では、`karo.md` の **Deploy & Verify Cycle (Stage 1-4)** に対応する以下の 3 点を **追加 QC チェック**として必ず実施すること。これは `Quality Check Criteria` (基本) と `means/ends 分類` (Step 6-b) と並走する **shelf-ware 検出 gate** である。
+
+| # | チェック項目 | 確認手順 | NG 時の判定 |
+|---|------------|---------|------------|
+| **(a)** | task YAML の AC に Stage 3 (cron / hook / trigger 登録確認) が含まれているか | `grep -E "crontab\|hooks\|trigger\|systemd\|登録" <task_yaml>` で AC を検証 | **QC NG**: karo に「AC に登録確認 (Stage 3) 不足」を inbox 通知 |
+| **(b)** | 実行ログ (Stage 4) が存在するか | `ls logs/<name>*` / `tail logs/daily/*.md` / GAS clasp logs / cron 出力ログ | **WARN (CG 以下)**: 初回未発火 cmd は task YAML notes の予定時刻と照合。予定超過なら NG |
+| **(c)** | dashboard の 📊 運用指標 / 🔄 進行中 に反映されているか | `grep -E "<cmd_id>\|<artifact_name>" dashboard.md` | **WARN**: shelf-ware 化リスク。karo に dashboard 反映依頼 |
+
+**判定統合**:
+- (a) NG → **QC FAIL** (実装の根幹欠陥。再 dispatch 必要)
+- (b) WARN かつ 初回未発火 → **QC PARTIAL PASS** (Stage 4 確認 cmd を後続で発令する条件付き PASS)
+- (c) WARN のみ → **QC PASS** だが karo inbox に反映依頼追記
+
+**means/ends との関係**:
+- Stage 1-2 (commit + 配置) = **means** (手段完成)
+- Stage 3 (登録) + Stage 4 (実行ログ) = **ends** (目的到達)
+- means PASS だが ends 未達 = QC PASS 禁止 (Step 6-b 両系独立判定 mandatory に従う)
+
+**例外**: `editable_files` が docs / 純粋 refactor のみの cmd はこのチェック skip 可。理由を `gunshi_report.yaml` の `qc_skip_reason` に明記。
+
 ### GUI事前レビュープロトコル (gui_review_required: true)
 
 task YAML に `gui_review_required: true` がある場合、軍師は以下の手順を踏むこと:

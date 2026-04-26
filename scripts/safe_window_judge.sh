@@ -87,8 +87,44 @@ _log() {
     echo "$msg" >> "$LOG_FILE" 2>/dev/null || true
 }
 
+_self_notify_karo() {
+    # REC が wait 以外のときのみ、karo inbox に compact suggestion を通知。
+    # 10分以内の重複通知は /tmp の timestamp で抑止する。
+    local result="$1"
+    local rec="$2"
+    local reason="$3"
+    local guard_file="/tmp/safe_window_judge_notify_${AGENT_ID}.ts"
+    local now_epoch last_epoch delta
+
+    [ "$AGENT_ID" = "karo" ] || return 0
+    [ "$rec" != "wait" ] || return 0
+
+    now_epoch=$(date +%s)
+    last_epoch=""
+    if [ -f "$guard_file" ]; then
+        last_epoch=$(cat "$guard_file" 2>/dev/null || true)
+    fi
+
+    if echo "${last_epoch}" | grep -qE '^[0-9]+$'; then
+        delta=$(( now_epoch - last_epoch ))
+        if [ "$delta" -lt 600 ]; then
+            _log "self-notify suppressed (loop guard): delta=${delta}s<600s rec=${rec}"
+            return 0
+        fi
+    fi
+
+    local msg="[safe_window_judge] RESULT=${result} REC=${rec} REASON=${reason} context_pct=${CONTEXT_PCT}"
+    if bash "$SCRIPT_DIR/scripts/inbox_write.sh" karo "$msg" compact_suggestion safe_window_judge; then
+        echo "$now_epoch" > "$guard_file" 2>/dev/null || true
+        _log "self-notify sent: type=compact_suggestion rec=${rec}"
+    else
+        _log "self-notify failed: type=compact_suggestion rec=${rec}"
+    fi
+}
+
 _emit() {
     # $1=SAFE_WINDOW_RESULT(true|false), $2=RECOMMENDATION(/clear|/compact|wait), $3=REASON
+    _self_notify_karo "$1" "$2" "$3"
     echo "SAFE_WINDOW_RESULT=$1"
     echo "RECOMMENDATION=$2"
     echo "REASON=$3"

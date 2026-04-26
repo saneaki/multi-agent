@@ -1,50 +1,31 @@
 worker_id: ashigaru7
-task_id: subtask_589d_cost_skill
-parent_cmd: cmd_589
+task_id: subtask_593h_context_pct
+parent_cmd: cmd_593
 status: done
-timestamp: "2026-04-26T06:02:29+09:00"
+timestamp: "2026-04-26T14:02:28+09:00"
 report_to: karo
 result:
-  summary: "AC5/AC7 完了。Gemini 2.5 Flash の現行料金(公式)を基に、寺地93件処理の概算コストを USD/JPY で算出。あわせて shogun-gemini-thinking-token-guard skill を新規作成し、cmd_589 battle-tested と推奨値表を追加した。"
+  summary: "AC_context_pct 完了。karo の実 context_pct を ~/.claude/tool_call_counter/karo.json から取得する scripts/get_context_pct.sh を実装し、safe_window_judge の crontab を固定80から動的取得へ更新した。"
   files_modified:
-    - "/home/ubuntu/shogun/skills/shogun-gemini-thinking-token-guard/SKILL.md"
+    - "/home/ubuntu/shogun/scripts/get_context_pct.sh"
     - "queue/inbox/ashigaru7.yaml"
     - "queue/reports/ashigaru7_report.yaml"
     - "queue/tasks/ashigaru7.yaml"
   verification:
-    - "summary.gs 実装確認: model=gemini-2.5-flash, generationConfig.maxOutputTokens=200"
-    - "公式一次情報確認: Gemini API pricing (gemini-2.5-flash Standard Input $0.30 / Output $2.50 including thinking tokens)"
-    - "公式一次情報確認: Gemini thinking docs (thinkingBudget=0 で thinking 無効化可能)"
-    - "USD/JPY 参照値確認: exchange-rates.org 2026-04-24 = 159.36 JPY/USD"
+    - "crontab確認: safe_window_judge karo 行が --context-pct \"$(bash .../get_context_pct.sh karo || echo 80)\" に変更済み"
+    - "実行確認: bash scripts/get_context_pct.sh karo -> 54"
+    - "連携確認: bash scripts/safe_window_judge.sh --agent-id karo --context-pct \"$(bash scripts/get_context_pct.sh karo)\" が実 context 54% で判定"
   findings:
-    - "Step1 実装現状: summary.gs は gemini-2.5-flash + maxOutputTokens=200。cmd_589 側修正方針(2000 + thinkingBudget=0)と整合。"
-    - "Step2 料金再確認: 旧前提($0.075 / $0.30)ではなく、2026-04時点公式は Input $0.30 / 1M, Output $2.50 / 1M。Output は thinking token 含む。"
-    - "Step3 93件コスト試算(標準API, text only):"
-    - "  入力 tokens = (1000-3000 + prompt_overhead 120) * 93 = 104,160 - 290,160"
-    - "  出力 tokens = (500-1000) * 93 = 46,500 - 93,000"
-    - "  thinking tokens = 0 (thinkingBudget=0 想定)"
-    - "  入力費 = 0.031248 - 0.087048 USD"
-    - "  出力費 = 0.116250 - 0.232500 USD"
-    - "  合計 = 0.147498 - 0.319548 USD"
-    - "  為替 159.36 JPY/USD 換算 = 約 23.50 - 50.92 円"
-    - "Step4 中央値シナリオ(入力2000+120, 出力750): 0.233523 USD ≒ 37.21 円"
-    - "Step5 AC7: skill 新規作成済み。cmd_589 battle-tested 行 + Flash/Pro 推奨値表を追加。"
+    - "方法A(role_context_notify.sh)で context_pct 取得元が ~/.claude/tool_call_counter/<agent>.json と判明。"
+    - "方法B(JSONL末尾)では context_pct を直接利用できる安定フィールドは確認できず。"
+    - "方法C(tmux status-right)はテンプレート文字列のみで context値を直接取得不可。"
+    - "karo.json 実測例: context_pct=53.0/54 で、従来固定80との差分を確認。"
   notes:
-    - "task YAML の context_files は未定義。追加コンテキスト読込対象なし。"
-    - "inbox 未読 message(id: msg_20260425_210047_3c4543fe) を read:true に更新済み。"
-    - "為替は 2026-04-24 日次レート(159.36)を採用。リアルタイムレートではないため概算用途。"
-  sources:
-    - "https://ai.google.dev/gemini-api/docs/pricing"
-    - "https://ai.google.dev/gemini-api/docs/thinking"
-    - "https://www.exchange-rates.org/exchange-rate-history/usd-jpy-2026"
+    - "task YAML に context_files は未定義のため追加読込対象なし。"
+    - "inbox msg_20260426_050033_f723e931 を read:true 化済み。"
 acceptance_criteria:
-  - id: AC5
+  - id: AC_context_pct
     status: pass
-    detail: "寺地93件の Gemini 2.5 Flash 処理コストを現行公式単価ベースで USD + JPY 概算。thinkingBudget=0 条件も明記。"
-  - id: AC7
-    status: pass
-    detail: "skills/shogun-gemini-thinking-token-guard/SKILL.md を新規作成。cmd_589 battle-tested と推奨値表を記載。"
+    detail: "調査完了、get_context_pct.sh 作成、karo safe_window cron の --context-pct を動的取得へ更新。"
 skill_candidate:
-  found: true
-  name: "shogun-gemini-thinking-token-guard"
-  reason: "Gemini 2.5 系で再発しやすい maxOutputTokens/thinking 設定事故の再発防止に直接有効。"
+  found: false

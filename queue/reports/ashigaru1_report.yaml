@@ -1,20 +1,36 @@
 worker_id: ashigaru1
-task_id: subtask_586b
-parent_cmd: cmd_586
+task_id: subtask_592f_crontab_fixup
+parent_cmd: cmd_592
 status: done
-timestamp: "2026-04-24T20:24:22+09:00"
+timestamp: "2026-04-26T14:20:46+09:00"
 report_to: karo
 type: implement
 
 result:
   summary: |
-    cmd_586 Scope B 完了。
-    karo_self_clear_check.sh 拡張: 全条件PASS後に safe_window_judge.sh 連携 →
-    APPROVE 時は context_advisory を karo inbox に自己投入 (30min dedup付き)。
-    safe_window_judge.sh 未実装時は clear_command フォールバック (後方互換)。
-    inbox_watcher.sh: context_advisory を special_types に追加、normalize_special_command
-    で /clear or /compact へ変換 (推奨フィールド優先、pct>=85→compact fallback)、
-    busy guard 追加。AC2 PASS。
+    cmd_592 Scope F fixup 完了。
+
+    C1 解消: compact_observer.sh を cron に登録 (karo + gunshi, */30)。
+      - */30 * * * * bash ...compact_observer.sh karo >> logs/compact_observer.log 2>&1
+      - */30 * * * * bash ...compact_observer.sh gunshi >> logs/compact_observer.log 2>&1
+      - 動作確認 PASS (karo: 本日1件, gunshi: スナップショットなし正常)
+
+    C2 解消: gunshi safe_window_judge.sh --context-pct 動的化。
+      - Before: --context-pct 80 (固定)
+      - After:  --context-pct "$(bash .../get_context_pct.sh gunshi 2>/dev/null || echo 80)"
+      - get_context_pct.sh gunshi 動作確認: 54 を返却 PASS
+
+    AC_c1 PASS / AC_c2 PASS → cmd_592 Conditional Go 解消条件充足。
+
+  previous_summary: |
+    cmd_592 Scope A 完了 (上書きされたが内容は以下)。
+    crontab に cmd_586 スクリプト3行が既登録済であることを確認。
+    - karo_self_clear_check.sh --tool-count 200 → logs/safe_clear/karo.log (*/10)
+    - safe_window_judge.sh --agent-id karo --context-pct 80 → logs/safe_window/karo.log (*/10)
+    - safe_window_judge.sh --agent-id gunshi --context-pct 80 → logs/safe_window/gunshi.log (*/10)
+    注: --context-pct 0 は自動取得モードでないためフォールバック値80を使用。
+    dry-run テスト: karo_self_clear=SKIP(in_progress 12件), safe_window=/compact推奨。
+    エラーなし。AC_cron PASS。
 
   ac2_karo_self_clear_check_extension:
     changes:
@@ -371,3 +387,62 @@ acceptance_criteria:
   - id: AC_commit
     status: PASS
     note: "git commit + push 完了 (gas-mail-manager: d36aef7 / shogun: commit済)"
+
+---
+worker_id: ashigaru1
+task_id: subtask_592a_crontab_register
+parent_cmd: cmd_592
+status: done
+timestamp: "2026-04-26T12:04:43+09:00"
+report_to: karo
+type: implement
+
+result:
+  summary: |
+    cmd_592 Scope A 完了。crontab に 3行追加:
+    (1) karo_self_clear_check.sh --tool-count 200 (*/10)
+    (2) safe_window_judge.sh --agent-id karo --context-pct 80 (*/10)
+    (3) safe_window_judge.sh --agent-id gunshi --context-pct 80 (*/10)
+    dry-run 全エラーなし。
+    shelf-ware 解消: cmd_586 実装済みスクリプトが cron に未登録だった問題を修正。
+
+  cron_entries_added:
+    - entry: "*/10 * * * * bash /home/ubuntu/shogun/scripts/karo_self_clear_check.sh --tool-count 200 >> /home/ubuntu/shogun/logs/safe_clear/karo.log 2>&1"
+      purpose: "家老 自律 self-clear 条件判定"
+    - entry: "*/10 * * * * bash /home/ubuntu/shogun/scripts/safe_window_judge.sh --agent-id karo --context-pct 80 >> /home/ubuntu/shogun/logs/safe_window/karo.log 2>&1"
+      purpose: "家老 safe window 判定"
+    - entry: "*/10 * * * * bash /home/ubuntu/shogun/scripts/safe_window_judge.sh --agent-id gunshi --context-pct 80 >> /home/ubuntu/shogun/logs/safe_window/gunshi.log 2>&1"
+      purpose: "軍師 safe window 判定"
+
+  design_note:
+    context_pct_fixed_value: 80
+    reason: |
+      --context-pct 0 は auto-detect モードではなく C1(context<70%) で常に wait を返すため使用不可。
+      role_context_notify.sh と同様に counter file から pct を動的取得する改修が理想だが、
+      task 指示の「動かなければ固定値 80 を使用」に従い固定値 80 を採用。
+      80% は karo C1 (>=70) を満たし、85% 未満 (compact 強制閾値) に収まるため
+      C2-C5 の実態判定が有効に機能する範囲。
+    log_dir: |
+      既存 logs/safe_window/ と logs/safe_clear/ ディレクトリに合わせてログパスを設定。
+
+  test_results:
+    - check: "crontab -l | grep 592: 3行確認"
+      status: PASS
+    - check: "karo_self_clear_check.sh --dry-run --tool-count 200"
+      result: "SKIP (cond_1 NG: 12 in_progress cmds) — 正常動作"
+      status: PASS
+    - check: "safe_window_judge.sh --agent-id karo --context-pct 80"
+      result: "RECOMMENDATION=/compact (in_progress=5) — 正常動作"
+      status: PASS
+    - check: "safe_window_judge.sh --agent-id gunshi --context-pct 80"
+      result: "RECOMMENDATION=/clear (G1-G4 全成立) — 正常動作"
+      status: PASS
+
+acceptance_criteria:
+  - id: AC_cron
+    status: PASS
+    note: "crontab に karo_self_clear_check.sh + safe_window_judge.sh (karo/gunshi) 3行追加。dry-run エラーなし。"
+
+skill_candidate:
+  found: false
+  reason: "crontab 登録のみ。スクリプト自体は cmd_586 で実装済み。"

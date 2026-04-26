@@ -303,6 +303,40 @@ steps:
     note: "Close with summary after QC PASS"
 ```
 
+### Implementation Procedure: Deploy & Verify Cycle (Mandatory)
+
+<!-- cmd_593 (2026-04-26) で制定。SHELF_WARE 51件根因対策 (AC4)。 -->
+<!-- 出典: cmd_593 Scope A 監査 — hook/cron/trigger/script 系 cmd の 32% が登録未確認のまま完了宣言 → shelf-ware 化。 -->
+
+実装系 cmd (hook / cron / trigger / script / systemd unit / GAS trigger 等、デプロイを伴う成果物全般) を発令する場合、task YAML の `acceptance_criteria` に **以下の 4 段確認 (Stage 1-4)** を必ず含めること。Stage 3 未完了 = shelf-ware 確定、Stage 4 未完了 = log=0 WARN。
+
+| Stage | 確認内容 | 検証コマンド例 |
+|-------|---------|----------------|
+| **Stage 1: commit** | 成果物 (script / config / hook 定義) が git に commit されている | `git log --oneline -5 -- <path>` |
+| **Stage 2: 配置** | 期待ディレクトリ (`scripts/` / `hooks/` / `~/.claude/` 等) にファイルが存在する | `ls -la <expected_path>` |
+| **Stage 3: 登録** | 実行系に登録されている (crontab / settings.json hooks / GAS trigger / systemd timer / pre-commit 等) | `crontab -l \| grep <name>` / `jq '.hooks' settings.json` / `clasp run listTriggers` |
+| **Stage 4: 実行ログ** | 1回以上の実行ログが logs / stdout / GAS log に存在する | `ls -la logs/<name>*.log` / `tail logs/daily/*.md` |
+
+**判定ルール**:
+- Stage 1-2 完了で「実装済」、Stage 3 完了で「稼働状態」、Stage 4 完了で「動作確認済」
+- Stage 3 未完了の cmd は完了宣言禁止 (= shelf-ware 化)。家老は dispatch 前に AC に Stage 1-4 が含まれることを確認すること
+- Stage 4 未確認は WARN レベル。初回実行が cron/trigger 待ちの場合は task YAML notes に「初回実行予定: YYYY-MM-DD HH:MM JST」を明記し、後続 cmd で Stage 4 確認を発令する
+
+**task YAML 記載例**:
+```yaml
+acceptance_criteria:
+  - id: AC1
+    check: "Stage 1: scripts/foo.sh が git commit 済 (git log で確認)"
+  - id: AC2
+    check: "Stage 2: scripts/foo.sh が実行可能 (ls -la + chmod +x 確認)"
+  - id: AC3
+    check: "Stage 3: crontab に */15 * * * * 登録済 (crontab -l | grep foo.sh)"
+  - id: AC4
+    check: "Stage 4: logs/foo.log に 1 回以上の実行ログあり (cron 初回発火後)"
+```
+
+**例外**: 純粋なドキュメント更新 / refactor (実行系に影響しない) cmd は Stage 1-2 のみで可。判定基準 = task YAML に `editable_files` で `scripts/` `hooks/` `crontab` 等の実行系パスが含まれるか。
+
 ## Task YAML Format
 
 **CRITICAL**: `report_to: gunshi` は全タスクに必須。`assigned_to` で担当足軽IDを必ず指定すること。

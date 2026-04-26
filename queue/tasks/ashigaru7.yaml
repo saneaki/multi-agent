@@ -1,105 +1,94 @@
-task_id: subtask_589d_cost_skill
-parent_cmd: cmd_589
+task_id: subtask_593h_context_pct
+parent_cmd: cmd_593
 assigned_to: ashigaru7
-assigned_at: "2026-04-26T05:53:00+09:00"
+assigned_at: "2026-04-26T13:58:00+09:00"
 status: done
 priority: high
 report_to: karo
-type: research
+type: implement
 language: ja
-title: "cmd_589 Scope D: Gemini コスト見積 + skill 拡張 (AC5/AC7)"
+title: "cmd_593 Scope H: context_pct 実取得経路実装"
 bloom_level: L3
-model_note: "Codex — L012"
+model_note: "Codex"
 context_policy: clear_between
 working_dir: /home/ubuntu/shogun
+completed_at: "2026-04-26T14:02:28+09:00"
 
 task:
   description: |
-    cmd_589: Gemini thinking token 食い尽くし修正。
-    Scope D: Gemini 2.5 Flash API コスト見積 + shogun-gemini-thinking-token-guard skill 拡張。
+    cmd_593: shelf-ware 即解消 + 防止体系化。
+    Scope H: karo cron で --context-pct 80 固定だった問題を解消し、
+    家老 pane の実 context 使用率を取得して渡す仕組みを実装する。
 
-    north_star: "殿が API コストを把握できる + 将来の skill 適用漏れを防ぐ。"
+    north_star: "家老の実際の context 使用率に基づいた判定で、
+    false positive (50% でも 80% 扱い) を排除する。"
 
-    Step 1: summary.gs 確認 (現状把握)
-      Read /home/ubuntu/gas-mail-manager/src/summary.gs
-      # 修正前後の maxOutputTokens と Gemini model 名を確認
+    【問題】
+    現状: crontab に `--context-pct 80` 固定
+    問題: 実際の context が 50% でも 80% 扱いで /compact 推奨 → 不要な interrupt
+    理想: 実 context_pct を取得して渡す
 
-    Step 2: Gemini コスト見積 (AC5)
-      Gemini 2.5 Flash の料金 (知識ベース + ウェブ検索で確認):
-        - 入力: $0.075 / 1M tokens (1M = 1,000,000)
-        - 出力: $0.30 / 1M tokens
-        - thinking: 入力扱い or 追加コストか確認
+    Step 1: 現在の crontab 確認
+      crontab -l | grep "safe_window\|karo_self_clear"
+      # --context-pct 80 固定の行を確認
 
-      寺地 93 件の処理コスト試算:
-        - 入力: メール本文 (1件あたり推定 1000-3000 tokens) × 93 + prompt overhead
-        - 出力 (修正後): 1件あたり推定 500-1000 tokens × 93
-        - thinking (thinkingBudget=0 設定後): 0
-        - 合計コスト概算 (USD + JPY)
+    Step 2: Claude Code の context 情報取得方法調査
+      # 方法 A: role_context_notify.sh の実装を参照
+      cat /home/ubuntu/shogun/scripts/role_context_notify.sh | head -80
 
-    Step 3: skill 拡張 (AC7)
-      対象: /home/ubuntu/shogun/skills/shogun-gemini-thinking-token-guard/SKILL.md
-      ファイルが存在しない場合: 新規作成
+      # 方法 B: JSONL から最新の usage stats を取得
+      ls -t /home/ubuntu/.claude/projects/-home-ubuntu-shogun/*.jsonl 2>/dev/null | head -1 | \
+        xargs tail -10 2>/dev/null | python3 -c "
+import sys, json
+for line in sys.stdin:
+    try:
+        d = json.loads(line)
+        if 'usage' in str(d) or 'context' in str(d).lower() or 'token' in str(d).lower():
+            print(json.dumps(d, ensure_ascii=False)[:300])
+    except: pass
+" 2>/dev/null || true
 
-      Write /home/ubuntu/shogun/skills/shogun-gemini-thinking-token-guard/SKILL.md
-      内容:
-      ---
-      name: shogun-gemini-thinking-token-guard
-      description: Gemini 2.5 Flash/Pro の thinking token 食い尽くし問題の回避パターン
-      type: skill
-      ---
+      # 方法 C: tmux statusline
+      tmux display-message -p '#{status-right}' 2>/dev/null || true
 
-      # Gemini Thinking Token Guard
+    Step 3: context_pct 取得 helper script 作成
+      取得可能な場合:
+        Write /home/ubuntu/shogun/scripts/get_context_pct.sh
+        #!/usr/bin/env bash
+        # get_context_pct.sh — 家老 pane の現在の context 使用率を返す (0-100整数)
+        # 取得できない場合は exit 1
+        # Usage: bash scripts/get_context_pct.sh [karo|gunshi]
+        (role_context_notify.sh の context 取得ロジックを参考に実装)
 
-      ## 問題
-      Gemini 2.5 Flash / Pro は "thinking" モードで内部推論 token を消費する。
-      maxOutputTokens が小さいと thinking token が予算を食い尽くし、
-      実際の出力が数 token しか残らず切断される (finishReason=MAX_TOKENS)。
+      取得不可能な場合:
+        フォールバック設計:
+        - role_context_notify.sh が記録した context_pct を /tmp/karo_context_pct.txt に保存する patch
+        - safe_window_judge.sh cron が read → --context-pct に渡す
+        - この設計を report に記録 (実装は role_context_notify.sh を見て判断)
 
-      ## 症状
-      - finishReason: MAX_TOKENS
-      - thoughtsTokenCount: 100-200 (消費済)
-      - candidatesTokenCount: 5-10 (ほぼゼロ)
-      - 出力: 10 字程度で切断
+    Step 4: crontab の --context-pct 修正 (取得方法確立時のみ)
+      crontab -l > /tmp/cron_backup_593h.txt
+      # 既存の safe_window_judge karo 行を確認
+      crontab -l | grep "safe_window.*karo"
+      # --context-pct 80 → 動的取得に変更
 
-      ## 解決策
+    Step 5: 動作確認
+      bash /home/ubuntu/shogun/scripts/get_context_pct.sh 2>&1 || echo "not available"
+      crontab -l | grep "safe_window.*karo"
 
-      ### 方法 A: maxOutputTokens を大きく設定 (推奨)
-      generationConfig: {
-        maxOutputTokens: 2000,  // Gemini 2.5 Flash: 2000+
-        temperature: 0.3
-      }
-      推奨値: Gemini 2.5 Flash = 2000, Gemini 2.5 Pro = 3000
-
-      ### 方法 B: thinkingBudget を 0 に設定 (thinking 無効化)
-      generationConfig: {
-        maxOutputTokens: 2000,
-        thinkingConfig: {
-          thinkingBudget: 0
-        }
-      }
-      // 要約・分類タスクでは thinking 不要なため推奨
-
-      ## Battle-tested
-      | cmd | 状況 | 解決策 |
-      |-----|------|--------|
-      | cmd_589 | 寺地 backfill 28 件で maxOutputTokens=200 → 10 字切断 | 2000 + thinkingBudget=0 |
-
-      ## 適用タイミング
-      GAS (Apps Script) で Gemini 2.5 系 API を呼ぶ実装時に必ず確認。
-      UrlFetchApp.fetch で生成 API を呼ぶ全てのスクリプトが対象。
-
-    Step 4: 報告
+    Step 6: 報告
       bash /home/ubuntu/shogun/scripts/inbox_write.sh karo \
-        "subtask_589d完了。コスト見積=[N]円相当+skill shogun-gemini-thinking-token-guard拡張(新規作成or追記)。AC5/AC7 PASS。ashigaru7_report.yaml参照。" \
+        "subtask_593h完了。context_pct実取得=[実装済/フォールバック設計]。get_context_pct.sh=[作成済/不可+次アクション記録]。crontab=[更新済/維持]。AC_context_pct=[PASS/PARTIAL]。ashigaru7_report.yaml参照。" \
         task_completed ashigaru7
 
 acceptance_criteria:
-  - id: AC5
-    check: "寺地 93 件 Gemini 2.5 Flash 処理コスト概算。USD + JPY で殿報告。"
-  - id: AC7
-    check: "skills/shogun-gemini-thinking-token-guard/SKILL.md 作成 or 更新。cmd_589 battle-tested 追記 + 推奨値表。"
+  - id: AC_context_pct
+    check: |
+      (1) context_pct 取得方法の調査完了
+      (2) 取得可能なら get_context_pct.sh 作成 + crontab 更新
+      (3) 取得不可なら次アクション提案 + report 記録
 
 editable_files:
-  - "/home/ubuntu/shogun/skills/shogun-gemini-thinking-token-guard/SKILL.md"
+  - "/home/ubuntu/shogun/scripts/get_context_pct.sh"
   - "queue/reports/ashigaru7_report.yaml"
   - "queue/tasks/ashigaru7.yaml"

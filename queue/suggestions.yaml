@@ -9298,3 +9298,45 @@ suggestions:
     action_needed: |
       skills/ 配下に "gas-spreadsheet-derivable-column-autofill" 等として SKILL.md 化検討。
       proposed_trigger: GAS 元帳型 Spreadsheet でメタ列が手動入力運用されている場合。
+
+  - id: sug_cmd_593_unyo_kado_kakunin_rule
+    from: ashigaru5
+    cmd_ref: cmd_593
+    task_ref: subtask_593b
+    created_at: "2026-04-26T14:16:00+09:00"
+    status: accepted
+    priority: high
+    title: "運用稼働確認ルール (cmd_584 統合 / AC8)"
+    summary: "実装系 cmd は完遂宣言前に Stage 3 (登録) + Stage 4 (実行ログ) を必須確認。SHELF_WARE 51件根因対策。"
+    content: |
+      cmd_593 Scope A 監査結果: hook/cron/trigger/script 系 cmd の 51件 が登録未確認のまま完了宣言され、
+      shelf-ware (実装済だが未稼働) として滞留していた。根本原因:
+        (1) karo.md / gunshi.md に「deploy & verify cycle 4段確認」が明文化されていない
+        (2) cmd_584 suggestions.yaml / 運用ルールに「運用稼働確認」ルールが存在しない
+
+      本 sug は cmd_584 (suggestions.yaml 運用) への永続化を意図する shelf-ware 防止ルール:
+
+      【ルール本文】
+      実装系 cmd (hook / cron / trigger / script / systemd unit / GAS trigger 等、デプロイを伴う成果物全般)
+      の AC には必ず以下の 4 段確認 (Stage 1-4) を含めること。
+
+        Stage 1: commit       — 成果物が git に commit 済 (git log で確認)
+        Stage 2: 配置         — 期待ディレクトリに配置済 (ls -la で確認)
+        Stage 3: 登録         — 実行系に登録済 (crontab/settings.json hooks/GAS trigger/systemd timer 等)
+        Stage 4: 実行ログ     — 1 回以上の実行ログが logs/ stdout / GAS log に存在
+
+      Stage 3 未完了 = shelf-ware 確定 (再 dispatch 必要)
+      Stage 4 未完了 = log=0 WARN (初回実行が trigger 待ちの場合は notes に予定時刻明記)
+
+      【適用範囲】
+      - 家老 (karo): dispatch 前に AC に Stage 1-4 含むことを確認 → 不足は task YAML 差戻し
+      - 軍師 (gunshi): QC 時に Stage 3 (登録) + Stage 4 (実行ログ) を means/ends 両系独立判定
+      - 足軽 (ashigaru): 完了報告時に Stage 1-4 全項目の検証コマンド出力を report YAML に記載
+
+      【例外】
+      docs / 純粋 refactor 系 cmd は Stage 1-2 のみ可 (実行系に影響しない場合)。
+    action_needed: |
+      cmd_584 suggestions.yaml 運用ルール集に本ルールを正式採用 (本 entry が永続化先)。
+      karo.md "Implementation Procedure: Deploy & Verify Cycle (Mandatory)" セクション参照。
+      gunshi.md "Implementation cmd QC Checklist (deploy & verify)" セクション参照。
+      cmd_593 Scope B (subtask_593b) で AC4 (karo.md/gunshi.md 追記) + AC8 (本 sug 追加) 同時実装完了。

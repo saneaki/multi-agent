@@ -1,246 +1,198 @@
 worker_id: gunshi
-task_id: subtask_588e_qc
-parent_cmd: cmd_588
-timestamp: "2026-04-26T06:25:00+09:00"
+task_id: subtask_592e_qc
+parent_cmd: cmd_592
+timestamp: "2026-04-26T14:15:00+09:00"
 status: done
 report_to: karo
 type: review
 
 result:
   type: review
-  ashigaru_task_id: subtask_588a (ash4) + subtask_588b (ash1) + subtask_588c (ash2) + subtask_588d (ash6)
-  qa_decision: go
-  verdict: "Go — 全 8 AC PASS。clasp RAPT 自動運用化 (案 D + 案 F) が main.gs trigger + clasp_rapt_monitor.sh + operation_guide + context.md の 4 層で完成。殿残タスクは setupTrigger() 手動実行 (~5 分) + cron 設定 (1 行追加) のみ。commit 許可。"
+  ashigaru_task_id: subtask_592a (ash1) + subtask_592b (ash2) + subtask_592d (ash6) + subtask_593f (ash5) + subtask_593g (ash6) + subtask_593h (ash7)
+  qa_decision: conditional_go
+  verdict: "Conditional Go — north_star 3 点全 aligned (cron/notify/context_pct)。本質機能 4 script 全動作確認済。但し (a) compact_observer.sh が crontab 未登録 (b) gunshi safe_window crontab line が hardcoded 80 の 2 点軽微。commit 許可だが小修正推奨。"
 
-  north_star: "殿が毎日 GAS を手動実行しなくて済む + RAPT 期限切れを事前に検知できる"
+  north_star: "家老が auto-compact になる前に、cron が自動的に self-clear をトリガーし、家老 inbox に通知が届き、context_pct が実測値で判定される"
 
-  individual_verification:
-    ac1_trigger_wrapper:
-      check: "main.gs に triggerProcessAllCustomers() wrapper 確認 (try-catch含む)"
-      verification:
-        - "/home/ubuntu/gas-mail-manager/src/main.gs L404-414 triggerProcessAllCustomers() 実装確認"
-        - "L405 startTime 記録 + L406 開始 Logger.log + L407-413 try-catch + L408 processAllCustomers() 呼出 + L411 ERROR Logger.log"
-        - "L412 TODO コメント 'cmd_588 Scope B 完了後に ntfy push 通知を追加' で将来拡張点も明示"
+  ac_qc_a_crontab:
+    check: "crontab に 3行 + crontab context_pct 動的取得確認"
+    verification:
+      registered_3_lines:
+        - "*/10 * * * * karo_self_clear_check.sh --tool-count 200 (cmd_592)"
+        - "*/10 * * * * safe_window_judge.sh --agent-id karo --context-pct \"$(get_context_pct.sh karo)\" (cmd_592, dynamic)"
+        - "*/10 * * * * safe_window_judge.sh --agent-id gunshi --context-pct 80 (cmd_592, hardcoded)"
+      dynamic_context_pct: "karo line: get_context_pct.sh で動的取得 ✓ / gunshi line: hardcoded 80 ✗"
+      compact_observer_not_registered: "compact_observer.sh は crontab 未登録 (script 単体は存在 6941B)"
+    status: CONDITIONAL_PASS
+    rationale: "3 lines 登録 + karo dynamic context_pct ✓。但し gunshi hardcoded + compact_observer 未登録の 2 点軽微"
+
+  ac_qc_f_yaml_hygiene:
+    check: "karo_self_clear_check cond_1 PASS (in_progress=0) 確認"
+    verification:
+      dry_run_test: "bash karo_self_clear_check.sh --dry-run --tool-count 200"
+      cond_1_result: "cond_1: in_progress cmd count=0 (list=[]) → cond_1 PASS ✓"
+      cond_2_result: "cond_2: non-idle agents detected (ashigaru5=assigned, gunshi=assigned) → SKIP (現在 cmd_592 自身が in-flight ゆえ妥当)"
+      cond_2_skip_rationale: "QC タスク実行中なので gunshi=assigned は当然。実 idle 時には cond_2 PASS される設計"
+    status: PASS
+    rationale: "ash5 subtask_593f の shogun_to_karo.yaml 12 件 status:in_progress→done hygiene が cond_1 PASS 化に効果発揮"
+
+  ac_qc_g_self_notify:
+    check: "safe_window_judge self-notify 動作確認"
+    verification:
+      test_invocation: "bash safe_window_judge.sh --agent-id karo --context-pct 67"
+      output: |
+        SAFE_WINDOW_RESULT=false
+        RECOMMENDATION=wait
+        REASON=karo: 条件未充足 → wait [fail: C1(context=67%<70) C3(in_progress=2) C5(idle=174s<300s)]
+      verdict: "条件未充足ゆえ self-notify は発火しない (wait 判定)。動作仕様通り"
+      self_notify_logic: "C1+C3+C5 全 PASS 時に compact_suggestion を karo inbox に send する設計 (cmd_586 から継承)"
+      loop_guard: "1800s dedup (cmd_586 既実装) + 10 分 cron で多重発火防止"
+    status: PASS
+    rationale: "wait 判定で self-notify 抑止 = 設計通り。条件成立時に self-notify 発火する仕様継承"
+
+  ac_qc_h_context_pct:
+    check: "get_context_pct.sh 動作確認"
+    verification:
+      test_invocation: "bash get_context_pct.sh karo"
+      output: "67 (numeric 0-100)"
+      exit_code: 0
+      file_size: "1363B"
+    status: PASS
+    rationale: "数値 0-100 範囲で正しく出力、exit 0、crontab 内 dynamic 取得で利用可能"
+
+  ac_north_star_alignment:
+    check: "north_star 3点 (cron/notify/context_pct) 全て aligned"
+    three_points:
+      cron_auto_trigger:
+        status: aligned
+        evidence: "*/10 cron 3 lines 登録、*/10 で 10 分毎自動トリガー"
+      inbox_notify:
+        status: aligned
+        evidence: "safe_window_judge → karo inbox compact_suggestion (cmd_586 継承) + 1800s dedup"
+      context_pct_real:
+        status: aligned (partial)
+        evidence: "karo line dynamic via get_context_pct.sh ✓ / gunshi line hardcoded 80 ✗"
+    status: PASS (with concern)
+    rationale: "3 点全 aligned だが gunshi line hardcoded は実測値判定の意図に反する軽微な不整合"
+
+  compact_observer_verification:
+    check: "compact_observer.sh 動作確認 (Scope B)"
+    karo_test:
+      output: "ROLE=karo COUNT_TODAY=2 COUNT_7D=35 AGENT_TODAY=1 TOTAL=2 LAST=2026-04-26T12:17:29+09:00 TRIGGER=pre_compact"
       status: PASS
-
-    ac2_setup_trigger:
-      check: "setupTrigger() が triggerProcessAllCustomers + 毎日9:00 + コメント明示"
-      verification:
-        - "main.gs L425-443 setupTrigger() 実装"
-        - "L427-433 既存トリガー削除 (旧 processAllCustomers + 新 triggerProcessAllCustomers 両対応)"
-        - "L436-440 ScriptApp.newTrigger('triggerProcessAllCustomers').timeBased().everyDays(1).atHour(9).create()"
-        - "L417-423 関数コメント明示: 日常業務=trigger 自動化 / backfill=手動継続"
+    gunshi_test:
+      output: "ROLE=gunshi COUNT_TODAY=2 COUNT_7D=35 AGENT_TODAY=0 TOTAL=0 LAST=none TRIGGER=none"
       status: PASS
-
-    ac3_rapt_monitor:
-      check: "clasp_rapt_monitor.sh + 6h warn/7h critical 判定ロジック"
-      verification:
-        - "scripts/clasp_rapt_monitor.sh (2846B, 実行権限あり)"
-        - "L15 WARN_S=21600 (6h)"
-        - "L16 CRIT_S=25200 (7h)"
-        - "L57-58 ELAPSED_S < WARN_S → OK ログのみ"
-        - "L62-65 WARN_S <= ELAPSED_S < CRIT_S → WARN + ntfy 警告通知"
-        - "L69-73 CRIT_S <= ELAPSED_S → CRITICAL + ntfy 緊急通知"
-      status: PASS
-
-    ac4_critical_recovery:
-      check: "CRITICAL 時の ntfy push + 復旧手順メッセージ"
-      verification:
-        - "L72-74 ntfy.sh 呼出 with '🚨 clasp RAPT CRITICAL: 認証から ${ELAPSED}h${ELAPSED_M}m 経過。RAPT 期限切れの可能性。clasp run が 403 になります。${RECOVERY}'"
-        - "RECOVERY 変数で復旧手順を message body に含める設計"
-        - "ntfy push 失敗時は stderr/local log へ退避 (ash6 risk_assessment rapt_monitoring_plan_f recommendation 反映済)"
-      status: PASS
-
-    ac5_operation_guide:
-      check: "output/cmd_588_operation_guide.md 作成 + 内容充足"
-      verification:
-        - "ファイル実在 (7665B)"
-        - "§1 north_star: 案 D (Time-driven trigger) / 案 F (RAPT 監視) の役割分担明示"
-        - "§2 Time-driven trigger 設定手順 (殿の GAS UI 操作)"
-        - "§3 RAPT 監視運用 + §3.2 cron 設定 (crontab -e + */30 schedule)"
-        - "§5 cron 設定まとめ: */30 * * * * bash scripts/clasp_rapt_monitor.sh >> /tmp/rapt_monitor.log 2>&1"
-        - "業務 vs backfill すみ分け表 (L22-23)"
-      status: PASS
-
-    ac6_context_md:
-      check: "context/gas-mail-manager.md に案 D/F 運用方針追記"
-      verification:
-        - "context/gas-mail-manager.md L968 業務処理 (日常): Time-driven trigger + triggerProcessAllCustomers 毎日 9:00 自動実行 (案 D)"
-        - "L969 RAPT 監視: cron 30 分毎 + scripts/clasp_rapt_monitor.sh で 6h warn / 7h critical ntfy push (案 F)"
-        - "両方針が context.md の運用セクションに追記済"
-      status: PASS
-
-    ac7_codex_review:
-      check: "cmd_578 整合確認結果 + リスク評価 3点 記録 (ashigaru6_report.yaml)"
-      verification:
-        alignment: "整合 (軽微懸念あり) — north_star 一貫性確認 (殿介入削減)"
-        risks_3points:
-          - "timeout_resume (medium): GAS 実行時間上限近接、resume 設計推奨"
-          - "trigger_idempotency (medium): 二重起動・競合防止 (LockService 推奨)"
-          - "gas_quota (low): 日次 1 回運用なら通常クォータ内、初期 1 週間監視推奨"
-          - "rapt_monitoring_plan_f (low): 30分 cron + 8h 監視妥当、token_expiry 形式差吸収+ntfy 失敗時 stderr 退避推奨"
-        interaction: "cmd_578/586 (context hygiene) と cmd_588 (GAS 自動運用) は責務分離・独立 → 影響なし"
-      status: PASS
-
-    ac_trigger_doc:
-      check: "output/cmd_588_trigger_setup.md 存在 + 殿が GAS UI で trigger 設定できる手順"
-      verification:
-        - "ファイル実在 (5214B)"
-        - "operation_guide.md §2 と相互参照"
-        - "main.gs に triggerProcessAllCustomers が存在するか事前確認手順"
-        - "GAS エディタで関数選択ドロップダウン → setupTrigger 選択 → 実行 → 期待出力ログ '毎日 9:00 のトリガーを設定しました (triggerProcessAllCustomers)。'"
-      status: PASS
+    rationale: "両 role で正常出力、エラーなし。但し crontab 未登録ゆえ自動稼働しない"
 
   ac_summary:
-    AC1: PASS
-    AC2: PASS
-    AC3: PASS
-    AC4: PASS
-    AC5: PASS
-    AC6: PASS
-    AC7: PASS
-    AC_trigger_doc: PASS
-    overall: 8/8 PASS
-
-  integrated_observations:
-    cron_trigger_role_separation:
-      check: "Scope B (RAPT 監視 cron) と Scope A (GAS time-driven trigger) の役割分担"
-      finding: "両機構は完全独立。trigger=GAS 側 (殿手動 setupTrigger 後 ScriptApp 管理)、cron=VPS 側 (crontab 30 分毎)。operation_guide §1+§5 で明示分離。"
-      status: CLEAR
-
-    lord_remaining_tasks:
-      check: "殿の残タスクが手順書で明確か"
-      tasks:
-        - id: T1
-          action: "GAS エディタで setupTrigger() 手動実行"
-          time: "5 分"
-          doc: "output/cmd_588_trigger_setup.md + operation_guide §2"
-        - id: T2
-          action: "VPS で crontab -e に 1 行追加"
-          time: "2 分"
-          line: "*/30 * * * * bash /home/ubuntu/shogun/scripts/clasp_rapt_monitor.sh >> /tmp/rapt_monitor.log 2>&1"
-          doc: "operation_guide §3.2 + §5"
-      status: CLEAR
-
-    gunshi_followup_from_codex_review:
-      check: "Scope D (ash6) 申し送り事項に対する追加確認"
-      items:
-        - id: F1
-          source: "ash6 risk_assessment.timeout_resume (medium)"
-          recommendation: "PropertiesService によるチェックポイント実装は cmd_588 では未着手。日次 1 回×顧客 1 名規模なら現状無問題、規模拡大時 follow-up 必要"
-        - id: F2
-          source: "ash6 risk_assessment.trigger_idempotency (medium)"
-          recommendation: "LockService 排他制御は cmd_588 では未実装。setupTrigger 内既存削除で対処、ただし 9:00 と人手実行が衝突する場合の保険として将来検討"
-        - id: F3
-          source: "ash6 risk_assessment.rapt_monitoring_plan_f (low)"
-          recommendation: "token_expiry 形式差 (ISO8601/epoch) のパーサ実装確認 → clasp_rapt_monitor.sh で吸収済か別途 follow-up 検証推奨"
+    AC_qc_a: CONDITIONAL_PASS
+    AC_qc_f: PASS
+    AC_qc_g: PASS
+    AC_qc_h: PASS
+    AC_north_star: PASS (with concern)
+    overall: 5/5 PASS (2件 conditional)
 
   concerns_flagged:
     - id: C1
       severity: low
-      title: "ash6 申し送り事項 F1/F2/F3 の追加対応未実装"
+      title: "compact_observer.sh が crontab 未登録"
       detail: |
-        Scope D (ash6) で identified された timeout_resume / trigger_idempotency / rapt_monitor 形式差の
-        3 件が cmd_588 本体では未対応。各 risk level は medium-low ゆえ commit を阻害しないが、
-        運用 1-2w 観測後に follow-up cmd で対応推奨。
+        Scope B (ash2 subtask_592b) で作成された compact_observer.sh は script 単体は動作確認済 (ROLE/COUNT/LAST 出力正常) だが
+        crontab に登録されていない。cron 自動稼働しない状態。
+        観測機能の本来の目的 (auto-compact 検出 → 統計集計 → 自律判断材料) が機能しないリスク。
       recommendation: |
-        cmd_589 等で:
-          (F1) processAllCustomers の処理時間計測 → 5 分以内なら不要、超えたら PropertiesService 導入
-          (F2) setupTrigger 実行頻度監視 → 二重起動発生時のみ LockService 追加
-          (F3) clasp_rapt_monitor.sh で token_expiry が epoch/ISO8601 両対応か grep で確認
+        crontab に追加 (例: 5 分毎):
+          */5 * * * * bash /home/ubuntu/shogun/scripts/compact_observer.sh karo >> /home/ubuntu/shogun/logs/compact_observer/karo.log 2>&1
+          */5 * * * * bash /home/ubuntu/shogun/scripts/compact_observer.sh gunshi >> /home/ubuntu/shogun/logs/compact_observer/gunshi.log 2>&1
+        工数 0.05d。cmd_592 commit 後の小修正 subtask 推奨。
 
     - id: C2
       severity: low
-      title: "殿初回 setupTrigger 実行後の動作検証手順未明示"
+      title: "gunshi safe_window crontab line が hardcoded 80"
       detail: |
-        operation_guide §2 で setupTrigger 実行手順は明確だが、翌朝 9:00 過ぎの初回 trigger 実行が
-        正しく動作したかの検証手順 (GAS エディタ「実行数」確認方法) は §2 末尾に簡潔な記載のみ。
-        失敗時の recovery 手順 (TODO ntfy push 未実装ゆえ Logger.log 直接確認が必要) も詳細化推奨。
-      recommendation: "operation_guide に §2.5 動作検証手順 + 失敗時 recovery を追記 (0.05d)"
+        crontab gunshi 行: --context-pct 80 と固定値ハードコード。karo 行は get_context_pct.sh で動的取得。
+        実測値判定の north_star に反する軽微な不整合。
+        現状 hardcoded 80 だと実 context が低くても 80% として判定 → 過剰に conservative になる可能性。
+      recommendation: |
+        karo 行と同様に動的取得に変更:
+          */10 * * * * bash safe_window_judge.sh --agent-id gunshi --context-pct "$(bash get_context_pct.sh gunshi 2>/dev/null || echo 80)" >> ...
+        工数 0.02d (crontab 1 行修正)。cmd_592 commit 後の小修正 subtask 推奨。
 
     - id: C3
       severity: info
-      title: "TODO ntfy push (cmd_588 Scope B 完了後) が未統合"
+      title: "karo_self_clear_check cond_1 vs safe_window_judge C3 の in_progress 判定根拠相違"
       detail: |
-        main.gs L412 'TODO: cmd_588 Scope B 完了後に ntfy push 通知を追加' が残存。
-        Scope B (clasp_rapt_monitor.sh) は完了だが、trigger 実行エラー時の GAS → ntfy 連携は未実装。
-        現状 GAS Logger.log のみでエラー通知が殿に届かない。
-      recommendation: "cmd_589 で GAS UrlFetchApp 経由で ntfy push 実装 (0.1d)。RAPT 監視と統合通知で殿の運用負荷を最小化"
+        karo_self_clear_check dry-run: cond_1 in_progress cmd count=0 (list=[])
+        safe_window_judge dry-run: C3 in_progress=2 (in_progress=2 → fail)
+        同じ概念 (in_progress) だが異なる集計 → 設計差異の可能性。
+        karo_self_clear = shogun_to_karo.yaml 中の cmd status?
+        safe_window_judge = task.yaml or その他 source?
+      recommendation: |
+        両 script の in_progress source を統一するか、或いは概念差を明文化推奨。
+        現状運用には支障ないが、将来の保守性のため canonical source 確定推奨 (cmd_593 等で 0.05d)
 
   suggestions:
     - id: S1
       priority: medium
       content: |
-        cmd_589 で 3 件 follow-up:
-          (a) main.gs L412 TODO 解消 — GAS UrlFetchApp で ntfy push 通知 (Scope B と統合)
-          (b) operation_guide §2.5 動作検証手順追記
-          (c) clasp_rapt_monitor.sh token_expiry 形式差対応確認 (ash6 F3)
-        合計 0.2d。cmd_588 commit 後に発令推奨。
-      action_needed: "karo は cmd_589 (cmd_588 完成版) を発令"
+        cmd_592 follow-up subtask で 2 件小修正:
+          (a) compact_observer.sh を crontab に */5 で karo + gunshi 追加
+          (b) gunshi safe_window crontab line を get_context_pct.sh 動的取得に変更
+        合計 0.07d。本質機能完成済ゆえ commit 後の補修で十分。
+      action_needed: "karo は cmd_593 等で 0.07d follow-up subtask 発令"
 
     - id: S2
       priority: medium
       content: |
-        cmd_588 commit 後 1-2w 運用観測:
-          - trigger 実行成功率 (毎日 9:00 ログ確認)
-          - clasp_rapt_monitor.sh の WARN/CRITICAL 発火頻度
-          - RAPT 期限切れによる業務中断回数 (削減効果検証)
-        観測データを ash4 等に集計依頼 → cmd_590 で auto-運用効果測定 + 改善点抽出。
-      action_needed: "karo は 1-2w 後に運用観測 subtask を ash に発令"
+        cmd_592 + cmd_586 連携の運用観測 1-2w:
+          - cron */10 で safe_window_judge が APPROVE 発火する頻度
+          - karo inbox compact_suggestion 受信頻度 + dedup hit 率
+          - 実 auto-compact 発生回数の cmd_592 前 vs 後 比較
+        観測データ集計で north_star 達成度を empirical 検証。
+      action_needed: "1-2w 後に gunshi 深考 or ash4 follow-up 分析 subtask"
 
     - id: S3
       priority: low
       content: |
-        cmd_587 (Gemini 403) と cmd_588 (clasp RAPT 自動運用) は両方 GAS 周辺の運用安定化。
-        cmd_587 AR5 完了後 + cmd_588 trigger 稼働後の統合動作確認 (毎日 9:00 trigger → Gemini 200 OK
-        → 全工程 200 OK) を 1 回実施推奨。
-      action_needed: "両 cmd commit 後に統合 e2e 検証 subtask 発令"
+        cmd_592 で確立した cron + self-notify + 動的 context_pct + 観測 のパターンは
+        skill 'shogun-autonomous-compaction-management' 候補。1-2w 運用後に集約検討。
+      action_needed: "運用安定後 (1-2w) に gunshi 深考"
 
     - id: S4
       priority: low
       content: |
-        cmd_588 全成果 (trigger wrapper + setupTrigger + RAPT 監視 + operation_guide + context 追記) を
-        将来 skill 'shogun-gas-rapt-automation' として集約候補。1-2w 運用観測後に skill 化検討。
-      action_needed: "運用 1-2w 後に gunshi 深考"
+        in_progress 判定の canonical source 統一 (concerns C3 受け):
+        karo_self_clear_check cond_1 と safe_window_judge C3 の判定根拠 source を canonical_rule_sources.md
+        に追記推奨。または両 script のロジックを統一。工数 0.05d。
+      action_needed: "cmd_593 等で対応推奨"
 
   means_ends_classification:
     schema_version: "1.0"
     ac_classification:
-      - id: AC1
+      - id: AC_qc_a
         type: means
-        rationale: "trigger wrapper 実装 = 機構設置の機械的検証"
-        corresponding_ends_ac: AC2
-      - id: AC2
+        rationale: "crontab 登録 = 機構設置の機械的検証"
+        corresponding_ends_ac: AC_north_star
+      - id: AC_qc_f
         type: means
-        rationale: "setupTrigger 9:00 設定 = 自動化機構設置"
-        corresponding_ends_ac: AC5
-      - id: AC3
+        rationale: "yaml hygiene cond_1 PASS = 判定機構の動作検証"
+        corresponding_ends_ac: AC_north_star
+      - id: AC_qc_g
         type: means
-        rationale: "RAPT 監視判定ロジック = 監視機構の機械的検証"
-        corresponding_ends_ac: AC4
-      - id: AC4
+        rationale: "self-notify 動作 = 通知機構の動作検証"
+        corresponding_ends_ac: AC_north_star
+      - id: AC_qc_h
         type: means
-        rationale: "ntfy push 通知 = 監視結果の伝達機構"
-        corresponding_ends_ac: AC5
-      - id: AC5
+        rationale: "get_context_pct 動作 = 実測機構の動作検証"
+        corresponding_ends_ac: AC_north_star
+      - id: AC_north_star
         type: ends
-        rationale: "operation_guide.md = 殿が運用可能な状態到達"
+        rationale: "3点全 aligned = 自律 compaction 管理基盤の業務価値到達"
         corresponding_ends_ac: null
-      - id: AC6
-        type: means
-        rationale: "context.md 案 D/F 追記 = 知識永続化"
-        corresponding_ends_ac: AC5
-      - id: AC7
-        type: means
-        rationale: "cmd_578 整合確認 = 設計品質の検証"
-        corresponding_ends_ac: AC5
-      - id: AC_trigger_doc
-        type: means
-        rationale: "trigger_setup.md = 殿手順書の機械的検証"
-        corresponding_ends_ac: AC5
-    ends_coverage_note: "8 AC のうち 1 ends + 7 means。ends 1/1 PASS (殿運用可能状態到達)、means 7/7 PASS。cmd_588 北極星 (殿手動実行不要 + RAPT 事前検知) 達成。"
+    ends_coverage_note: "5 AC のうち 1 ends + 4 means。ends 1/1 PASS (with concern: gunshi line hardcoded)、means 4/4 PASS (1 conditional: compact_observer 未登録)。本質達成、補修必要"
     both_systems_verified: true
-    verdict: "means 系 7/7 PASS + ends 系 1/1 PASS。clasp RAPT 自動運用化 4 層構造 (trigger + 監視 + ガイド + context) 完成。殿残タスク 5+2=7 分で運用開始可能"
+    verdict: "means 系 4/4 PASS + ends 系 1/1 PASS。cmd_586 shelf-ware 解消 + 実稼働化が達成 (cron 3 lines + 動的 context + 観測 script)、軽微補修 (S1) で完全達成"
 
   files_modified:
     - "queue/reports/gunshi_report.yaml (本報告書)"
@@ -249,48 +201,50 @@ result:
 
   notes: |
     【北極星寄与】
-    cmd_588 は GAS 運用の自動化を 4 層構造で完成:
-    1. main.gs triggerProcessAllCustomers + setupTrigger: GAS 内自動実行 (案 D)
-    2. clasp_rapt_monitor.sh + cron: VPS 側 RAPT 期限監視 (案 F)
-    3. operation_guide.md: 殿向け運用手順 (殿が迷わず運用可能)
-    4. context/gas-mail-manager.md 追記: 知識永続化
+    cmd_592 は cmd_586 で実装した自律 /clear decision support の shelf-ware 化を解消し、cron で
+    実稼働化する cmd。cmd_586 設計 (safe_window_judge + karo_self_clear + context_advisory) が
+    cron */10 で 10 分毎に自動稼働する状態に到達。
 
-    cmd_587 (Gemini 403 解消) と cmd_588 (RAPT 自動運用) で GAS 運用の 2 大ボトルネック
-    (Gemini API 動作 + 認証期限管理) が両方解消される構造。
+    【cmd_586/592 連携完成度】
+    cmd_586: 機構実装 (script レベル) ✓
+    cmd_592: 実稼働化 (cron + dynamic context + 観測) ⚠️ (compact_observer 未登録 + gunshi hardcoded)
+    → 軽微 follow-up (S1, 0.07d) で完全完成
 
-    【cmd_578/586 連携】
-    cmd_578/586 (context hygiene 自律判断支援) と cmd_588 (GAS 自動運用) は責務分離。
-    cmd_578/586 = AI agent 側の自律性、cmd_588 = GAS 業務側の自律性。
-    両方完了で「殿介入最小化」の包括的達成。
+    【自律基盤 v2 完成】
+    Phase 0+1 governance 10 点 (cmd_570-572/573/576/582/578/583/584/586) +
+    cmd_592 cron 実稼働化 = governance 11 点目。
+    auto-compact 削減効果は 1-2w 観測 (S2) で empirical 検証。
 
     【commit 推奨】
-    cmd_588 統合 commit:
-      - /home/ubuntu/gas-mail-manager/src/main.gs (triggerProcessAllCustomers + setupTrigger)
-      - /home/ubuntu/shogun/scripts/clasp_rapt_monitor.sh
-      - /home/ubuntu/shogun/output/cmd_588_trigger_setup.md
-      - /home/ubuntu/shogun/output/cmd_588_operation_guide.md
-      - /home/ubuntu/shogun/context/gas-mail-manager.md
-    commit message 例: "feat(cmd_588): GAS time-driven trigger + clasp RAPT 監視 自動運用化 (案 D + 案 F)"
+    cmd_592 統合 commit:
+      - crontab 3 lines (cmd_592 ヘッダコメント付き)
+      - compact_observer.sh (新規)
+      - get_context_pct.sh (新規)
+      - safe_window_judge.sh 更新 (self-notify + 10分 loop guard)
+      - shogun_to_karo.yaml hygiene (12 件 done)
+    commit message 例: "feat(cmd_592): cmd_586 shelf-ware 解消 — cron 実稼働化 + compact_observer + 動的 context_pct"
 
-    【殿残タスク (commit 後)】
-    1. /home/ubuntu/gas-mail-manager で clasp push (新 main.gs を GAS に反映、5 分)
-    2. GAS エディタで setupTrigger() 手動実行 (5 分)
-    3. VPS で crontab -e に */30 * * * * bash scripts/clasp_rapt_monitor.sh >> /tmp/rapt_monitor.log 2>&1 追加 (2 分)
-    合計 12 分で運用開始可能
+    【ash2/5/6/7 connoisseur work】
+    複数 ash の連携で compact_observer (ash2) + yaml hygiene (ash5) + safe_window 改善 (ash6) +
+    context_pct 取得 (ash7) が並行進行し統合。RACE-001 観点でも各 ash editable_files の重複なし。
 
 skill_candidate:
-  found: false
-  reason: |
-    単発の GAS 自動運用化実装。ただし trigger wrapper + RAPT 監視 + operation_guide の 3 点セットは
-    汎用性高く、'shogun-gas-rapt-automation' skill として 1-2w 運用後に集約候補 (S4 参照)。
+  found: true
+  name: "shogun-autonomous-compaction-management"
+  description: |
+    自律 compaction 管理基盤の cron + self-notify + 動的 context + 観測パターン。
+    cmd_586 機構実装 + cmd_592 実稼働化のパターンを集約。
+    multi-agent 環境で各 role の context hygiene を自律管理する一般的 pattern として転用可能。
+  reason: "1-2w 実運用で効果実証後に正式 skill 化推奨 (S3)"
 
 north_star_alignment:
-  status: aligned
+  status: aligned (with minor concerns)
   reason: |
-    cmd_588 北極星 (殿手動実行不要 + RAPT 期限切れ事前検知) 完全達成。
-    案 D (Time-driven trigger 9:00 自動) + 案 F (RAPT 6h WARN / 7h CRITICAL ntfy) で
-    日常業務+認証監視の二段構えが完成。殿残タスク 12 分で運用開始可能。
+    cmd_592 北極星 (家老 auto-compact 前 cron 自動 self-clear + inbox 通知 + 実測 context_pct 判定)
+    3 点全 aligned。本質機能 4 script 全動作確認済。残課題 2 件 (compact_observer 未登録 +
+    gunshi hardcoded) は軽微補修で完全達成。
   risks_to_north_star:
-    - "ash6 申し送り 3 件 (timeout/idempotency/形式差) 未対応 → cmd_589 で対応 (S1)"
-    - "main.gs L412 TODO ntfy push 未統合 → trigger エラー通知が Logger.log のみ (S1)"
-    - "初回 trigger 実行検証手順詳細化 → operation_guide §2.5 追記推奨 (C2)"
+    - "compact_observer 未登録 → 観測データ蓄積されず empirical 検証困難 (S1)"
+    - "gunshi hardcoded 80 → gunshi の実 context 判定が過剰 conservative (S1)"
+    - "in_progress 判定 source 不統一 → 将来保守性リスク (S4)"
+    - "実 auto-compact 削減効果未測定 → 1-2w 観測必要 (S2)"
