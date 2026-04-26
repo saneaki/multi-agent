@@ -1,5 +1,5 @@
 # 📊 戦況報告
-最終更新: 2026-04-26 14:22 JST
+最終更新: 2026-04-26 17:00 JST
 
 ## 📋 記載ルール (Self-Documentation)
 > **更新者必読**: このセクションのルールを遵守して dashboard を更新すること。
@@ -23,7 +23,7 @@
 | 今日のFrog | 未設定 |
 | Frog状態 | 🐸 未撃破 |
 | ストリーク | 🔥 32日目継続中 (最長: 32日) |
-| 今日の完了 | 1 |
+| 今日の完了 | 3 |
 | VFタスク残り | 0件（うち今日期限: 0件） |
 
 ## 🚨 要対応 - 殿のご判断をお待ちしております
@@ -46,26 +46,27 @@
 
 | cmd | 内容 | 担当 | 状態 |
 |-----|------|------|------|
-| cmd_593 | shelf-ware監査+効果測定体系化 | ash5:C作業中 | A✅+B✅(14:18:4段確認)+D✅+E✅+F✅+G✅+H✅+C(ash5:KPI observer+dashboard拡張) |
-| cmd_592 | cmd_586 shelf-ware解消(cron稼働+観測) | ash1:fixup中 | A✅+B✅+D✅+F✅+G✅+H✅+E=CG(14:14)。F-fixup(ash1:compact_observer cron+gunshi動的化) |
+| (進行中なし) | — | — | — |
 
 ## 🏯 待機中の構成員
 
 | 構成員 | 状態 | 最終タスク |
 |------|------|-----------|
-| 足軽1号(Sonnet+T) | 作業中 | subtask_592f発令(14:15): compact_observer cron登録(karo+gunshi */30)+gunshi context_pct動的化 |
+| 足軽1号(Sonnet+T) | 待機 | subtask_592f完了(14:21): compact_observer cron登録(karo+gunshi */30)+gunshi context_pct動的化 AC_c1/AC_c2 PASS ✅ |
 | 足軽2号(Sonnet+T) | 待機 | subtask_592b完了(12:12): compact_observer.sh新規作成 ✅ |
 | 足軽3号(Sonnet+T) | 待機 | subtask_585l完了(13:33): clasp RAPT Issue #39作成 https://github.com/saneaki/multi-agent/issues/39 ✅ |
 | 足軽4号(Opus+T) | 待機 | subtask_588a完了(06:15): clasp push 7files成功 AC1/AC2/AC_trigger_doc 全PASS ✅ |
-| 足軽5号(Opus+T) | 作業中 | subtask_593c発令(14:20): cmd_kpi_observer.sh新規作成+dashboard運用指標3列拡張 |
+| 足軽5号(Opus+T) | 待機 | subtask_593c完了(14:25): cmd_kpi_observer.sh新規作成+dashboard運用指標3列拡張 AC5/AC6 PASS ✅ |
 | 足軽6号(Codex5.3) | 待機 | subtask_593g完了(14:02): safe_window_judge self-notify+10分guard実装。dry-run karo inbox投入確認 ✅ |
 | 足軽7号(Codex5.3) | 待機 | subtask_593h完了(14:02): get_context_pct.sh作成(実測54%)+crontab動的取得更新 ✅ |
-| 軍師(Opus+T) | 待機 | subtask_592e_qc完了(14:14): cmd_592 QC=CG。compact_observer未登録+gunshi hardcoded残課題(ash1 fixup中) |
+| 軍師(Opus+T) | 待機 | subtask_593i_qc完了(17:00): cmd_593 QC=Go 6/6 PASS。north_star 5点 aligned ✅ |
 
 ## ✅ 本日の戦果（4/26 JST）
 
 | 時刻 | 戦場 | 任務 | 結果 |
 |------|------|------|------|
+| 17:00 | scripts/shogun | cmd_593完遂(ash1/2/5/6/7/gunshi): shelf-ware監査51件+防止体系(deploy&verify/KPI observer/context_pct動的化) commit b2ec328。gunshi QC=Go | ✅ ends完了 |
+| 14:27 | scripts/shogun | cmd_592完遂(ash1/2/7/gunshi): shelf-ware解消 cron実稼働(compact_observer/safe_window動的/karo_self_clear) commit 02bb5d7 | ✅ ends完了 |
 | 12:27 | GAS/shogun | cmd_590完遂(ash5/gunshi): 寺地backfill 5x高速化 Fix2+3+4+callGeminiApiBatch chunk=5並列化 commit 4e1f955/853f58c。殿 backfillTerachi 実行待ち | ✅ ends完了 |
 | 06:26 | GAS/shogun | cmd_588完遂(ash4/1/2/6/gunshi): clasp RAPT自動運用化 Time-driven trigger+RAPT monitor commit d36aef7/3f32704 | ✅ ends完了 |
 

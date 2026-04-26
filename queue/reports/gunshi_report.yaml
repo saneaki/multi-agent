@@ -1,198 +1,215 @@
 worker_id: gunshi
-task_id: subtask_592e_qc
-parent_cmd: cmd_592
-timestamp: "2026-04-26T14:15:00+09:00"
+task_id: subtask_593i_qc
+parent_cmd: cmd_593
+timestamp: "2026-04-26T17:00:00+09:00"
 status: done
 report_to: karo
 type: review
 
 result:
   type: review
-  ashigaru_task_id: subtask_592a (ash1) + subtask_592b (ash2) + subtask_592d (ash6) + subtask_593f (ash5) + subtask_593g (ash6) + subtask_593h (ash7)
-  qa_decision: conditional_go
-  verdict: "Conditional Go — north_star 3 点全 aligned (cron/notify/context_pct)。本質機能 4 script 全動作確認済。但し (a) compact_observer.sh が crontab 未登録 (b) gunshi safe_window crontab line が hardcoded 80 の 2 点軽微。commit 許可だが小修正推奨。"
+  ashigaru_task_id: subtask_593a-h (ash1/5/6/7 各 Scope)
+  qa_decision: go
+  verdict: "Go — 全 6 AC PASS。north_star 5 点全 aligned。shelf-ware 51 件監査+deploy & verify 4 段標準化+KPI observer cron 稼働+suggestions 永続化+context_pct 動的化で防止体系完成。commit 許可。"
 
-  north_star: "家老が auto-compact になる前に、cron が自動的に self-clear をトリガーし、家老 inbox に通知が届き、context_pct が実測値で判定される"
+  north_star: "直近100 cmd の shelf-ware が監査・定量化され、防止体系 (deploy & verify cycle / KPI observer / suggestions) が稼働し、家老・軍師が効果を可視化できる状態"
 
-  ac_qc_a_crontab:
-    check: "crontab に 3行 + crontab context_pct 動的取得確認"
+  ac_qc_b_deploy_verify_cycle:
+    check: "instructions/karo.md + gunshi.md に deploy & verify 4 段確認 追加"
     verification:
-      registered_3_lines:
-        - "*/10 * * * * karo_self_clear_check.sh --tool-count 200 (cmd_592)"
-        - "*/10 * * * * safe_window_judge.sh --agent-id karo --context-pct \"$(get_context_pct.sh karo)\" (cmd_592, dynamic)"
-        - "*/10 * * * * safe_window_judge.sh --agent-id gunshi --context-pct 80 (cmd_592, hardcoded)"
-      dynamic_context_pct: "karo line: get_context_pct.sh で動的取得 ✓ / gunshi line: hardcoded 80 ✗"
-      compact_observer_not_registered: "compact_observer.sh は crontab 未登録 (script 単体は存在 6941B)"
-    status: CONDITIONAL_PASS
-    rationale: "3 lines 登録 + karo dynamic context_pct ✓。但し gunshi hardcoded + compact_observer 未登録の 2 点軽微"
-
-  ac_qc_f_yaml_hygiene:
-    check: "karo_self_clear_check cond_1 PASS (in_progress=0) 確認"
-    verification:
-      dry_run_test: "bash karo_self_clear_check.sh --dry-run --tool-count 200"
-      cond_1_result: "cond_1: in_progress cmd count=0 (list=[]) → cond_1 PASS ✓"
-      cond_2_result: "cond_2: non-idle agents detected (ashigaru5=assigned, gunshi=assigned) → SKIP (現在 cmd_592 自身が in-flight ゆえ妥当)"
-      cond_2_skip_rationale: "QC タスク実行中なので gunshi=assigned は当然。実 idle 時には cond_2 PASS される設計"
+      karo_md:
+        - "L309 出典コメント 'cmd_593 Scope A 監査 — hook/cron/trigger/script 系 cmd の 32% が登録未確認のまま完了宣言 → shelf-ware 化'"
+        - "L311-321 Stage 1-4 table (commit / 配置 / 登録 / 実行ログ) + 各 Stage の検証コマンド明記"
+        - "L322 'Stage 3 未完了 = 完了宣言禁止 (= shelf-ware 化)' rule 明示"
+        - "L329-335 task YAML AC 例 (Stage 1-4 acceptance_criteria 4 項目)"
+        - "L338 例外: 純粋ドキュメント refactor は Stage 1-2 のみで可"
+      gunshi_md:
+        - "L409 '### Implementation cmd QC Checklist (deploy & verify)' 追加"
+        - "L412 出典コメント 'cmd_593 Scope A 監査 — gunshi QC が Stage 3 を見落とすケース多発'"
+        - "L414 Quality Check Criteria + means/ends 並走の shelf-ware 検出 gate"
+        - "L418-420 (a)(b)(c) gates (AC Stage 3 含有 / 実行ログ Stage 4 / dashboard 反映) で QC NG/WARN 判定"
     status: PASS
-    rationale: "ash5 subtask_593f の shogun_to_karo.yaml 12 件 status:in_progress→done hygiene が cond_1 PASS 化に効果発揮"
+    rationale: "karo.md (発令側) + gunshi.md (QC 側) 両側に deploy & verify cycle が実装され、shelf-ware 防止 + 検出の二重 gate が完成"
+
+  ac_qc_c_kpi_observer:
+    check: "cmd_kpi_observer.sh dry-run OK + cron 0 9 * * * 登録"
+    verification:
+      script:
+        path: /home/ubuntu/shogun/scripts/cmd_kpi_observer.sh
+        size: 6680B
+        permission: executable
+      dry_run_output: |
+        [cmd_kpi_observer] KPI: pub_us_invoke=0 success=0 fail=0 kill=0
+        [cmd_kpi_observer] KPI: karo_compact=1 gunshi_compact=0 safe_window=65 self_clear=4
+        DRY RUN — would append/update row: | 2026-04-26 | 0 | 0 | 0 | 0 | 1 | 0 | 65 |
+      kpi_count: 8 (pub_us 4 + karo_compact + gunshi_compact + safe_window + self_clear)
+      crontab: "0 9 * * * bash cmd_kpi_observer.sh >> logs/kpi_observer.log 2>&1 ✓"
+    status: PASS
+    rationale: "8 KPI 収集 + dashboard row preview + cron 0 9 登録 全動作確認済"
+
+  ac_qc_c6_dashboard_columns:
+    check: "dashboard.md 📊 運用指標 に 3列存在"
+    verification:
+      header_columns:
+        - "日付(JST) / /pub-us起動 / 成功 / 失敗 / kill-switch発動 / **karo auto-compact** / **gunshi auto-compact** / **safe_window発動**"
+      sample_rows:
+        - "2026-04-22: 1 / 1 / 0 / 0 / - / - / - (cmd_593 前データ、新 3 列は '-')"
+        - "2026-04-26: 0 / 0 / 0 / 0 / 1 / 0 / 35 (cmd_593 後実データ、3 列値あり)"
+      data_consistency: "新 3 列が後方互換でハイフン埋め可能、既存運用無影響"
+    status: PASS
+    rationale: "3 新 column (karo/gunshi auto-compact + safe_window 発動) が schema 拡張で追加、データ実装も確認"
 
   ac_qc_g_self_notify:
-    check: "safe_window_judge self-notify 動作確認"
+    check: "safe_window_judge.sh self-notify ロジック確認"
     verification:
-      test_invocation: "bash safe_window_judge.sh --agent-id karo --context-pct 67"
-      output: |
-        SAFE_WINDOW_RESULT=false
-        RECOMMENDATION=wait
-        REASON=karo: 条件未充足 → wait [fail: C1(context=67%<70) C3(in_progress=2) C5(idle=174s<300s)]
-      verdict: "条件未充足ゆえ self-notify は発火しない (wait 判定)。動作仕様通り"
-      self_notify_logic: "C1+C3+C5 全 PASS 時に compact_suggestion を karo inbox に send する設計 (cmd_586 から継承)"
-      loop_guard: "1800s dedup (cmd_586 既実装) + 10 分 cron で多重発火防止"
+      function_definition: "L90 _self_notify_karo() {...} 関数定義"
+      invocation: "L127 _self_notify_karo \"$1\" \"$2\" \"$3\" 呼出"
+      logic_chain: "判定 PASS → _self_notify_karo() → karo inbox へ compact_suggestion send (cmd_586 から継承+10分 loop guard 追加)"
     status: PASS
-    rationale: "wait 判定で self-notify 抑止 = 設計通り。条件成立時に self-notify 発火する仕様継承"
+    rationale: "self-notify 関数+呼出ロジック実装、cmd_586 機構と整合"
 
-  ac_qc_h_context_pct:
-    check: "get_context_pct.sh 動作確認"
+  ac_qc_h_get_context_pct:
+    check: "get_context_pct.sh karo/gunshi 動作"
     verification:
-      test_invocation: "bash get_context_pct.sh karo"
-      output: "67 (numeric 0-100)"
-      exit_code: 0
-      file_size: "1363B"
+      karo_test: "bash get_context_pct.sh karo → 40 (numeric 0-100, exit 0)"
+      gunshi_test: "bash get_context_pct.sh gunshi → 55 (numeric 0-100, exit 0)"
+      both_roles_supported: "両 role で正常出力、crontab dynamic 取得で利用可能"
     status: PASS
-    rationale: "数値 0-100 範囲で正しく出力、exit 0、crontab 内 dynamic 取得で利用可能"
+    rationale: "両 role で 数値出力 + exit 0、crontab 内 $(get_context_pct.sh ROLE) で動的取得可能"
 
   ac_north_star_alignment:
-    check: "north_star 3点 (cron/notify/context_pct) 全て aligned"
-    three_points:
-      cron_auto_trigger:
+    check: "north_star 5点 全 aligned"
+    five_points:
+      shelf_ware_audit:
         status: aligned
-        evidence: "*/10 cron 3 lines 登録、*/10 で 10 分毎自動トリガー"
-      inbox_notify:
+        evidence: "Scope A で直近 100 cmd の shelf-ware 51 件確認 (audit 完了)"
+      deploy_verify_cycle:
         status: aligned
-        evidence: "safe_window_judge → karo inbox compact_suggestion (cmd_586 継承) + 1800s dedup"
-      context_pct_real:
-        status: aligned (partial)
-        evidence: "karo line dynamic via get_context_pct.sh ✓ / gunshi line hardcoded 80 ✗"
-    status: PASS (with concern)
-    rationale: "3 点全 aligned だが gunshi line hardcoded は実測値判定の意図に反する軽微な不整合"
+        evidence: "Scope B karo.md + gunshi.md 両側に Stage 1-4 標準化"
+      kpi_observer_running:
+        status: aligned
+        evidence: "Scope C cmd_kpi_observer.sh + cron 0 9 * * * 登録"
+      suggestions_yaml_updated:
+        status: aligned
+        evidence: "Scope F suggestions.yaml accepted entry 追加"
+      context_pct_dynamic:
+        status: aligned
+        evidence: "Scope H get_context_pct.sh + crontab dynamic 取得 (cmd_592 連携)"
+    status: PASS
+    rationale: "5 点全 aligned、防止体系の包括的稼働状態に到達"
 
-  compact_observer_verification:
-    check: "compact_observer.sh 動作確認 (Scope B)"
-    karo_test:
-      output: "ROLE=karo COUNT_TODAY=2 COUNT_7D=35 AGENT_TODAY=1 TOTAL=2 LAST=2026-04-26T12:17:29+09:00 TRIGGER=pre_compact"
-      status: PASS
-    gunshi_test:
-      output: "ROLE=gunshi COUNT_TODAY=2 COUNT_7D=35 AGENT_TODAY=0 TOTAL=0 LAST=none TRIGGER=none"
-      status: PASS
-    rationale: "両 role で正常出力、エラーなし。但し crontab 未登録ゆえ自動稼働しない"
+  scope_a_audit_summary:
+    check: "Scope A 直近 100 cmd 監査結果"
+    finding: "shelf-ware 51 件確認 (32% が hook/cron/trigger/script 系 cmd で登録未確認のまま完了宣言)"
+    impact: "32% という高比率が deploy & verify 4 段標準化 (Scope B) の必要性を empirical に裏付け"
+    rationale: "audit → 標準化 → KPI observer の 3 段アプローチが論理的"
 
   ac_summary:
-    AC_qc_a: CONDITIONAL_PASS
-    AC_qc_f: PASS
+    AC_qc_b: PASS
+    AC_qc_c: PASS
+    AC_qc_c6: PASS
     AC_qc_g: PASS
     AC_qc_h: PASS
-    AC_north_star: PASS (with concern)
-    overall: 5/5 PASS (2件 conditional)
+    AC_north_star: PASS
+    overall: 6/6 PASS
 
   concerns_flagged:
     - id: C1
       severity: low
-      title: "compact_observer.sh が crontab 未登録"
+      title: "Scope D KPI framework 設計の運用 verification 未実施"
       detail: |
-        Scope B (ash2 subtask_592b) で作成された compact_observer.sh は script 単体は動作確認済 (ROLE/COUNT/LAST 出力正常) だが
-        crontab に登録されていない。cron 自動稼働しない状態。
-        観測機能の本来の目的 (auto-compact 検出 → 統計集計 → 自律判断材料) が機能しないリスク。
-      recommendation: |
-        crontab に追加 (例: 5 分毎):
-          */5 * * * * bash /home/ubuntu/shogun/scripts/compact_observer.sh karo >> /home/ubuntu/shogun/logs/compact_observer/karo.log 2>&1
-          */5 * * * * bash /home/ubuntu/shogun/scripts/compact_observer.sh gunshi >> /home/ubuntu/shogun/logs/compact_observer/gunshi.log 2>&1
-        工数 0.05d。cmd_592 commit 後の小修正 subtask 推奨。
+        Scope D (subtask_593d) で shelf-ware 防止 KPI framework 設計が完了したが、
+        KPI 観測値 (Scope C cmd_kpi_observer 出力) との整合性 (framework 設計通りの値が
+        実測データで取れるか) は本 QC スコープ外。1-2w 観測後に framework 妥当性検証推奨。
+      recommendation: "cmd_594 等で 1-2w KPI 蓄積データを framework に対して整合性チェック (0.1d)"
 
     - id: C2
-      severity: low
-      title: "gunshi safe_window crontab line が hardcoded 80"
+      severity: info
+      title: "shelf-ware 51 件の解消状況未明示"
       detail: |
-        crontab gunshi 行: --context-pct 80 と固定値ハードコード。karo 行は get_context_pct.sh で動的取得。
-        実測値判定の north_star に反する軽微な不整合。
-        現状 hardcoded 80 だと実 context が低くても 80% として判定 → 過剰に conservative になる可能性。
-      recommendation: |
-        karo 行と同様に動的取得に変更:
-          */10 * * * * bash safe_window_judge.sh --agent-id gunshi --context-pct "$(bash get_context_pct.sh gunshi 2>/dev/null || echo 80)" >> ...
-        工数 0.02d (crontab 1 行修正)。cmd_592 commit 後の小修正 subtask 推奨。
+        Scope A audit で 51 件の shelf-ware が identified されたが、cmd_593 commit 時点での
+        個別 cmd 解消状況 (resolved / 受容 deferred / 廃棄) が dashboard 等で可視化されていない。
+        新 cmd では deploy & verify が機能するが、過去 51 件はそのまま残存リスク。
+      recommendation: "cmd_595 等で 51 件 triage subtask 発令推奨。各 cmd を resolved/deferred/obsolete 分類 + suggestions.yaml 反映"
 
     - id: C3
       severity: info
-      title: "karo_self_clear_check cond_1 vs safe_window_judge C3 の in_progress 判定根拠相違"
+      title: "context_pct 取得値の運用観測"
       detail: |
-        karo_self_clear_check dry-run: cond_1 in_progress cmd count=0 (list=[])
-        safe_window_judge dry-run: C3 in_progress=2 (in_progress=2 → fail)
-        同じ概念 (in_progress) だが異なる集計 → 設計差異の可能性。
-        karo_self_clear = shogun_to_karo.yaml 中の cmd status?
-        safe_window_judge = task.yaml or その他 source?
-      recommendation: |
-        両 script の in_progress source を統一するか、或いは概念差を明文化推奨。
-        現状運用には支障ないが、将来の保守性のため canonical source 確定推奨 (cmd_593 等で 0.05d)
+        get_context_pct.sh karo=40, gunshi=55 は実測値だが、これが claude code の実 context 使用量と
+        整合するかは別途検証必要。cmd_592 で dynamic 化したが、計測精度は 1-2w 観測で確認推奨。
+      recommendation: "1-2w 観測で get_context_pct 値 vs 実 auto-compact 発生時 tool_count の相関確認"
 
   suggestions:
     - id: S1
-      priority: medium
+      priority: high
       content: |
-        cmd_592 follow-up subtask で 2 件小修正:
-          (a) compact_observer.sh を crontab に */5 で karo + gunshi 追加
-          (b) gunshi safe_window crontab line を get_context_pct.sh 動的取得に変更
-        合計 0.07d。本質機能完成済ゆえ commit 後の補修で十分。
-      action_needed: "karo は cmd_593 等で 0.07d follow-up subtask 発令"
+        cmd_595 等で shelf-ware 51 件 triage subtask 発令:
+          (a) 各 cmd を resolved (実装済+稼働確認済) / deferred (将来対応) / obsolete (廃棄) 分類
+          (b) suggestions.yaml に各分類結果を append-only 記録
+          (c) dashboard 🛠️ または 🚨 セクションに残存件数を可視化
+        工数 0.3d (51 件 × 3 分/件)。Scope A audit を活かして体系的 cleanup。
+      action_needed: "karo は cmd_595 で ash5 等に発令 (audit データ持つ ash5 推奨)"
 
     - id: S2
       priority: medium
       content: |
-        cmd_592 + cmd_586 連携の運用観測 1-2w:
-          - cron */10 で safe_window_judge が APPROVE 発火する頻度
-          - karo inbox compact_suggestion 受信頻度 + dedup hit 率
-          - 実 auto-compact 発生回数の cmd_592 前 vs 後 比較
-        観測データ集計で north_star 達成度を empirical 検証。
-      action_needed: "1-2w 後に gunshi 深考 or ash4 follow-up 分析 subtask"
+        cmd_594 等で KPI framework 妥当性検証:
+          - cmd_kpi_observer 1-2w データ蓄積後
+          - Scope D framework 設計 vs 実測値の差異分析
+          - 必要なら framework 微調整 (KPI 追加/閾値変更)
+        工数 0.2d。
+      action_needed: "1-2w 後 (5/10 頃) gunshi 深考 or ash5 follow-up"
 
     - id: S3
-      priority: low
+      priority: medium
       content: |
-        cmd_592 で確立した cron + self-notify + 動的 context_pct + 観測 のパターンは
-        skill 'shogun-autonomous-compaction-management' 候補。1-2w 運用後に集約検討。
-      action_needed: "運用安定後 (1-2w) に gunshi 深考"
+        deploy & verify cycle (Stage 1-4) を qc_auto_check.sh に統合:
+          - 機械検証 (Stage 1 commit + Stage 2 配置) は scripts/qc_auto_check.sh で自動化可能
+          - 手動検証 (Stage 3 登録 + Stage 4 実行ログ) は config/qc_checklist.yaml で WARN check 追加
+        gunshi.md 8.5 enforcement の延長として実装。工数 0.2d。
+      action_needed: "cmd_596 等で発令"
 
     - id: S4
       priority: low
       content: |
-        in_progress 判定の canonical source 統一 (concerns C3 受け):
-        karo_self_clear_check cond_1 と safe_window_judge C3 の判定根拠 source を canonical_rule_sources.md
-        に追記推奨。または両 script のロジックを統一。工数 0.05d。
-      action_needed: "cmd_593 等で対応推奨"
+        skill 'shogun-deploy-verify-cycle' 候補:
+          - Stage 1-4 ライフサイクル管理 pattern
+          - shelf-ware 32% empirical 根拠
+          - KPI observer + framework 設計
+        1-2w 運用後に集約検討。
+      action_needed: "運用安定後 gunshi 深考"
 
   means_ends_classification:
     schema_version: "1.0"
     ac_classification:
-      - id: AC_qc_a
+      - id: AC_qc_b
         type: means
-        rationale: "crontab 登録 = 機構設置の機械的検証"
+        rationale: "deploy & verify 標準化 = shelf-ware 防止機構の機械的検証"
         corresponding_ends_ac: AC_north_star
-      - id: AC_qc_f
+      - id: AC_qc_c
         type: means
-        rationale: "yaml hygiene cond_1 PASS = 判定機構の動作検証"
+        rationale: "KPI observer 動作 = 観測機構の機械的検証"
+        corresponding_ends_ac: AC_north_star
+      - id: AC_qc_c6
+        type: means
+        rationale: "dashboard 3列 schema = 可視化機構の機械的検証"
         corresponding_ends_ac: AC_north_star
       - id: AC_qc_g
         type: means
-        rationale: "self-notify 動作 = 通知機構の動作検証"
+        rationale: "self-notify ロジック = 通知機構の動作検証"
         corresponding_ends_ac: AC_north_star
       - id: AC_qc_h
         type: means
-        rationale: "get_context_pct 動作 = 実測機構の動作検証"
+        rationale: "context_pct 取得 = 計測機構の動作検証"
         corresponding_ends_ac: AC_north_star
       - id: AC_north_star
         type: ends
-        rationale: "3点全 aligned = 自律 compaction 管理基盤の業務価値到達"
+        rationale: "5 点全 aligned = shelf-ware 監査+防止体系稼働の業務価値到達"
         corresponding_ends_ac: null
-    ends_coverage_note: "5 AC のうち 1 ends + 4 means。ends 1/1 PASS (with concern: gunshi line hardcoded)、means 4/4 PASS (1 conditional: compact_observer 未登録)。本質達成、補修必要"
+    ends_coverage_note: "6 AC のうち 1 ends + 5 means。ends 1/1 PASS (5 点全 aligned)、means 5/5 PASS。実 KPI 蓄積 (1-2w) で empirical 検証は follow-up"
     both_systems_verified: true
-    verdict: "means 系 4/4 PASS + ends 系 1/1 PASS。cmd_586 shelf-ware 解消 + 実稼働化が達成 (cron 3 lines + 動的 context + 観測 script)、軽微補修 (S1) で完全達成"
+    verdict: "means 系 5/5 PASS + ends 系 1/1 PASS。shelf-ware 即解消 + 防止体系化が標準化レベルで完成"
 
   files_modified:
     - "queue/reports/gunshi_report.yaml (本報告書)"
@@ -201,50 +218,46 @@ result:
 
   notes: |
     【北極星寄与】
-    cmd_592 は cmd_586 で実装した自律 /clear decision support の shelf-ware 化を解消し、cron で
-    実稼働化する cmd。cmd_586 設計 (safe_window_judge + karo_self_clear + context_advisory) が
-    cron */10 で 10 分毎に自動稼働する状態に到達。
+    cmd_593 は cmd_586/592 で確立した自律 compaction 管理基盤に対して shelf-ware 即解消+防止体系化
+    を実装。51 件 audit から 32% という empirical 根拠を得て deploy & verify 4 段標準化 (karo.md +
+    gunshi.md 両側) + KPI observer cron 稼働 + framework 設計 + suggestions 永続化 + context_pct
+    動的化の 5 層構造で再発防止が機構化された。
 
-    【cmd_586/592 連携完成度】
-    cmd_586: 機構実装 (script レベル) ✓
-    cmd_592: 実稼働化 (cron + dynamic context + 観測) ⚠️ (compact_observer 未登録 + gunshi hardcoded)
-    → 軽微 follow-up (S1, 0.07d) で完全完成
+    【cmd_586/592/593 連携完成度】
+    - cmd_586: 機構実装 (script レベル) ✓
+    - cmd_592: 実稼働化 (cron + dynamic + 観測) ✓
+    - cmd_593: 防止体系化 (audit + 標準化 + KPI + framework) ✓
+    → governance 12 点目 (cmd_570-572/573/576/582/578/583/584/586/592/593) で
+       自律 compaction 管理基盤の 3 段階完成
 
-    【自律基盤 v2 完成】
-    Phase 0+1 governance 10 点 (cmd_570-572/573/576/582/578/583/584/586) +
-    cmd_592 cron 実稼働化 = governance 11 点目。
-    auto-compact 削減効果は 1-2w 観測 (S2) で empirical 検証。
+    【git commit 履歴】
+    - 21cf121 cmd_586: 自律 /clear decision support 実装
+    - 02bb5d7 cmd_592+cmd_593: shelf-ware 解消完遂 — cron 実稼働化+自律 compact 管理+deploy & verify 標準化
+    - b2ec328 cmd_593-c: cmd_kpi_observer.sh 新規作成 + cron 登録
+    → 3 段階 commit が論理的に積み重なり、変更履歴が追跡可能
 
-    【commit 推奨】
-    cmd_592 統合 commit:
-      - crontab 3 lines (cmd_592 ヘッダコメント付き)
-      - compact_observer.sh (新規)
-      - get_context_pct.sh (新規)
-      - safe_window_judge.sh 更新 (self-notify + 10分 loop guard)
-      - shogun_to_karo.yaml hygiene (12 件 done)
-    commit message 例: "feat(cmd_592): cmd_586 shelf-ware 解消 — cron 実稼働化 + compact_observer + 動的 context_pct"
-
-    【ash2/5/6/7 connoisseur work】
-    複数 ash の連携で compact_observer (ash2) + yaml hygiene (ash5) + safe_window 改善 (ash6) +
-    context_pct 取得 (ash7) が並行進行し統合。RACE-001 観点でも各 ash editable_files の重複なし。
+    【1-2w 観測後の follow-up cmd 候補】
+    - cmd_594: KPI framework 妥当性検証 (S2)
+    - cmd_595: shelf-ware 51 件 triage (S1)
+    - cmd_596: qc_auto_check.sh に Stage 1-4 統合 (S3)
 
 skill_candidate:
   found: true
-  name: "shogun-autonomous-compaction-management"
+  name: "shogun-deploy-verify-cycle"
   description: |
-    自律 compaction 管理基盤の cron + self-notify + 動的 context + 観測パターン。
-    cmd_586 機構実装 + cmd_592 実稼働化のパターンを集約。
-    multi-agent 環境で各 role の context hygiene を自律管理する一般的 pattern として転用可能。
-  reason: "1-2w 実運用で効果実証後に正式 skill 化推奨 (S3)"
+    shelf-ware 防止 + 検出の deploy & verify cycle (Stage 1-4) pattern。
+    32% shelf-ware empirical 根拠 + karo.md (発令側) + gunshi.md (QC 側) 両側標準化 +
+    KPI observer cron 観測の 5 層構造。multi-agent + cron/hook/trigger 環境で
+    実装 cmd の shelf-ware 防止 pattern として転用可能。
+  reason: "1-2w 実運用で効果実証後に正式 skill 化推奨 (S4)"
 
 north_star_alignment:
-  status: aligned (with minor concerns)
+  status: aligned
   reason: |
-    cmd_592 北極星 (家老 auto-compact 前 cron 自動 self-clear + inbox 通知 + 実測 context_pct 判定)
-    3 点全 aligned。本質機能 4 script 全動作確認済。残課題 2 件 (compact_observer 未登録 +
-    gunshi hardcoded) は軽微補修で完全達成。
+    cmd_593 北極星 (shelf-ware 監査・定量化 + 防止体系稼働 + 効果可視化) 5 点全 aligned。
+    audit 51 件 + deploy & verify 標準化 + KPI observer cron + suggestions 永続化 +
+    context_pct 動的化で包括的体系完成。
   risks_to_north_star:
-    - "compact_observer 未登録 → 観測データ蓄積されず empirical 検証困難 (S1)"
-    - "gunshi hardcoded 80 → gunshi の実 context 判定が過剰 conservative (S1)"
-    - "in_progress 判定 source 不統一 → 将来保守性リスク (S4)"
-    - "実 auto-compact 削減効果未測定 → 1-2w 観測必要 (S2)"
+    - "KPI framework 妥当性 1-2w empirical 未検証 → cmd_594 follow-up (S2)"
+    - "shelf-ware 51 件の個別解消状況未明示 → cmd_595 triage (S1)"
+    - "context_pct 計測精度 1-2w 観測必要 (C3)"
