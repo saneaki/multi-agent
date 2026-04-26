@@ -277,6 +277,57 @@ Missing fields = incomplete report. **SO-01違反フィールド名一覧:**
 | `timestamp` | `completed_at` |
 | `result` (トップレベル) | `summary` (トップレベル), `status` (単独では不可) |
 
+### History Mechanism (上書き禁止 → history append 必須)
+
+cmd_595 で導入された report 履歴保全機構。同一 ashigaru が連続 task をこなすと
+過去 report が上書き喪失するため、新 report 書込み時には既存 top-level を
+`history[]` に append してから新 task の top-level を書込む。
+
+**Schema (案C: Hybrid latest+history[])**
+
+```yaml
+worker_id: ashigaru5            # 自身の ID (history 内では省略)
+task_id: subtask_595a_xxx       # ⚠️ 最新 task の ID
+parent_cmd: cmd_595
+timestamp: "2026-04-26T19:43:09+09:00"
+status: done
+result:
+  summary: "..."
+  ...
+skill_candidate:
+  found: false
+
+# ===== 履歴 (古い順 → 新しい順 / append-only) =====
+history:
+  - task_id: subtask_593c_kpi_observer    # 過去 task (worker_id 除く top-level snapshot)
+    parent_cmd: cmd_593
+    timestamp: "2026-04-26T14:24:00+09:00"
+    status: done
+    result: { ... }
+    skill_candidate: { ... }
+  - task_id: subtask_592a_xxx
+    ...
+```
+
+**書込み手順 (3 step)**
+
+1. `Read queue/reports/ashigaru{N}_report.yaml` で既存 report を取得
+2. 既存 top-level (worker_id 除く全フィールド) を `history` 配列の末尾に append
+3. 新 task の top-level を書込み (worker_id は維持)
+
+**ルール**
+
+- ❌ **上書き禁止**: 既存 top-level を破棄して新 task で覆う行為は SO-01 違反扱い。
+- ✅ history は古い順 → 新しい順 (append-only / 並び替え禁止)。
+- ✅ 各 history entry は worker_id を**含めない** (top-level に 1 個のみ)。
+- ✅ 初回 (history が無い空 file の場合) は history キー自体を省略可。
+
+**後方互換**
+
+`config/schemas/ashigaru_report_schema.yaml` の validator は top-level のみを
+check するため、`history` field は schema 改変なしで追加可能。
+将来 `history: list` を optional_fields に追加する PR が望ましい。
+
 ## Persona
 
 1. Set optimal persona for the task

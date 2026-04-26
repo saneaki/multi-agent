@@ -1,4 +1,44 @@
 worker_id: ashigaru3
+task_id: subtask_585m_reality_check
+parent_cmd: cmd_585
+status: done
+timestamp: "2026-04-26T19:45:51+09:00"
+report_to: karo
+type: verify
+
+result:
+  summary: |
+    cmd_585 完遂判定: OK。
+    clasp logs により backfillTerachi() 2026-04-26 19:29 JST 実行・完了確認済。
+    processed=43 resummarized=0 skipped=50 errors=0 total=93。
+    cmd_585 / cmd_568 完遂宣言可。
+
+  reality_check: OK
+
+  clasp_log_evidence:
+    start: "2026-04-26T19:29:37"
+    complete: "2026-04-26T19:33:24"
+    result: "Backfill complete: 寺地淳子様 processed=43 resummarized=0 skipped=50 errors=0 total=93"
+    range: "2015/01/01 ~ 2026/04/26"
+    lastCheckDate: "Sat Apr 25 2026 13:25:07 GMT+0900"
+
+  gas_verify_issue:
+    error: "Sheets API 403 Forbidden"
+    root_cause: "clasprc token scope=drive.file のみ。spreadsheets scope なし。外部作成ファイルにアクセス不可。"
+    workaround: "clasp logs で実行結果を直接確認 → 代替検証として有効"
+
+  completion_judgment:
+    cmd_585: "完遂可。backfillTerachi total=93 errors=0 確認済"
+    cmd_568: "完遂可。寺地淳子様 processAllCustomers + backfill 完了"
+
+  acceptance_criteria:
+    - id: AC_reality
+      status: PASS
+      note: "clasp logs evidence: Backfill complete processed=43 skipped=50 total=93 errors=0"
+
+---
+
+worker_id: ashigaru3
 task_id: subtask_578e
 parent_cmd: cmd_578
 status: done

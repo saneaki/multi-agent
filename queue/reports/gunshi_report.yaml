@@ -1,263 +1,219 @@
 worker_id: gunshi
-task_id: subtask_593i_qc
-parent_cmd: cmd_593
-timestamp: "2026-04-26T17:00:00+09:00"
+task_id: subtask_595a_autonomous_qc
+parent_cmd: cmd_595
+timestamp: "2026-04-26T19:50:00+09:00"
 status: done
 report_to: karo
 type: review
 
 result:
   type: review
-  ashigaru_task_id: subtask_593a-h (ash1/5/6/7 各 Scope)
-  qa_decision: go
-  verdict: "Go — 全 6 AC PASS。north_star 5 点全 aligned。shelf-ware 51 件監査+deploy & verify 4 段標準化+KPI observer cron 稼働+suggestions 永続化+context_pct 動的化で防止体系完成。commit 許可。"
+  ashigaru_task_id: subtask_595a_report_history (ashigaru5)
+  qa_decision: conditional_go
+  verdict: "Conditional Go — AC1-3 全 PASS。history 機構 (案C) 実装+本 file 自身が history[0]=593c+top-level=595a で構造実証。validator は MEDIUM WARN 1 件 (type='implement' enum 不一致) 残存だが軽微。commit 許可。"
 
-  north_star: "直近100 cmd の shelf-ware が監査・定量化され、防止体系 (deploy & verify cycle / KPI observer / suggestions) が稼働し、家老・軍師が効果を可視化できる状態"
+  autonomous_qc_trigger: "ash5 report_received (msg_20260426_194544) 受領 → karo task YAML 未割当なれど protocol 通り autonomous QC 実施"
 
-  ac_qc_b_deploy_verify_cycle:
-    check: "instructions/karo.md + gunshi.md に deploy & verify 4 段確認 追加"
-    verification:
-      karo_md:
-        - "L309 出典コメント 'cmd_593 Scope A 監査 — hook/cron/trigger/script 系 cmd の 32% が登録未確認のまま完了宣言 → shelf-ware 化'"
-        - "L311-321 Stage 1-4 table (commit / 配置 / 登録 / 実行ログ) + 各 Stage の検証コマンド明記"
-        - "L322 'Stage 3 未完了 = 完了宣言禁止 (= shelf-ware 化)' rule 明示"
-        - "L329-335 task YAML AC 例 (Stage 1-4 acceptance_criteria 4 項目)"
-        - "L338 例外: 純粋ドキュメント refactor は Stage 1-2 のみで可"
-      gunshi_md:
-        - "L409 '### Implementation cmd QC Checklist (deploy & verify)' 追加"
-        - "L412 出典コメント 'cmd_593 Scope A 監査 — gunshi QC が Stage 3 を見落とすケース多発'"
-        - "L414 Quality Check Criteria + means/ends 並走の shelf-ware 検出 gate"
-        - "L418-420 (a)(b)(c) gates (AC Stage 3 含有 / 実行ログ Stage 4 / dashboard 反映) で QC NG/WARN 判定"
-    status: PASS
-    rationale: "karo.md (発令側) + gunshi.md (QC 側) 両側に deploy & verify cycle が実装され、shelf-ware 防止 + 検出の二重 gate が完成"
+  north_star: "QC が任意 subtask の report を遡及検証できる状態になる"
 
-  ac_qc_c_kpi_observer:
-    check: "cmd_kpi_observer.sh dry-run OK + cron 0 9 * * * 登録"
-    verification:
-      script:
-        path: /home/ubuntu/shogun/scripts/cmd_kpi_observer.sh
-        size: 6680B
-        permission: executable
-      dry_run_output: |
-        [cmd_kpi_observer] KPI: pub_us_invoke=0 success=0 fail=0 kill=0
-        [cmd_kpi_observer] KPI: karo_compact=1 gunshi_compact=0 safe_window=65 self_clear=4
-        DRY RUN — would append/update row: | 2026-04-26 | 0 | 0 | 0 | 0 | 1 | 0 | 65 |
-      kpi_count: 8 (pub_us 4 + karo_compact + gunshi_compact + safe_window + self_clear)
-      crontab: "0 9 * * * bash cmd_kpi_observer.sh >> logs/kpi_observer.log 2>&1 ✓"
-    status: PASS
-    rationale: "8 KPI 収集 + dashboard row preview + cron 0 9 登録 全動作確認済"
+  individual_verification:
+    ac1_overwrite_loss_pattern:
+      check: "現状調査: report 上書き喪失パターン具体例で確認"
+      verification:
+        - "ash5 report で subtask_593c_kpi_observer の単一 record のみ存在 (cmd_593 Scope C 詳細記録)"
+        - "次に subtask_595a 書込みで 593c は完全喪失する設計を確認"
+        - "git log でしか cmd_592 (subtask_592a/b/...) の report が辿れないという根本問題を identification"
+        - "ガバナンス低下の影響 (gunshi 遡及検証不能) を明示"
+      status: PASS
 
-  ac_qc_c6_dashboard_columns:
-    check: "dashboard.md 📊 運用指標 に 3列存在"
-    verification:
-      header_columns:
-        - "日付(JST) / /pub-us起動 / 成功 / 失敗 / kill-switch発動 / **karo auto-compact** / **gunshi auto-compact** / **safe_window発動**"
-      sample_rows:
-        - "2026-04-22: 1 / 1 / 0 / 0 / - / - / - (cmd_593 前データ、新 3 列は '-')"
-        - "2026-04-26: 0 / 0 / 0 / 0 / 1 / 0 / 35 (cmd_593 後実データ、3 列値あり)"
-      data_consistency: "新 3 列が後方互換でハイフン埋め可能、既存運用無影響"
-    status: PASS
-    rationale: "3 新 column (karo/gunshi auto-compact + safe_window 発動) が schema 拡張で追加、データ実装も確認"
+    ac2_design_selection:
+      check: "設計: 採用案を理由付きで決定"
+      verification:
+        candidates_evaluated: 3
+        adopted: case_C_hybrid (Hybrid latest top-level + history[])
+        adoption_rationale:
+          - "後方互換: validate_ashigaru_report.py / so24_verify.sh / qc_auto_check.sh の既存 top-level 読み取りロジック変更不要"
+          - "shift-left 維持: required_fields top-level のまま check 可能、schema 改変ゼロ"
+          - "QC 遡及性: history[] iterate で過去 task report 参照可"
+          - "書込み手順 simple: top-level を history.append → 新 top-level 書込み (1 step)"
+        rejection_rationale:
+          case_A_append_only: "top-level=null で既存 validator CRITICAL → 既存 tools 一斉破壊"
+          case_B_directory_split: "ashigaru{N}_report.yaml ファイル名直接参照ゆえ全 tool 改修必須、scope 超過"
+      status: PASS
 
-  ac_qc_g_self_notify:
-    check: "safe_window_judge.sh self-notify ロジック確認"
-    verification:
-      function_definition: "L90 _self_notify_karo() {...} 関数定義"
-      invocation: "L127 _self_notify_karo \"$1\" \"$2\" \"$3\" 呼出"
-      logic_chain: "判定 PASS → _self_notify_karo() → karo inbox へ compact_suggestion send (cmd_586 から継承+10分 loop guard 追加)"
-    status: PASS
-    rationale: "self-notify 関数+呼出ロジック実装、cmd_586 機構と整合"
-
-  ac_qc_h_get_context_pct:
-    check: "get_context_pct.sh karo/gunshi 動作"
-    verification:
-      karo_test: "bash get_context_pct.sh karo → 40 (numeric 0-100, exit 0)"
-      gunshi_test: "bash get_context_pct.sh gunshi → 55 (numeric 0-100, exit 0)"
-      both_roles_supported: "両 role で正常出力、crontab dynamic 取得で利用可能"
-    status: PASS
-    rationale: "両 role で 数値出力 + exit 0、crontab 内 $(get_context_pct.sh ROLE) で動的取得可能"
-
-  ac_north_star_alignment:
-    check: "north_star 5点 全 aligned"
-    five_points:
-      shelf_ware_audit:
-        status: aligned
-        evidence: "Scope A で直近 100 cmd の shelf-ware 51 件確認 (audit 完了)"
-      deploy_verify_cycle:
-        status: aligned
-        evidence: "Scope B karo.md + gunshi.md 両側に Stage 1-4 標準化"
-      kpi_observer_running:
-        status: aligned
-        evidence: "Scope C cmd_kpi_observer.sh + cron 0 9 * * * 登録"
-      suggestions_yaml_updated:
-        status: aligned
-        evidence: "Scope F suggestions.yaml accepted entry 追加"
-      context_pct_dynamic:
-        status: aligned
-        evidence: "Scope H get_context_pct.sh + crontab dynamic 取得 (cmd_592 連携)"
-    status: PASS
-    rationale: "5 点全 aligned、防止体系の包括的稼働状態に到達"
-
-  scope_a_audit_summary:
-    check: "Scope A 直近 100 cmd 監査結果"
-    finding: "shelf-ware 51 件確認 (32% が hook/cron/trigger/script 系 cmd で登録未確認のまま完了宣言)"
-    impact: "32% という高比率が deploy & verify 4 段標準化 (Scope B) の必要性を empirical に裏付け"
-    rationale: "audit → 標準化 → KPI observer の 3 段アプローチが論理的"
+    ac3_implementation:
+      check: "実装: schema 変更 + ashigaru.md 更新 + 本 subtask report が history に格納"
+      verification:
+        ashigaru_md:
+          - "instructions/ashigaru.md L280-329 '§History Mechanism (上書き禁止 → history append 必須)' 追記"
+          - "Schema 例 (case_C Hybrid) + 書込み手順 3 step + ルール 4 項目 + 後方互換性記述"
+          - "ルール明示: '上書き禁止' = SO-01 違反扱い / append-only / worker_id 非含有 / 初回省略可"
+        report_yaml:
+          - "top-level: task_id=subtask_595a_report_history (新 record) ✓"
+          - "history[0] task_id=subtask_593c_kpi_observer (前回 report 保持) ✓"
+          - "history len=1 (本 record 自身が機構実証の証左 = self-validating design)"
+        validator:
+          - "python3 validate_ashigaru_report.py --worker 5 → PASS with 1 WARN"
+          - "WARN: type='implement' not in allowed [feat/fix/refactor/docs/test/chore/perf/ci]"
+          - "WARN は本機構と無関係 (schema enum と task type 値の軽微不整合)"
+        backward_compat:
+          - "top-level 必須 fields (worker_id/task_id/parent_cmd/timestamp/status/result) 全て保持"
+          - "history field は config/schemas/ashigaru_report_schema.yaml 改変なしで追加可能 (validator は top-level のみ check)"
+      status: PASS
 
   ac_summary:
-    AC_qc_b: PASS
-    AC_qc_c: PASS
-    AC_qc_c6: PASS
-    AC_qc_g: PASS
-    AC_qc_h: PASS
-    AC_north_star: PASS
-    overall: 6/6 PASS
+    AC1: PASS
+    AC2: PASS
+    AC3: PASS
+    overall: 3/3 PASS (with 1 WARN)
+    commit_permission: "許可 — history 機構実装 + ashigaru.md 追記 + 本 file 自身が証左の statement"
 
   concerns_flagged:
     - id: C1
       severity: low
-      title: "Scope D KPI framework 設計の運用 verification 未実施"
+      title: "validator MEDIUM WARN: type='implement' enum 不一致"
       detail: |
-        Scope D (subtask_593d) で shelf-ware 防止 KPI framework 設計が完了したが、
-        KPI 観測値 (Scope C cmd_kpi_observer 出力) との整合性 (framework 設計通りの値が
-        実測データで取れるか) は本 QC スコープ外。1-2w 観測後に framework 妥当性検証推奨。
-      recommendation: "cmd_594 等で 1-2w KPI 蓄積データを framework に対して整合性チェック (0.1d)"
+        validate_ashigaru_report.py 実行で MEDIUM WARN: 'implement' not in allowed
+        [feat/fix/refactor/docs/test/chore/perf/ci]。本 subtask scope 外の軽微 schema/値不一致。
+        ash5 が type='implement' を採用したが、ashigaru_report_schema.yaml の enum は
+        Conventional Commits 準拠の 8 値のみ許容。
+      recommendation: |
+        2 択:
+          (a) schema に 'implement' を追加 (task type の柔軟性確保)
+          (b) ash5 task YAML の type を 'feat' に変更 (Conventional Commits 準拠維持)
+        cmd_596 等で対応推奨 (0.05d)。
+        recommendation: 案 (a) — 'implement' は report 文脈で意味があり、Conventional Commits は git commit 用と分離
 
     - id: C2
       severity: info
-      title: "shelf-ware 51 件の解消状況未明示"
+      title: "schema 拡張は本 subtask scope 外"
       detail: |
-        Scope A audit で 51 件の shelf-ware が identified されたが、cmd_593 commit 時点での
-        個別 cmd 解消状況 (resolved / 受容 deferred / 廃棄) が dashboard 等で可視化されていない。
-        新 cmd では deploy & verify が機能するが、過去 51 件はそのまま残存リスク。
-      recommendation: "cmd_595 等で 51 件 triage subtask 発令推奨。各 cmd を resolved/deferred/obsolete 分類 + suggestions.yaml 反映"
+        ash5 notes に「config/schemas/ashigaru_report_schema.yaml は editable_files に
+        含まれないため scope 外」と明記。history field を optional_fields に追加する
+        PR は将来 cmd で実施推奨。現状は validator が top-level のみ check するため
+        history 追加でも regression なし。
+      recommendation: "cmd_596 等で schema 'history: list (optional)' 追加 (0.03d)"
 
     - id: C3
       severity: info
-      title: "context_pct 取得値の運用観測"
+      title: "全 ashigaru への history 機構展開"
       detail: |
-        get_context_pct.sh karo=40, gunshi=55 は実測値だが、これが claude code の実 context 使用量と
-        整合するかは別途検証必要。cmd_592 で dynamic 化したが、計測精度は 1-2w 観測で確認推奨。
-      recommendation: "1-2w 観測で get_context_pct 値 vs 実 auto-compact 発生時 tool_count の相関確認"
+        本 subtask は ashigaru5_report.yaml のみで history 機構を実証。
+        ashigaru1/2/3/4/6/7/8 の report は依然として上書き喪失設計のまま。
+        全 ashigaru に history 機構を展開する subtask が必要。
+      recommendation: |
+        ashigaru.md §History Mechanism は全 ashigaru 共通の指示として追記済ゆえ、次 task で
+        各 ashigaru が自然に history append を採用する。明示的 migration が必要なら cmd_597
+        等で全 ashigaru report の歴史的 backfill (git log から過去 record 復元) を発令推奨
 
   suggestions:
     - id: S1
-      priority: high
-      content: |
-        cmd_595 等で shelf-ware 51 件 triage subtask 発令:
-          (a) 各 cmd を resolved (実装済+稼働確認済) / deferred (将来対応) / obsolete (廃棄) 分類
-          (b) suggestions.yaml に各分類結果を append-only 記録
-          (c) dashboard 🛠️ または 🚨 セクションに残存件数を可視化
-        工数 0.3d (51 件 × 3 分/件)。Scope A audit を活かして体系的 cleanup。
-      action_needed: "karo は cmd_595 で ash5 等に発令 (audit データ持つ ash5 推奨)"
-
-    - id: S2
       priority: medium
       content: |
-        cmd_594 等で KPI framework 妥当性検証:
-          - cmd_kpi_observer 1-2w データ蓄積後
-          - Scope D framework 設計 vs 実測値の差異分析
-          - 必要なら framework 微調整 (KPI 追加/閾値変更)
-        工数 0.2d。
-      action_needed: "1-2w 後 (5/10 頃) gunshi 深考 or ash5 follow-up"
+        cmd_596 等で 2 件 follow-up:
+          (a) ashigaru_report_schema.yaml に 'implement' を type enum 追加 (validator WARN 解消)
+          (b) ashigaru_report_schema.yaml に 'history: list (optional)' 追加 (case_C 機構の正式 schema 化)
+        合計 0.08d。validator が完全 PASS (no WARN) になる + history が schema レベルで承認される。
+      action_needed: "karo は cmd_596 等で発令"
+
+    - id: S2
+      priority: low
+      content: |
+        ashigaru1/2/3/4/6/7/8 の history 機構 migration:
+          - 各 report の git log を辿り、最新数件の record を history[] に backfill
+          - 1 ashigaru あたり 0.1d × 7 = 0.7d
+          - 価値: 過去 cmd の遡及検証が即座に可能 (git log を辿る不要)
+        ただし優先度は低い。新 task 以降は自然に history が積まれるゆえ、明示 migration の
+        cost-effectiveness 要評価。
+      action_needed: "1-2w 後に gunshi 深考で必要性判断"
 
     - id: S3
       priority: medium
       content: |
-        deploy & verify cycle (Stage 1-4) を qc_auto_check.sh に統合:
-          - 機械検証 (Stage 1 commit + Stage 2 配置) は scripts/qc_auto_check.sh で自動化可能
-          - 手動検証 (Stage 3 登録 + Stage 4 実行ログ) は config/qc_checklist.yaml で WARN check 追加
-        gunshi.md 8.5 enforcement の延長として実装。工数 0.2d。
-      action_needed: "cmd_596 等で発令"
+        history[] 容量制限の検討:
+          - 1 ashigaru が 100 task こなすと history[] が 100 entry に肥大
+          - report.yaml サイズ増加 → context 圧迫
+          - 案: history[] を最新 N 件 (N=10? 20?) に制限 + 古い record は別 archive file に rotate
+        本 subtask scope 外だが将来課題として記録。
+      action_needed: "history[] が 50 entry を超えた段階で rotation 設計検討 (cmd_XXX 0.2d)"
 
     - id: S4
       priority: low
       content: |
-        skill 'shogun-deploy-verify-cycle' 候補:
-          - Stage 1-4 ライフサイクル管理 pattern
-          - shelf-ware 32% empirical 根拠
-          - KPI observer + framework 設計
-        1-2w 運用後に集約検討。
-      action_needed: "運用安定後 gunshi 深考"
+        skill 候補 'shogun-report-history-mechanism': 後方互換+遡及性+書込み単純化を兼ねた
+        Hybrid pattern として汎用性高。multi-agent + 上書き report 環境一般に適用可能。
+        1-2w 運用で効果実証後に集約検討。
+      action_needed: "運用安定後 (1-2w) に gunshi 深考"
 
   means_ends_classification:
     schema_version: "1.0"
     ac_classification:
-      - id: AC_qc_b
+      - id: AC1
         type: means
-        rationale: "deploy & verify 標準化 = shelf-ware 防止機構の機械的検証"
-        corresponding_ends_ac: AC_north_star
-      - id: AC_qc_c
+        rationale: "現状調査 = 問題識別の機械的検証"
+        corresponding_ends_ac: AC3
+      - id: AC2
         type: means
-        rationale: "KPI observer 動作 = 観測機構の機械的検証"
-        corresponding_ends_ac: AC_north_star
-      - id: AC_qc_c6
-        type: means
-        rationale: "dashboard 3列 schema = 可視化機構の機械的検証"
-        corresponding_ends_ac: AC_north_star
-      - id: AC_qc_g
-        type: means
-        rationale: "self-notify ロジック = 通知機構の動作検証"
-        corresponding_ends_ac: AC_north_star
-      - id: AC_qc_h
-        type: means
-        rationale: "context_pct 取得 = 計測機構の動作検証"
-        corresponding_ends_ac: AC_north_star
-      - id: AC_north_star
+        rationale: "案C採用根拠 = 設計判断の論理的検証"
+        corresponding_ends_ac: AC3
+      - id: AC3
         type: ends
-        rationale: "5 点全 aligned = shelf-ware 監査+防止体系稼働の業務価値到達"
+        rationale: "実装+本 file 自身が証左 = QC 遡及検証可能状態の業務価値到達"
         corresponding_ends_ac: null
-    ends_coverage_note: "6 AC のうち 1 ends + 5 means。ends 1/1 PASS (5 点全 aligned)、means 5/5 PASS。実 KPI 蓄積 (1-2w) で empirical 検証は follow-up"
+    ends_coverage_note: "3 AC のうち 1 ends + 2 means。ends 1/1 PASS (history[0]=593c 実装で QC 遡及可能化達成)、means 2/2 PASS"
     both_systems_verified: true
-    verdict: "means 系 5/5 PASS + ends 系 1/1 PASS。shelf-ware 即解消 + 防止体系化が標準化レベルで完成"
+    verdict: "means 系 2/2 PASS + ends 系 1/1 PASS。本 file 自身が機構実証 (history[0]=593c, top-level=595a) という self-validating design で north_star 達成"
 
   files_modified:
     - "queue/reports/gunshi_report.yaml (本報告書)"
-    - "queue/tasks/gunshi.yaml (status: done)"
-    - "queue/inbox/gunshi.yaml (karo task_assigned → read:true)"
+    - "queue/inbox/gunshi.yaml (ash5 msg_20260426_194544 → read:true)"
 
   notes: |
     【北極星寄与】
-    cmd_593 は cmd_586/592 で確立した自律 compaction 管理基盤に対して shelf-ware 即解消+防止体系化
-    を実装。51 件 audit から 32% という empirical 根拠を得て deploy & verify 4 段標準化 (karo.md +
-    gunshi.md 両側) + KPI observer cron 稼働 + framework 設計 + suggestions 永続化 + context_pct
-    動的化の 5 層構造で再発防止が機構化された。
+    cmd_595 Scope A は cmd_577 Scope D で identified された「report.yaml 上書き喪失」(T1/T2
+    governance issue) を構造解消する core 改革。case_C Hybrid 採用で:
+    - 後方互換: 既存 validator/qc_auto_check/so24_verify 全て無改修
+    - shift-left 維持: top-level required_fields 不変
+    - 遡及性: history[] iterate で過去 task report 参照可能
 
-    【cmd_586/592/593 連携完成度】
-    - cmd_586: 機構実装 (script レベル) ✓
-    - cmd_592: 実稼働化 (cron + dynamic + 観測) ✓
-    - cmd_593: 防止体系化 (audit + 標準化 + KPI + framework) ✓
-    → governance 12 点目 (cmd_570-572/573/576/582/578/583/584/586/592/593) で
-       自律 compaction 管理基盤の 3 段階完成
+    【self-validating design】
+    本 subtask 595a の report yaml 自身が新機構の証左:
+    - top-level: 595a record (新規) ✓
+    - history[0]: 593c record (前回 report) ✓
+    → 機構が機能する証拠が file 構造そのもの。テストケースが現実の report で稼働している
+       (test in production の最良例)
 
-    【git commit 履歴】
-    - 21cf121 cmd_586: 自律 /clear decision support 実装
-    - 02bb5d7 cmd_592+cmd_593: shelf-ware 解消完遂 — cron 実稼働化+自律 compact 管理+deploy & verify 標準化
-    - b2ec328 cmd_593-c: cmd_kpi_observer.sh 新規作成 + cron 登録
-    → 3 段階 commit が論理的に積み重なり、変更履歴が追跡可能
+    【ash5 connoisseur work】
+    ash5 が 3 案評価 (A/B/C) で論理的判断、case_C Hybrid を選択。後方互換 + shift-left + 遡及性
+    の 3 制約を同時満足する唯一案。pragmatic engineering の好例。
 
-    【1-2w 観測後の follow-up cmd 候補】
-    - cmd_594: KPI framework 妥当性検証 (S2)
-    - cmd_595: shelf-ware 51 件 triage (S1)
-    - cmd_596: qc_auto_check.sh に Stage 1-4 統合 (S3)
+    【cmd_577 Scope D との連携】
+    cmd_577 で gunshi が「Scope A/C report 上書き喪失」を T1/T2 issue として記録 (concerns C1) →
+    karo が cmd_595 を立案 → ash5 が case_C Hybrid 実装で構造解消。
+    governance feedback loop の好例 (incident report → root cause 分析 → 構造改修)。
+
+    【commit 推奨】
+    cmd_595 commit:
+      - queue/reports/ashigaru5_report.yaml (history 機構実証)
+      - instructions/ashigaru.md (§History Mechanism 追記 L280-329)
+    commit message 例: "feat(cmd_595): report.yaml history 機構導入 — case_C Hybrid + 後方互換"
 
 skill_candidate:
   found: true
-  name: "shogun-deploy-verify-cycle"
+  name: "shogun-report-history-mechanism"
   description: |
-    shelf-ware 防止 + 検出の deploy & verify cycle (Stage 1-4) pattern。
-    32% shelf-ware empirical 根拠 + karo.md (発令側) + gunshi.md (QC 側) 両側標準化 +
-    KPI observer cron 観測の 5 層構造。multi-agent + cron/hook/trigger 環境で
-    実装 cmd の shelf-ware 防止 pattern として転用可能。
-  reason: "1-2w 実運用で効果実証後に正式 skill 化推奨 (S4)"
+    multi-agent 環境で report yaml の上書き喪失を構造解消する Hybrid pattern。
+    top-level=最新 + history[]=過去 append-only の二層構造で、後方互換+遡及性+書込み単純化
+    の 3 制約を同時満足。validator/qc_auto_check 等 既存 tools 無改修で導入可能。
+  reason: "ash5 設計判断 (3 案評価で case_C 採用) は再利用価値高。1-2w 実運用で効果実証後に skill 化推奨 (S4)"
 
 north_star_alignment:
   status: aligned
   reason: |
-    cmd_593 北極星 (shelf-ware 監査・定量化 + 防止体系稼働 + 効果可視化) 5 点全 aligned。
-    audit 51 件 + deploy & verify 標準化 + KPI observer cron + suggestions 永続化 +
-    context_pct 動的化で包括的体系完成。
+    cmd_595 Scope A 北極星 (QC が任意 subtask report を遡及検証可能) 達成。
+    case_C Hybrid + ash5_report.yaml 自身が機構実証 (history[0]=593c) で
+    self-validating design 完成。後方互換ゆえ既存 tool chain への影響ゼロ。
   risks_to_north_star:
-    - "KPI framework 妥当性 1-2w empirical 未検証 → cmd_594 follow-up (S2)"
-    - "shelf-ware 51 件の個別解消状況未明示 → cmd_595 triage (S1)"
-    - "context_pct 計測精度 1-2w 観測必要 (C3)"
+    - "validator MEDIUM WARN (type='implement' enum 不一致) → S1 で解消 (cmd_596 0.05d)"
+    - "ashigaru1/2/3/4/6/7/8 の history 未展開 → 新 task 以降自然に積まれる (S2)"
+    - "history[] 容量肥大化 → 50+ entry 時 rotation 設計検討 (S3)"

@@ -1,5 +1,5 @@
 # 📊 戦況報告
-最終更新: 2026-04-26 19:43 JST
+最終更新: 2026-04-26 19:48 JST
 
 ## 📋 記載ルール (Self-Documentation)
 > **更新者必読**: このセクションのルールを遵守して dashboard を更新すること。
@@ -23,16 +23,16 @@
 | 今日のFrog | 未設定 |
 | Frog状態 | 🐸 未撃破 |
 | ストリーク | 🔥 32日目継続中 (最長: 32日) |
-| 今日の完了 | 3 |
+| 今日の完了 | 5 |
 | VFタスク残り | 0件（うち今日期限: 0件） |
 
 ## 🚨 要対応 - 殿のご判断をお待ちしております
 
 | タグ | 項目 | 詳細 |
 |------|------|------|
+| [action-9] | **殿ご確認: 寺地 50件 古い要約の取扱** | cmd_585 完遂済(19:33)。既処理 50 thread は cmd_589 修正前の要約が残存。(a) force=true 再実行で再要約 or (b) 現状維持。完了後 家老 inbox に通知。 |
 | [action-8] | **cmd_594 発令待ち (2026-05-03 以降)** — KPI framework 1-2w 後検証 | cmd_593 KPI framework の実測値妥当性確認。2026-05-03 に家老が発令 (ash Scope A + gunshi QC)。 |
 | [action-7] | **difference.md 5日間未更新** — cmd_593 Scope E で hook登録完了 | 次の 🏆🏆 commit で自動再生成予定。急ぐなら VPS で `bash scripts/cmd_squash_pub_hook.sh` 手動実行。 |
-| [action-6] | **殿 GAS Editor 実行依頼** — backfillTerachi 手動実行済 → ash3 reality check中 | cmd_590完遂(12:27)。殿が backfillTerachi() 実行済。ash3 が実シート確認中 → cmd_585/cmd_568 完遂判定待ち。 |
 | [action-5] | cmd_588 運用開始 — 殿 12分作業 | gunshi QC=Go(06:19)確認済。(1)**GAS エディタ** script.google.com→gas-mail-manager→`setupTrigger()` 手動実行→毎日9:00 trigger登録(5分) 手順書: output/cmd_588_trigger_setup.md (2)**crontab設定** `crontab -e` で `*/30 * * * * bash /home/ubuntu/shogun/scripts/clasp_rapt_monitor.sh >> /tmp/rapt_monitor.log 2>&1` 追加(2分) 完了後 家老 inbox に「action-5完了」通知。 |
 | [info-1] | Claude Code .claude/skills パーミッションバグ | **2026-04-24 16:10 将軍確認**: anthropics/claude-code#37157 (bug/has repro/area:skills, 最終更新 4/20) + #38806 (enhancement/area:permissions, 最終更新 4/2) 共に **OPEN** (公式修正なし)。暫定対処: 選択肢2で手動承認を継続。将軍が週次で修正状況を確認する。 |
 
@@ -47,9 +47,8 @@
 
 | cmd | 内容 | 担当 | 状態 |
 |-----|------|------|------|
-| cmd_595 | report.yaml per-subtask history 機構 | ash5:Scope A作業中 | A(ash5:設計+実装中) |
-| cmd_596 | suggestions 定期消化機構(507件triage) | ash1:Scope B作業中 | A✅(19:42:resolved71/accepted169/deferred219/rejected165)+B(ash1:digest.sh中) |
-| cmd_585 | 寺地backfill完遂判定 | ash3:reality check中 | m(ash3:実シート確認中) |
+| cmd_595 | report.yaml per-subtask history 機構 | ash6:Scope C中 | A✅(19:43:案C Hybrid)+B待機+C(ash6:second opinion中)+D(gunshi:QC待機) |
+| cmd_596 | suggestions 定期消化機構 | ash1:Scope B作業中 | A✅(19:42:resolved71/accepted169)+B(ash1:digest.sh中) |
 
 ## 🏯 待機中の構成員
 
@@ -57,10 +56,10 @@
 |------|------|-----------|
 | 足軽1号(Sonnet+T) | 作業中 | subtask_596b発令(19:45): cmd_596 Scope B suggestions_digest.sh新規作成+cron登録 |
 | 足軽2号(Sonnet+T) | 待機 | subtask_592b完了(12:12): compact_observer.sh新規作成 ✅ |
-| 足軽3号(Sonnet+T) | 作業中 | subtask_585m発令(19:37): action-6 backfillTerachi実行後 実シートreality check |
+| 足軽3号(Sonnet+T) | 待機 | subtask_585m完了(19:46): reality check OK。clasp logs確認 processed=43/total=93。cmd_585/cmd_568完遂=可 ✅ |
 | 足軽4号(Opus+T) | 待機 | subtask_588a完了(06:15): clasp push 7files成功 AC1/AC2/AC_trigger_doc 全PASS ✅ |
-| 足軽5号(Opus+T) | 作業中 | subtask_595a発令(19:37): cmd_595 report.yaml per-subtask history 機構 設計+実装 |
-| 足軽6号(Codex5.3) | 待機 | subtask_596a完了(19:42): suggestions.yaml 507件triage完了 resolved71/accepted169/deferred219/rejected165 ✅ |
+| 足軽5号(Opus+T) | 待機 | subtask_595a完了(19:43): report history機構 案C Hybrid実装+instructions/ashigaru.md更新 AC1/AC2/AC3 PASS ✅ |
+| 足軽6号(Codex5.3) | 作業中 | subtask_595c発令(19:47): cmd_595 Scope C 案C Hybrid設計 second opinion |
 | 足軽7号(Codex5.3) | 待機 | subtask_593h完了(14:02): get_context_pct.sh作成(実測54%)+crontab動的取得更新 ✅ |
 | 軍師(Opus+T) | 待機 | subtask_593i_qc完了(17:00): cmd_593 QC=Go 6/6 PASS。north_star 5点 aligned ✅ |
 
@@ -68,6 +67,7 @@
 
 | 時刻 | 戦場 | 任務 | 結果 |
 |------|------|------|------|
+| 19:33 | GAS/shogun | cmd_585完遂(ash3/5/gunshi)+cmd_568連鎖完遂: 寺地11年分全93thread backfill完了(processed=43/skipped=50/errors=0)。5x並列化稼働3m47s完遂 | ✅ ends完了 |
 | 17:00 | scripts/shogun | cmd_593完遂(ash1/2/5/6/7/gunshi): shelf-ware監査51件+防止体系(deploy&verify/KPI observer/context_pct動的化) commit b2ec328。gunshi QC=Go | ✅ ends完了 |
 | 14:27 | scripts/shogun | cmd_592完遂(ash1/2/7/gunshi): shelf-ware解消 cron実稼働(compact_observer/safe_window動的/karo_self_clear) commit 02bb5d7 | ✅ ends完了 |
 | 12:27 | GAS/shogun | cmd_590完遂(ash5/gunshi): 寺地backfill 5x高速化 Fix2+3+4+callGeminiApiBatch chunk=5並列化 commit 4e1f955/853f58c。殿 backfillTerachi 実行待ち | ✅ ends完了 |
@@ -93,6 +93,7 @@
 
 | スキル名 | 発見元 | 概要 |
 |---------|-------|------|
+| **shogun-gas-backfill-pattern** | cmd_585/590 ash5+gunshi: GAS UrlFetchApp.fetchAll による 11年分 thread 並列 backfill パターン。force=false(新規のみ)/chunk=5並列/resume省略/完遂検出→trigger削除。battle_tested: 寺地93thread 3m47s完遂 (5x高速化)。1w運用観測後に正式スキル化推奨。 | 承認待ち |
 | **shogun-bash-daemon-restart-subcommand-pattern** | cmd_546 gunshi(Opus+T): bash daemon に安全な restart サブコマンドを追加するパターン。mode="${1:-daemon}"で引数解釈/lockfile PID+pgrep二段フォールバック/kill-TERM+5秒deadline/nohup spawn後PID再検証/stale lockfile回復実証済み。systemd非依存の軽量bash daemon・常駐watcher・hook runnerに汎用展開可。1w運用観測後に正式スキル化推奨。 | 承認待ち |
 | **shogun-gas-clasp-rapt-reauth-fallback** | cmd_565 gunshi(Opus+T): clasp push invalid_grant/invalid_rapt 復旧プロトコル。VPS 側 ~/.clasprc.json の refresh token が RAPT 再認証境界を越えた場合、リモート(VPS)からは再認証不能(ブラウザ必須)のため、案A=殿ローカル clasp login → scp 転送 (最短経路) / 案B=GAS editor 直接編集 (代替、複数ファイル同期には非効率)。**SKILL.md 資産化完了** (/home/ubuntu/shogun/skills/shogun-gas-clasp-rapt-reauth-fallback/SKILL.md)。battle_tested=cmd_486/cmd_564/cmd_565 (3回再現、cmd_565 で実地復旧検証済)。cmd_562 AC5 準拠配置。GAS 運用全般に汎用展開可。1w 運用観測後に正式スキル化推奨。 | 承認待ち |
 | **shogun-gas-automated-verification** | cmd_567 ashigaru1(Sonnet+T): GAS (clasp 3.x) 自動検証基盤スキル。VPS/Ubuntu 上で `clasp run` + `clasp logs` による自動テストを実現。battle_tested 5点: (1) clasp 3.x --creds は --use-project-scopes + --include-clasp-scopes 必須 (2) OAuth クライアントは「デスクトップアプリ」必須 (ウェブアプリは Invalid redirect URL) (3) .clasp.json に projectId 追加必須 (clasp logs 使用時) (4) Google アカウント承諾削除は myaccount.google.com/permissions (5) Logger.log は clasp 3.x + Cloud Logging 経由で INFO レベル取得可 (console.log 置換不要)。**SKILL.md 資産化完了** (/home/ubuntu/shogun/skills/shogun-gas-automated-verification/SKILL.md)。cmd_562 AC5 準拠配置。他 GAS プロジェクト展開可。1w 運用観測後に正式スキル化推奨。 | 承認待ち |
