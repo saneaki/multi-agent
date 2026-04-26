@@ -12150,8 +12150,11 @@ suggestions:
   cmd_ref: cmd_566
   task_ref: subtask_566e
   created_at: '2026-04-24T12:22:00+09:00'
-  status: accepted
+  status: resolved
   priority: high
+  resolved_by: cmd_571
+  resolved_at: '2026-04-24T00:00:00+09:00'
+  resolution: "cmd_571 で F006a/F006b 分割実装済 (commit 5cdb3c5, 2026-04-24)。"
   content: 'F006 重複意義の分割定義 (不整合-1 解消)。
 
     ash3 調査で発見。F006 は karo.md 他で「generated file 直編集禁止」、別 .md で
@@ -12175,8 +12178,11 @@ suggestions:
   cmd_ref: cmd_566
   task_ref: subtask_566e
   created_at: '2026-04-24T12:22:00+09:00'
-  status: accepted
+  status: resolved
   priority: high
+  resolved_by: cmd_572
+  resolved_at: '2026-04-24T00:00:00+09:00'
+  resolution: "cmd_572 で SO-24 新設実装済 (commit 5ad403f, 2026-04-24)。Verification Before Report を SO-24 として独立定義。"
   content: 'SO-20 重複定義の分離 (不整合-2 解消)。
 
     ash3 調査で発見。SO-20 は 1 箇所で「editable_files 完全性 check」、別箇所で

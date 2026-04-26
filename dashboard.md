@@ -1,5 +1,5 @@
 # 📊 戦況報告
-最終更新: 2026-04-26 22:50 JST
+最終更新: 2026-04-26 22:54 JST
 
 ## 📋 記載ルール (Self-Documentation)
 > **更新者必読**: このセクションのルールを遵守して dashboard を更新すること。
@@ -30,12 +30,10 @@
 
 | タグ | 項目 | 詳細 |
 |------|------|------|
-| [action-9] | **殿ご確認: 寺地 50件 古い要約の取扱** | cmd_585 完遂済(19:33)。既処理 50 thread は cmd_589 修正前の要約が残存。(a) force=true 再実行で再要約 or (b) 現状維持。完了後 家老 inbox に通知。 |
 | [action-8] | **cmd_594 発令待ち (2026-05-03 以降)** — KPI framework 1-2w 後検証 | cmd_593 KPI framework の実測値妥当性確認。2026-05-03 に家老が発令 (ash Scope A + gunshi QC)。 |
 | [action-7] | **difference.md 5日間未更新** — cmd_593 Scope E で hook登録完了 | 次の 🏆🏆 commit で自動再生成予定。急ぐなら VPS で `bash scripts/cmd_squash_pub_hook.sh` 手動実行。 |
 | [info-1] | Claude Code .claude/skills パーミッションバグ | **2026-04-24 16:10 将軍確認**: anthropics/claude-code#37157 (bug/has repro/area:skills, 最終更新 4/20) + #38806 (enhancement/area:permissions, 最終更新 4/2) 共に **OPEN** (公式修正なし)。暫定対処: 選択肢2で手動承認を継続。将軍が週次で修正状況を確認する。 |
 | [提案-1] | clasp RAPT 月次再認証定期化 (sug_cmd_564_001) | cmd_486→cmd_564 の 1週間サイクルで RAPT 再認証境界越えが顕在化。bi-weekly〜monthly 再発可能性高。(a) 月初 RAPT refresh cmd を SayTask 化 or (b) clasp_rapt_monitor.sh で残日数自動通知。殿のご判断: 採否+方式選択。 |
-| [提案-2] | F006/SO-20 重複定義の整理 (sug_cmd_566_001/002) | cmd_566 ash3 調査で発見。F006 は karo.md 他で「generated file 直編集禁止」、別 .md で「Stall Response 違反」の 2 義併存。SO-20 も「editable_files 完全性 check」と「Verification Before Report」の 2 義。Violation 検出時に責務不明確化リスク。F006a/F006b と SO-20a/SO-20b に分割改名 or どちらかを別番号に移管が必要。殿のご判断待ち。 |
 
 ## 📊 運用指標
 
@@ -70,6 +68,7 @@
 | 22:46 | GAS/crontab/shogun | cmd_588真の運用稼働(殿完遂): GAS Time-driven trigger 毎日9:00登録+rapt_monitor crontab。4段reality check Go。業務介入=0体制確立 | ✅ 殿完了 |
 | 22:00 | queue/instructions/shogun | cmd_596完遂(ash1/5/6/gunshi): suggestions定期消化機構。triage 553件→pending=0+digest.sh cron+karo.md hard check+dashboard[提案]反映。gunshi QC=Go commit 66c29bd | ✅ ends完了 |
 | 20:00 | instructions/shogun | cmd_595完遂(ash5/ash6/gunshi): report.yaml history機構(案C Hybrid)導入。twin QC=Go+north_star 3点 aligned。commit d550795 | ✅ ends完了 |
+| 22:50 | GAS/shogun | action-9 殿決定: 寺地50件古い要約=**現状維持** (b)採択。cmd_585/cmd_568 完全クローズ | ✅ 殿決定 |
 | 19:33 | GAS/shogun | cmd_585完遂(ash3/5/gunshi)+cmd_568連鎖完遂: 寺地11年分全93thread backfill完了(processed=43/skipped=50/errors=0)。5x並列化稼働3m47s完遂 | ✅ ends完了 |
 | 17:00 | scripts/shogun | cmd_593完遂(ash1/2/5/6/7/gunshi): shelf-ware監査51件+防止体系(deploy&verify/KPI observer/context_pct動的化) commit b2ec328。gunshi QC=Go | ✅ ends完了 |
 | 14:27 | scripts/shogun | cmd_592完遂(ash1/2/7/gunshi): shelf-ware解消 cron実稼働(compact_observer/safe_window動的/karo_self_clear) commit 02bb5d7 | ✅ ends完了 |
