@@ -1,5 +1,5 @@
 # 📊 戦況報告
-最終更新: 2026-04-26 17:00 JST
+最終更新: 2026-04-26 19:40 JST
 
 ## 📋 記載ルール (Self-Documentation)
 > **更新者必読**: このセクションのルールを遵守して dashboard を更新すること。
@@ -30,8 +30,9 @@
 
 | タグ | 項目 | 詳細 |
 |------|------|------|
+| [action-8] | **cmd_594 発令待ち (2026-05-03 以降)** — KPI framework 1-2w 後検証 | cmd_593 KPI framework の実測値妥当性確認。2026-05-03 に家老が発令 (ash Scope A + gunshi QC)。 |
 | [action-7] | **difference.md 5日間未更新** — cmd_593 Scope E で hook登録完了 | 次の 🏆🏆 commit で自動再生成予定。急ぐなら VPS で `bash scripts/cmd_squash_pub_hook.sh` 手動実行。 |
-| [action-6] | **殿 GAS Editor 実行依頼** — backfillTerachi 手動実行 | cmd_590完遂(12:27 gunshi QC=Go)。GAS Editor → gas-mail-manager → `backfillTerachi()` を手動実行。target: 150-180件/run (5x高速化済)。完了後 家老 inbox に「action-6完了+処理件数」を通知。 |
+| [action-6] | **殿 GAS Editor 実行依頼** — backfillTerachi 手動実行済 → ash3 reality check中 | cmd_590完遂(12:27)。殿が backfillTerachi() 実行済。ash3 が実シート確認中 → cmd_585/cmd_568 完遂判定待ち。 |
 | [action-5] | cmd_588 運用開始 — 殿 12分作業 | gunshi QC=Go(06:19)確認済。(1)**GAS エディタ** script.google.com→gas-mail-manager→`setupTrigger()` 手動実行→毎日9:00 trigger登録(5分) 手順書: output/cmd_588_trigger_setup.md (2)**crontab設定** `crontab -e` で `*/30 * * * * bash /home/ubuntu/shogun/scripts/clasp_rapt_monitor.sh >> /tmp/rapt_monitor.log 2>&1` 追加(2分) 完了後 家老 inbox に「action-5完了」通知。 |
 | [info-1] | Claude Code .claude/skills パーミッションバグ | **2026-04-24 16:10 将軍確認**: anthropics/claude-code#37157 (bug/has repro/area:skills, 最終更新 4/20) + #38806 (enhancement/area:permissions, 最終更新 4/2) 共に **OPEN** (公式修正なし)。暫定対処: 選択肢2で手動承認を継続。将軍が週次で修正状況を確認する。 |
 
@@ -40,13 +41,15 @@
 | 日付(JST) | /pub-us起動 | 成功 | 失敗 | kill-switch発動 | karo auto-compact | gunshi auto-compact | safe_window発動 |
 |-----------|------------|------|------|----------------|-------------------|---------------------|------------------|
 | 2026-04-22 | 1 | 1 | 0 | 0 | - | - | - |
-| 2026-04-26 | 0 | 0 | 0 | 0 | 1 | 0 | 35 |
+| 2026-04-26 | 0 | 0 | 0 | 0 | 1 | 0 | 79 |
 
 ## 🔄 進行中 - 只今、戦闘中でござる
 
 | cmd | 内容 | 担当 | 状態 |
 |-----|------|------|------|
-| (進行中なし) | — | — | — |
+| cmd_595 | report.yaml per-subtask history 機構 | ash5:Scope A作業中 | A(ash5:設計+実装中) |
+| cmd_596 | suggestions 定期消化機構(507件triage) | ash6:Scope A作業中 | A(ash6:triage中) |
+| cmd_585 | 寺地backfill完遂判定 | ash3:reality check中 | m(ash3:実シート確認中) |
 
 ## 🏯 待機中の構成員
 
@@ -54,10 +57,10 @@
 |------|------|-----------|
 | 足軽1号(Sonnet+T) | 待機 | subtask_592f完了(14:21): compact_observer cron登録(karo+gunshi */30)+gunshi context_pct動的化 AC_c1/AC_c2 PASS ✅ |
 | 足軽2号(Sonnet+T) | 待機 | subtask_592b完了(12:12): compact_observer.sh新規作成 ✅ |
-| 足軽3号(Sonnet+T) | 待機 | subtask_585l完了(13:33): clasp RAPT Issue #39作成 https://github.com/saneaki/multi-agent/issues/39 ✅ |
+| 足軽3号(Sonnet+T) | 作業中 | subtask_585m発令(19:37): action-6 backfillTerachi実行後 実シートreality check |
 | 足軽4号(Opus+T) | 待機 | subtask_588a完了(06:15): clasp push 7files成功 AC1/AC2/AC_trigger_doc 全PASS ✅ |
-| 足軽5号(Opus+T) | 待機 | subtask_593c完了(14:25): cmd_kpi_observer.sh新規作成+dashboard運用指標3列拡張 AC5/AC6 PASS ✅ |
-| 足軽6号(Codex5.3) | 待機 | subtask_593g完了(14:02): safe_window_judge self-notify+10分guard実装。dry-run karo inbox投入確認 ✅ |
+| 足軽5号(Opus+T) | 作業中 | subtask_595a発令(19:37): cmd_595 report.yaml per-subtask history 機構 設計+実装 |
+| 足軽6号(Codex5.3) | 作業中 | subtask_596a発令(19:37): cmd_596 suggestions.yaml pending 507件 triage |
 | 足軽7号(Codex5.3) | 待機 | subtask_593h完了(14:02): get_context_pct.sh作成(実測54%)+crontab動的取得更新 ✅ |
 | 軍師(Opus+T) | 待機 | subtask_593i_qc完了(17:00): cmd_593 QC=Go 6/6 PASS。north_star 5点 aligned ✅ |
 
