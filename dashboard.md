@@ -1,5 +1,5 @@
 # 📊 戦況報告
-最終更新: 2026-04-26 19:40 JST
+最終更新: 2026-04-26 19:43 JST
 
 ## 📋 記載ルール (Self-Documentation)
 > **更新者必読**: このセクションのルールを遵守して dashboard を更新すること。
@@ -48,19 +48,19 @@
 | cmd | 内容 | 担当 | 状態 |
 |-----|------|------|------|
 | cmd_595 | report.yaml per-subtask history 機構 | ash5:Scope A作業中 | A(ash5:設計+実装中) |
-| cmd_596 | suggestions 定期消化機構(507件triage) | ash6:Scope A作業中 | A(ash6:triage中) |
+| cmd_596 | suggestions 定期消化機構(507件triage) | ash1:Scope B作業中 | A✅(19:42:resolved71/accepted169/deferred219/rejected165)+B(ash1:digest.sh中) |
 | cmd_585 | 寺地backfill完遂判定 | ash3:reality check中 | m(ash3:実シート確認中) |
 
 ## 🏯 待機中の構成員
 
 | 構成員 | 状態 | 最終タスク |
 |------|------|-----------|
-| 足軽1号(Sonnet+T) | 待機 | subtask_592f完了(14:21): compact_observer cron登録(karo+gunshi */30)+gunshi context_pct動的化 AC_c1/AC_c2 PASS ✅ |
+| 足軽1号(Sonnet+T) | 作業中 | subtask_596b発令(19:45): cmd_596 Scope B suggestions_digest.sh新規作成+cron登録 |
 | 足軽2号(Sonnet+T) | 待機 | subtask_592b完了(12:12): compact_observer.sh新規作成 ✅ |
 | 足軽3号(Sonnet+T) | 作業中 | subtask_585m発令(19:37): action-6 backfillTerachi実行後 実シートreality check |
 | 足軽4号(Opus+T) | 待機 | subtask_588a完了(06:15): clasp push 7files成功 AC1/AC2/AC_trigger_doc 全PASS ✅ |
 | 足軽5号(Opus+T) | 作業中 | subtask_595a発令(19:37): cmd_595 report.yaml per-subtask history 機構 設計+実装 |
-| 足軽6号(Codex5.3) | 作業中 | subtask_596a発令(19:37): cmd_596 suggestions.yaml pending 507件 triage |
+| 足軽6号(Codex5.3) | 待機 | subtask_596a完了(19:42): suggestions.yaml 507件triage完了 resolved71/accepted169/deferred219/rejected165 ✅ |
 | 足軽7号(Codex5.3) | 待機 | subtask_593h完了(14:02): get_context_pct.sh作成(実測54%)+crontab動的取得更新 ✅ |
 | 軍師(Opus+T) | 待機 | subtask_593i_qc完了(17:00): cmd_593 QC=Go 6/6 PASS。north_star 5点 aligned ✅ |
 
