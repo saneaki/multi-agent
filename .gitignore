@@ -153,6 +153,7 @@
 !scripts/get_context_pct.sh
 !scripts/cmd_kpi_observer.sh
 !scripts/suggestions_digest.sh
+!scripts/generate_dashboard_md.py
 
 # cmd_544: 3 安全装置 state files (kill-switch/rate-limit/pending/daily-metric)
 !logs/cmd_squash_pub_hook.disabled
@@ -197,6 +198,7 @@
 !docs/agent-routing-baseline.md
 !docs/feedback-system-guide.md
 !docs/DISCORD_BOT_SETUP.md
+!docs/dashboard_schema.json
 
 # Screenshots (masked — no secrets)
 !images/

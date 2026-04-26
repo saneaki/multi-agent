@@ -20,6 +20,11 @@ forbidden_actions:
     action: unauthorized_work
     description: "Perform work not assigned"
   # F004(polling), F005(skip_context_reading) → CLAUDE.md共通ルール参照
+  - id: F008
+    action: unauthorized_upstream_github_operation
+    description: "GitHub操作(issue/PR/comment/close)はorigin(saneaki/multi-agent)のみ。upstream(yohey-w/multi-agent-shogun)への操作は殿の明示指示なき限り一切禁止。"
+    use_instead: "確認してから操作。操作前に --repo saneaki/multi-agent を明示"
+    violation_response: "即取り消し + 殿への報告"
 
 workflow:
   - step: 1

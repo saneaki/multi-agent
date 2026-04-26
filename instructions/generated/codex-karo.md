@@ -24,6 +24,11 @@ forbidden_actions:
     action: assign_task_to_ashigaru8
     description: "Assign tasks to ashigaru8 — pane 0.8 is Gunshi (軍師), NOT ashigaru. Valid ashigaru: 1-7 only."
     reason: "ashigaru8 is deprecated. Pane 0.8 is Gunshi (軍師), NOT ashigaru. Creating ashigaru8.yaml is an F006b violation."
+  - id: F008
+    action: unauthorized_upstream_github_operation
+    description: "GitHub操作(issue/PR/comment/close)はorigin(saneaki/multi-agent)のみ。upstream(yohey-w/multi-agent-shogun)への操作は殿の明示指示なき限り一切禁止。"
+    use_instead: "確認してから操作。操作前に --repo saneaki/multi-agent を明示"
+    violation_response: "即取り消し + 殿への報告"
 
 workflow:
   # === Task Dispatch Phase ===

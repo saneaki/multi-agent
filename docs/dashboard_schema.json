@@ -1,0 +1,216 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Shogun Dashboard SoT Schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "metadata",
+    "frog",
+    "action_required",
+    "metrics",
+    "in_progress",
+    "idle_members",
+    "achievements",
+    "skill_candidates"
+  ],
+  "properties": {
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["last_updated", "streak", "frog_status"],
+      "properties": {
+        "last_updated": { "type": "string", "minLength": 1 },
+        "streak": { "type": "integer", "minimum": 0 },
+        "frog_status": { "type": "string", "minLength": 1 }
+      }
+    },
+    "documentation_rules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["category", "rule_summary", "rationale"],
+        "properties": {
+          "category": { "type": "string", "minLength": 1 },
+          "rule_summary": { "type": "string", "minLength": 1 },
+          "rationale": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "frog": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "today",
+        "status",
+        "streak_days",
+        "streak_max",
+        "completed_today",
+        "vf_remaining"
+      ],
+      "properties": {
+        "today": {
+          "type": ["string", "null"]
+        },
+        "status": { "type": "string", "minLength": 1 },
+        "streak_days": { "type": "integer", "minimum": 0 },
+        "streak_max": { "type": "integer", "minimum": 0 },
+        "completed_today": { "type": "integer", "minimum": 0 },
+        "vf_remaining": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "action_required": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["tag", "title", "detail"],
+        "properties": {
+          "tag": { "type": "string", "minLength": 1 },
+          "title": { "type": "string", "minLength": 1 },
+          "detail": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "metrics": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "date",
+          "pub_us",
+          "success",
+          "failure",
+          "kill_switch",
+          "karo_compact",
+          "gunshi_compact",
+          "safe_window"
+        ],
+        "properties": {
+          "date": {
+            "type": "string",
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+          },
+          "pub_us": { "type": "integer", "minimum": 0 },
+          "success": { "type": "integer", "minimum": 0 },
+          "failure": { "type": "integer", "minimum": 0 },
+          "kill_switch": { "type": "integer", "minimum": 0 },
+          "karo_compact": {
+            "oneOf": [
+              { "type": "integer", "minimum": 0 },
+              { "type": "string", "enum": ["-"] }
+            ]
+          },
+          "gunshi_compact": {
+            "oneOf": [
+              { "type": "integer", "minimum": 0 },
+              { "type": "string", "enum": ["-"] }
+            ]
+          },
+          "safe_window": {
+            "oneOf": [
+              { "type": "integer", "minimum": 0 },
+              { "type": "string", "enum": ["-"] }
+            ]
+          }
+        }
+      }
+    },
+    "in_progress": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["cmd", "content", "assignee", "status"],
+        "properties": {
+          "cmd": { "type": "string", "minLength": 1 },
+          "content": { "type": "string", "minLength": 1 },
+          "assignee": { "type": "string", "minLength": 1 },
+          "status": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "idle_members": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "model", "status", "last_task"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1 },
+          "model": { "type": "string", "minLength": 1 },
+          "status": { "type": "string", "minLength": 1 },
+          "last_task": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "achievements": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["today", "yesterday", "day_before"],
+      "properties": {
+        "today": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/achievement_item"
+          }
+        },
+        "yesterday": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["header", "items"],
+          "properties": {
+            "header": { "type": "string", "minLength": 1 },
+            "items": {
+              "type": "array",
+              "items": { "$ref": "#/definitions/achievement_item" }
+            }
+          }
+        },
+        "day_before": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["header", "items"],
+          "properties": {
+            "header": { "type": "string", "minLength": 1 },
+            "items": {
+              "type": "array",
+              "items": { "$ref": "#/definitions/achievement_item" }
+            }
+          }
+        }
+      }
+    },
+    "skill_candidates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "source", "summary", "status"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1 },
+          "source": { "type": "string", "minLength": 1 },
+          "summary": { "type": "string", "minLength": 1 },
+          "status": { "type": "string", "minLength": 1 }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "achievement_item": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["time", "battlefield", "task", "result"],
+      "properties": {
+        "time": {
+          "type": "string",
+          "pattern": "^([0-1][0-9]|2[0-3]):[0-5][0-9]$"
+        },
+        "battlefield": { "type": "string", "minLength": 1 },
+        "task": { "type": "string", "minLength": 1 },
+        "result": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}
