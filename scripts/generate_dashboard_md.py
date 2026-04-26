@@ -167,8 +167,18 @@ def generate_markdown(data: dict[str, Any]) -> str:
     today_label = format_today_label(last_updated)
     lines.append(f"## ✅ 本日の戦果（{today_label}）")
     lines.append("")
+    def _today_task_cell(r: dict) -> str:
+        task = r.get("task", "")
+        result = r.get("result", "")
+        if "ends完了" in result:
+            import re as _re
+            m = _re.search(r"(cmd_\d+)完遂", task)
+            if m:
+                return f"🏆🏆{m.group(1)} COMPLETE — {task}"
+        return task
+
     today_rows = [
-        [r.get("time", ""), r.get("battlefield", ""), r.get("task", ""), r.get("result", "")]
+        [r.get("time", ""), r.get("battlefield", ""), _today_task_cell(r), r.get("result", "")]
         for r in achievements.get("today", [])
     ]
     lines.extend(render_table(["時刻", "戦場", "任務", "結果"], today_rows, TABLE_4_EMPTY_ROW))
