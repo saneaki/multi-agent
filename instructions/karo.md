@@ -537,6 +537,20 @@ Step 3: Gunshi → 両レポート統合 QC + 差分・補完点整理 → integ
 
 Task YAML notes フィールド: `"L016 dual-model: Opus=ash5, Codex=ash6"` を明記すること。
 
+## Test Execution — Dual-Model Parallel Rule (L017)
+
+<!-- Established 2026-04-28. Extends L016 principle to test execution. -->
+
+**cmd の AC に「テスト」が含まれる場合、テスト Scope を Claude 系 ash と Codex 系 ash の 2 体並列で発令すること (L017)。**
+
+| 種別 | 適用 |
+|------|------|
+| smoke test / integration test / E2E test | dual-model 必須 |
+| 5コマンド以内の自明な pass/fail 確認 | 家老判断で単系統可 (理由を task YAML に記録) |
+
+Canonical source: `instructions/common/protocol.md §Test Execution Rule: Dual-Model Parallel (L017)`
+Task YAML notes フィールド: `"L017 test dual-model: Claude=ashN, Codex=ashM"` を明記すること。
+
 ## Task Dependencies (blocked_by)
 
 ```

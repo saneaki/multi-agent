@@ -90,7 +90,9 @@ Consequence: edits to `common/*.md` propagate to every generated composite on ne
 | **F006** Generated-file direct edit prohibited | `instructions/common/forbidden_actions.md` | §Common table row (line 9) | ⚠️ See Known Issues §6 — "F006" is currently overloaded. |
 | **F007** `git push` without approval | `instructions/common/forbidden_actions.md` | §Common table row (line 10) | |
 | **F008** GitHub scope restriction | `memory/global_context.md` | §F008 section | saneaki/obsidian 等 殿明示指示は例外適用可 |
-| **F009** Communication Channel Mirror | `instructions/common/protocol.md` | §F009 section (末尾) | 入口チャネル=返信チャネル。ntfy受信→ntfy返信必須。2026-04-28 追加 |
+| **F009** Communication Channel Mirror | `instructions/common/protocol.md` | §F009 section | 入口チャネル=返信チャネル。ntfy受信→ntfy返信必須。2026-04-28 追加 |
+| **L016** Investigation Tasks dual-model | `instructions/karo.md` | §Investigation Tasks — Dual-Model Parallel Rule (L016) | 調査・設計分析は Opus+Codex 並列必須 |
+| **L017** Test Execution dual-model | `instructions/common/protocol.md` | §Test Execution Rule: Dual-Model Parallel (L017) | テスト AC = Claude+Codex 並列必須。2026-04-28 追加 |
 | **SO-16** Report Delegation | `instructions/common/shogun_mandatory.md` | Rule 9 (line 13) | Also enumerated in `config/qc_checklist.yaml:55`. |
 | **SO-17** North Star Alignment | `instructions/common/shogun_mandatory.md` | Rule 10 (line 14) | Also `config/qc_checklist.yaml:64`. |
 | **SO-18** Bug Fix Issue Tracking | `instructions/common/shogun_mandatory.md` | Rule 11 (line 15) | Also `config/qc_checklist.yaml:74`. |

@@ -330,6 +330,32 @@ The inbox_write guarantees persistence. inbox_watcher handles delivery.
 
 See `memory/global_context.md §Communication Channel Mismatch` for full 4-layer analysis.
 
+---
+
+## Test Execution Rule: Dual-Model Parallel (L017)
+
+**Definition**: When a cmd's Acceptance Criteria include "test" (smoke test, integration test, E2E test, etc.), the test scope MUST be dispatched in parallel to both a Claude-series ashigaru and a Codex-series ashigaru.
+
+**Applies to**: All agents. Karo is responsible for dual dispatch at decomposition time.
+
+**Rationale**: cmd_597/cmd_598 single-model tests caused silent failures and overlooked edge cases. cmd_602 dual-model analysis demonstrated clear quality improvement (script.run SA constraint found only by Codex). Same principle applied to test execution.
+
+**Rule**:
+- AC with "test" keyword → dual dispatch (Claude ash + Codex ash) mandatory
+- Single-model test is **prohibited** unless the exception below applies
+- Exception (Karo judgment): trivial smoke test (< 5 commands, 1 binary pass/fail) may use single model; document reason in task YAML
+
+**Dispatch pattern**:
+```
+Claude ash (ash4/ash5): test suite execution + pass/fail report
+Codex ash (ash6/ash7): independent re-run + edge case detection
+Gunshi: consolidate results, flag discrepancies
+```
+
+Task YAML notes field: `"L017 test dual-model: Claude=ashN, Codex=ashM"` to be recorded.
+
+See also: L016 (Investigation Tasks dual-model) in `instructions/karo.md`.
+
 # Task Flow
 
 ## Workflow: Shogun → Karo → Ashigaru
