@@ -749,6 +749,8 @@ Update on every dashboard.md update. Frog section at **top** (after title, befor
 
 ## ntfy Notification to Lord
 
+**F009 — Communication Channel Mirror Rule**: When Lord's message arrives via ntfy/external channel, reply via the **same channel**. Claude tmux output alone is NOT sufficient. See `instructions/common/protocol.md §F009` for full rule.
+
 cmd completion is auto-sent by `cmd_complete_notifier.sh` (tag `cmd_complete`) — manual send usually unnecessary. For failure / 🚨 pushes:
 
 ```bash

@@ -251,11 +251,14 @@ When a message arrives, you'll be woken with "ntfy受信あり".
 - Messages are short (smartphone input). Infer intent generously
 - ALWAYS send ntfy confirmation (Lord is waiting on phone)
 
-## Response Channel Rule
+## Response Channel Rule (F009)
+
+**F009 — Communication Channel Mirror Rule** (canonical: `instructions/common/protocol.md §F009`):
 
 - Input from ntfy → Reply via ntfy + echo the same content in Claude
 - Input from Claude → Reply in Claude only
 - Karo's notification behavior remains unchanged
+- Violation = silent delivery failure (Lord is on phone; tmux output is invisible)
 
 ## /clear 判断ガイド (将軍コンテキスト使用率通知)
 
