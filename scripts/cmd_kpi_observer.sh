@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # cmd_kpi_observer.sh — 完遂 cmd の KPI を観測し dashboard 運用指標に書込む (cmd_593 Scope C / AC5)
 #
-# Usage: bash scripts/cmd_kpi_observer.sh [--dry-run]
+# Usage: bash scripts/cmd_kpi_observer.sh [--dry-run] [--date YYYY-MM-DD]
 # cron:  0 9 * * * bash /home/ubuntu/shogun/scripts/cmd_kpi_observer.sh >> /home/ubuntu/shogun/logs/kpi_observer.log 2>&1
 #
 # 収集 KPI (今日, JST):
@@ -24,11 +24,14 @@ PUB_LOG="${SCRIPT_DIR}/logs/cmd_squash_pub_hook.log"
 SAFE_WINDOW_DIR="${SCRIPT_DIR}/logs/safe_window"
 SAFE_CLEAR_DIR="${SCRIPT_DIR}/logs/safe_clear"
 COMPACT_OBSERVER="${SCRIPT_DIR}/scripts/compact_observer.sh"
+COMPACT_HISTORY_LOG="${SCRIPT_DIR}/logs/compact_history.log"
 
 DRY_RUN=0
+TARGET_DATE=""
 for arg in "$@"; do
     case "$arg" in
         --dry-run) DRY_RUN=1 ;;
+        --date=*) TARGET_DATE="${arg#--date=}" ;;
         -h|--help)
             sed -n '2,18p' "$0"
             exit 0
@@ -42,7 +45,7 @@ _log() {
 
 _log "=== START (dry_run=${DRY_RUN}) ==="
 
-TODAY="$(bash "${SCRIPT_DIR}/scripts/jst_now.sh" --date)"
+TODAY="${TARGET_DATE:-$(date -d "$(bash "${SCRIPT_DIR}/scripts/jst_now.sh" --date) -1 day" '+%Y-%m-%d' 2>/dev/null || bash "${SCRIPT_DIR}/scripts/jst_now.sh" --date)}"
 
 # ── KPI 1: /pub-us 起動回数 (today) ──────────────────────────────────────────
 PUB_US_INVOKE=0
@@ -68,11 +71,62 @@ PUB_US_KILL=${PUB_US_KILL:-0}
 # ── KPI 3-4: karo / gunshi auto-compact (today) ─────────────────────────────
 KARO_COMPACT=0
 GUNSHI_COMPACT=0
+derive_agent_compact_count() {
+    local role="$1"
+    local observer_out="$2"
+    local fallback="$3"
+    local total prev_date
+    total="$(echo "$observer_out" | grep -oE 'TOTAL=[0-9]+' | cut -d= -f2 | tr -d '\n' || true)"
+    total="${total:-0}"
+    prev_date="$(date -d "${TODAY} -1 day" '+%Y-%m-%d' 2>/dev/null || true)"
+    if [ -z "$prev_date" ] || [ ! -f "$COMPACT_HISTORY_LOG" ]; then
+        echo "${fallback:-0}"
+        return
+    fi
+    python3 - "$COMPACT_HISTORY_LOG" "$role" "$prev_date" "$total" "$fallback" "$TODAY" "$(bash "${SCRIPT_DIR}/scripts/jst_now.sh" --date)" <<'PYEOF'
+import json, sys
+import datetime as dt
+path, role, prev_date, total_s, fallback_s, target_date, current_jst = sys.argv[1:]
+total = int(total_s or "0")
+fallback = int(fallback_s or "0")
+date_to_total = {}
+with open(path) as f:
+    for line in f:
+        parts = line.strip().split("|", 3)
+        if len(parts) != 4:
+            continue
+        _, line_role, kind, payload = parts
+        if line_role != role or kind != "daily_rotate":
+            continue
+        try:
+            data = json.loads(payload)
+        except Exception:
+            continue
+        d = str(data.get("date", ""))
+        try:
+            date_to_total[d] = int(data.get("total_compactions", 0))
+        except Exception:
+            pass
+
+def day_before(d):
+    return (dt.datetime.strptime(d, "%Y-%m-%d") - dt.timedelta(days=1)).strftime("%Y-%m-%d")
+
+if target_date in date_to_total and day_before(target_date) in date_to_total:
+    print(max(date_to_total[target_date] - date_to_total[day_before(target_date)], 0))
+elif target_date == day_before(current_jst) and prev_date in date_to_total:
+    print(max(total - date_to_total[prev_date], 0))
+else:
+    print(fallback)
+PYEOF
+}
+
 if [ -x "$COMPACT_OBSERVER" ] || [ -f "$COMPACT_OBSERVER" ]; then
-    KARO_OUT=$(bash "$COMPACT_OBSERVER" karo 2>/dev/null | grep -m1 "^ROLE=" || true)
-    GUNSHI_OUT=$(bash "$COMPACT_OBSERVER" gunshi 2>/dev/null | grep -m1 "^ROLE=" || true)
-    KARO_COMPACT=$(echo "$KARO_OUT" | grep -oE 'AGENT_TODAY=[0-9]+' | cut -d= -f2 | tr -d '\n' || true)
-    GUNSHI_COMPACT=$(echo "$GUNSHI_OUT" | grep -oE 'AGENT_TODAY=[0-9]+' | cut -d= -f2 | tr -d '\n' || true)
+    KARO_OUT=$(bash "$COMPACT_OBSERVER" karo --date "$TODAY" 2>/dev/null | grep -m1 "^ROLE=" || true)
+    GUNSHI_OUT=$(bash "$COMPACT_OBSERVER" gunshi --date "$TODAY" 2>/dev/null | grep -m1 "^ROLE=" || true)
+    KARO_AGENT_TODAY=$(echo "$KARO_OUT" | grep -oE 'AGENT_TODAY=[0-9]+' | cut -d= -f2 | tr -d '\n' || true)
+    GUNSHI_AGENT_TODAY=$(echo "$GUNSHI_OUT" | grep -oE 'AGENT_TODAY=[0-9]+' | cut -d= -f2 | tr -d '\n' || true)
+    KARO_COMPACT=$(derive_agent_compact_count "karo" "$KARO_OUT" "${KARO_AGENT_TODAY:-0}")
+    GUNSHI_COMPACT=$(derive_agent_compact_count "gunshi" "$GUNSHI_OUT" "${GUNSHI_AGENT_TODAY:-0}")
 fi
 KARO_COMPACT=${KARO_COMPACT:-0}
 GUNSHI_COMPACT=${GUNSHI_COMPACT:-0}

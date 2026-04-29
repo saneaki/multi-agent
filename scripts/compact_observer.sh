@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # compact_observer.sh — role 別 auto-compact 発生回数を記録し、dashboard 連携データを生成する (cmd_592 Scope B)
 #
-# Usage: bash scripts/compact_observer.sh [karo|gunshi|ashigaru1|...]
+# Usage: bash scripts/compact_observer.sh [karo|gunshi|ashigaru1|...] [--date YYYY-MM-DD]
 # cron:  */30 * * * * bash /home/ubuntu/shogun/scripts/compact_observer.sh karo >> /home/ubuntu/shogun/logs/compact_observer.log 2>&1
 #        */30 * * * * bash /home/ubuntu/shogun/scripts/compact_observer.sh gunshi >> /home/ubuntu/shogun/logs/compact_observer.log 2>&1
 #
@@ -19,7 +19,31 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PYTHON="${SCRIPT_DIR}/.venv/bin/python3"
 if [ ! -x "$PYTHON" ]; then PYTHON="python3"; fi
 
-ROLE="${1:-}"
+ROLE=""
+TARGET_DATE=""
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --date=*)
+            TARGET_DATE="${1#--date=}"
+            shift
+            ;;
+        --date)
+            TARGET_DATE="${2:-}"
+            shift 2
+            ;;
+        -h|--help)
+            sed -n '2,14p' "$0"
+            exit 0
+            ;;
+        *)
+            if [ -z "$ROLE" ]; then
+                ROLE="$1"
+            fi
+            shift
+            ;;
+    esac
+done
+
 if [ -z "$ROLE" ]; then
     echo "Usage: compact_observer.sh <agent_id>" >&2
     exit 2
@@ -44,10 +68,11 @@ if [ ! -f "$COMPACTION_LOG" ]; then
 fi
 
 # ── Step 1: compaction-log.txt から今日 / 7日分のイベント数を集計 ─────────────────
-TODAY=$(date '+%Y-%m-%d')
-CUTOFF_7D=$(date -d '7 days ago' '+%Y-%m-%d' 2>/dev/null || date -v-7d '+%Y-%m-%d' 2>/dev/null || echo "2000-01-01")
+TODAY="${TARGET_DATE:-$(bash "${SCRIPT_DIR}/scripts/jst_now.sh" --date 2>/dev/null || date '+%Y-%m-%d')}"
+CUTOFF_7D=$(date -d "${TODAY} 7 days ago" '+%Y-%m-%d' 2>/dev/null || date -v-7d '+%Y-%m-%d' 2>/dev/null || echo "2000-01-01")
 
-COUNT_TODAY=$(grep -c "$TODAY" "$COMPACTION_LOG" 2>/dev/null || echo "0")
+COUNT_TODAY=$(grep -c "$TODAY" "$COMPACTION_LOG" 2>/dev/null || true)
+COUNT_TODAY=${COUNT_TODAY:-0}
 COUNT_7D=$(awk -v cutoff="$CUTOFF_7D" '
     /Context compaction triggered/ {
         match($0, /\[([0-9]{4}-[0-9]{2}-[0-9]{2})/, arr)
@@ -103,8 +128,10 @@ try:
         for line in f:
             m = re.search(r'\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\]', line)
             if not m: continue
-            if today not in line: continue
             log_dt = datetime.datetime.strptime(m.group(1), '%Y-%m-%d %H:%M:%S')
+            # compaction-log is UTC; convert to JST date for daily bucket
+            if (log_dt + datetime.timedelta(hours=9)).strftime('%Y-%m-%d') != today:
+                continue
             diff = abs((log_dt - snap_dt_utc).total_seconds())
             if diff <= 300:  # ±5分
                 count += 1
