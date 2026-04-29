@@ -225,14 +225,18 @@ _log "ALL CONDITIONS PASSED."
 
 SAFE_WINDOW_JUDGE="$SCRIPT_DIR/scripts/safe_window_judge.sh"
 if [ -f "$SAFE_WINDOW_JUDGE" ]; then
-    # safe_window_judge.sh 実装済 → APPROVE/SKIP + recommendation を取得
-    JUDGE_OUTPUT=$(bash "$SAFE_WINDOW_JUDGE" --agent-id karo 2>/dev/null || echo "SKIP:error")
-    JUDGE_VERDICT=$(echo "$JUDGE_OUTPUT" | head -1 | grep -oE '^(APPROVE|SKIP)' || echo "SKIP")
+    # safe_window_judge.sh 実装済 → SAFE_WINDOW_RESULT=true|false を parse
+    JUDGE_OUTPUT=$(bash "$SAFE_WINDOW_JUDGE" --agent-id karo 2>/dev/null || echo "SAFE_WINDOW_RESULT=false")
+    SAFE_WINDOW_RESULT=$(echo "$JUDGE_OUTPUT" | grep -oE 'SAFE_WINDOW_RESULT=(true|false)' | head -1 | cut -d= -f2 || echo "false")
+    case "$SAFE_WINDOW_RESULT" in
+        true) JUDGE_VERDICT="APPROVE" ;;
+        *) JUDGE_VERDICT="SKIP" ;;
+    esac
     _log "safe_window_judge verdict: ${JUDGE_OUTPUT:-SKIP}"
 
     if [ "$JUDGE_VERDICT" = "APPROVE" ]; then
         JUDGE_PCT=$(echo "$JUDGE_OUTPUT" | grep -oE 'context_pct=[0-9]+' | cut -d= -f2 || echo "")
-        JUDGE_RECOMMEND=$(echo "$JUDGE_OUTPUT" | grep -oE 'recommend=(clear|compact)' | cut -d= -f2 || echo "clear")
+        JUDGE_RECOMMEND=$(echo "$JUDGE_OUTPUT" | grep -oE 'RECOMMENDATION=(/clear|/compact)' | head -1 | cut -d= -f2 | sed 's|^/||' || echo "clear")
 
         # dedup: 30min 以内に context_advisory 送信済みなら skip
         DEDUP_MARKER="/tmp/karo_context_advisory_last_sent"

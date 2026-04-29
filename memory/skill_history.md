@@ -7,6 +7,7 @@ dashboard.md 🛠️スキル欄から溢れた全エントリ。最新順（上
 
 | スキル名 | 出典 |
 |----------|------|
+| **shogun-l017-dual-model-smoke-qc** | cmd_608 gunshi(Opus+T) 推奨: L017 dual-model smoke test + gunshi QC パターン (5回適用実績)。Claude arm + Codex arm を並列 dispatch → 独立検証 → gunshi north_star QC (N1-N4) → Go/NoGo 判定。典型適用: 新ルール/スクリプト/skill の実装品質保証。cmd_605/606/607/608 で安定運用確認。skill化推奨条件: 5回適用達成 (本cmd_608で達成)。 | 承認待ち |
 | **shogun-tmux-busy-aware-send-keys** | cmd_582 ash6(Sonnet+T): tmux send-keys で Enter 前に Claude idle を待つ wait_until_idle() パターン。A-3 race condition 解消。poll 0.5s / timeout configurable / WARN+fallback。pane整合チェック+stale pane 自動再検出。cmd_complete 通知 reliability 強化。battle-tested 条件: 1w 後 3 cmd_complete 通知で実測確認後に正式スキル化推奨。 | 承認待ち |
 | **semantic-gap-diagnosis** ✅実装済み | cmd_559 ash5(Sonnet): `~/.claude/skills/semantic-gap-diagnosis/SKILL.md`(188行)。means(手段完成) vs ends(目的到達) 乖離を検出する4ステップ診断パターン。4cmd実証事例(cmd_550/553/555/556)+gunshi QC discipline(Step 6-b)+gunshi_report means_ends_classification schema統合。gunshi 559g QC Go(2026-04-22)。 |
 | **shift-left-validation-pattern** ✅実装済み | cmd_528d→cmd_547(2026-04-20): 軍師(Opus+T) `~/.claude/skills/shift-left-validation-pattern/SKILL.md`(140行/--mode validate/run case分岐+exit code規約+stderr詳細出力+実装テンプレート+適用事例)。足軽1号(Sonnet)作成。 |

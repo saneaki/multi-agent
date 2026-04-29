@@ -302,13 +302,16 @@ if [ "$ROLE" = "karo" ]; then
         FAIL="${FAIL}C4(dispatch_debt=${C4_DEBT}) "
     fi
 
-    # C5: karo_idle_for >= 300 秒
+    # C5: karo_idle_for >= threshold秒 (context_pct adaptive: >=80→30s, >=70→60s, else→300s)
     C5_IDLE=$(_karo_idle_secs)
-    if [ "${C5_IDLE:-0}" -lt 300 ] 2>/dev/null; then
-        FAIL="${FAIL}C5(idle=${C5_IDLE}s<300s) "
+    if [ "$CONTEXT_PCT" -ge 80 ]; then C5_THRESH=30
+    elif [ "$CONTEXT_PCT" -ge 70 ]; then C5_THRESH=60
+    else C5_THRESH=300; fi
+    if [ "${C5_IDLE:-0}" -lt "$C5_THRESH" ] 2>/dev/null; then
+        FAIL="${FAIL}C5(idle=${C5_IDLE}s<${C5_THRESH}s) "
     fi
 
-    _log "karo C1=${CONTEXT_PCT}%, C2=${C2_UNREAD}, C3=${C3_INPROG}, C4=${C4_DEBT}, C5=${C5_IDLE}s"
+    _log "karo C1=${CONTEXT_PCT}%, C2=${C2_UNREAD}, C3=${C3_INPROG}, C4=${C4_DEBT}, C5=${C5_IDLE}s(thresh=${C5_THRESH}s)"
 
     # 推奨選択
     if [ "$CONTEXT_PCT" -ge 85 ]; then
