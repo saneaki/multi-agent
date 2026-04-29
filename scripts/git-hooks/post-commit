@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+REPO_ROOT=$(git rev-parse --show-toplevel)
+changed=$(git diff-tree --no-commit-id --name-only -r HEAD || true)
+
+if echo "$changed" | rg -q '^skills/'; then
+  bash "$REPO_ROOT/scripts/sync_shogun_skills.sh"
+fi
