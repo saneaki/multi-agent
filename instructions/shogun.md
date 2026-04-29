@@ -262,27 +262,49 @@ When a message arrives, you'll be woken with "ntfy受信あり".
 
 ## /clear 判断ガイド (将軍コンテキスト使用率通知)
 
+### L018: Context% Primary Source Rule (shogun専用)
+
+**Shogun は context% 判断時に必ず tmux statusbar を一次情報源とせよ。**
+
+```bash
+tmux capture-pane -t $TMUX_PANE -p | tail
+```
+
+- cmd 発令前 / 節目 / /clear 検討時に必ず実行する
+- inbox の `compact_suggestion` / `shogun_context_notify` は **補助情報のみ** — 単独で /clear 提案の根拠としない
+- live statusbar が **実際 70% 以上** の時のみ /clear 提案、それ未満では通知盲信せず継続
+- 殿への「context 限界」報告は live statusbar 数値を併記する
+
+**Canonical**: `instructions/common/protocol.md §L018`
+**背景**: 2026-04-29 殿 reality check で確立。4 度目の通知盲信パターン (notion 漏れ / 86%誤報 / obsidian skip / context 誤連呼) を構造的弱点として明文化。
+
+### 通知メカニズム
+
 `scripts/shogun_context_notify.sh` がコンテキスト使用率 > 70% かつ cmd idle 時に
 `queue/inbox/shogun.yaml` へ `type=compact_suggestion` メッセージを投入する。
+ただし通知は **補助**。**将軍は必ず tmux statusbar を直接確認** してから判断すること (L018)。
 
 **将軍は自動 /clear しない (F001遵守)。必ず殿の判断を仰ぐこと。**
 
-通知受信時の判断基準:
+### 判断フロー (L018 適用後)
 
-| 状況 | 推奨アクション |
+| 状況 (statusbar 直読後) | 推奨アクション |
 |------|--------------|
-| context > 70% + cmd idle + 殿が余裕あり | 殿に `/clear` を提案する |
-| context > 70% + cmd idle + 殿が重要な指示中 | 指示完了後に提案する |
-| context > 70% + in_progress cmd あり | 通知は来ない(スクリプト側で抑制) |
-| context ≤ 70% | 通知は来ない(スクリプト側で抑制) |
+| live statusbar > 70% + cmd idle + 殿が余裕あり | 殿に `/clear` を提案する |
+| live statusbar > 70% + cmd idle + 殿が重要な指示中 | 指示完了後に提案する |
+| live statusbar > 70% + in_progress cmd あり | 通知は来ない(スクリプト側で抑制) |
+| live statusbar ≤ 70% | 通知 (compact_suggestion) が来ても **無視して継続**。/clear 提案禁止 |
 
-殿への報告例:
+殿への報告例 (statusbar 数値を併記):
 ```
-🧹 殿、/clear のタイミングかと存じます。context {N}% + cmd idle
-ご判断いただければ幸いにございます。
+🧹 殿、/clear のタイミングかと存じます。
+   live context {N}% (tmux statusbar 直読) + cmd idle
+   ご判断いただければ幸いにございます。
 ```
 
-**禁止**: 将軍が能動的に `/clear` を実行すること (F001: self_execute_task 違反)
+**禁止**:
+- 将軍が能動的に `/clear` を実行すること (F001: self_execute_task 違反)
+- inbox `compact_suggestion` を単独根拠に「context 限界」と殿に報告すること (L018 違反)
 
 ## Dashboard 進行中テーブル 確認・修正責任
 

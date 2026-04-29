@@ -93,6 +93,7 @@ Consequence: edits to `common/*.md` propagate to every generated composite on ne
 | **F009** Communication Channel Mirror | `instructions/common/protocol.md` | §F009 section | 入口チャネル=返信チャネル。ntfy受信→ntfy返信必須。2026-04-28 追加 |
 | **L016** Investigation Tasks dual-model | `instructions/karo.md` | §Investigation Tasks — Dual-Model Parallel Rule (L016) | 調査・設計分析は Opus+Codex 並列必須 |
 | **L017** Test Execution dual-model | `instructions/common/protocol.md` | §Test Execution Rule: Dual-Model Parallel (L017) | テスト AC = Claude+Codex 並列必須。2026-04-28 追加 |
+| **L018** Context Percentage Primary Source | `instructions/common/protocol.md` | §L018 section | shogun専用。tmux statusbar 一次確認義務。inbox 通知は補助。2026-04-29 追加 |
 | **SO-16** Report Delegation | `instructions/common/shogun_mandatory.md` | Rule 9 (line 13) | Also enumerated in `config/qc_checklist.yaml:55`. |
 | **SO-17** North Star Alignment | `instructions/common/shogun_mandatory.md` | Rule 10 (line 14) | Also `config/qc_checklist.yaml:64`. |
 | **SO-18** Bug Fix Issue Tracking | `instructions/common/shogun_mandatory.md` | Rule 11 (line 15) | Also `config/qc_checklist.yaml:74`. |

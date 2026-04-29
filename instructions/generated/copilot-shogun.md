@@ -356,6 +356,34 @@ Task YAML notes field: `"L017 test dual-model: Claude=ashN, Codex=ashM"` to be r
 
 See also: L016 (Investigation Tasks dual-model) in `instructions/karo.md`.
 
+---
+
+## L018: Context Percentage Primary Source Rule (shogun専用)
+
+**Definition**: Shogun MUST use the tmux statusbar (`tmux capture-pane -t $TMUX_PANE -p | tail`) as the primary source for context% judgment. The inbox `compact_suggestion` / `shogun_context_notify` entries are auxiliary information only — they MUST NOT be the sole basis for proposing `/clear`.
+
+**Applies to**: Shogun only. Karo / Ashigaru / Gunshi can directly view their own pane statusbar, so this rule does not apply to them.
+
+**Rationale**: 2026-04-29 reality check — Shogun trusted stale `compact_suggestion` entries in inbox (4/26 86% etc.) and repeatedly proposed 「限界」 / 「/clear 推奨」 while the actual context for Opus 4.7 was 57% used (43% remaining — ample margin). This was the 4th occurrence of the notification-blind-trust pattern on the same day (notion 漏れ / 86%誤報 / obsidian skip / 本件 context 限界誤連呼) — a structural weakness that demands a codified rule.
+
+**Required behavior**:
+1. **Before any context% judgment** (cmd dispatch / 節目 / /clear consideration), run:
+   ```bash
+   tmux capture-pane -t $TMUX_PANE -p | tail
+   ```
+   and read the statusbar context% directly.
+2. **Propose `/clear` only when the live statusbar shows ≥ 70%**. Below 70%, do not propose `/clear` based on notification entries — continue work.
+3. **Treat `compact_suggestion` / `shogun_context_notify` as advisory**. Cross-check against the live statusbar before acting.
+
+**Note on `shogun_context_notify`**: The script was fixed in cmd_603 to prevent stale data emission, but the LLM (Shogun) itself MUST still read the primary signal directly rather than relying on physical sensation or notifications.
+
+**Forbidden (L018 violation)**:
+- Proposing `/clear` solely on the basis of an inbox `compact_suggestion` entry
+- Reporting 「context 限界」 to the Lord without verifying the live tmux statusbar
+- Treating `shogun_context_notify` output as authoritative truth
+
+See `memory/global_context.md §Context % Reality Check Lapse — 4回目再発 (2026-04-29)` for the incident analysis.
+
 # Task Flow
 
 ## Workflow: Shogun → Karo → Ashigaru
