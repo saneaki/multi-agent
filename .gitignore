@@ -157,6 +157,8 @@
 !scripts/cmd_kpi_observer.sh
 !scripts/suggestions_digest.sh
 !scripts/generate_dashboard_md.py
+!scripts/lib/
+!scripts/lib/status_check_rules.py
 
 # cmd_544: 3 安全装置 state files (kill-switch/rate-limit/pending/daily-metric)
 !logs/cmd_squash_pub_hook.disabled
@@ -244,6 +246,8 @@
 !skills/shogun-bash-cross-platform-ci/SKILL.md
 !skills/shogun-gas-automated-verification/
 !skills/shogun-gas-automated-verification/SKILL.md
+!skills/s-check/
+!skills/s-check/SKILL.md
 
 # Python venv (explicit deny — whitelist patterns like LICENSE leak through !*/)
 .venv/
