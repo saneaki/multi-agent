@@ -297,5 +297,8 @@ tests/specs/osato_lms_*
 
 # Explicitly deny Windows paths mixed in from dev environments
 C:\
+C:/
 # projects/ is local-only (contains secrets) — deny explicitly
 projects/
+# Windows plugin path accidentally created in repo root
+C:\Users\
