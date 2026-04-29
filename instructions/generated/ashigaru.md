@@ -321,6 +321,42 @@ See also: L016 (Investigation Tasks dual-model) in `instructions/karo.md`.
 
 See `memory/global_context.md §Context % Reality Check Lapse — 4回目再発 (2026-04-29)` for the incident analysis.
 
+---
+
+## L019: Cross-Source Verification Rule (s-check Rule) (shogun専用)
+
+**Definition**: Shogun MUST cross-verify multiple primary sources before reporting state ("状況" / "進捗" / "完了報告" / "確認してくれ" / "動いてるか" 等) to the Lord. Replies based solely on `dashboard.md` are forbidden — `dashboard.md` is a Secondary source (Karo's summary) and may lag actual state.
+
+**Applies to**: Shogun only. Karo / Ashigaru / Gunshi are not in scope (they have direct access to the relevant primary sources by role).
+
+**Trigger phrases (mandatory `/s-check` invocation)**:
+- 「状況」 / 「進捗」 / 「完了報告」 / 「確認してくれ」 / 「動いてるか」
+- ntfy 経由でも terminal 経由でも同様に発動する
+
+**Primary sources to cross-check (must read before replying)**:
+1. `queue/tasks/*.yaml` — assigned task state (status / assigned_to / acceptance_criteria)
+2. `queue/reports/*_report.yaml` — agent reports (most recent timestamp + outcome)
+3. `queue/inbox/*.yaml` — pending / unread messages per agent
+4. `dashboard.yaml` — strategic state (machine-readable counterpart of dashboard.md)
+5. `tmux capture-pane -t <pane> -p | tail` — live pane state per relevant agent
+6. `git log -n 10` — recent commits (verifies "implemented" claims)
+
+**Required behavior**:
+1. **silent success 防止**: Replies MUST list `checked sources` + `last verified timestamp` so the Lord can audit which signals were used.
+2. **inconclusive 容認**: When some primary source cannot be read (sandbox / permission / timeout), report partial results explicitly — do not pad with assumptions.
+3. **dashboard-only 禁止**: A reply that cites only `dashboard.md` is a L019 violation. `dashboard.md` may be quoted as supplementary context but never as the sole evidence.
+4. **Implementation**: detailed procedure in `skills/s-check/SKILL.md` (Scope A) + `scripts/status_check_rules.py` shared module (Scope B).
+
+**Forbidden (L019 violation)**:
+- Replying to 「状況」/「進捗」 without reading `queue/tasks/*.yaml`, `queue/reports/*_report.yaml`, `queue/inbox/*.yaml`
+- Reporting 「正常」 / 「進行中」 with no `checked sources` enumeration
+- Citing only `dashboard.md` ("dashboard.md には◯◯と書いてある") as the basis for a reply
+- Silent success: claiming "OK" / "完了" without primary-source verification
+
+**Rationale**: 2026-04-29 reality check — five consecutive lapses on the same day (notion 漏れ / 86%誤報 / obsidian skip / context%誤連呼 / dashboard 盲信). Pattern (4) was already covered by L018; pattern (5) (dashboard-only blind trust) demands its own structural rule. L019 codifies cross-source verification as the canonical defense against single-signal blindness.
+
+See `memory/global_context.md §Reality Check 5度連発 — 構造解消 (2026-04-29)` for the incident analysis and structural defense design.
+
 # Task Flow
 
 ## Workflow: Shogun → Karo → Ashigaru

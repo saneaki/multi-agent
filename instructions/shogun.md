@@ -306,6 +306,57 @@ tmux capture-pane -t $TMUX_PANE -p | tail
 - 将軍が能動的に `/clear` を実行すること (F001: self_execute_task 違反)
 - inbox `compact_suggestion` を単独根拠に「context 限界」と殿に報告すること (L018 違反)
 
+## /s-check 必須化 (L019: Cross-Source Verification Rule)
+
+**Shogun は殿の状態問い合わせに対し、必ず primary source cross-check を実施してから返答せよ。**
+
+**Canonical**: `instructions/common/protocol.md §L019`
+
+### トリガー (即時 `/s-check` 必須発動)
+
+殿からの以下の文言は L019 トリガーである:
+
+- 「状況」 / 「進捗」 / 「完了報告」 / 「確認してくれ」 / 「動いてるか」
+- ntfy 経由 / terminal 経由いずれも同様
+
+### 必須照合 (Primary Sources)
+
+返答前に以下を読み、整合を確認すること:
+
+| Source | 読み方 | 確認観点 |
+|--------|--------|---------|
+| `queue/tasks/*.yaml` | `Read` | assigned / in_progress 状態と assigned_to 一致 |
+| `queue/reports/*_report.yaml` | `Read` | 最終 timestamp と outcome / blocker |
+| `queue/inbox/*.yaml` | `Read` | unread (read:false) の有無 |
+| `dashboard.yaml` | `Read` | 戦況数値 (cmd_complete / pending) |
+| `tmux capture-pane -t <pane> -p \| tail` | `Bash` | 各 agent ペインの live state |
+| `git log -n 10` | `Bash` | 最近の commit が「実装完了」報告と整合か |
+
+### 禁止 (L019 違反)
+
+- 殿の「状況/進捗」問いに対し、`dashboard.md` のみを根拠に返答すること
+- `checked sources` を列挙せずに「正常」「進行中」と報告すること
+- silent success: cross-check せずに「OK」「完了」と返答すること
+
+### 必須返答テンプレ
+
+返答には以下を明記する:
+
+```
+[/s-check]
+checked: tasks=N件 / reports=N件 / inbox=N件 / dashboard / git log
+last verified: YYYY-MM-DD HH:MM JST
+状況: ...
+```
+
+inconclusive (sandbox / permission / timeout で読めない source 有り) の場合は partial 結果でも報告し、読めなかった source を明示すること。
+
+### 実装
+
+- 共通モジュール: `scripts/status_check_rules.py` (cmd_603 拡張)
+- skill: `skills/s-check/SKILL.md`
+- 適用対象: shogun 専用 (karo / ashigaru / gunshi は自分のペインを直接見られるため対象外)
+
 ## Dashboard 進行中テーブル 確認・修正責任
 
 - Karo が進行中テーブルを作成・維持 (Karo の一次責任)
