@@ -63,6 +63,17 @@ def maybe_name_with_model(name: str, model: str) -> str:
     return f"{name}({model})"
 
 
+def _section_items(section: Any) -> list[dict[str, Any]]:
+    """Accept either legacy list format or current {header, items} dict format."""
+    if isinstance(section, list):
+        return [r for r in section if isinstance(r, dict)]
+    if isinstance(section, dict):
+        items = section.get("items", [])
+        if isinstance(items, list):
+            return [r for r in items if isinstance(r, dict)]
+    return []
+
+
 def generate_markdown(data: dict[str, Any]) -> str:
     meta = data.get("metadata", {})
     last_updated = meta.get("last_updated", "")
@@ -179,7 +190,7 @@ def generate_markdown(data: dict[str, Any]) -> str:
 
     today_rows = [
         [r.get("time", ""), r.get("battlefield", ""), _today_task_cell(r), r.get("result", "")]
-        for r in achievements.get("today", [])
+        for r in _section_items(achievements.get("today", {}))
     ]
     lines.extend(render_table(["時刻", "戦場", "任務", "結果"], today_rows, TABLE_4_EMPTY_ROW))
     lines.append("")
@@ -193,7 +204,7 @@ def generate_markdown(data: dict[str, Any]) -> str:
     lines.append("")
     yesterday_rows = [
         [r.get("time", ""), r.get("battlefield", ""), r.get("task", ""), r.get("result", "")]
-        for r in yesterday.get("items", [])
+        for r in _section_items(yesterday)
     ]
     lines.extend(render_table(["時刻", "戦場", "任務", "結果"], yesterday_rows, TABLE_4_EMPTY_ROW))
     lines.append("")
@@ -207,7 +218,7 @@ def generate_markdown(data: dict[str, Any]) -> str:
     lines.append("")
     day_before_rows = [
         [r.get("time", ""), r.get("battlefield", ""), r.get("task", ""), r.get("result", "")]
-        for r in day_before.get("items", [])
+        for r in _section_items(day_before)
     ]
     lines.extend(render_table(["時刻", "戦場", "任務", "結果"], day_before_rows, TABLE_4_EMPTY_ROW))
     lines.append("")
