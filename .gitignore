@@ -162,6 +162,7 @@
 !scripts/generate_dashboard_md.py
 !scripts/karo_dispatch.sh
 !scripts/karo_auto_clear.sh
+!scripts/validate_idle_members.sh
 !scripts/test_dashboard_roundtrip.py
 !scripts/git-hooks/
 !scripts/git-hooks/pre-commit-dashboard

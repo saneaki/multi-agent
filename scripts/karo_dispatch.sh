@@ -164,6 +164,28 @@ else
     echo "  → status: assigned 確認 OK"
 fi
 
+# ── Step 1.5: idle_members 整合性チェック (Scope A 連携) ─────
+# validate_idle_members.sh が存在する場合のみ --mode check で呼び出す。
+# 未配置 (Scope A 実装待ち) の場合は graceful skip。
+# mode=check は exit 0 (WARN でも続行) なので dispatch を阻害しない。
+VALIDATE_SCRIPT="$SCRIPT_DIR/scripts/validate_idle_members.sh"
+echo ""
+echo "[Step 1.5] idle_members 整合性チェック"
+
+if [[ -f "$VALIDATE_SCRIPT" ]]; then
+    if $DRY_RUN; then
+        echo "[DRY-RUN] bash $VALIDATE_SCRIPT --mode check"
+    else
+        if bash "$VALIDATE_SCRIPT" --mode check 2>&1; then
+            echo "  → idle_members 検証 OK"
+        else
+            echo "  [WARN] idle_members 検証で異常検知 (続行)"
+        fi
+    fi
+else
+    echo "  → validate_idle_members.sh 未配置のため skip (Scope A 実装待ち)"
+fi
+
 # ── Step 2: dashboard.yaml に in_progress エントリを追加 ─────
 echo ""
 echo "[Step 2] dashboard.yaml に in_progress エントリを追加"

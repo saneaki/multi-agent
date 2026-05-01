@@ -59,6 +59,20 @@ clasp:
   critical_days: 28
   token_path: /home/ubuntu/.clasprc.json
 
+# 家老運用設定 (karo)
+karo:
+  # idle_member_names: validate_idle_members.sh が参照する dispatch 対象メンバー一覧
+  # 新足軽追加時はここに追記するだけで validate_idle_members.sh が動的対応する
+  idle_member_names:
+    - 足軽1号(Sonnet)
+    - 足軽2号(Sonnet+T)
+    - 足軽3号(Sonnet)
+    - 足軽4号(Opus+T)
+    - 足軽5号(Opus+T)
+    - 足軽6号(Codex)
+    - 足軽7号(Codex)
+    - 軍師(Opus+T)
+
 #ntfy通知設定
 ntfy_topic: "hananoen"
 
