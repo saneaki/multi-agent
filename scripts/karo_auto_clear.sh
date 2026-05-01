@@ -33,25 +33,6 @@ SETTINGS_YAML="$ROOT_DIR/config/settings.yaml"
 INBOX_YAML="$ROOT_DIR/queue/inbox/karo.yaml"
 TASKS_DIR="$ROOT_DIR/queue/tasks"
 
-threshold=$("$PYTHON" - <<PYEOF
-import yaml
-path = "$SETTINGS_YAML"
-default = 80
-try:
-    with open(path, encoding="utf-8") as f:
-        d = yaml.safe_load(f) or {}
-    karo = d.get("karo", {}) if isinstance(d, dict) else {}
-    v = karo.get("context_threshold", default)
-    print(int(v))
-except Exception:
-    print(default)
-PYEOF
-)
-if [ "$threshold" -lt 60 ]; then
-  log "WARN: threshold ${threshold} too low, clamping to 60"
-  threshold=60
-fi
-
 unread_count=$("$PYTHON" - <<PYEOF
 import yaml
 path = "$INBOX_YAML"
@@ -88,18 +69,7 @@ print(active)
 PYEOF
 )
 
-context_pct=0
-if context_pct_raw="$(bash "$ROOT_DIR/scripts/get_context_pct.sh" karo 2>/dev/null)"; then
-  if echo "$context_pct_raw" | grep -Eq '^[0-9]+$'; then
-    context_pct="$context_pct_raw"
-  else
-    log "WARN: get_context_pct.sh returned non-numeric: '${context_pct_raw}'"
-  fi
-else
-  log "WARN: get_context_pct.sh failed -> context_pct=0 (will skip)"
-fi
-
-log "check: unread=${unread_count}, active=${active_count}, context=${context_pct}, threshold=${threshold}, dry_run=${DRY_RUN}"
+log "check: unread=${unread_count}, active=${active_count}, dry_run=${DRY_RUN}"
 
 # E2 guard: avoid race right after task assignment writes.
 RECENT_WRITE=$(find "$ROOT_DIR/queue/tasks" -name "ashigaru*.yaml" -mmin -1 2>/dev/null | head -1)
@@ -108,7 +78,7 @@ if [ -n "$RECENT_WRITE" ]; then
   exit 0
 fi
 
-if [ "$unread_count" -ne 0 ] || [ "$active_count" -ne 0 ] || [ "$context_pct" -lt "$threshold" ]; then
+if [ "$unread_count" -ne 0 ] || [ "$active_count" -ne 0 ]; then
   log "idle=false -> skip."
   exit 0
 fi
