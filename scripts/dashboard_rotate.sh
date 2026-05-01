@@ -81,19 +81,37 @@ HEREDOC
     OLDEST_ENTRIES=$(sed -n "${SECTION_START},${SECTION_END}p" "$DASHBOARD" \
         | grep '^| \*\*' | tail -n "$EXCESS")
 
-    # Add to archive (after the table header row)
+    # Add to archive (after the table header row) — idempotent: skip already-archived entries
     local ARCHIVE_TMP
     ARCHIVE_TMP=$(mktemp "${SKILL_HISTORY}.tmp.XXXXXX")
 
-    local HEADER_DONE=false
-    while IFS= read -r line; do
-        echo "$line" >> "$ARCHIVE_TMP"
-        if ! $HEADER_DONE && [[ "$line" =~ ^\|----------|------\| ]]; then
-            HEADER_DONE=true
-            echo "$OLDEST_ENTRIES" >> "$ARCHIVE_TMP"
+    # Filter out entries already present in skill_history.md
+    local NEW_ENTRIES=""
+    while IFS= read -r entry_line; do
+        local skill_name
+        skill_name=$(echo "$entry_line" | grep -o '^\| \*\*[^*]*\*\*' | sed 's/^| \*\*//;s/\*\*//')
+        if [[ -n "$skill_name" ]] && grep -qF "**${skill_name}**" "$SKILL_HISTORY" 2>/dev/null; then
+            log "スキル重複スキップ: $skill_name (既にアーカイブ済み)"
+        else
+            NEW_ENTRIES="${NEW_ENTRIES}${entry_line}"$'\n'
         fi
-    done < "$SKILL_HISTORY"
-    mv "$ARCHIVE_TMP" "$SKILL_HISTORY"
+    done <<< "$OLDEST_ENTRIES"
+
+    if [[ -z "${NEW_ENTRIES// }" ]]; then
+        log "新規アーカイブ対象なし (全件重複) — skill_history.md 書込みスキップ"
+        mv "$ARCHIVE_TMP" /dev/null 2>/dev/null || true
+        rm -f "$ARCHIVE_TMP"
+    else
+        local HEADER_DONE=false
+        while IFS= read -r line; do
+            echo "$line" >> "$ARCHIVE_TMP"
+            if ! $HEADER_DONE && [[ "$line" =~ ^\|----------|------\| ]]; then
+                HEADER_DONE=true
+                printf '%s' "$NEW_ENTRIES" >> "$ARCHIVE_TMP"
+            fi
+        done < "$SKILL_HISTORY"
+        mv "$ARCHIVE_TMP" "$SKILL_HISTORY"
+    fi
 
     # Remove oldest entries from dashboard.md (bottom up within skill section)
     for i in $(seq 1 "$EXCESS"); do

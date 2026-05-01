@@ -1,249 +1,162 @@
 worker_id: gunshi
-task_id: subtask_610_scope_d_gunshi_qc
-parent_cmd: cmd_610
-timestamp: "2026-04-30T00:50:00+09:00"
+task_id: subtask_604_step2_gunshi_qc
+parent_cmd: cmd_604
+timestamp: "2026-05-01T12:24:00+09:00"
 status: done
 report_to: karo
 type: review
 
 result:
-  type: phase_completion_qc_with_direct_verification
+  type: phase_completion_qc_with_dual_arm_verification
   summary: |
-    cmd_610 Scope D gunshi QC 完遂。cmd_609 dual-model 統合で確定した 2 層真因
-    (A4 parse bug + C5 閾値固定) を Scope A+B で一括修正、Scope C で dual-model smoke
-    PASS、Scope D で軍師統合 QC。
-    gunshi 直接検証 (実装ファイル Read + ash6 Codex arm report cross-check) で
-    N1-N4 全 PASS + AC1-AC6 全 PASS + Scope E Go 判定。
-    output/cmd_610_qc_report.md 作成完了 (約 200 行)。
-    QC=Go — Scope E commit dispatch 可。
+    cmd_604 Step2 gunshi QC 完遂。SA approach (HTTP 403) → OAuth refresh_token approach
+    への完全移行を北極星 N1-N4 で検証。両 arm (ash1 Claude / ash7 Codex) 独立検証で
+    HTTP 200 × 2 回ずつ + idempotent + token 漏洩なしを確認。
+    /tmp/gas_push_oauth.log 末尾の response JSON で実 GAS Project 更新
+    (updateTime 12:20 JST) を直接確認。
+    output/cmd_604_oauth_qc_report.md 作成 (約 200 行)。
+    QC=Go — Scope D (commit) dispatch 可。
 
   ac_verification:
-    - id: N1_silent_failure_resolution
-      task_yaml: "silent failure 構造解消: parse修正が正確に実装されていること"
+    - id: N1_oauth_auth_working
       verification: |
-        karo_self_clear_check.sh L227-L233:
-          - JUDGE_OUTPUT 取得 + grep -oE 'SAFE_WINDOW_RESULT=(true|false)' で SAFE_WINDOW_RESULT 抽出
-          - case true → JUDGE_VERDICT=APPROVE / その他 → SKIP の正しい mapping
-        safe_window_judge.sh L305-310 Adaptive C5:
-          - context_pct >= 80 → C5_THRESH=30
-          - context_pct >= 70 → C5_THRESH=60
-          - else → C5_THRESH=300 (現状維持)
-        2 層真因 (直接=parse bug / 構造=C5 閾値固定) 両方解消確認。
+        - dry-run GET getContent: 両 arm HTTP 200
+        - 本番 PUT updateContent: 両 arm HTTP 200 × 2 回ずつ独立確認
+        - /tmp/gas_push_oauth.log 末尾: "[2026-05-01T03:20:03Z] Completed successfully"
+          + response JSON に gas-mail-manager 全ファイル + updateTime: 2026-05-01T03:20:02.726Z
+        - refresh_token → access_token flow (gas_push_oauth.sh L89-127): stdout/log に
+          token 値を吐かない設計 (Python 変数経由で curl)
+      status: PASS
+    - id: N2_sa_approach_retired
+      verification: |
+        - 機能的廃止: gas_push_sa.sh は HTTP 403 PERMISSION_DENIED で運用不能
+          (ash7 subtask_604_step1_b で 2 回再現)
+        - OAuth 完全置換: gas_push_oauth.sh 冒頭コメント "Replaces gas_push_sa.sh
+          (SA approach: HTTP 403, retired 2026-04-30)" で意図明示
+        - 残課題: gas_push_sa.sh script 自体は残存 (deprecation marker / exit 1 ガード未導入)
+          → minor concern として suggestions.yaml に追加
+      status: PASS_WITH_MINOR
+    - id: N3_zero_side_effect
+      verification: |
+        - .clasprc.json perm 600 維持 (gas_push_oauth.sh L67-70 で 600/400 以外なら WARNING)
+        - /tmp/gas_push_oauth.log token 漏洩なし (rg 'refresh_token|client_secret|access_token|ya29' でマッチ 0)
+        - logs/daily/ token 漏洩なし (2026-04-05.md / 2026-03-30.md は説明文のみ実値なし)
+        - git tracking: .clasprc.json はリポジトリ外 (/home/ubuntu/) 配置、
+          docs/clasp_login_procedure.md は untracked
+        - idempotent: 両 arm が 2 回連続実行で同結果確認
+      status: PASS
+    - id: N4_post_migration_integrity
+      verification: |
+        - scripts/gas_push_oauth.sh 配置 (6463 bytes, exec)
+        - docs/clasp_login_procedure.md 配置 (3887 bytes, untracked = secrets 漏洩防止)
+        - /home/ubuntu/.clasprc.json 配置 (632 bytes, perm 600, 殿配置 12:08 JST)
+        - 後続 Step (Web App 化 run) 阻害要因なし
       status: PASS
 
-    - id: N2_parse_format_consistency
-      task_yaml: "parse format 整合: safe_window_judge.sh↔karo_self_clear_check.sh のformat一致"
-      verification: |
-        safe_window_judge.sh L125-128 _emit() 出力: SAFE_WINDOW_RESULT=true|false
-        karo_self_clear_check.sh L230 parse: grep -oE 'SAFE_WINDOW_RESULT=(true|false)'
-        ash6 Codex arm 実行 smoke: SAFE_WINDOW_RESULT=false / RECOMMENDATION=wait /
-          REASON=karo: ... [fail: C5(idle=2s<30s)] = 仕様通り
-        format mismatch ゼロ確認。
-        Pre-existing gap として記録 (cmd_610 scope 外):
-          - karo_self_clear_check.sh L226 が safe_window_judge を --context-pct なしで呼出
-          - judge 側 L168-170 で early return wait
-          - 別 cmd で context_pct 取得経路整備が必要
-      status: PASS
+means_ends_classification:
+  schema_version: "1.0"
+  ac_classification:
+    - id: N1
+      type: ends
+      rationale: "実 updateContent (PUT) が GAS Project を更新し HTTP 200 を返却 = 業務動作完遂"
+      corresponding_ends_ac: null
+    - id: N2
+      type: means_and_ends
+      rationale: "SA 廃止 (means: コメント/廃止意図) + OAuth が機能置換 (ends: 実 push 成立) を双方達成"
+      corresponding_ends_ac: N1
+    - id: N3
+      type: ends
+      rationale: "漏洩なし・perm 維持 = 安全性 ends を直接担保"
+      corresponding_ends_ac: null
+    - id: N4
+      type: means
+      rationale: "script/docs/.clasprc 配置は手段。ends は後続 Step (Web App 化 run) で完遂"
+      corresponding_ends_ac: 後続cmd
+  ends_coverage_note: "N4 は後続 cmd で ends 検証。本 cmd では means 完遂で十分 (インフラ移行 cmd の特性)。"
+  both_systems_verified: true
+  verdict: "means 系 4/4 PASS。ends 系 (N1+N3) 2/2 PASS。N2 は means+ends 双方達成。N4 は means 完遂、ends は後続 cmd へ委譲。"
 
-    - id: N3_adaptive_c5_zero_side_effect
-      task_yaml: "Adaptive C5 副作用ゼロ: gunshi/ashigaru判定への影響なし"
-      verification: |
-        変更範囲限定確認:
-          - karo C1-C5 (L282-331): C5 のみ adaptive 化、他条件は不変
-          - gunshi G1-G4 (L380-410): 変更なし、context>=85 /compact、FAIL=空 /clear、
-            G2/G3 NG /compact ロジック完全維持
-          - ashigaru 委譲 (L152-163): safe_clear_check.sh 委譲ロジック維持 (non-regression)
-          - shogun (L142-145): F001 auto-clear forbidden 維持
-        C5 変更は karo role 限定。他 role の判定経路に影響ゼロ。
-      status: PASS
+so24_verification:
+  inbox: PASS
+  artifact: PARTIAL
+  content: PASS
+  overall: PARTIAL_2_OF_3
+  note: "ash1 report.yaml に subtask_604_step2 entry が未追加 (karo inbox 通知のみ)。
+         ash7 report.yaml は entry あり。C1 として suggestions.yaml に追記。"
 
-    - id: N4_cmd_604_non_interference
-      task_yaml: "cmd_604 並行作業との非干渉: 修正ファイルと cmd_604 資産の完全分離"
-      verification: |
-        cmd_604 関連: scripts/gas_push_sa.sh (存在), scripts/gas_push_oauth.sh (未存在、予定中)
-        cmd_610 修正: scripts/karo_self_clear_check.sh + scripts/safe_window_judge.sh
-        共有依存 grep: cmd_610 修正ファイル内に gas_push_sa.sh / gas_push_oauth.sh への
-          参照なし → 完全分離確認。
-        dashboard in_progress 欄での両 cmd 並列状態に矛盾なし。
-        ash 割当も異なる (cmd_604=ash6 SA push、cmd_610=ash1+ash6) → 並行進行可能。
-      status: PASS
+dual_arm_independence:
+  ash1_claude:
+    ac_status: "CL1-CL4 全 PASS"
+    http_count: 2
+    report_form: "karo inbox notify"
+    report_yaml_append: false  # ★ 漏れ
+  ash7_codex:
+    ac_status: "CO1-CO5 全 PASS"
+    http_count: 2
+    report_form: "karo inbox notify + ashigaru7_report.yaml append"
+    report_yaml_append: true
+    code_review_detail: "OAuth 安全性/refresh/error/idempotent 4 観点記述"
+  verdict: "両 arm 一致。Codex arm がより詳細。Claude arm の report append 漏れは独立 concern."
 
-    - id: AC5_gunshi_qc_complete
-      task_yaml: "cmd_610 AC5: gunshi QC north_star 4点全確認完了"
-      verification: |
-        N1-N4 全 PASS + 残存懸念点 (C1/C2/C3) 明確記録 + Scope E 判定明記。
-        output/cmd_610_qc_report.md 作成完了 (約 200 行)。
-      status: PASS
+go_no_go: Go
+go_no_go_reason: |
+  N1-N4 全 PASS (N2/N4 は minor 残課題ありだが Scope 外)。
+  両 arm 独立検証で HTTP 200 + idempotent + 漏洩なしを確認。
+  /tmp/gas_push_oauth.log の response JSON で実 GAS Project 更新確認。
+  殿 north_star (SA→OAuth 完全移行) を機能的に達成。
+  Scope D (commit) dispatch 可。
 
-    - id: Go_NoGo
-      task_yaml: "Scope E Go/NoGo 判定: commit可否の明示"
-      verification: |
-        判定: **Go** ✅
-        根拠:
-          1. north_star 4 点全 PASS
-          2. AC1-AC6 全 PASS (AC4 Claude arm report 未記載は karo cross-check で代替)
-          3. 残存懸念点 (C1/C2) は cmd_610 完遂を阻害せず、別 cmd で対処予定
-        Scope E 担当 ash への申し送り:
-          - commit 単位: Scope A+B+C を 1 atomic commit 推奨
-          - dashboard.yaml achievements.today に「cmd_610 完遂」記録
-          - commit message 推奨:
-            'feat(cmd_610): karo self_clear silent failure 2層構造解消 (parse整合 + Adaptive C5)'
-      status: PASS
+scope_d_recommended_includes:
+  - "scripts/gas_push_oauth.sh"
+  - "関連 dashboard / queue YAML"
 
-  means_ends_classification:
-    schema_version: "1.0"
-    ac_classification:
-      - id: N1_silent_failure_resolution
-        type: ends
-        rationale: "silent failure 構造解消が cmd_610 業務目的そのもの"
-        corresponding_ends_ac: null
-      - id: N2_parse_format_consistency
-        type: means
-        rationale: "format 整合は N1 を実現する手段"
-        corresponding_ends_ac: N1_silent_failure_resolution
-      - id: N3_adaptive_c5_zero_side_effect
-        type: ends
-        rationale: "副作用ゼロ確認は安全運用の業務目的"
-        corresponding_ends_ac: null
-      - id: N4_cmd_604_non_interference
-        type: ends
-        rationale: "cmd_604 並行進行可能性確認は組織運用の業務目的"
-        corresponding_ends_ac: null
-      - id: AC5_gunshi_qc_complete
-        type: means
-        rationale: "QC 完了は伝達手段"
-        corresponding_ends_ac: Go_NoGo
-      - id: Go_NoGo
-        type: ends
-        rationale: "Scope E commit 判断は cmd_610 完遂判定の業務目的"
-        corresponding_ends_ac: null
-    ends_coverage_note: "ends 系 4件 (N1/N3/N4/Go_NoGo) で本タスクの業務目的を表現。means (N2/AC5) は ends を支える検証/伝達。"
-    both_systems_verified: true
-    verdict: "means 2/2 + ends 4/4 全 PASS。cmd_610 Scope E commit dispatch 可。"
+scope_d_must_exclude:
+  - "/home/ubuntu/.clasprc.json (リポジトリ外、絶対不可)"
+  - "docs/clasp_login_procedure.md (殿が untracked で意図的に保管中)"
 
-  deliverables_verified: true
-  tests_status: smoke_passed
-  build_status: not_applicable
-  scope_match: complete
-  scope_match_detail: |
-    task YAML 指示通り N1-N4 + AC1-AC6 + Scope E Go/NoGo 全検証完了 +
-    output/cmd_610_qc_report.md 作成。実行テスト不要 (Scope C で済) を遵守、
-    Read + 分析のみ実施。commit 不要 (Scope E 担当)。scope creep なし。
+suggestions:
+  - id: C1
+    priority: high
+    content: |
+      ash1 report.yaml への subtask_604_step2 entry append 漏れ。
+      karo inbox 通知のみで監査記録が ashigaru1_report.yaml に未保存。
+      SO-24 PARTIAL 判定の主因。
+    action_needed: "Karo から ash1 へ report.yaml 末尾 entry 追記を再 dispatch、
+                   または完了確認 hook での persistence 検査を強化"
+  - id: C2
+    priority: medium
+    content: "gas_push_sa.sh script 残存 (deprecation marker / exit 1 ガード未導入)"
+    action_needed: "別 cmd で 'exit 1; echo \"RETIRED — use gas_push_oauth.sh\"' 冒頭追記 or rename"
+  - id: C3
+    priority: low
+    content: "gas_push_oauth.sh curl --retry 未実装 — 一時的 NW 障害耐性が低い"
+    action_needed: "Step2 commit 後の小規模 follow-up cmd で対応"
+  - id: C4
+    priority: low
+    content: "token endpoint 失敗時の HTTP code ログ化未実装"
+    action_needed: "C3 と併せて follow-up cmd で対応"
+  - id: C5
+    priority: low
+    content: "docs/clasp_login_procedure.md が git untracked のため version 管理不可"
+    action_needed: "secret 含まない場合は .example 化検討 (殿判断事項)"
 
-  qc_verdict:
-    overall: Go
-    conditions:
-      - "ash1 cmd_610 entry 未記載は karo cross-check で代替成立 (構造問題は別 cmd で対処)"
-      - "karo_self_clear_check.sh --context-pct なし呼出は pre-existing gap、cmd_610 scope 外"
-    completion_definition: |
-      cmd_610 = cmd_609 dual-model 統合で確定した 2 層真因 (A4 parse bug + C5 閾値固定) の
-      一括修正が業務目的。
-      Scope A+B で実装、Scope C で dual-model smoke、Scope D で軍師統合 QC、
-      Scope E で commit + dashboard 反映 = 5 段で完遂。
-      gunshi 直接検証で N1-N4 全 PASS + AC1-AC6 全 PASS = 完遂判定可能。
-
-  skill_candidate_inherited:
-    found: false
-    reason: |
-      ash6 Codex arm の skill_candidate=false。本 QC は dual-model + 軍師直接検証の
-      標準パターンを踏襲のため新規 skill 候補なし。
-      L017 適用 7 回目 (cmd_603/605/606/607/608/609/610) で標準パターン更に定着。
-
-  concerns_flagged:
-    - id: C1
-      severity: medium
-      title: "ash1 cmd_610 entry 未記載 (cmd_607/608 ash3 と同型問題が複数 ash で発生)"
-      detail: |
-        ashigaru1_report.yaml 末尾が subtask_606_scope_a_version_up で停止、cmd_610 Scope B
-        + Scope C Claude arm の entry なし。
-        cmd_607 (ash3 entry 未記載) → cmd_608 (ash3 再発) → 本 cmd_610 (ash1 でも発生)
-        = **複数 ash で構造問題化が確定**。ash 個別の運用 pattern ではなく運用フロー全体の
-        structural fix が必要。
-      action_needed: |
-        cmd_611 候補として「ash report 自動 append 機構」または instructions/ashigaru.md
-        強化を最優先で karo dispatch 推奨。inbox_write 時に report.yaml entry append を
-        自動化すれば構造解消可能。
-
-    - id: C2
-      severity: low
-      title: "karo_self_clear_check.sh が --context-pct なしで safe_window_judge を呼出 (pre-existing gap)"
-      detail: |
-        karo_self_clear_check.sh L226 が safe_window_judge を --context-pct なしで呼出。
-        safe_window_judge L168-170 で early return wait。本 cmd_610 で parse 形式整合 +
-        Adaptive C5 が解消されても、--context-pct 未渡しで silent failure の一部が残存する
-        可能性。task notes 明記通り cmd_610 scope 外。
-      action_needed: |
-        cmd_611 / cmd_612 候補として「karo_self_clear_check.sh から context_pct を取得して
-        safe_window_judge に渡す」修正を計画推奨。get_context_pct.sh などの既存スクリプト
-        活用可能。
-
-    - id: C3
-      severity: info
-      title: "L017 dual-model 7 回目適用達成、skill 化推奨タイミング更に強化"
-      detail: |
-        cmd_603/605/606/607/608/609/610 で L017 を 7 回適用。本 cmd_610 でも標準パターンの
-        安定運用を再確認。
-      action_needed: |
-        karo 判断で skill 'shogun-l017-dual-model-smoke-qc' の作成を最優先 dispatch 推奨。
-        cmd_607/608 の suggestions と統合して優先度を再強化。
-
-  qc_skip_reason: null
-  notes: |
-    cmd_610 は cmd_609 dual-model 統合で確定した 2 層真因の一括修正 cmd。本 QC で重要な点:
-
-    1. **gunshi 直接検証の意義**: ash1 entry 未記載があっても gunshi が実装ファイル Read で
-       N1-N4 全検証可能。**dual-model + 軍師統合 7 回目** で標準パターン定着。
-
-    2. **2 層原因同時修正完遂**: 直接原因 (A4 parse bug) と構造原因 (C5 閾値固定) を
-       Phase 1 で同時実装 = cmd_609 統合分析の予測が完全的中。dual-model 効果の実証。
-
-    3. **pre-existing gap の明示記録**: --context-pct なし呼出を cmd_610 scope 外として
-       明確に区別し、後続 cmd で対処する運用パターンが確立。「scope creep 回避」と
-       「改善材料体系化」の両立。
-
-    4. **ash report 未記載問題の構造化確定**: ash3 (cmd_607/608) → ash1 (cmd_610) と
-       複数 ash で発生 = 個別問題ではなく運用フロー structural fix 必要。
-       cmd_611 候補の最有力。
-
-    L017 dual-model + 軍師統合の skill 化推奨タイミングが 7 回目で更に強化された。
-
-files_modified:
-  - "output/cmd_610_qc_report.md"  # 約 200 行作成
-  - "queue/reports/gunshi_report.yaml"
-  - "queue/inbox/gunshi.yaml"
-  - "queue/snapshots/gunshi_snapshot.yaml"
+concerns_flagged:
+  - "C1: ash1 report.yaml への entry append 漏れ — SO-24 PARTIAL 主因 (high)"
+  - "C2: gas_push_sa.sh script 残存 (medium)"
 
 skill_candidate:
   found: false
+  reason: "cmd_602/604 系で既出 (shogun-l017-dual-model-smoke-qc) のため新規スキル不要"
+
+files_modified:
+  - "output/cmd_604_oauth_qc_report.md"
+  - "queue/reports/gunshi_report.yaml"
+  - "queue/suggestions.yaml"
+  - "logs/daily/2026-05-01.md"
 
 north_star_alignment:
   status: aligned
-  reason: |
-    cmd_610 北極星 = 「家老 self_clear 自動化の silent failure (4/29 当日 self_clear 0回 +
-    auto-compact 3度) を構造解消、cmd_609 で確定した 2 層真因を一括修正」。
-    N1-N4 全 PASS + AC1-AC6 全 PASS + Scope E Go 判定により、両軸 (silent failure 解消 +
-    副作用ゼロ + cmd_604 並行非干渉) 達成。aligned 判定。
+  reason: "OAuth 経由で実 updateContent が両 arm 独立に HTTP 200 を 2 回ずつ返却。SA 経路を機能的に置換完了。"
   risks_to_north_star:
-    - "ash1 entry 未記載問題が複数 ash で構造問題化 = 運用フロー全体の弱化リスク (C1, medium)。"
-    - "--context-pct なし呼出 (pre-existing gap) で実運用上 wait に倒れる可能性 (C2, low)。"
-    - "L017 skill 化遅延が継続している (C3, info)。"
-
-suggestions:
-  - "cmd_611 候補として ash report 自動 append 機構 (inbox_write 時 report.yaml 自動更新)
-    または instructions/ashigaru.md 強化を最優先 dispatch 推奨。本 QC C1 で flag、
-    複数 ash で構造問題化 = 運用フロー全体の structural fix が必要。"
-  - "L017 dual-model + 軍師統合 7 回目達成。skill 'shogun-l017-dual-model-smoke-qc' の
-    作成を cmd_607/608 suggestions と統合して最優先 dispatch 推奨。"
-  - "--context-pct なし呼出 (C2 pre-existing gap) を cmd_611 / cmd_612 候補として
-    karo_self_clear_check.sh から get_context_pct.sh 経由で取得する修正計画推奨。"
-
-history:
-- task_id: subtask_609_integrated_gunshi
-  completed_at: "2026-04-30T00:08:00+09:00"
-  summary: "cmd_609 dual-model 統合 + cmd_610 発令案策定。2 層真因確定で 5 Scope cmd_610 案"
-- task_id: subtask_608_scope_e_gunshi_qc
-  completed_at: "2026-04-29T23:25:00+09:00"
-  summary: "cmd_608 Scope E QC=Go。reality check 5度連発構造解消、L019 canonical 永続化"
-- task_id: subtask_607_gunshi_qc
-  completed_at: "2026-04-29T18:25:00+09:00"
-  summary: "cmd_607 auto-compact 計測機構修復 QC=Go 条件付。dashboard backfill 4/27=1, 4/28=3"
+    - "ash1 report.yaml への append 漏れが看過されると、後続 cmd で同様の persistence skip が常態化するリスク"
+    - "gas_push_sa.sh 残存により誤実行のリスク (低確率だが操作ミス時に gas-mail-manager が破壊される可能性)"
