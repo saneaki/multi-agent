@@ -1,64 +1,67 @@
 worker_id: gunshi
-task_id: subtask_622_scope_c_gunshi_qc
-parent_cmd: cmd_622
-timestamp: "2026-05-01T13:52:07+09:00"
+task_id: subtask_623_scope_e_gunshi_qc
+parent_cmd: cmd_623
+timestamp: "2026-05-01T15:50:32+09:00"
 status: done
 report_to: karo
 type: review
 
 result:
-  type: scope_c_gunshi_qc_report
+  type: scope_e_gunshi_qc_report
   summary: |
-    cmd_622 Scope C (CHANGELOG + RUNBOOK + git tag QC) 完遂。
+    cmd_623 Scope E (clasp RAPT 自動化 N1/N2/N3 検証) 完遂。
     北極星 N1/N2/N3 全 PASS。判定: Go。
-    対象: /home/ubuntu/gas-mail-manager/CHANGELOG.md (ash3) / docs/RUNBOOK.md (ash7)
-    / git tag v0.1.0=672a28f, v0.2.0=64cdceb, v0.3.0=853f58c (ash3)。
-    output/cmd_622_gunshi_qc_report.md 作成。AC1-AC4 全 PASS。
-    家老に: ash3 (またはash1) へ RUNBOOK.md commit + tag push を [要行動] dispatch 推奨。
+    Scope A (gas_run_oauth.sh) / Scope B (clasp_age_check.sh) /
+    Scope C (gas_push_oauth.sh エラー検知強化) / Scope D (settings.yaml + dashboard badge)
+    の4 scope を統合検証。clasp_age_check.sh 実行 (exit 0, 0日 NORMAL),
+    dashboard.md 再生成成功, ntfy 通知 8箇所 (gas_push 4 + gas_run 4) 実装確認。
+    output/cmd_623_gunshi_qc_report.md 作成 (216行)。AC1-AC4 全 PASS。
+    Scope F (ash1 commit + push + dashboard 反映) dispatch 推奨。
 
   ac_verification:
     - id: AC1
       verification: |
-        - CHANGELOG.md (44行) を Read → Keep a Changelog 1.1.0 形式確認
-        - 必須/推奨 10項目全充足:
-          - "# Changelog" ヘッダ / 説明文 / KCL 1.1.0+SemVer 言及
-          - [Unreleased] セクション / バージョン見出し ## [X.Y.Z] - YYYY-MM-DD
-          - カテゴリ見出し (Added, Fixed) / 箇条書きエントリ
-          - 比較リンク (Unreleased→v0.3.0→v0.2.0→v0.1.0→tag)
-          - 降順 (新版が上)
+        - python3 scripts/generate_dashboard_md.py 実行成功
+        - dashboard.md L3 で確認: clasp: 🟢 0日 (2026-05-01更新)
+        - バッジ絵文字 + 経過日数 + 更新日 の3要素揃い
+        - バッジ色は実経過日数 (0日 → 🟢) と整合
       status: PASS
     - id: AC2
       verification: |
-        - git -C /home/ubuntu/gas-mail-manager show-ref --tags で確認:
-          - v0.1.0 = 672a28f56bd3162340512f3da34c73ea03c65755 (main.gs orchestration)
-          - v0.2.0 = 64cdceb16936569b5ad42c89bf58e57e753b452f (appsscript.json executionApi)
-          - v0.3.0 = 853f58cc580b003fdabd957896f8d0091d238a54 (Fix4 cap500 + DriveApp案B)
-        - 各 commit subject と CHANGELOG 記述が完全一致
-        - cmd_619 Scope D 戦略 plan では v0.1.0=5437734 提示だったが、
-          ash3 が CHANGELOG [0.1.0] 記述 (Initial scaffold + 全 5 モジュール) との
-          整合を優先し 672a28f を選択 — 妥当な判断
+        - clasp_age_check.sh L26-L27 で settings.yaml から閾値読込確認:
+          WARN_DAYS=25, CRITICAL_DAYS=28
+        - 4階層判定実装確認:
+          - >= 28 (CRITICAL): 🔴 + ntfy + exit 2 (L49-L55)
+          - >= 25 (WARN):     🟡 + ntfy + exit 1 (L57-L63)
+          - >= 16 (INFO):     🟡 + 通知不要 + exit 0 (L65-L69)
+          - <  16 (NORMAL):   🟢 + exit 0 (L71-L75)
+        - 経過日数計算: (NOW_EPOCH - FILE_EPOCH) / 86400 (L37-L41)
+          → Python 独立検算 (now-mtime)/86400 と完全一致
+        - 実行検証: 0日経過 → 🟢 NORMAL → exit 0 期待通り
       status: PASS
     - id: AC3
       verification: |
-        - RUNBOOK.md (149行) を Read → 実運用手順記載確認
-        - 14項目全充足:
-          - Overview / Prerequisites / clasp login --no-localhost
-          - .clasp.json scriptId / initializeConfig() + Script Properties
-          - clasp push (status→push) / 手動実行 (Editor)
-          - clasp run + clasp logs --watch / 主要関数 5件
-          - Troubleshooting: PERMISSION_DENIED (OAuth scope 5件), clasp push 失敗,
-            Gemini API エラー, 6分制限+RESUME_INDEX 再開
-          - Configuration (主要設定値 8件) / Version History
-        - clasp push/run/logs の3操作完備、「読めば動かせる」レベル達成
+        - gas_push_oauth.sh notify_error 4箇所:
+          - L134: token refresh 失敗
+          - L149: token parse 失敗
+          - L247: 403 permission denied
+          - L249: その他 4xx エラー
+        - gas_run_oauth.sh notify_error 4箇所:
+          - L135: token refresh 失敗
+          - L150: token parse 失敗
+          - L180: 403 scope 不足
+          - L186: 404 scriptId 不正
+        - 共通 notify_error() 関数: bash scripts/ntfy.sh "$message"
+          gas_oauth_error || true (通知失敗ガード付)
+        - 全メッセージに復旧ヒント明示 (例: "復旧: clasp re-login")
       status: PASS
     - id: AC4
       verification: |
-        - Go 判定明記 (output/cmd_622_gunshi_qc_report.md §3)
-        - 根拠 3点: N1 PASS / N2 PASS / N3 PASS
-        - commit dispatch 推奨: ash3 (またはash1) に
-          RUNBOOK.md commit + git push origin v0.1.0 v0.2.0 v0.3.0 main
-        - HEAD=6c020ce で CHANGELOG.md 既 commit 済確認
-        - origin/main=d36aef7 で停止 → 未 push commit + 未 push tag あり
+        - Go 判定明記 (output/cmd_623_gunshi_qc_report.md §4)
+        - 根拠 5点: N1/N2/N3 全PASS / Smoke test 全成功 / Scope A-D 統合性確認
+        - Scope F dispatch 推奨対象ファイル一覧明示 (5ファイル)
+        - 軽微改善余地 4件 (G1-G4) を low priority で記載 (Go 妨げず)
+        - 出力: output/cmd_623_gunshi_qc_report.md (216行)
       status: PASS
 
 means_ends_classification:
@@ -66,28 +69,29 @@ means_ends_classification:
   ac_classification:
     - id: AC1
       type: means
-      rationale: "KCL形式確認は QC の手段。ends は Go/NoGo 判定."
+      rationale: "dashboard badge 確認は QC の手段。ends は Go/NoGo 判定."
       corresponding_ends_ac: AC4
     - id: AC2
       type: means
-      rationale: "tag-SHA 整合確認は QC の手段。ends は Go/NoGo 判定."
+      rationale: "閾値ロジック確認は QC の手段。ends は Go/NoGo 判定."
       corresponding_ends_ac: AC4
     - id: AC3
       type: means
-      rationale: "RUNBOOK 記載確認は QC の手段。ends は Go/NoGo 判定."
+      rationale: "ntfy 通知コード確認は QC の手段。ends は Go/NoGo 判定."
       corresponding_ends_ac: AC4
     - id: AC4
       type: ends
-      rationale: "Go/NoGo 判定は本 cmd の最終 ends (家老が commit dispatch するための材料)."
+      rationale: "Go/NoGo 判定は本 cmd の最終 ends (家老が Scope F dispatch するための材料)."
       corresponding_ends_ac: null
   ends_coverage_note: |
     本 cmd は QC cmd。Go/NoGo 判定 (means+ends 一致) で本 cmd の ends は達成。
-    実 commit + tag push は ash3 (またはash1) で ends 検証する設計。
+    実 commit + push + 実運用での ntfy 受信検証は後続 (Scope F + 25日後/28日後の運用観察) へ委譲。
   both_systems_verified: true
   verdict: |
-    means 系 3/3 PASS (CHANGELOG + tag + RUNBOOK 確認)。
+    means 系 3/3 PASS (N1/N2/N3 検証)。
     ends 系: AC4 (Go/NoGo 判定) は本 cmd 内で ends 完遂。
-    実 commit + tag push は後続 (ash3/ash1) へ委譲 (QC cmd の特性)。
+    実運用での効果検証 (25日経過時の WARN ntfy 到達 / 28日経過時の CRITICAL ntfy 到達 /
+    実エラー時の notify_error 発火) は後続日次運用で観察すべき。
 
 so24_verification:
   inbox: PENDING
@@ -96,74 +100,89 @@ so24_verification:
   overall: WILL_VERIFY_AFTER_KARO_INBOX
   note: |
     本報告書込み + karo inbox 通知後に so24 三点照合が成立。
-    artifact = output/cmd_622_gunshi_qc_report.md PASS 済。
+    artifact = output/cmd_623_gunshi_qc_report.md PASS 済。
 
-scope_c_qc_summary:
-  n1_changelog_keep_a_changelog: PASS
-  n2_git_tag_sha_correctness: PASS
-  n3_runbook_operational_steps: PASS
+scope_e_qc_summary:
+  n1_dashboard_clasp_badge: PASS
+  n2_age_check_threshold: PASS
+  n3_oauth_ntfy_error_detection: PASS
   go_nogo: Go
-  commit_targets:
-    - "docs/RUNBOOK.md (新規, 149行, 未 commit の可能性高)"
-    - "git tag v0.1.0/v0.2.0/v0.3.0 (ローカル作成済, push 必要)"
-  push_required:
-    - "git push origin main (HEAD=6c020ce / origin=d36aef7 で複数 commit 未 push)"
-    - "git push origin v0.1.0 v0.2.0 v0.3.0"
-  v0_1_0_sha_decision_note: |
-    cmd_619 戦略 plan では v0.1.0=5437734 提示。ash3 が CHANGELOG 記述
-    (Initial scaffold + 全 5 モジュール) との整合を優先し 672a28f を選択。
-    KCL 1.1.0 上「Initial release」を全コアモジュール揃った時点とする
-    解釈は妥当。戦略 plan との差異は許容範囲。
+  smoke_tests:
+    syntax_check: "3 scripts OK (gas_run_oauth / clasp_age_check / gas_push_oauth)"
+    clasp_age_check_run: "exit 0, 0日 NORMAL, settings.yaml 連携確認"
+    dashboard_regenerate: "成功, L3 に 🟢 0日 (2026-05-01更新)"
+    ntfy_call_count: "gas_push 4 + gas_run 4 = 8箇所"
+  scope_f_recommended_targets:
+    - "scripts/gas_run_oauth.sh (新規)"
+    - "scripts/clasp_age_check.sh (新規)"
+    - "scripts/gas_push_oauth.sh (修正 — notify_error 追加)"
+    - "config/settings.yaml (修正 — clasp セクション追加)"
+    - "dashboard.md / dashboard.yaml (clasp バッジ反映)"
 
 suggestions:
   - id: G1
     priority: low
     content: |
-      RUNBOOK の clasp pull 運用シナリオ追加検討。現状 Troubleshooting 内に
-      1行のみ言及。ローカル↔GAS双方向同期の運用方針を別セクションで補強候補。
-    action_needed: "push 中心運用なら現状で十分。実運用で必要性が見えたら別 cmd で改修"
+      read_setting 関数の section 識別。grep "^  ${key}:" で 2スペース字下げを
+      照合 → first match 取得。同じ key が他セクションに存在すると誤マッチ可能性。
+      改善案: yq または python yaml.safe_load + dotted-path で厳密指定。
+    action_needed: "現状 settings.yaml に重複 key なし、運用上問題なし。
+      将来セクション増加時に検討"
   - id: G2
     priority: low
     content: |
-      CHANGELOG [Unreleased] セクションの運用方針明記検討。
-      v0.4.0 開発開始時、追加機能/修正を [Unreleased] に随時追記する運用を
-      README または CONTRIBUTING に明記すべき。
-    action_needed: "Phase 2 (release-please 導入) で自動化される予定。優先度低"
+      INFO (16日) 閾値の出典明示。clasp_age_check.sh L65 で ELAPSED_DAYS >= 16 が
+      ハードコード。settings.yaml に info_days キーなし、変更時に script 直接編集必要。
+      改善案: settings.yaml に info_days: 16 を追加し read_setting 経由で読込。
+    action_needed: "16日は中間警告で 25/28日より優先度低。実運用で必要性が見えたら改修"
   - id: G3
     priority: low
     content: |
-      RUNBOOK の appsscript.json 同期方針。L43 で「チーム手順に合わせて確認」と
-      曖昧。具体的手順 (cp appsscript.json src/ 等) を運用固まってから明記すべき。
-    action_needed: "運用で固まってから別 cmd で改修"
+      notify_error topic 統一性。clasp_age_check は clasp_age_warn、
+      gas_push/run_oauth は gas_oauth_error。
+      改善案: clasp 関連は全て同一 topic (例: clasp_alerts) で購読側設定単純化。
+    action_needed: "現状の topic 分離はむしろ識別性向上に寄与。優先度低"
+  - id: G4
+    priority: low
+    content: |
+      gas_run_oauth.sh L180 の 403 復旧メッセージで scope 名「script.scriptapp」が
+      簡略形。正確には URL 形式 (https://www.googleapis.com/auth/script.scriptapp)。
+      clasp が両形式を解釈するか確認した上で記述すべき。
+    action_needed: "殿/家老が clasp ドキュメントで補完可能。優先度低"
 
 concerns_flagged: []
 
 skill_candidate:
   found: false
   reason: |
-    本 cmd は QC cmd であり、再利用可能なスキルパターンの抽出には
-    具体的実装 (CHANGELOG/RUNBOOK/git tag を実プロジェクトで運用した知見) が必要。
-    Phase 2 (release-please 導入) 完了後、運用知見蓄積を経て新規スキル抽出を検討。
+    本 cmd は QC cmd であり、再利用可能なスキルパターンの抽出には実運用知見蓄積が必要。
+    clasp RAPT 自動化 (proactive 監視 + reactive エラー検知 + dashboard badge + ntfy)
+    の組合せは将来「OAuth トークン日数監視の標準パターン」としてスキル化候補だが、
+    1ヶ月以上の実運用 + 25/28日 ntfy 到達の実検証後に検討すべき。
 
 files_modified:
-  - "output/cmd_622_gunshi_qc_report.md"
+  - "output/cmd_623_gunshi_qc_report.md"
   - "queue/reports/gunshi_report.yaml"
   - "queue/inbox/gunshi.yaml"
+  - "dashboard.md (smoke test での再生成)"
 
 north_star_alignment:
   status: aligned
   reason: |
-    cmd_622 北極星 N1/N2/N3 (CHANGELOG KCL 1.1.0 準拠 + git tag 正確性 +
-    RUNBOOK 運用手順) を QC で全 PASS 判定。Go 判定により後続 (commit + tag push)
-    dispatch 可状態。gas-mail-manager docs 体制 Phase 1 が確実に進捗。
+    cmd_623 北極星 N1/N2/N3 (経過日数可視化 + 25/28日通知到達 + reactive エラー検知)
+    を QC で全 PASS 判定。Go 判定により Scope F (commit + push + dashboard 反映)
+    dispatch 可能状態。clasp RAPT 自動化 Step1 (proactive + reactive) が完成形に到達し、
+    月次再認証境界を構造的に検知できる体制が整った。
   risks_to_north_star:
-    - "RUNBOOK.md の未 commit を放置すると、CHANGELOG だけ反映されて RUNBOOK が
-      取り残されるリスクあり。家老から速やかに ash3/ash1 へ commit + push dispatch すべき"
-    - "tag v0.1.0/v0.2.0/v0.3.0 の origin push を忘れると、release-please (Phase 2)
-      導入時に過去版基準が取れず誤動作する可能性"
-    - "v0.1.0 の SHA 選定 (672a28f vs 戦略 plan の 5437734) の差異は許容したが、
-      将来の遡及作業時に混乱を招かないよう、CHANGELOG または RUNBOOK に
-      決定理由を残すと安全"
+    - "実運用での 25/28日 ntfy 到達は cron 定期実行 + 日数経過の両立が必要。
+      cron 設定が別途必要 (現在 dashboard 行は表示済だが cron 未確認)"
+    - "16日 INFO 閾値の出典が settings.yaml になく hardcode。
+      運用変更時に script 直接編集が必要 (G2)"
+    - "ntfy トピック分散 (clasp_age_warn vs gas_oauth_error) で殿/家老の購読設定
+      負荷増。識別性向上の利点もあり、現状運用で問題なければ静観 (G3)"
+    - "実エラー発火時の ntfy 到達は notify_error 関数の動作に依存。
+      |¦| true ガードで通知失敗時もスクリプト続行する設計は安全だが、
+      通知失敗自体は気付きにくい (将来的に二段ログ化検討余地)"
 
 skip_count: 0
 test_self_sufficient: true
