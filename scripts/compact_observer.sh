@@ -161,6 +161,36 @@ except:
 " 2>/dev/null || echo "0")
 fi
 
+# 日次 rotate は compaction 発生有無と独立して実行する。
+# これにより compaction=0 の日でも前日 stats を確実に履歴へ退避できる。
+rotate_daily_if_needed() {
+    [ -f "$STATS_FILE" ] || return 0
+    local prev_date prev_payload
+    prev_date=$("$PYTHON" -c "
+import json
+try:
+    with open('$STATS_FILE') as f:
+        d = json.load(f)
+    print(d.get('date', ''))
+except Exception:
+    print('')
+" 2>/dev/null || echo "")
+    if [ -n "$prev_date" ] && [ "$prev_date" != "$TODAY" ]; then
+        prev_payload=$("$PYTHON" -c "
+import json
+with open('$STATS_FILE') as f:
+    d = json.load(f)
+print(json.dumps(d))
+" 2>/dev/null || echo "")
+        if [ -n "$prev_payload" ]; then
+            echo "${TODAY}|${ROLE}|daily_rotate|${prev_payload}" >> "$HISTORY_LOG" 2>/dev/null || true
+            _log "daily rotate (independent): prev_date=${prev_date} archived to compact_history.log"
+        fi
+    fi
+}
+
+rotate_daily_if_needed
+
 # pre_compact snapshot があれば累積を更新 (重複防止: 前回の LAST と比較)
 PREV_LAST="none"
 if [ -f "$STATS_FILE" ]; then
@@ -179,28 +209,6 @@ NEW_TOTAL=$PREV_TOTAL
 if [ "$LAST_TRIGGER" = "pre_compact" ] && [ "$LAST_COMPACT" != "$PREV_LAST" ]; then
     NEW_TOTAL=$((PREV_TOTAL + 1))
     _log "new compaction detected → total=${NEW_TOTAL}"
-
-    # 日次 rotate: 古いカウンタを compact_history.log に追記
-    if [ -f "$STATS_FILE" ]; then
-        PREV_DATE=$("$PYTHON" -c "
-import json
-try:
-    with open('$STATS_FILE') as f:
-        d = json.load(f)
-    print(d.get('date', ''))
-except:
-    print('')
-" 2>/dev/null || echo "")
-        if [ -n "$PREV_DATE" ] && [ "$PREV_DATE" != "$TODAY" ]; then
-            echo "$("$PYTHON" -c "
-import json
-with open('$STATS_FILE') as f:
-    d = json.load(f)
-print('${TODAY}|${ROLE}|daily_rotate|' + json.dumps(d))
-" 2>/dev/null)" >> "$HISTORY_LOG" 2>/dev/null || true
-            _log "daily rotate: prev_date=${PREV_DATE} archived to compact_history.log"
-        fi
-    fi
 fi
 
 # stats ファイル書き込み

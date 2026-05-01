@@ -45,7 +45,9 @@ _log() {
 
 _log "=== START (dry_run=${DRY_RUN}) ==="
 
-TODAY="${TARGET_DATE:-$(date -d "$(bash "${SCRIPT_DIR}/scripts/jst_now.sh" --date) -1 day" '+%Y-%m-%d' 2>/dev/null || bash "${SCRIPT_DIR}/scripts/jst_now.sh" --date)}"
+# cmd_616 Scope C: safe_window stale の根本対策として TODAY=今日(JST) を標準にする。
+# 従来の「昨日」集計は safe_window 判定に1日遅延を生むため、日次KPIは当日値を直接扱う。
+TODAY="${TARGET_DATE:-$(bash "${SCRIPT_DIR}/scripts/jst_now.sh" --date)}"
 
 # ── KPI 1: /pub-us 起動回数 (today) ──────────────────────────────────────────
 PUB_US_INVOKE=0
@@ -113,6 +115,9 @@ def day_before(d):
 
 if target_date in date_to_total and day_before(target_date) in date_to_total:
     print(max(date_to_total[target_date] - date_to_total[day_before(target_date)], 0))
+elif target_date == current_jst and target_date not in date_to_total and day_before(target_date) in date_to_total:
+    # today 未rotate (compact_history 未確定) でも TOTAL 差分で当日件数を復元する。
+    print(max(total - date_to_total[day_before(target_date)], 0))
 elif target_date == day_before(current_jst) and prev_date in date_to_total:
     print(max(total - date_to_total[prev_date], 0))
 else:
