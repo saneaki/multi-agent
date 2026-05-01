@@ -161,6 +161,7 @@
 !scripts/suggestions_digest.sh
 !scripts/generate_dashboard_md.py
 !scripts/karo_dispatch.sh
+!scripts/karo_auto_clear.sh
 !scripts/test_dashboard_roundtrip.py
 !scripts/git-hooks/
 !scripts/git-hooks/pre-commit-dashboard

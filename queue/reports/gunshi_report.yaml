@@ -1,97 +1,101 @@
 worker_id: gunshi
-task_id: subtask_623_scope_e_gunshi_qc
-parent_cmd: cmd_623
-timestamp: "2026-05-01T15:50:32+09:00"
+task_id: subtask_624_scope_c2_gunshi_reqc
+parent_cmd: cmd_624
+timestamp: "2026-05-01T23:51:43+09:00"
 status: done
 report_to: karo
 type: review
 
 result:
-  type: scope_e_gunshi_qc_report
+  type: scope_c2_gunshi_reqc_report
   summary: |
-    cmd_623 Scope E (clasp RAPT 自動化 N1/N2/N3 検証) 完遂。
-    北極星 N1/N2/N3 全 PASS。判定: Go。
-    Scope A (gas_run_oauth.sh) / Scope B (clasp_age_check.sh) /
-    Scope C (gas_push_oauth.sh エラー検知強化) / Scope D (settings.yaml + dashboard badge)
-    の4 scope を統合検証。clasp_age_check.sh 実行 (exit 0, 0日 NORMAL),
-    dashboard.md 再生成成功, ntfy 通知 8箇所 (gas_push 4 + gas_run 4) 実装確認。
-    output/cmd_623_gunshi_qc_report.md 作成 (216行)。AC1-AC4 全 PASS。
-    Scope F (ash1 commit + push + dashboard 反映) dispatch 推奨。
+    cmd_624 Scope C2 (再QC) 完遂。判定: **Go** (前回 Scope C NoGo から完全復旧)。
+    ash6 Scope A2 (再修正) で Scope B §4 6差分を全件反映確認 (grep 6/6 キーワードヒット)。
+    N1 PASS (idle 3条件 AND 維持) / N2 PASS (E1/E2/E3/E6/E7/E9/E10 全 guard 実装) /
+    N3 PASS (safe_clear_check.sh L130 内部呼出維持)。
+    dry-run exit 0 (active=2 → idle=false skip 期待通り)。
+    output/cmd_624_gunshi_qc2_report.md 作成 (200+ 行)。
+    Scope D (ash1 commit + cron 設定 + dashboard 反映) dispatch 可。
+    Scope D 投入前の 10シナリオ確認 を §6 で推奨。
 
   ac_verification:
     - id: AC1
       verification: |
-        - python3 scripts/generate_dashboard_md.py 実行成功
-        - dashboard.md L3 で確認: clasp: 🟢 0日 (2026-05-01更新)
-        - バッジ絵文字 + 経過日数 + 更新日 の3要素揃い
-        - バッジ色は実経過日数 (0日 → 🟢) と整合
+        - grep -nE "flock|COMPACT_TRIGGER|RECENT_WRITE|capture-pane|threshold.*60|context_pct_raw"
+          で 6キーワード全ヒット (反映率 6/6 = 100%)
+        - 各差分の行番号で実装確認:
+          - 差分1 flock (E3/E7): L20-L26 (exec 9>"$LOCK_FILE" + flock -n 9 + PID 記録)
+          - 差分2 threshold clamp (E10): L50-L53 (WARN ログ付 60 clamp)
+          - 差分3 RECENT_WRITE (E2): L104-L109 (find -mmin -1 + E2 guard ログ)
+          - 差分4 COMPACT_TRIGGER (E1): L116-L128 (compact_observer 連携 + 300秒判定)
+          - 差分5 capture-pane (E6): L144-L148 (regex (│ >|^>|claude-code))
+          - 差分6 context_pct_raw WARN (E9): L92-L100 (失敗 + non-numeric 2種 WARN)
       status: PASS
     - id: AC2
       verification: |
-        - clasp_age_check.sh L26-L27 で settings.yaml から閾値読込確認:
-          WARN_DAYS=25, CRITICAL_DAYS=28
-        - 4階層判定実装確認:
-          - >= 28 (CRITICAL): 🔴 + ntfy + exit 2 (L49-L55)
-          - >= 25 (WARN):     🟡 + ntfy + exit 1 (L57-L63)
-          - >= 16 (INFO):     🟡 + 通知不要 + exit 0 (L65-L69)
-          - <  16 (NORMAL):   🟢 + exit 0 (L71-L75)
-        - 経過日数計算: (NOW_EPOCH - FILE_EPOCH) / 86400 (L37-L41)
-          → Python 独立検算 (now-mtime)/86400 と完全一致
-        - 実行検証: 0日経過 → 🟢 NORMAL → exit 0 期待通り
+        - karo_auto_clear.sh L111-L114 で 3条件 AND 判定維持確認
+        - unread_count == 0 (L55-L66) / active_count == 0 (L68-L89) /
+          context_pct >= threshold (L91-L100, L50-L53 clamp 経由)
+        - 前回 PASS から無変更維持
       status: PASS
     - id: AC3
       verification: |
-        - gas_push_oauth.sh notify_error 4箇所:
-          - L134: token refresh 失敗
-          - L149: token parse 失敗
-          - L247: 403 permission denied
-          - L249: その他 4xx エラー
-        - gas_run_oauth.sh notify_error 4箇所:
-          - L135: token refresh 失敗
-          - L150: token parse 失敗
-          - L180: 403 scope 不足
-          - L186: 404 scriptId 不正
-        - 共通 notify_error() 関数: bash scripts/ntfy.sh "$message"
-          gas_oauth_error || true (通知失敗ガード付)
-        - 全メッセージに復旧ヒント明示 (例: "復旧: clasp re-login")
+        - L130 で bash safe_clear_check.sh --agent-id karo 内部呼出確認
+        - exit code で PASS/FAIL 判定、FAIL 時 graceful skip (L130-L135)
+        - log を /tmp/karo_auto_clear_safe_check.log に分離
+        - 前回 PASS から無変更維持
       status: PASS
     - id: AC4
       verification: |
-        - Go 判定明記 (output/cmd_623_gunshi_qc_report.md §4)
-        - 根拠 5点: N1/N2/N3 全PASS / Smoke test 全成功 / Scope A-D 統合性確認
-        - Scope F dispatch 推奨対象ファイル一覧明示 (5ファイル)
-        - 軽微改善余地 4件 (G1-G4) を low priority で記載 (Go 妨げず)
-        - 出力: output/cmd_623_gunshi_qc_report.md (216行)
+        - bash -n syntax check OK
+        - bash karo_auto_clear.sh --dry-run 実行:
+          [2026-05-01T23:51:42+09:00] check: unread=0, active=2, context=33, threshold=80
+          [2026-05-01T23:51:42+09:00] idle=false -> skip.
+          EXIT=0
+        - flock 取得成功 (lock メッセージなし)
+        - active=2 → idle=false → 期待通り skip
+      status: PASS
+    - id: AC5
+      verification: |
+        - Go 判定明記 (output/cmd_624_gunshi_qc2_report.md §5)
+        - 根拠 5点: 6差分全件反映 / N2 完全復旧 / N1+N3 維持 /
+          dry-run 0 / 依存資産活用 (compact_observer + safe_clear_check)
+        - Scope D 申し送り: ash1 commit + cron 30分間隔 + dashboard 反映
+        - 10シナリオ確認推奨 (§6 で網羅)
       status: PASS
 
 means_ends_classification:
   schema_version: "1.0"
   ac_classification:
     - id: AC1
-      type: means
-      rationale: "dashboard badge 確認は QC の手段。ends は Go/NoGo 判定."
-      corresponding_ends_ac: AC4
+      type: means_and_ends
+      rationale: "6差分反映確認は QC の means + 本 cmd の ends (Go 判定の核心根拠)"
+      corresponding_ends_ac: AC5
     - id: AC2
       type: means
-      rationale: "閾値ロジック確認は QC の手段。ends は Go/NoGo 判定."
-      corresponding_ends_ac: AC4
+      rationale: "idle 条件確認は QC の手段。ends は Go/NoGo 判定."
+      corresponding_ends_ac: AC5
     - id: AC3
       type: means
-      rationale: "ntfy 通知コード確認は QC の手段。ends は Go/NoGo 判定."
-      corresponding_ends_ac: AC4
+      rationale: "safe_clear_check 再利用確認は QC の手段。ends は Go/NoGo 判定."
+      corresponding_ends_ac: AC5
     - id: AC4
+      type: means
+      rationale: "dry-run 動作確認は QC の手段。ends は Go/NoGo 判定."
+      corresponding_ends_ac: AC5
+    - id: AC5
       type: ends
-      rationale: "Go/NoGo 判定は本 cmd の最終 ends (家老が Scope F dispatch するための材料)."
+      rationale: "Go/NoGo 判定は本 cmd の最終 ends (家老が Scope D dispatch するための材料)."
       corresponding_ends_ac: null
   ends_coverage_note: |
-    本 cmd は QC cmd。Go/NoGo 判定 (means+ends 一致) で本 cmd の ends は達成。
-    実 commit + push + 実運用での ntfy 受信検証は後続 (Scope F + 25日後/28日後の運用観察) へ委譲。
+    本 cmd は再 QC cmd。Go 判定 (means+ends 一致) で本 cmd の ends は達成。
+    実 commit + cron 投入 + 10シナリオ動作確認は Scope D へ委譲。
   both_systems_verified: true
   verdict: |
-    means 系 3/3 PASS (N1/N2/N3 検証)。
-    ends 系: AC4 (Go/NoGo 判定) は本 cmd 内で ends 完遂。
-    実運用での効果検証 (25日経過時の WARN ntfy 到達 / 28日経過時の CRITICAL ntfy 到達 /
-    実エラー時の notify_error 発火) は後続日次運用で観察すべき。
+    means 系 4/4 PASS (6差分確認 + idle + safe_clear + dry-run)。
+    ends 系: AC5 (Go 判定) は本 cmd 内で ends 完遂。
+    実運用での効果検証 (E1/E2/E6 guard の実発火) は cron 投入後の
+    1週間程度の運用観察で gunshi が継続監視推奨。
 
 so24_verification:
   inbox: PENDING
@@ -100,89 +104,97 @@ so24_verification:
   overall: WILL_VERIFY_AFTER_KARO_INBOX
   note: |
     本報告書込み + karo inbox 通知後に so24 三点照合が成立。
-    artifact = output/cmd_623_gunshi_qc_report.md PASS 済。
+    artifact = output/cmd_624_gunshi_qc2_report.md PASS 済。
 
-scope_e_qc_summary:
-  n1_dashboard_clasp_badge: PASS
-  n2_age_check_threshold: PASS
-  n3_oauth_ntfy_error_detection: PASS
+scope_c2_qc_summary:
+  n1_idle_detection: PASS
+  n2_no_misfire_during_work: PASS
+  n3_safe_clear_check_reuse: PASS
   go_nogo: Go
-  smoke_tests:
-    syntax_check: "3 scripts OK (gas_run_oauth / clasp_age_check / gas_push_oauth)"
-    clasp_age_check_run: "exit 0, 0日 NORMAL, settings.yaml 連携確認"
-    dashboard_regenerate: "成功, L3 に 🟢 0日 (2026-05-01更新)"
-    ntfy_call_count: "gas_push 4 + gas_run 4 = 8箇所"
-  scope_f_recommended_targets:
-    - "scripts/gas_run_oauth.sh (新規)"
-    - "scripts/clasp_age_check.sh (新規)"
-    - "scripts/gas_push_oauth.sh (修正 — notify_error 追加)"
-    - "config/settings.yaml (修正 — clasp セクション追加)"
-    - "dashboard.md / dashboard.yaml (clasp バッジ反映)"
+  scope_b_diff_reflection_rate: "6/6 (100%, 前回 0% から完全復旧)"
+  diff_implementation_lines:
+    - diff_id: 1
+      target: "flock 方式 (E3/E7)"
+      lines: "L20-L26"
+      priority: HIGH
+    - diff_id: 2
+      target: "threshold clamp 60 (E10)"
+      lines: "L50-L53"
+      priority: LOW
+    - diff_id: 3
+      target: "RECENT_WRITE check (E2)"
+      lines: "L104-L109"
+      priority: MEDIUM
+    - diff_id: 4
+      target: "compaction in-progress check (E1)"
+      lines: "L116-L128"
+      priority: HIGH
+    - diff_id: 5
+      target: "pane active prompt 確認 (E4/E6)"
+      lines: "L144-L148"
+      priority: MEDIUM
+    - diff_id: 6
+      target: "get_context_pct.sh WARN ログ (E9)"
+      lines: "L92-L100"
+      priority: LOW
+  recommended_next:
+    target: "ash1 (Sonnet)"
+    scope: "Scope D — commit + cron 設定 + dashboard 反映"
+    cron_schedule: "*/30 * * * * (compact_observer.sh と整合)"
+    pre_cron_validation: "10シナリオ確認 (本書 §6)"
 
 suggestions:
-  - id: G1
+  - id: D1
+    priority: high
+    content: |
+      Scope D で cron 投入前の 10シナリオ動作確認を必須実施推奨。
+      特に E1 (compaction中) と E6 (pane busy) は実環境でのみ再現可能で、
+      cron 後の異常動作で karo コンテキスト破損リスクあり。
+    action_needed: "家老が ash1 task YAML に 10シナリオチェックリストを明示記載"
+  - id: D2
+    priority: medium
+    content: |
+      RECENT_WRITE check の順序: 現在 L104-L109 で context_pct 取得後に配置。
+      Scope B §2 strict ordering では context_pct より前を推奨だったが、
+      get_context_pct.sh 実行コストは小さく、論理的には問題なし。
+      将来 context_pct がコスト高になった場合のみ順序入れ替え検討。
+    action_needed: "現状運用で問題なし。将来パフォーマンス監視で必要性判断"
+  - id: D3
     priority: low
     content: |
-      read_setting 関数の section 識別。grep "^  ${key}:" で 2スペース字下げを
-      照合 → first match 取得。同じ key が他セクションに存在すると誤マッチ可能性。
-      改善案: yq または python yaml.safe_load + dotted-path で厳密指定。
-    action_needed: "現状 settings.yaml に重複 key なし、運用上問題なし。
-      将来セクション増加時に検討"
-  - id: G2
-    priority: low
-    content: |
-      INFO (16日) 閾値の出典明示。clasp_age_check.sh L65 で ELAPSED_DAYS >= 16 が
-      ハードコード。settings.yaml に info_days キーなし、変更時に script 直接編集必要。
-      改善案: settings.yaml に info_days: 16 を追加し read_setting 経由で読込。
-    action_needed: "16日は中間警告で 25/28日より優先度低。実運用で必要性が見えたら改修"
-  - id: G3
-    priority: low
-    content: |
-      notify_error topic 統一性。clasp_age_check は clasp_age_warn、
-      gas_push/run_oauth は gas_oauth_error。
-      改善案: clasp 関連は全て同一 topic (例: clasp_alerts) で購読側設定単純化。
-    action_needed: "現状の topic 分離はむしろ識別性向上に寄与。優先度低"
-  - id: G4
-    priority: low
-    content: |
-      gas_run_oauth.sh L180 の 403 復旧メッセージで scope 名「script.scriptapp」が
-      簡略形。正確には URL 形式 (https://www.googleapis.com/auth/script.scriptapp)。
-      clasp が両形式を解釈するか確認した上で記述すべき。
-    action_needed: "殿/家老が clasp ドキュメントで補完可能。優先度低"
+      pane prompt regex (│ >|^>|claude-code) は Claude Code UI 変更で
+      壊れる可能性。複数パターン OR で堅牢化済だが、UI 大幅更新時に
+      regex 見直しが必要。CI に正規表現テストを追加推奨。
+    action_needed: "Scope D 完了後の運用監視で UI 変更があれば軽微改修 cmd 起案"
 
 concerns_flagged: []
 
 skill_candidate:
   found: false
   reason: |
-    本 cmd は QC cmd であり、再利用可能なスキルパターンの抽出には実運用知見蓄積が必要。
-    clasp RAPT 自動化 (proactive 監視 + reactive エラー検知 + dashboard badge + ntfy)
-    の組合せは将来「OAuth トークン日数監視の標準パターン」としてスキル化候補だが、
-    1ヶ月以上の実運用 + 25/28日 ntfy 到達の実検証後に検討すべき。
+    本 cmd は再 QC cmd であり、再利用可能なスキル抽出には実運用知見が必要。
+    karo 自動 self_clear 機構 (cron + flock + 多段 edge case guard) の組合せは
+    将来「自律エージェント自己保護パターン」としてスキル化候補。Scope D commit +
+    1ヶ月以上の実運用観察 + E1/E2/E6 guard の実発火事例蓄積後に検討推奨。
 
 files_modified:
-  - "output/cmd_623_gunshi_qc_report.md"
+  - "output/cmd_624_gunshi_qc2_report.md"
   - "queue/reports/gunshi_report.yaml"
   - "queue/inbox/gunshi.yaml"
-  - "dashboard.md (smoke test での再生成)"
 
 north_star_alignment:
   status: aligned
   reason: |
-    cmd_623 北極星 N1/N2/N3 (経過日数可視化 + 25/28日通知到達 + reactive エラー検知)
-    を QC で全 PASS 判定。Go 判定により Scope F (commit + push + dashboard 反映)
-    dispatch 可能状態。clasp RAPT 自動化 Step1 (proactive + reactive) が完成形に到達し、
-    月次再認証境界を構造的に検知できる体制が整った。
+    cmd_624 北極星 N1/N2/N3 を全達成。前回 Scope C NoGo (N2 FAIL) から
+    Scope A2 再修正 + Scope C2 再 QC で完全復旧。Scope B §4 6差分の
+    全件反映により業務中誤発動ゼロが構造的に保証された。
+    Scope D (commit + cron 投入) で実運用フェーズへ移行可。
   risks_to_north_star:
-    - "実運用での 25/28日 ntfy 到達は cron 定期実行 + 日数経過の両立が必要。
-      cron 設定が別途必要 (現在 dashboard 行は表示済だが cron 未確認)"
-    - "16日 INFO 閾値の出典が settings.yaml になく hardcode。
-      運用変更時に script 直接編集が必要 (G2)"
-    - "ntfy トピック分散 (clasp_age_warn vs gas_oauth_error) で殿/家老の購読設定
-      負荷増。識別性向上の利点もあり、現状運用で問題なければ静観 (G3)"
-    - "実エラー発火時の ntfy 到達は notify_error 関数の動作に依存。
-      |¦| true ガードで通知失敗時もスクリプト続行する設計は安全だが、
-      通知失敗自体は気付きにくい (将来的に二段ログ化検討余地)"
+    - "10シナリオ動作確認を Scope D で省略すると実環境での edge case 顕在化リスク"
+    - "cron 投入後 1週間は gunshi が継続監視し E1/E2/E6 guard 発火ログを観察すべき
+      (silent 動作だと改善余地が見えない)"
+    - "pane prompt regex (│ >|^>|claude-code) は Claude Code UI 変更で壊れうる
+      → 将来 UI 大幅更新時に CI による検出が望ましい"
 
 skip_count: 0
 test_self_sufficient: true
