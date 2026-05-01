@@ -120,7 +120,13 @@ Ashigaru: task complete → git push + build verify + done_keywords → report Y
 Gunshi: quality check → dashboard.md update → inbox_write to karo
   ↓ inbox_write to karo
 Karo: OK/NG decision → next task assignment
+  ↓ inbox_write to shogun (cmd_complete)
+Shogun: 完遂報告受領 → implementation-verifier (background) MUST USE 起動
 ```
+
+**完遂報告受領時の MUST USE**: Karo からの `cmd_complete` 受信時は、必ず
+`implementation-verifier` を `run_in_background: true` で起動し、4-Layer 検証を実施せよ。
+`background: true` なので wall-clock コストは 0。起動を省略することは禁止 (F007 相当)。
 
 **Note**: ashigaru8 is retired. Gunshi uses pane 8. ashigaru8 settings may remain in settings.yaml but the pane does not exist.
 
