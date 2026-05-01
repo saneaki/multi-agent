@@ -164,6 +164,10 @@
 !scripts/git-hooks/pre-commit-dashboard
 !scripts/lib/
 !scripts/lib/status_check_rules.py
+!scripts/suggestion_vectorize.py
+!scripts/suggestion_db.py
+!output/cmd_618_phase1_vectors.json
+!output/cmd_618_phase0_mining_output.jsonl
 
 # cmd_544: 3 安全装置 state files (kill-switch/rate-limit/pending/daily-metric)
 !logs/cmd_squash_pub_hook.disabled
