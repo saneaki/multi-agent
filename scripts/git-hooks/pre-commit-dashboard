@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# pre-commit hook: run dashboard round-trip test when dashboard.yaml is staged.
+#
+# Symptom prevented: dashboard.yaml updated but dashboard.md not regenerated
+# (silent yaml→md desync), causing stale view for shogun/karo dashboards.
+#
+# Install (manual):
+#   ln -s ../../scripts/git-hooks/pre-commit-dashboard .git/hooks/pre-commit
+# Or run scripts/install_git_hooks.sh after it has been extended.
+set -euo pipefail
+
+REPO_ROOT=$(git rev-parse --show-toplevel)
+staged=$(git diff --cached --name-only --diff-filter=ACM || true)
+
+if printf '%s\n' "$staged" | grep -qx 'dashboard\.yaml'; then
+  echo "[pre-commit-dashboard] dashboard.yaml staged — running round-trip test"
+  if ! python3 "$REPO_ROOT/scripts/test_dashboard_roundtrip.py"; then
+    echo "[pre-commit-dashboard] FAIL: yaml/md mismatch detected. Aborting commit." >&2
+    echo "[pre-commit-dashboard] Hint: regenerate with 'python3 scripts/generate_dashboard_md.py'" >&2
+    exit 1
+  fi
+  echo "[pre-commit-dashboard] PASS"
+fi

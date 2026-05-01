@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -11,6 +12,9 @@ import yaml
 
 
 TABLE_4_EMPTY_ROW = "| （まだなし） | | | |"
+IN_PROGRESS_REQUIRED_FIELDS = {"cmd", "content", "status", "assignee"}
+IN_PROGRESS_KNOWN_FIELDS = IN_PROGRESS_REQUIRED_FIELDS | {"agent"}
+ACHIEVEMENTS_REQUIRED_FIELDS = {"time", "battlefield", "task", "result"}
 
 
 def md_cell(value: Any) -> str:
@@ -72,6 +76,43 @@ def _section_items(section: Any) -> list[dict[str, Any]]:
         if isinstance(items, list):
             return [r for r in items if isinstance(r, dict)]
     return []
+
+
+def validate_in_progress(entries: Any) -> None:
+    if not isinstance(entries, list):
+        return
+
+    for entry in entries:
+        if not isinstance(entry, dict):
+            continue
+        cmd = entry.get("cmd", "")
+        for field in IN_PROGRESS_REQUIRED_FIELDS:
+            if field not in entry:
+                print(
+                    f"WARNING: [schema] in_progress entry missing required field: '{field}' (cmd={cmd})",
+                    file=sys.stderr,
+                )
+        if "agent" in entry:
+            print(
+                f"WARNING: [schema] 'agent' should be 'assignee' in in_progress entry (cmd={cmd})",
+                file=sys.stderr,
+            )
+        for field in entry:
+            if field not in IN_PROGRESS_KNOWN_FIELDS:
+                print(
+                    f"WARNING: [schema] unknown field '{field}' in in_progress entry",
+                    file=sys.stderr,
+                )
+
+
+def validate_achievements(entries: Any, section_name: str) -> None:
+    for entry in _section_items(entries):
+        for field in ACHIEVEMENTS_REQUIRED_FIELDS:
+            if field not in entry:
+                print(
+                    f"WARNING: [schema] {section_name} achievement entry missing: '{field}'",
+                    file=sys.stderr,
+                )
 
 
 def generate_markdown(data: dict[str, Any]) -> str:
@@ -248,6 +289,12 @@ def main() -> None:
 
     with input_path.open("r", encoding="utf-8") as f:
         data = yaml.safe_load(f) or {}
+
+    validate_in_progress(data.get("in_progress", []))
+    achievements = data.get("achievements", {})
+    validate_achievements(achievements.get("today", {}), "today")
+    validate_achievements(achievements.get("yesterday", {}), "yesterday")
+    validate_achievements(achievements.get("day_before", {}), "day_before")
 
     markdown = generate_markdown(data)
     output_path.write_text(markdown, encoding="utf-8")
