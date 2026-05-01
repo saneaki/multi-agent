@@ -165,21 +165,22 @@ else
 fi
 
 # ── Step 1.5: idle_members 整合性チェック (Scope A 連携) ─────
-# validate_idle_members.sh が存在する場合のみ --mode check で呼び出す。
-# 未配置 (Scope A 実装待ち) の場合は graceful skip。
-# mode=check は exit 0 (WARN でも続行) なので dispatch を阻害しない。
+# validate_idle_members.sh が存在する場合のみ --mode strict で呼び出す。
+# 未配置の場合は graceful skip。
+# mode=strict は不在体検出時に exit 1 となり dispatch を停止する。
 VALIDATE_SCRIPT="$SCRIPT_DIR/scripts/validate_idle_members.sh"
 echo ""
 echo "[Step 1.5] idle_members 整合性チェック"
 
 if [[ -f "$VALIDATE_SCRIPT" ]]; then
     if $DRY_RUN; then
-        echo "[DRY-RUN] bash $VALIDATE_SCRIPT --mode check"
+        echo "[DRY-RUN] bash $VALIDATE_SCRIPT --mode strict"
     else
-        if bash "$VALIDATE_SCRIPT" --mode check 2>&1; then
+        if bash "$VALIDATE_SCRIPT" --mode strict 2>&1; then
             echo "  → idle_members 検証 OK"
         else
-            echo "  [WARN] idle_members 検証で異常検知 (続行)"
+            echo "  [CRITICAL] idle_members 検証 NG のため dispatch を中断します" >&2
+            exit 1
         fi
     fi
 else

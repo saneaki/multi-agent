@@ -53,7 +53,8 @@ if [[ ! -f "$DASHBOARD_FILE" ]]; then
   exit 2
 fi
 
-# settings.yaml から expected members を抽出 (karo.idle_member_names)。未定義時はフォールバック。
+# settings.yaml から expected members を抽出 (karo.idle_member_names)。
+# settings.yaml が唯一の SoT (source of truth)。不在 or 未定義時は ERROR + exit 1。
 read_expected_members() {
   local parsed=""
   if [[ -f "$SETTINGS_FILE" ]]; then
@@ -74,16 +75,9 @@ read_expected_members() {
     return 0
   fi
 
-  cat <<'FALLBACK'
-足軽1号(Sonnet)
-足軽2号(Sonnet+T)
-足軽3号(Sonnet)
-足軽4号(Opus+T)
-足軽5号(Opus+T)
-足軽6号(Codex)
-足軽7号(Codex)
-軍師(Opus+T)
-FALLBACK
+  echo "[validate_idle_members] ERROR: config/settings.yaml の karo.idle_member_names が未定義" >&2
+  echo "[validate_idle_members] ERROR: settings.yaml を確認し idle_member_names を設定せよ" >&2
+  return 1
 }
 
 read_dashboard_members() {
@@ -98,7 +92,11 @@ read_dashboard_members() {
   ' "$DASHBOARD_FILE"
 }
 
-mapfile -t EXPECTED_MEMBERS < <(read_expected_members)
+EXPECTED_MEMBERS_RAW=""
+if ! EXPECTED_MEMBERS_RAW="$(read_expected_members)"; then
+  exit 1
+fi
+mapfile -t EXPECTED_MEMBERS <<< "$EXPECTED_MEMBERS_RAW"
 mapfile -t DASHBOARD_MEMBERS < <(read_dashboard_members)
 
 if [[ ${#EXPECTED_MEMBERS[@]} -eq 0 ]]; then
