@@ -149,6 +149,7 @@
 !scripts/cmd_squash_pub_hook.sh
 !scripts/gas_run.sh
 !scripts/gas_push_sa.sh
+!scripts/gas_push_oauth.sh
 !scripts/README_SA_SETUP.md
 !scripts/shogun_reality_check.sh
 !scripts/dashboard_lint.py

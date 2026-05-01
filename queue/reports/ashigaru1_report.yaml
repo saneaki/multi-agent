@@ -1,0 +1,647 @@
+worker_id: ashigaru1
+task_id: subtask_592f_crontab_fixup
+parent_cmd: cmd_592
+status: done
+timestamp: "2026-04-26T14:20:46+09:00"
+report_to: karo
+type: implement
+
+result:
+  summary: |
+    cmd_592 Scope F fixup 完了。
+
+    C1 解消: compact_observer.sh を cron に登録 (karo + gunshi, */30)。
+      - */30 * * * * bash ...compact_observer.sh karo >> logs/compact_observer.log 2>&1
+      - */30 * * * * bash ...compact_observer.sh gunshi >> logs/compact_observer.log 2>&1
+      - 動作確認 PASS (karo: 本日1件, gunshi: スナップショットなし正常)
+
+    C2 解消: gunshi safe_window_judge.sh --context-pct 動的化。
+      - Before: --context-pct 80 (固定)
+      - After:  --context-pct "$(bash .../get_context_pct.sh gunshi 2>/dev/null || echo 80)"
+      - get_context_pct.sh gunshi 動作確認: 54 を返却 PASS
+
+    AC_c1 PASS / AC_c2 PASS → cmd_592 Conditional Go 解消条件充足。
+
+  previous_summary: |
+    cmd_592 Scope A 完了 (上書きされたが内容は以下)。
+    crontab に cmd_586 スクリプト3行が既登録済であることを確認。
+    - karo_self_clear_check.sh --tool-count 200 → logs/safe_clear/karo.log (*/10)
+    - safe_window_judge.sh --agent-id karo --context-pct 80 → logs/safe_window/karo.log (*/10)
+    - safe_window_judge.sh --agent-id gunshi --context-pct 80 → logs/safe_window/gunshi.log (*/10)
+    注: --context-pct 0 は自動取得モードでないためフォールバック値80を使用。
+    dry-run テスト: karo_self_clear=SKIP(in_progress 12件), safe_window=/compact推奨。
+    エラーなし。AC_cron PASS。
+
+  ac2_karo_self_clear_check_extension:
+    changes:
+      - file: "scripts/karo_self_clear_check.sh"
+        description: |
+          全PASS後セクションを safe_window_judge.sh 連携に置換。
+          APPROVE → context_advisory 送信 (dedup 30min)。
+          safe_window_judge.sh 未存在 → clear_command fallback (後方互換)。
+      - file: "scripts/inbox_watcher.sh"
+        description: |
+          special_types に context_advisory 追加 (line 507)。
+          normalize_special_command: context_advisory → /clear or /compact 変換 (line 305-322)。
+          main specials loop: context_advisory busy guard + clear_seen=1 (line 1133-1140)。
+    test_results:
+      - check: "normalize logic (Python unit test): 5ケース全PASS"
+        status: PASS
+      - check: "bash -n syntax check: inbox_watcher.sh + karo_self_clear_check.sh"
+        status: PASS
+      - check: "karo_self_clear_check.sh --dry-run --tool-count 100: 正常動作 (cond_1 NG → SKIP)"
+        status: PASS
+
+  step1_577b_context:
+    summary: |
+      ash2 subtask_577b の分析結果を踏まえ、P1-P5 のうち P5 (emergency_mode) が殿によって
+      却下された。残る P1-P4 の知見を Scope B 設計に反映。
+    key_findings:
+      - "karo alpha 係数 0.964 (最低) だが並列 cmd 管理による総 tool 数が多く compact 頻度が最大"
+      - "C1 ブロッカー: 並列 cmd 中は task_completed 着信が連続 → inbox=0 が構造的に達成困難"
+      - "C3 ブロッカー: 大規模 cmd の複数 Scope が発令完了前に 80% 到達 → dispatch_debt>0 が持続"
+      - "karo_self_clear_check.sh は dry-run のまま (cmd_531 以来) → 実際の /clear が発生していない"
+    rejected_proposals:
+      - id: P5
+        title: "context 92% FORCE 時 C1/C3 条件バイパス (emergency_mode)"
+        reason: "殿明示却下。north_star: 外部介入禁止・自律判断支援のみ。"
+
+  ac3_multivariate_criteria:
+    description: "家老/軍師が自律判断できる safe window 判定基準 (多変量)"
+
+    karo_safe_window:
+      condition_count: 5
+      logical_operator: ALL_OF
+      trigger_note: "C1 判定は P2 緩和案を採用 (actionable_unread のみカウント)"
+      conditions:
+        - id: C1
+          label: "context_pct >= 70%"
+          rationale: "WARN 閾値到達。早め検知により C2-C5 解消の余裕が生まれる。P3提案の karo専用70%閾値採用。"
+          measurement: "bash scripts/safe_clear_check.sh の context_pct 出力"
+        - id: C2
+          label: "inbox_actionable_unread == 0"
+          definition: "type in (task_assigned, blocked, escalate) かつ read=false の件数 = 0"
+          rationale: "P2 C1緩和採用。task_completed/report_completed 型未読は除外。並列 cmd 中でも達成可能な窓が大幅拡大。"
+          measurement: "python3 -c \"import yaml; ...\" で type フィルタ済み件数確認"
+        - id: C3
+          label: "in_progress == 0"
+          definition: "dashboard.md の 🔄 進行中 テーブルに active cmd が 0 件"
+          rationale: "アクティブ cmd が残っていると /clear で状態が失われるリスク"
+          measurement: "queue/tasks/karo.yaml の status フィールド確認 or dashboard 参照"
+        - id: C4
+          label: "dispatch_debt == 0"
+          definition: "発令待ち (unassigned) subtask が 0 件"
+          rationale: "発令未完了 subtask がある状態で /clear すると割り当て漏れが発生するリスク"
+          measurement: "karo_self_clear_check.sh の dispatch_debt ロジック参照"
+        - id: C5
+          label: "karo_idle_for >= 5min"
+          definition: "直前 5 分間に karo の tool 呼出記録がない"
+          rationale: "tool 呼出中の /clear は途中状態を破壊するリスク。idle 確認が必須。"
+          measurement: "tmux capture-pane で karo pane の活動確認"
+      when_clear: "C1-C5 全成立 AND context_pct < 85% → /clear 推奨"
+      when_compact: "C1-C5 全成立 AND context_pct >= 85% → /compact 強制 (auto-compact 回避)"
+      when_wait: "C1-C5 の 1 つでも未成立 → 待機 (次のチェック周期まで)"
+
+    gunshi_safe_window:
+      condition_count: 4
+      logical_operator: ALL_OF
+      conditions:
+        - id: G1
+          label: "context_pct >= 60%"
+          rationale: "軍師は QC 完了後に即 /clear が理想。低めの閾値で早め検知。"
+        - id: G2
+          label: "qc_cycle_boundary == true"
+          definition: "gunshi task YAML が done になった直後。次 QC タスクが inbox に届いていない。"
+          rationale: "QC サイクルの区切りが最も安全な /clear ポイント。"
+        - id: G3
+          label: "next_qc_not_started == true"
+          definition: "inbox の task_assigned (type=qc_request) が 0 件"
+          rationale: "次 QC が始まった後で /clear すると QC 文脈が失われる。"
+        - id: G4
+          label: "inbox_actionable_unread == 0"
+          definition: "P2 と同様: type in (task_assigned, blocked, escalate) かつ read=false の件数 = 0"
+          rationale: "未処理の actionable メッセージを残したまま /clear は危険。"
+      when_clear: "G1-G4 全成立 → /clear 推奨"
+      when_compact: "G1 成立 AND G2/G3 未成立 (QC 途中) → /compact のみ可"
+
+  ac4_information_presentation:
+    description: "家老/軍師が safe window 到達を認識するための情報提示仕組み 3案"
+
+    options:
+      - id: a
+        title: "role_context_notify 拡張 — インライン hint 表示"
+        mechanism: |
+          既存 role_context_notify.sh を拡張。WARN 閾値到達時に dashboard へ
+          「家老 safe window チェック推奨」メッセージを追記。
+        pros:
+          - "既存インフラ活用。改修コスト最小 (0.2d)"
+          - "tmux pane に即時表示可"
+        cons:
+          - "passive: dashboard を見なければ気づかない"
+          - "家老が多忙な場合は通知が埋もれる"
+          - "インタラクティブな判断トリガーにならない"
+        implementation_cost: "0.2d"
+        verdict: "補助的。単独では効果薄。P1/P2 と組み合わせるべき。"
+
+      - id: b
+        title: "ntfy 通知 — 殿経由で家老/軍師に伝達"
+        mechanism: |
+          context が WARN 閾値に達したとき ntfy でプッシュ通知を送信。
+          殿 (または監視スクリプト) が通知を受け取り、家老に /clear 推奨を伝える。
+        pros:
+          - "殿が状況把握できる"
+          - "既存 ntfy インフラを再利用可"
+        cons:
+          - "外部介入の一形態。north_star「外部介入なし・自律判断支援」に矛盾"
+          - "殿が不在・非応答の場合は機能しない"
+          - "agent の自律性を損なう"
+        implementation_cost: "0.2d"
+        verdict: "north_star に反する。採用不可。"
+
+      - id: c
+        title: "self-notify — karo inbox に context_advisory を self-投入"
+        mechanism: |
+          karo_self_clear_check.sh が safe window 条件を検出したとき、
+          karo inbox に type=context_advisory のメッセージを自己投入。
+          inbox_watcher.sh が context_advisory を受信し、/clear or /compact を実行。
+          context_advisory は P2 C1 緩和の対象外 (actionable カウント外) のため
+          C2 条件に影響しない。
+        pros:
+          - "自律的 (外部介入なし)。north_star に完全準拠"
+          - "inbox_watcher.sh の既存処理ループと統合可。実装コスト中"
+          - "P1 (本番有効化) + P2 (C1 緩和) と自然に組み合わさる"
+          - "context_advisory を inbox に書くのみ → 実装がシンプル"
+        cons:
+          - "inbox_watcher.sh への type=context_advisory 処理追加が必要 (0.3d)"
+          - "karo_self_clear_check.sh の本番有効化 (P1) が前提"
+        implementation_cost: "0.3d (P1 含む 0.4d)"
+        verdict: "推奨。外部介入なしで自律判断を実現。P1/P2 との統合で最大効果。"
+
+    recommendation:
+      selected: c
+      rationale: |
+        案 (c) self-notify が north_star (外部介入なし・自律判断支援) に最も合致する。
+        既存 inbox_watcher.sh インフラを活用し、P1 (本番有効化) + P2 (C1 緩和) と
+        統合することで、追加コスト 0.3d で実装完結。
+        案 (a) は passive で単独効果なし、案 (b) は north_star 違反で採用不可。
+      preconditions:
+        - "P1: karo_self_clear_check.sh 本番有効化 (殿承認後)"
+        - "P2: C1 判定を actionable_unread に限定"
+        - "inbox_watcher.sh に context_advisory ハンドラ追加"
+
+  ac5_clear_vs_compact:
+    description: "/clear vs /compact 選択支援指針 (役割別)"
+
+    karo_guidelines:
+      title: "家老 /clear vs /compact 選択指針"
+      rules:
+        - condition: "in_progress >= 1 (cmd 進行中)"
+          action: "/compact 推奨"
+          reason: "進行中 cmd の文脈を保持しつつ context を半減。snapshot で状態補完。"
+        - condition: "in_progress == 0 AND dispatch_debt == 0 (cmd 完了直後)"
+          action: "/clear 推奨"
+          reason: "全タスク完了後なら文脈喪失リスクなし。最もクリーンな /clear タイミング。"
+        - condition: "context_pct >= 85%"
+          action: "/compact 強制"
+          reason: "auto-compact (92%+) 回避のため即時 /compact。safe window 成立を待たない。"
+        - condition: "context_pct in [70, 85) AND C2-C5 全成立"
+          action: "/clear 可 (推奨)"
+          reason: "safe window 内かつ余裕あり。/clear が最も効果的。"
+      priority: "上から順に優先適用 (最上位条件が最優先)"
+
+    gunshi_guidelines:
+      title: "軍師 /clear vs /compact 選択指針"
+      rules:
+        - condition: "QC サイクル区切り (G1-G4 全成立)"
+          action: "/clear 推奨"
+          reason: "次 QC は新 context で開始が理想。文脈リセットにより判断の独立性が高まる。"
+        - condition: "QC 途中 (G2/G3 未成立)"
+          action: "/compact のみ可"
+          reason: "QC 文脈を失うと前半 QC の判断根拠が消える。snapshot 必須。"
+        - condition: "context_pct >= 85%"
+          action: "/compact 強制"
+          reason: "家老と同様。auto-compact 回避優先。"
+
+  ac6_emergency_mode_rejection:
+    title: "emergency_mode 提案 (P5) の正式却下記録"
+    proposal_source: "ash2 subtask_577b P5: context 92% FORCE 時 C1/C3 条件バイパス"
+    decision: "却下"
+    decision_date: "2026-04-24"
+    decision_by: "殿 (明示指示)"
+
+    rejection_reasons:
+      - id: R1
+        category: "north_star 違反"
+        detail: |
+          cmd_578 の north_star は「外部介入なし。自律判断支援のみ」。
+          emergency_mode は外部スクリプトが条件を判断して強制 /clear を発動する = 外部介入。
+          north_star に根本的に矛盾する。
+      - id: R2
+        category: "殿明示指示"
+        detail: |
+          殿: 「emergency_mode (強制 clear) は却下」。
+          自律的でない強制介入は shogun system の設計思想に反する。
+      - id: R3
+        category: "家老判断権尊重"
+        detail: |
+          家老は連続 cmd process 中に最も多くの状態情報を持つ。
+          外部からの強制 /clear はその判断を無視することになり、
+          処理中断・状態不整合・dispatch_debt 残留のリスクが生じる。
+      - id: R4
+        category: "技術的問題"
+        detail: |
+          92% LIMIT に到達するタイミングで dispatch_debt <= 2 が成立する保証がない。
+          タイミング依存の条件で強制 /clear を発動すると、
+          発令途中の subtask が孤立するケースが発生しうる。
+
+    alternative:
+      description: |
+        emergency_mode の代替として、P1/P2/P3/P4 の組み合わせで
+        92% LIMIT への到達自体を構造的に防止する。
+        具体的には karo_self_clear_check.sh 本番有効化 (P1) +
+        C1 緩和 (P2) + 早め WARN (P3) の 3 点セットが根本対策。
+
+acceptance_criteria:
+  - id: AC3
+    status: PASS
+    note: |
+      家老 safe window: C1-C5 (5条件、ALL_OF)。C1=context_pct>=70%、C2=actionable_unread==0(P2緩和)、
+      C3=in_progress==0、C4=dispatch_debt==0、C5=idle>=5min。
+      軍師 safe window: G1-G4 (4条件、ALL_OF)。G1=context_pct>=60%、G2=qc_cycle_boundary、
+      G3=next_qc_not_started、G4=actionable_unread==0。
+  - id: AC4
+    status: PASS
+    note: |
+      3案比較完了。(a)role_context_notify拡張(passive・補助のみ) / (b)ntfy通知(north_star違反・採用不可) /
+      (c)self-notify(推奨)。推奨案(c): karo inbox に context_advisory self-投入。P1/P2との統合で自律判断実現。
+  - id: AC5
+    status: PASS
+    note: |
+      家老: in_progress>=1→compact / in_progress==0&&debt==0→clear / >=85%→compact強制 / [70,85)&&C2-C5→clear。
+      軍師: QCサイクル区切り→clear推奨 / QC途中→compact / >=85%→compact強制。
+  - id: AC6
+    status: PASS
+    note: |
+      emergency_mode (P5) 却下理由を R1-R4 で明示記録。R1=north_star違反 / R2=殿明示指示 /
+      R3=家老判断権尊重 / R4=技術的問題(タイミング依存)。代替: P1+P2+P3の3点セットで92%到達自体を防止。
+
+skill_candidate:
+  found: false
+  reason: "設計・分析のみ。実装は別 cmd (P1 本番有効化 = 殿承認後)。"
+
+---
+
+worker_id: ashigaru1
+task_id: subtask_582e
+parent_cmd: cmd_582
+status: done
+timestamp: "2026-04-24T19:08:28+09:00"
+result:
+  summary: "cmd_582 Scope E完了。feat(cmd_582) commit+push済(62d101a)。skill候補 shogun-tmux-busy-aware-send-keys dashboard登録。AC8/AC9 全PASS。"
+  files_modified:
+    - file: "scripts/inbox_watcher.sh"
+      change: "wait_until_idle() + pane整合check。commit: 62d101a"
+    - file: "dashboard.md"
+      change: "🛠️スキル候補に shogun-tmux-busy-aware-send-keys 追記 + ✅本日の戦果 19:08行追加"
+  verification:
+    AC8: "git log: 62d101a feat(cmd_582): tmux send-keys busy-aware wait — push to origin/main 確認"
+    AC9: "dashboard.md 🛠️スキル候補: shogun-tmux-busy-aware-send-keys 行追記確認"
+acceptance_criteria:
+  - id: AC8
+    status: pass
+    detail: "feat(cmd_582) commit 62d101a + git push origin main 完了"
+  - id: AC9
+    status: pass
+    detail: "dashboard.md 🛠️スキル候補に shogun-tmux-busy-aware-send-keys 登録済 (battle-tested条件付き)"
+skill_candidate:
+  found: true
+  name: shogun-tmux-busy-aware-send-keys
+  status: pending_approval
+  note: "1w後 3 cmd_complete通知で実測確認後に正式スキル化推奨"
+
+---
+
+worker_id: ashigaru1
+task_id: subtask_588b_rapt_monitor
+parent_cmd: cmd_588
+status: done
+timestamp: "2026-04-26T06:07:09+09:00"
+report_to: karo
+type: implement
+
+result:
+  summary: |
+    cmd_588 Scope B 完了。scripts/clasp_rapt_monitor.sh 実装。
+    ~/.clasprc.json の tokens.default.expiry_date (epoch ms) から
+    最終トークン発行時刻を算出し、elapsed > 6h → WARN / > 7h → CRITICAL 判定。
+    動作確認: elapsed=16h27m → CRITICAL 正常検出。ntfy.sh 経由で push 送信。
+
+  files_created:
+    - file: "scripts/clasp_rapt_monitor.sh"
+      description: |
+        RAPT期限監視スクリプト。
+        - ~/.clasprc.json 不在 → exit 0 (エラーなし)
+        - expiry_date 取得不可 → exit 0
+        - elapsed < 0 (freshly issued) → OK
+        - elapsed < 6h → OK ログのみ
+        - elapsed 6-7h → WARN ログ + ntfy push (警告)
+        - elapsed >= 7h → CRITICAL ログ + ntfy push (復旧手順含む、urgency=warning,sos)
+
+  test_results:
+    - check: "bash clasp_rapt_monitor.sh 実行: elapsed=16h27m → CRITICAL 正常出力"
+      status: PASS
+    - check: "bash -n syntax check"
+      status: PASS
+
+acceptance_criteria:
+  - id: AC3
+    status: PASS
+    note: "scripts/clasp_rapt_monitor.sh 作成。expiry_date から elapsed 算出、6h warn/7h critical 判定実装済み。"
+  - id: AC4
+    status: PASS
+    note: "CRITICAL 時に ntfy.sh 経由で push 送信。復旧手順(案A:clasp login→scp/案B:GAS Editor)をメッセージに含む。"
+
+skill_candidate:
+  found: false
+  reason: "既存 shogun-gas-clasp-rapt-reauth-fallback スキルの補完実装。独立スキル化不要。"
+
+---
+task_id: subtask_588f_commit
+parent_cmd: cmd_588
+status: done
+timestamp: "2026-04-26T06:24:53+09:00"
+assigned_to: ashigaru1
+
+summary: |
+  cmd_588 Scope F: gunshi QC=Go(8/8 PASS)確認済。git commit + push 両リポジトリ完了。
+
+work_log:
+  - step: "1. gas-mail-manager commit"
+    result: "git add src/main.gs && git commit → d36aef7 feat(cmd_588): triggerProcessAllCustomers wrapper + setupTrigger 毎日9:00 (353 insertions)"
+  - step: "2. shogun commit (scripts/output/context/queue/dashboard)"
+    result: "git add -f scripts/clasp_rapt_monitor.sh output/cmd_588_trigger_setup.md output/cmd_588_operation_guide.md context/gas-mail-manager.md queue/ dashboard.md → commit完了"
+  - step: "3. push 両リポジトリ"
+    result: "gas-mail-manager + shogun push完了"
+
+acceptance_criteria:
+  - id: AC_commit
+    status: PASS
+    note: "git commit + push 完了 (gas-mail-manager: d36aef7 / shogun: commit済)"
+
+---
+worker_id: ashigaru1
+task_id: subtask_592a_crontab_register
+parent_cmd: cmd_592
+status: done
+timestamp: "2026-04-26T12:04:43+09:00"
+report_to: karo
+type: implement
+
+result:
+  summary: |
+    cmd_592 Scope A 完了。crontab に 3行追加:
+    (1) karo_self_clear_check.sh --tool-count 200 (*/10)
+    (2) safe_window_judge.sh --agent-id karo --context-pct 80 (*/10)
+    (3) safe_window_judge.sh --agent-id gunshi --context-pct 80 (*/10)
+    dry-run 全エラーなし。
+    shelf-ware 解消: cmd_586 実装済みスクリプトが cron に未登録だった問題を修正。
+
+  cron_entries_added:
+    - entry: "*/10 * * * * bash /home/ubuntu/shogun/scripts/karo_self_clear_check.sh --tool-count 200 >> /home/ubuntu/shogun/logs/safe_clear/karo.log 2>&1"
+      purpose: "家老 自律 self-clear 条件判定"
+    - entry: "*/10 * * * * bash /home/ubuntu/shogun/scripts/safe_window_judge.sh --agent-id karo --context-pct 80 >> /home/ubuntu/shogun/logs/safe_window/karo.log 2>&1"
+      purpose: "家老 safe window 判定"
+    - entry: "*/10 * * * * bash /home/ubuntu/shogun/scripts/safe_window_judge.sh --agent-id gunshi --context-pct 80 >> /home/ubuntu/shogun/logs/safe_window/gunshi.log 2>&1"
+      purpose: "軍師 safe window 判定"
+
+  design_note:
+    context_pct_fixed_value: 80
+    reason: |
+      --context-pct 0 は auto-detect モードではなく C1(context<70%) で常に wait を返すため使用不可。
+      role_context_notify.sh と同様に counter file から pct を動的取得する改修が理想だが、
+      task 指示の「動かなければ固定値 80 を使用」に従い固定値 80 を採用。
+      80% は karo C1 (>=70) を満たし、85% 未満 (compact 強制閾値) に収まるため
+      C2-C5 の実態判定が有効に機能する範囲。
+    log_dir: |
+      既存 logs/safe_window/ と logs/safe_clear/ ディレクトリに合わせてログパスを設定。
+
+  test_results:
+    - check: "crontab -l | grep 592: 3行確認"
+      status: PASS
+    - check: "karo_self_clear_check.sh --dry-run --tool-count 200"
+      result: "SKIP (cond_1 NG: 12 in_progress cmds) — 正常動作"
+      status: PASS
+    - check: "safe_window_judge.sh --agent-id karo --context-pct 80"
+      result: "RECOMMENDATION=/compact (in_progress=5) — 正常動作"
+      status: PASS
+    - check: "safe_window_judge.sh --agent-id gunshi --context-pct 80"
+      result: "RECOMMENDATION=/clear (G1-G4 全成立) — 正常動作"
+      status: PASS
+
+acceptance_criteria:
+  - id: AC_cron
+    status: PASS
+    note: "crontab に karo_self_clear_check.sh + safe_window_judge.sh (karo/gunshi) 3行追加。dry-run エラーなし。"
+
+skill_candidate:
+  found: false
+  reason: "crontab 登録のみ。スクリプト自体は cmd_586 で実装済み。"
+
+---
+worker_id: ashigaru1
+task_id: subtask_596b_suggestions_digest
+parent_cmd: cmd_596
+status: done
+timestamp: "2026-04-26T19:46:59+09:00"
+report_to: karo
+type: implement
+
+result:
+  summary: |
+    cmd_596 Scope B 完了。suggestions_digest.sh 新規作成 + cron 登録 (毎日09:05)。
+    pending=0 (ash6 Scope A triage 完了済) を確認。dry-run エラーなし。AC2 PASS。
+
+  files_created:
+    - file: "scripts/suggestions_digest.sh"
+      description: |
+        pending suggestions の定期通知スクリプト。
+        - pending=0 → ログのみ (inbox 通知なし)
+        - pending>=1 かつ high or medium → karo inbox へ digest 通知
+        - pending>=1 だが low のみ → ログのみ
+        - --dry-run オプション: inbox 書込みなし stdout 出力のみ
+        - PyYAML で suggestions.yaml を安全にパース
+
+  cron_entry:
+    schedule: "5 9 * * *"
+    command: "bash /home/ubuntu/shogun/scripts/suggestions_digest.sh >> /home/ubuntu/shogun/logs/suggestions_digest.log 2>&1"
+    purpose: "毎日09:05に pending suggestions を自動チェック + karo通知"
+
+  test_results:
+    - check: "dry-run 実行: pending=0 → exit 0 正常"
+      status: PASS
+    - check: "crontab -l | grep suggestions_digest: エントリ確認"
+      status: PASS
+    - check: "bash -n syntax check (set -euo pipefail)"
+      status: PASS
+
+acceptance_criteria:
+  - id: AC2
+    status: PASS
+    note: "scripts/suggestions_digest.sh 新規作成 + dry-run OK (pending=0 正常終了) + cron 5 9 * * * 登録確認済"
+
+skill_candidate:
+  found: false
+  reason: "一般的な YAML ダイジェスト通知パターン。shogun 専用ゆえ汎用スキル化不要。"
+
+---
+worker_id: ashigaru1
+task_id: subtask_605_scope_a_gh_retry
+parent_cmd: cmd_605
+timestamp: "2026-04-28T23:53:19+09:00"
+status: done
+report_to: karo
+type: implementation
+
+result:
+  summary: |
+    cmd_605 Scope A 完了。案 A3 (A1+A2 ハイブリッド) を saneaki/obsidian に適用。
+    AC1: dally-notion-sync.yml に2系統 cron + nick-fields/retry@v3 追加 (commit f14503e)
+    AC2: issue#1 に案 A3 採択コメント追加
+    AC3: run history 確認 → 4/27, 4/28 が failure → backfill workflow_dispatch 実行
+    AC4: 本レポート記録
+
+  ac1_workflow_update:
+    status: PASS
+    commit_sha: "f14503e52519b23d8cd5a4b6078eb871bcab922a"
+    repo: "saneaki/obsidian"
+    branch: main
+    changes:
+      - "cron 2エントリ追加: '0 12 * * *' (Primary) + '30 12 * * *' (Backup)"
+      - "Run sync script step を nick-fields/retry@v3 に変更 (max 3, 5min間隔)"
+
+  ac2_issue_comment:
+    status: PASS
+    issue_url: "https://github.com/saneaki/obsidian/issues/1#issuecomment-4336419893"
+    content: "案 A3 採択 + 案 C 却下 の殿確定指示を記録"
+
+  ac3_backfill:
+    status: PASS
+    run_history:
+      - date: "2026-04-28"
+        result: failure
+        action: "workflow_dispatch 実行 (run_id: 25060181792)"
+      - date: "2026-04-27"
+        result: failure
+        action: "workflow_dispatch 実行 (run_id: 25060176836)"
+      - date: "2026-04-26"
+        result: success
+        action: SKIP
+      - date: "2026-04-25"
+        result: success
+        action: SKIP
+      - date: "2026-04-24"
+        result: success
+        action: SKIP
+
+  ac4_report:
+    status: PASS
+    evidence: "本エントリにより AC4 達成"
+
+  files_changed:
+    - path: "saneaki/obsidian:.github/workflows/dally-notion-sync.yml"
+      action: "updated via GitHub API"
+      commit: "f14503e52519b23d8cd5a4b6078eb871bcab922a"
+    - path: "queue/inbox/ashigaru1.yaml"
+      action: "unread 4件を read=true に更新"
+    - path: "queue/reports/ashigaru1_report.yaml"
+      action: "append subtask_605_scope_a_gh_retry entry"
+
+  skill_candidate:
+    found: false
+    reason: "saneaki/obsidian 専用の単発設定タスク"
+
+  agent_tool_usage:
+    used: false
+    token_count: 0
+
+---
+worker_id: ashigaru1
+task_id: subtask_606_scope_a_version_up
+parent_cmd: cmd_606
+timestamp: "2026-04-29T06:04:26+09:00"
+status: done
+report_to: karo
+type: implementation
+
+result:
+  summary: |
+    cmd_606 Scope A 完了。dally-notion-sync.yml の deprecated actions をバージョンアップ。
+    AC1: actions/checkout@v3 → @v4 更新済み
+    AC2: actions/setup-python@v4 → @v5 更新済み
+    AC3: cmd_605 の変更 (2系統 cron + nick-fields/retry@v3) 維持確認
+    AC4: 本レポート記録 + karo 報告
+
+  commit:
+    sha: "d5b0660d60c1f5a8f6f2b0eb12a9ad465423e30a"
+    repo: "saneaki/obsidian"
+    branch: main
+    message: "chore(cmd_606): Node.js 20 deprecation 対応 actions v3/v4→v4/v5"
+    parent: "f14503e52519b23d8cd5a4b6078eb871bcab922a"
+
+acceptance_criteria:
+  - id: AC1_checkout_v4
+    status: PASS
+    note: "actions/checkout@v3 → @v4 commit d5b0660 で完了"
+  - id: AC2_setup_python_v5
+    status: PASS
+    note: "actions/setup-python@v4 → @v5 commit d5b0660 で完了"
+  - id: AC3_regression
+    status: PASS
+    note: "2系統 cron (0 12, 30 12) + nick-fields/retry@v3 (max_attempts:3, retry_wait_seconds:300) 維持確認"
+  - id: AC4_report
+    status: PASS
+    note: "本エントリにより AC4 達成"
+
+skill_candidate:
+  found: false
+  reason: "GitHub Actions バージョン更新の単発タスク"
+
+agent_tool_usage:
+  used: false
+  token_count: 0
+
+---
+worker_id: ashigaru1
+task_id: subtask_604_step2_l017_claude_smoke
+parent_cmd: cmd_604
+status: done
+timestamp: "2026-05-01T12:32:17+09:00"
+report_to: karo
+type: test
+result:
+  summary: |
+    cmd_604 Step2 L017 Claude arm smoke test 完了。
+    gas_push_oauth.sh で OAuth refresh_token 認証を用いた updateContent が
+    HTTP 200 で成功。SA approach (HTTP 403) から OAuth への移行を確認。
+  http_results:
+    dry_run_get_content: 200
+    update_content_attempt_1: 200
+    update_content_attempt_2: 200
+acceptance_criteria:
+  - id: AC_604_CL1
+    status: PASS
+    detail: "perm=600 確認 + dry-run GET HTTP 200"
+  - id: AC_604_CL2
+    status: PASS
+    detail: "本番 push HTTP 200。updateContent succeeded 確認"
+  - id: AC_604_CL3
+    status: PASS
+    detail: "2回実行で同結果 (idempotent)"
+  - id: AC_604_CL4
+    status: PASS
+    detail: ".clasprc.json は /home/ubuntu/ 配置 (git外)。token漏洩なし"
+notes:
+  - "SO-24 C1 対応: gunshi QC で entry 漏れ指摘、本 Scope D で事後追記"
+agent_tool_usage:
+  used: false
+  token_count: 0
