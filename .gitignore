@@ -158,6 +158,7 @@
 !scripts/cmd_kpi_observer.sh
 !scripts/suggestions_digest.sh
 !scripts/generate_dashboard_md.py
+!scripts/karo_dispatch.sh
 !scripts/lib/
 !scripts/lib/status_check_rules.py
 
