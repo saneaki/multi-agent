@@ -1,162 +1,169 @@
 worker_id: gunshi
-task_id: subtask_604_step2_gunshi_qc
-parent_cmd: cmd_604
-timestamp: "2026-05-01T12:24:00+09:00"
+task_id: subtask_622_scope_c_gunshi_qc
+parent_cmd: cmd_622
+timestamp: "2026-05-01T13:52:07+09:00"
 status: done
 report_to: karo
 type: review
 
 result:
-  type: phase_completion_qc_with_dual_arm_verification
+  type: scope_c_gunshi_qc_report
   summary: |
-    cmd_604 Step2 gunshi QC 完遂。SA approach (HTTP 403) → OAuth refresh_token approach
-    への完全移行を北極星 N1-N4 で検証。両 arm (ash1 Claude / ash7 Codex) 独立検証で
-    HTTP 200 × 2 回ずつ + idempotent + token 漏洩なしを確認。
-    /tmp/gas_push_oauth.log 末尾の response JSON で実 GAS Project 更新
-    (updateTime 12:20 JST) を直接確認。
-    output/cmd_604_oauth_qc_report.md 作成 (約 200 行)。
-    QC=Go — Scope D (commit) dispatch 可。
+    cmd_622 Scope C (CHANGELOG + RUNBOOK + git tag QC) 完遂。
+    北極星 N1/N2/N3 全 PASS。判定: Go。
+    対象: /home/ubuntu/gas-mail-manager/CHANGELOG.md (ash3) / docs/RUNBOOK.md (ash7)
+    / git tag v0.1.0=672a28f, v0.2.0=64cdceb, v0.3.0=853f58c (ash3)。
+    output/cmd_622_gunshi_qc_report.md 作成。AC1-AC4 全 PASS。
+    家老に: ash3 (またはash1) へ RUNBOOK.md commit + tag push を [要行動] dispatch 推奨。
 
   ac_verification:
-    - id: N1_oauth_auth_working
+    - id: AC1
       verification: |
-        - dry-run GET getContent: 両 arm HTTP 200
-        - 本番 PUT updateContent: 両 arm HTTP 200 × 2 回ずつ独立確認
-        - /tmp/gas_push_oauth.log 末尾: "[2026-05-01T03:20:03Z] Completed successfully"
-          + response JSON に gas-mail-manager 全ファイル + updateTime: 2026-05-01T03:20:02.726Z
-        - refresh_token → access_token flow (gas_push_oauth.sh L89-127): stdout/log に
-          token 値を吐かない設計 (Python 変数経由で curl)
+        - CHANGELOG.md (44行) を Read → Keep a Changelog 1.1.0 形式確認
+        - 必須/推奨 10項目全充足:
+          - "# Changelog" ヘッダ / 説明文 / KCL 1.1.0+SemVer 言及
+          - [Unreleased] セクション / バージョン見出し ## [X.Y.Z] - YYYY-MM-DD
+          - カテゴリ見出し (Added, Fixed) / 箇条書きエントリ
+          - 比較リンク (Unreleased→v0.3.0→v0.2.0→v0.1.0→tag)
+          - 降順 (新版が上)
       status: PASS
-    - id: N2_sa_approach_retired
+    - id: AC2
       verification: |
-        - 機能的廃止: gas_push_sa.sh は HTTP 403 PERMISSION_DENIED で運用不能
-          (ash7 subtask_604_step1_b で 2 回再現)
-        - OAuth 完全置換: gas_push_oauth.sh 冒頭コメント "Replaces gas_push_sa.sh
-          (SA approach: HTTP 403, retired 2026-04-30)" で意図明示
-        - 残課題: gas_push_sa.sh script 自体は残存 (deprecation marker / exit 1 ガード未導入)
-          → minor concern として suggestions.yaml に追加
-      status: PASS_WITH_MINOR
-    - id: N3_zero_side_effect
-      verification: |
-        - .clasprc.json perm 600 維持 (gas_push_oauth.sh L67-70 で 600/400 以外なら WARNING)
-        - /tmp/gas_push_oauth.log token 漏洩なし (rg 'refresh_token|client_secret|access_token|ya29' でマッチ 0)
-        - logs/daily/ token 漏洩なし (2026-04-05.md / 2026-03-30.md は説明文のみ実値なし)
-        - git tracking: .clasprc.json はリポジトリ外 (/home/ubuntu/) 配置、
-          docs/clasp_login_procedure.md は untracked
-        - idempotent: 両 arm が 2 回連続実行で同結果確認
+        - git -C /home/ubuntu/gas-mail-manager show-ref --tags で確認:
+          - v0.1.0 = 672a28f56bd3162340512f3da34c73ea03c65755 (main.gs orchestration)
+          - v0.2.0 = 64cdceb16936569b5ad42c89bf58e57e753b452f (appsscript.json executionApi)
+          - v0.3.0 = 853f58cc580b003fdabd957896f8d0091d238a54 (Fix4 cap500 + DriveApp案B)
+        - 各 commit subject と CHANGELOG 記述が完全一致
+        - cmd_619 Scope D 戦略 plan では v0.1.0=5437734 提示だったが、
+          ash3 が CHANGELOG [0.1.0] 記述 (Initial scaffold + 全 5 モジュール) との
+          整合を優先し 672a28f を選択 — 妥当な判断
       status: PASS
-    - id: N4_post_migration_integrity
+    - id: AC3
       verification: |
-        - scripts/gas_push_oauth.sh 配置 (6463 bytes, exec)
-        - docs/clasp_login_procedure.md 配置 (3887 bytes, untracked = secrets 漏洩防止)
-        - /home/ubuntu/.clasprc.json 配置 (632 bytes, perm 600, 殿配置 12:08 JST)
-        - 後続 Step (Web App 化 run) 阻害要因なし
+        - RUNBOOK.md (149行) を Read → 実運用手順記載確認
+        - 14項目全充足:
+          - Overview / Prerequisites / clasp login --no-localhost
+          - .clasp.json scriptId / initializeConfig() + Script Properties
+          - clasp push (status→push) / 手動実行 (Editor)
+          - clasp run + clasp logs --watch / 主要関数 5件
+          - Troubleshooting: PERMISSION_DENIED (OAuth scope 5件), clasp push 失敗,
+            Gemini API エラー, 6分制限+RESUME_INDEX 再開
+          - Configuration (主要設定値 8件) / Version History
+        - clasp push/run/logs の3操作完備、「読めば動かせる」レベル達成
+      status: PASS
+    - id: AC4
+      verification: |
+        - Go 判定明記 (output/cmd_622_gunshi_qc_report.md §3)
+        - 根拠 3点: N1 PASS / N2 PASS / N3 PASS
+        - commit dispatch 推奨: ash3 (またはash1) に
+          RUNBOOK.md commit + git push origin v0.1.0 v0.2.0 v0.3.0 main
+        - HEAD=6c020ce で CHANGELOG.md 既 commit 済確認
+        - origin/main=d36aef7 で停止 → 未 push commit + 未 push tag あり
       status: PASS
 
 means_ends_classification:
   schema_version: "1.0"
   ac_classification:
-    - id: N1
-      type: ends
-      rationale: "実 updateContent (PUT) が GAS Project を更新し HTTP 200 を返却 = 業務動作完遂"
-      corresponding_ends_ac: null
-    - id: N2
-      type: means_and_ends
-      rationale: "SA 廃止 (means: コメント/廃止意図) + OAuth が機能置換 (ends: 実 push 成立) を双方達成"
-      corresponding_ends_ac: N1
-    - id: N3
-      type: ends
-      rationale: "漏洩なし・perm 維持 = 安全性 ends を直接担保"
-      corresponding_ends_ac: null
-    - id: N4
+    - id: AC1
       type: means
-      rationale: "script/docs/.clasprc 配置は手段。ends は後続 Step (Web App 化 run) で完遂"
-      corresponding_ends_ac: 後続cmd
-  ends_coverage_note: "N4 は後続 cmd で ends 検証。本 cmd では means 完遂で十分 (インフラ移行 cmd の特性)。"
+      rationale: "KCL形式確認は QC の手段。ends は Go/NoGo 判定."
+      corresponding_ends_ac: AC4
+    - id: AC2
+      type: means
+      rationale: "tag-SHA 整合確認は QC の手段。ends は Go/NoGo 判定."
+      corresponding_ends_ac: AC4
+    - id: AC3
+      type: means
+      rationale: "RUNBOOK 記載確認は QC の手段。ends は Go/NoGo 判定."
+      corresponding_ends_ac: AC4
+    - id: AC4
+      type: ends
+      rationale: "Go/NoGo 判定は本 cmd の最終 ends (家老が commit dispatch するための材料)."
+      corresponding_ends_ac: null
+  ends_coverage_note: |
+    本 cmd は QC cmd。Go/NoGo 判定 (means+ends 一致) で本 cmd の ends は達成。
+    実 commit + tag push は ash3 (またはash1) で ends 検証する設計。
   both_systems_verified: true
-  verdict: "means 系 4/4 PASS。ends 系 (N1+N3) 2/2 PASS。N2 は means+ends 双方達成。N4 は means 完遂、ends は後続 cmd へ委譲。"
+  verdict: |
+    means 系 3/3 PASS (CHANGELOG + tag + RUNBOOK 確認)。
+    ends 系: AC4 (Go/NoGo 判定) は本 cmd 内で ends 完遂。
+    実 commit + tag push は後続 (ash3/ash1) へ委譲 (QC cmd の特性)。
 
 so24_verification:
-  inbox: PASS
-  artifact: PARTIAL
-  content: PASS
-  overall: PARTIAL_2_OF_3
-  note: "ash1 report.yaml に subtask_604_step2 entry が未追加 (karo inbox 通知のみ)。
-         ash7 report.yaml は entry あり。C1 として suggestions.yaml に追記。"
+  inbox: PENDING
+  artifact: PASS
+  content: PENDING
+  overall: WILL_VERIFY_AFTER_KARO_INBOX
+  note: |
+    本報告書込み + karo inbox 通知後に so24 三点照合が成立。
+    artifact = output/cmd_622_gunshi_qc_report.md PASS 済。
 
-dual_arm_independence:
-  ash1_claude:
-    ac_status: "CL1-CL4 全 PASS"
-    http_count: 2
-    report_form: "karo inbox notify"
-    report_yaml_append: false  # ★ 漏れ
-  ash7_codex:
-    ac_status: "CO1-CO5 全 PASS"
-    http_count: 2
-    report_form: "karo inbox notify + ashigaru7_report.yaml append"
-    report_yaml_append: true
-    code_review_detail: "OAuth 安全性/refresh/error/idempotent 4 観点記述"
-  verdict: "両 arm 一致。Codex arm がより詳細。Claude arm の report append 漏れは独立 concern."
-
-go_no_go: Go
-go_no_go_reason: |
-  N1-N4 全 PASS (N2/N4 は minor 残課題ありだが Scope 外)。
-  両 arm 独立検証で HTTP 200 + idempotent + 漏洩なしを確認。
-  /tmp/gas_push_oauth.log の response JSON で実 GAS Project 更新確認。
-  殿 north_star (SA→OAuth 完全移行) を機能的に達成。
-  Scope D (commit) dispatch 可。
-
-scope_d_recommended_includes:
-  - "scripts/gas_push_oauth.sh"
-  - "関連 dashboard / queue YAML"
-
-scope_d_must_exclude:
-  - "/home/ubuntu/.clasprc.json (リポジトリ外、絶対不可)"
-  - "docs/clasp_login_procedure.md (殿が untracked で意図的に保管中)"
+scope_c_qc_summary:
+  n1_changelog_keep_a_changelog: PASS
+  n2_git_tag_sha_correctness: PASS
+  n3_runbook_operational_steps: PASS
+  go_nogo: Go
+  commit_targets:
+    - "docs/RUNBOOK.md (新規, 149行, 未 commit の可能性高)"
+    - "git tag v0.1.0/v0.2.0/v0.3.0 (ローカル作成済, push 必要)"
+  push_required:
+    - "git push origin main (HEAD=6c020ce / origin=d36aef7 で複数 commit 未 push)"
+    - "git push origin v0.1.0 v0.2.0 v0.3.0"
+  v0_1_0_sha_decision_note: |
+    cmd_619 戦略 plan では v0.1.0=5437734 提示。ash3 が CHANGELOG 記述
+    (Initial scaffold + 全 5 モジュール) との整合を優先し 672a28f を選択。
+    KCL 1.1.0 上「Initial release」を全コアモジュール揃った時点とする
+    解釈は妥当。戦略 plan との差異は許容範囲。
 
 suggestions:
-  - id: C1
-    priority: high
+  - id: G1
+    priority: low
     content: |
-      ash1 report.yaml への subtask_604_step2 entry append 漏れ。
-      karo inbox 通知のみで監査記録が ashigaru1_report.yaml に未保存。
-      SO-24 PARTIAL 判定の主因。
-    action_needed: "Karo から ash1 へ report.yaml 末尾 entry 追記を再 dispatch、
-                   または完了確認 hook での persistence 検査を強化"
-  - id: C2
-    priority: medium
-    content: "gas_push_sa.sh script 残存 (deprecation marker / exit 1 ガード未導入)"
-    action_needed: "別 cmd で 'exit 1; echo \"RETIRED — use gas_push_oauth.sh\"' 冒頭追記 or rename"
-  - id: C3
+      RUNBOOK の clasp pull 運用シナリオ追加検討。現状 Troubleshooting 内に
+      1行のみ言及。ローカル↔GAS双方向同期の運用方針を別セクションで補強候補。
+    action_needed: "push 中心運用なら現状で十分。実運用で必要性が見えたら別 cmd で改修"
+  - id: G2
     priority: low
-    content: "gas_push_oauth.sh curl --retry 未実装 — 一時的 NW 障害耐性が低い"
-    action_needed: "Step2 commit 後の小規模 follow-up cmd で対応"
-  - id: C4
+    content: |
+      CHANGELOG [Unreleased] セクションの運用方針明記検討。
+      v0.4.0 開発開始時、追加機能/修正を [Unreleased] に随時追記する運用を
+      README または CONTRIBUTING に明記すべき。
+    action_needed: "Phase 2 (release-please 導入) で自動化される予定。優先度低"
+  - id: G3
     priority: low
-    content: "token endpoint 失敗時の HTTP code ログ化未実装"
-    action_needed: "C3 と併せて follow-up cmd で対応"
-  - id: C5
-    priority: low
-    content: "docs/clasp_login_procedure.md が git untracked のため version 管理不可"
-    action_needed: "secret 含まない場合は .example 化検討 (殿判断事項)"
+    content: |
+      RUNBOOK の appsscript.json 同期方針。L43 で「チーム手順に合わせて確認」と
+      曖昧。具体的手順 (cp appsscript.json src/ 等) を運用固まってから明記すべき。
+    action_needed: "運用で固まってから別 cmd で改修"
 
-concerns_flagged:
-  - "C1: ash1 report.yaml への entry append 漏れ — SO-24 PARTIAL 主因 (high)"
-  - "C2: gas_push_sa.sh script 残存 (medium)"
+concerns_flagged: []
 
 skill_candidate:
   found: false
-  reason: "cmd_602/604 系で既出 (shogun-l017-dual-model-smoke-qc) のため新規スキル不要"
+  reason: |
+    本 cmd は QC cmd であり、再利用可能なスキルパターンの抽出には
+    具体的実装 (CHANGELOG/RUNBOOK/git tag を実プロジェクトで運用した知見) が必要。
+    Phase 2 (release-please 導入) 完了後、運用知見蓄積を経て新規スキル抽出を検討。
 
 files_modified:
-  - "output/cmd_604_oauth_qc_report.md"
+  - "output/cmd_622_gunshi_qc_report.md"
   - "queue/reports/gunshi_report.yaml"
-  - "queue/suggestions.yaml"
-  - "logs/daily/2026-05-01.md"
+  - "queue/inbox/gunshi.yaml"
 
 north_star_alignment:
   status: aligned
-  reason: "OAuth 経由で実 updateContent が両 arm 独立に HTTP 200 を 2 回ずつ返却。SA 経路を機能的に置換完了。"
+  reason: |
+    cmd_622 北極星 N1/N2/N3 (CHANGELOG KCL 1.1.0 準拠 + git tag 正確性 +
+    RUNBOOK 運用手順) を QC で全 PASS 判定。Go 判定により後続 (commit + tag push)
+    dispatch 可状態。gas-mail-manager docs 体制 Phase 1 が確実に進捗。
   risks_to_north_star:
-    - "ash1 report.yaml への append 漏れが看過されると、後続 cmd で同様の persistence skip が常態化するリスク"
-    - "gas_push_sa.sh 残存により誤実行のリスク (低確率だが操作ミス時に gas-mail-manager が破壊される可能性)"
+    - "RUNBOOK.md の未 commit を放置すると、CHANGELOG だけ反映されて RUNBOOK が
+      取り残されるリスクあり。家老から速やかに ash3/ash1 へ commit + push dispatch すべき"
+    - "tag v0.1.0/v0.2.0/v0.3.0 の origin push を忘れると、release-please (Phase 2)
+      導入時に過去版基準が取れず誤動作する可能性"
+    - "v0.1.0 の SHA 選定 (672a28f vs 戦略 plan の 5437734) の差異は許容したが、
+      将来の遡及作業時に混乱を招かないよう、CHANGELOG または RUNBOOK に
+      決定理由を残すと安全"
+
+skip_count: 0
+test_self_sufficient: true

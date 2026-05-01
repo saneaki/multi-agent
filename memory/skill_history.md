@@ -7,6 +7,7 @@ dashboard.md 🛠️スキル欄から溢れた全エントリ。最新順（上
 
 | スキル名 | 出典 |
 |----------|------|
+| **shogun-dashboard-sync-silent-failure-pattern** ✅実装済み | cmd_621 Scope B (2026-05-01): ash4(Opus) `skills/shogun-dashboard-sync-silent-failure-pattern/SKILL.md`(145行)。dashboard.yaml→dashboard.md 同期 silent failure の 4 incident (cmd_607/615/619/agent-vs-assignee) と 5 pattern (P1-P5) を体系化。診断チェックリスト + cmd_620 Scope A/C/D 防止策マッピング + 横展開対象 (queue/reports, inbox, task YAML)。出典: output/cmd_620_scope_b_incident_analysis.md (229行)。 |
 | **shogun-tmux-busy-aware-send-keys** | cmd_582 ash6(Sonnet+T): tmux send-keys で Enter 前に Claude idle を待つ wait_until_idle() パターン。A-3 race condition 解消。poll 0.5s / timeout configurable / WARN+fallback。pane整合チェック+stale pane 自動再検出。cmd_complete 通知 reliability 強化。battle-tested 条件: 1w 後 3 cmd_complete 通知で実測確認後に正式スキル化推奨。 | 承認待ち |
 | **shogun-l017-dual-model-smoke-qc** | cmd_608 gunshi(Opus+T) 推奨: L017 dual-model smoke test + gunshi QC パターン (5回適用実績)。Claude arm + Codex arm を並列 dispatch → 独立検証 → gunshi north_star QC (N1-N4) → Go/NoGo 判定。典型適用: 新ルール/スクリプト/skill の実装品質保証。cmd_605/606/607/608 で安定運用確認。skill化推奨条件: 5回適用達成 (本cmd_608で達成)。 | 承認待ち |
 | **shogun-dual-model-layered-research** | cmd_609 gunshi(Opus+T) 推奨: dual-model 異レイヤー研究 + gunshi 統合パターン (6回目で標準化)。Opus arm=構造設計層 (設計パターン/アーキテクチャ分析) + Codex arm=実装コード層 (コード分析/バグ特定) → gunshi が両arm独立性を確認し2層根本原因を統合。典型適用: silent failure / 設計バグ / 複合原因 の構造分析。cmd_609で2層独立原因 (A4 parse bug + C5閾値固定) を発見。単一モデルでは見落とす補完関係あり。 | 承認待ち |
