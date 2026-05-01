@@ -150,6 +150,8 @@
 !scripts/gas_run.sh
 !scripts/gas_push_sa.sh
 !scripts/gas_push_oauth.sh
+!scripts/gas_run_oauth.sh
+!scripts/clasp_age_check.sh
 !scripts/README_SA_SETUP.md
 !scripts/shogun_reality_check.sh
 !scripts/dashboard_lint.py

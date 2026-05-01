@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import datetime
 import sys
 from pathlib import Path
 from typing import Any
@@ -115,13 +116,44 @@ def validate_achievements(entries: Any, section_name: str) -> None:
                 )
 
 
+def _get_clasp_badge(
+    token_path: str = "/home/ubuntu/.clasprc.json",
+    warn_days: int = 25,
+    critical_days: int = 28,
+) -> str:
+    path = Path(token_path)
+    if not path.exists():
+        return "clasp: ❓ (token未設定)"
+    mtime = datetime.datetime.fromtimestamp(path.stat().st_mtime)
+    days = (datetime.datetime.now() - mtime).days
+    updated = mtime.strftime("%Y-%m-%d")
+    if days >= critical_days:
+        return f"clasp: 🔴 {days}日 ⚠ re-login 必要"
+    if days >= warn_days:
+        return f"clasp: 🟡 {days}日 ({updated}更新)"
+    return f"clasp: 🟢 {days}日 ({updated}更新)"
+
+
 def generate_markdown(data: dict[str, Any]) -> str:
     meta = data.get("metadata", {})
     last_updated = meta.get("last_updated", "")
 
+    try:
+        with Path("config/settings.yaml").open("r", encoding="utf-8") as _f:
+            _cfg = yaml.safe_load(_f) or {}
+        _clasp_cfg = _cfg.get("clasp", {})
+    except Exception:
+        _clasp_cfg = {}
+    clasp_badge = _get_clasp_badge(
+        token_path=_clasp_cfg.get("token_path", "/home/ubuntu/.clasprc.json"),
+        warn_days=int(_clasp_cfg.get("warn_days", 25)),
+        critical_days=int(_clasp_cfg.get("critical_days", 28)),
+    )
+
     lines: list[str] = []
     lines.append("# 📊 戦況報告")
     lines.append(f"最終更新: {last_updated}")
+    lines.append(clasp_badge)
     lines.append("")
 
     lines.append("## 📋 記載ルール (Self-Documentation)")

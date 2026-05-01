@@ -54,6 +54,11 @@ gas_verify:
   spreadsheet_id: "1AMojM16Xs2i9lxMKgPnH6LdPJ5DhDKKULc4-gQt4UVE"
   ledger_sheet: "元帳"
 
+clasp:
+  warn_days: 25
+  critical_days: 28
+  token_path: /home/ubuntu/.clasprc.json
+
 #ntfy通知設定
 ntfy_topic: "hananoen"
 

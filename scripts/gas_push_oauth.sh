@@ -10,6 +10,11 @@ log() {
   echo "[$(date -u +'%Y-%m-%dT%H:%M:%SZ')] $*" | tee -a "$LOG_FILE"
 }
 
+notify_error() {
+  local message="$1"
+  bash scripts/ntfy.sh "$message" gas_oauth_error || true
+}
+
 die() {
   log "ERROR: $*"
   exit 1
@@ -86,8 +91,8 @@ print(sid)
 PY
 )"
 
-ACCESS_TOKEN="$(python3 - "$CLASPRC" <<'PY'
-import json, subprocess, sys
+TOKEN_FIELDS="$(python3 - "$CLASPRC" <<'PY'
+import json, sys
 
 clasprc_path = sys.argv[1]
 with open(clasprc_path, encoding='utf-8') as f:
@@ -104,27 +109,46 @@ if not creds:
 for k in ('client_id', 'client_secret', 'refresh_token'):
     if not creds.get(k):
         raise SystemExit(f'{k} missing in tokens.default')
-
-resp = subprocess.run(
-    [
-        'curl', '-sS', '-X', 'POST',
-        'https://oauth2.googleapis.com/token',
-        '-H', 'Content-Type: application/x-www-form-urlencoded',
-        '--data-urlencode', 'grant_type=refresh_token',
-        '--data-urlencode', f"refresh_token={creds['refresh_token']}",
-        '--data-urlencode', f"client_id={creds['client_id']}",
-        '--data-urlencode', f"client_secret={creds['client_secret']}",
-    ],
-    stdout=subprocess.PIPE,
-    stderr=subprocess.PIPE,
-    check=True,
-)
-obj = json.loads(resp.stdout.decode())
-if 'access_token' not in obj:
-    raise SystemExit('Failed to acquire access_token: ' + resp.stdout.decode())
-print(obj['access_token'])
+print(creds['client_id'])
+print(creds['client_secret'])
+print(creds['refresh_token'])
 PY
 )"
+
+CLIENT_ID="$(echo "$TOKEN_FIELDS" | sed -n '1p')"
+CLIENT_SECRET="$(echo "$TOKEN_FIELDS" | sed -n '2p')"
+REFRESH_TOKEN="$(echo "$TOKEN_FIELDS" | sed -n '3p')"
+
+TOKEN_BODY="$TMP_DIR/token_response.json"
+TOKEN_HTTP_CODE="$(curl -sS -o "$TOKEN_BODY" -w '%{http_code}' \
+  -X POST 'https://oauth2.googleapis.com/token' \
+  -H 'Content-Type: application/x-www-form-urlencoded' \
+  --data-urlencode 'grant_type=refresh_token' \
+  --data-urlencode "refresh_token=${REFRESH_TOKEN}" \
+  --data-urlencode "client_id=${CLIENT_ID}" \
+  --data-urlencode "client_secret=${CLIENT_SECRET}")"
+
+if [[ "$TOKEN_HTTP_CODE" =~ ^4[0-9][0-9]$ ]]; then
+  log "token refresh failed with HTTP $TOKEN_HTTP_CODE"
+  cat "$TOKEN_BODY" | tee -a "$LOG_FILE"
+  notify_error "gas_push: token refresh 失敗 — 復旧: bash scripts/gas_push_oauth.sh を再実行、または clasp re-login"
+  die "Failed to acquire access_token"
+fi
+
+ACCESS_TOKEN="$(python3 - "$TOKEN_BODY" <<'PY'
+import json, sys
+with open(sys.argv[1], encoding='utf-8') as f:
+    obj = json.load(f)
+if 'access_token' not in obj:
+    raise SystemExit('access_token missing in token response')
+print(obj['access_token'])
+PY
+)" || {
+  log "token response parse failed"
+  cat "$TOKEN_BODY" | tee -a "$LOG_FILE"
+  notify_error "gas_push: token refresh 失敗 — 復旧: bash scripts/gas_push_oauth.sh を再実行、または clasp re-login"
+  die "Failed to parse access_token"
+}
 
 GET_URL="https://script.googleapis.com/v1/projects/${SCRIPT_ID}/content"
 log "Fetching current project content (GET)"
@@ -219,6 +243,11 @@ HTTP_CODE="$(curl -sS -o "$TMP_DIR/update_response.json" -w '%{http_code}' \
 if [[ "$HTTP_CODE" != "200" ]]; then
   log "updateContent failed with HTTP $HTTP_CODE"
   cat "$TMP_DIR/update_response.json" | tee -a "$LOG_FILE"
+  if [[ "$HTTP_CODE" == "403" ]]; then
+    notify_error "gas_push: 403 permission denied — 復旧: GAS Project のoauth 権限を確認してください"
+  elif [[ "$HTTP_CODE" =~ ^4[0-9][0-9]$ ]]; then
+    notify_error "gas_push: HTTP ${HTTP_CODE} エラー — ログ: /tmp/gas_push_oauth.log を確認"
+  fi
   die "Apps Script updateContent failed"
 fi
 
