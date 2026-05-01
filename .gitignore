@@ -253,6 +253,8 @@
 !skills/shogun-gas-automated-verification/SKILL.md
 !skills/s-check/
 !skills/s-check/SKILL.md
+!skills/shogun-dashboard-sync-silent-failure-pattern/
+!skills/shogun-dashboard-sync-silent-failure-pattern/SKILL.md
 
 # Python venv (explicit deny — whitelist patterns like LICENSE leak through !*/)
 .venv/
