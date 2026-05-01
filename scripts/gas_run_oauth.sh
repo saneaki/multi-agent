@@ -154,7 +154,7 @@ PY
 RUN_URL="https://script.googleapis.com/v1/scripts/${SCRIPT_ID}:run"
 REQUEST_BODY="$(python3 - "$FUNCTION_NAME" <<'PY'
 import json, sys
-print(json.dumps({"function": sys.argv[1], "devMode": False}, ensure_ascii=False))
+print(json.dumps({"function": sys.argv[1], "devMode": True}, ensure_ascii=False))
 PY
 )"
 
