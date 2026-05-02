@@ -105,11 +105,11 @@ cli:
       effort: max
     ashigaru6:
       cli_type: codex
-      model: gpt-5.3-codex
+      model: gpt-5.5
       effort: max
     ashigaru7:
       cli_type: codex
-      model: gpt-5.3-codex
+      model: gpt-5.5
       effort: max
     gunshi:
       cli_type: claude
@@ -132,8 +132,8 @@ formations:
       ashigaru3: { cli_type: claude, model: claude-sonnet-4-6, effort: max }
       ashigaru4: { cli_type: claude, model: claude-opus-4-7, effort: max }
       ashigaru5: { cli_type: claude, model: claude-opus-4-7, effort: max }
-      ashigaru6: { cli_type: codex, model: gpt-5.3-codex }
-      ashigaru7: { cli_type: codex, model: gpt-5.3-codex }
+      ashigaru6: { cli_type: codex, model: gpt-5.5 }
+      ashigaru7: { cli_type: codex, model: gpt-5.5 }
   all-sonnet:
     description: "全員Claude Sonnet（従来構成・復帰用）"
     agents:

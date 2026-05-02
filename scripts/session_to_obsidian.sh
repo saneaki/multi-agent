@@ -9,6 +9,7 @@ if ! flock -n 9; then
 fi
 
 DRY_RUN=0
+DO_PUSH=0
 TARGET_DATE=""
 OUTPUT_DIR="${OBSIDIAN_REPO_PATH:-/home/ubuntu/obsidian}"
 
@@ -20,6 +21,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --dry-run)
       DRY_RUN=1
+      shift
+      ;;
+    --push)
+      DO_PUSH=1
       shift
       ;;
     --output-dir)
@@ -179,4 +184,29 @@ if ! cp /tmp/session_to_obsidian_rendered.md "$OUT_PATH"; then
 fi
 
 echo "Wrote: $OUT_PATH"
+
+if [[ "$DO_PUSH" -eq 1 ]]; then
+  if ! cd "$OUTPUT_DIR"; then
+    echo "Failed to cd to obsidian repo: $OUTPUT_DIR" >&2
+    exit 1
+  fi
+
+  if ! git add "$OUT_PATH"; then
+    echo "git add failed: $OUT_PATH" >&2
+    exit 1
+  fi
+
+  if ! git commit -m "session: $(date +%Y-%m-%d) shogun log"; then
+    echo "git commit failed" >&2
+    exit 1
+  fi
+
+  if ! git push origin main; then
+    echo "git push failed" >&2
+    exit 1
+  fi
+
+  echo "Pushed to origin/main"
+fi
+
 exit 0
