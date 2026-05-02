@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# project root に移行 (cron 起動時の cwd 不整合対策)
+cd "$(dirname "$0")/.." || exit 1
+
 # session_to_obsidian.sh — Claude Code shogun セッションを Obsidian Vault に書出
 # cmd_635 Scope A: jsonl 一次source化 + cmd今日filter + 殿令本文抽出
 set -euo pipefail
@@ -290,6 +293,10 @@ cmd_list = sorted(today_filtered, key=cmd_sort_key)
 # 7. Build per-cmd sections
 def get_cmd_meta(cmd_id):
     sk_info = sk_db.get(cmd_id, {})
+    if isinstance(sk_info, str):
+        sk_info = {'purpose': sk_info}
+    elif not isinstance(sk_info, dict):
+        sk_info = {}
     issued_iso = sk_info.get('timestamp', '')
     title = sk_info.get('purpose', '')
     lord_cmd = sk_info.get('command', '')
@@ -324,7 +331,8 @@ def get_cmd_meta(cmd_id):
     if not title:
         completion = next(
             (it for it in today_items
-             if cmd_id in (it.get('result') or '') and '完遂' in (it.get('result') or '')),
+             if isinstance(it, dict)
+             and cmd_id in (it.get('result') or '') and '完遂' in (it.get('result') or '')),
             None,
         )
         if completion:
@@ -346,7 +354,8 @@ def get_cmd_meta(cmd_id):
 
     completion_entries = [
         it for it in today_items
-        if cmd_id in (it.get('result') or '') and '完遂' in (it.get('result') or '')
+        if isinstance(it, dict)
+        and cmd_id in (it.get('result') or '') and '完遂' in (it.get('result') or '')
     ]
     if completion_entries:
         completion_entries.sort(key=lambda x: x.get('time', ''), reverse=True)
@@ -392,6 +401,33 @@ if not cmd_list:
 else:
     for cmd_id in cmd_list:
         meta = get_cmd_meta(cmd_id)
+        if isinstance(meta, str):
+            meta = {
+                'cmd_id': cmd_id,
+                'title': meta,
+                'issued': 'unknown',
+                'completed': '進行中',
+                'lord_command': '',
+                'shogun_summary': '',
+            }
+        elif isinstance(meta, dict):
+            meta = {
+                'cmd_id': meta.get('cmd_id', cmd_id),
+                'title': meta.get('title') or meta.get('purpose') or str(meta)[:80],
+                'issued': meta.get('issued', 'unknown'),
+                'completed': meta.get('completed', '進行中'),
+                'lord_command': meta.get('lord_command', ''),
+                'shogun_summary': meta.get('shogun_summary', ''),
+            }
+        else:
+            meta = {
+                'cmd_id': cmd_id,
+                'title': str(meta),
+                'issued': 'unknown',
+                'completed': '進行中',
+                'lord_command': '',
+                'shogun_summary': '',
+            }
         title = meta['title'][:80] or '(タイトル不明)'
         out.append(f"## {cmd_id}: {title}")
         out.append(f"- 発令: {meta['issued']}")
@@ -428,6 +464,8 @@ if today_items:
     out.append('| 時刻 | 戦場 | 結果 | 任務概要 |')
     out.append('|---|---|---|---|')
     for it in today_items:
+        if not isinstance(it, dict):
+            continue
         time_v = it.get('time', '') or ''
         bf = it.get('battlefield', '') or ''
         rs = it.get('result', '') or ''

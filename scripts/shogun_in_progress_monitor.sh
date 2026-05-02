@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# shogun_in_progress_monitor.sh — 進行中乖離 1h 監視 (6パターン検出)
-# cmd_638 Scope A
+# shogun_in_progress_monitor.sh — 進行中乖離 1h 監視 (7パターン検出)
+# cmd_638 Scope A + cmd_640 Scope B (P7)
 #
 # 検出対象:
 #   P1: shogun_to_karo.yaml に status=pending かつ inbox/karo.yaml に shogun→karo
@@ -12,6 +12,7 @@
 #   P4: dashboard last_updated > 90分前 → 進行中 stale
 #   P5: shogun inbox に未処理 action_required > 30分 → 殿手作業滞留
 #   P6: dashboard.md の「最終更新:」が 2h 以上前 → dashboard stale alert
+#   P7: GHA daily-notion-sync が success でも upsert 0件 → Notion同期 silent failure
 #
 # 重複 alert 抑制: 1h 内同種は再送付しない (alert_key で識別)
 #
@@ -106,9 +107,9 @@ handle_alert() {
     fi
 }
 
-# ===== 6パターン検出ロジック (Python 一括実行) =====
+# ===== 7パターン検出ロジック (Python 一括実行) =====
 RESULTS=$("${PYTHON}" - <<'PYEOF'
-import os, re, glob, yaml
+import os, re, glob, yaml, json, subprocess
 from datetime import datetime, timedelta, timezone
 
 ROOT = os.environ['SCRIPT_DIR']
@@ -373,12 +374,54 @@ def check_pattern_6():
             f"(last_updated={last_updated_str} JST). "
             f"rotate 失敗 / karo 更新漏れを確認せよ。")
 
+# ---------- Pattern 7: GHA daily-notion-sync upsert 0件 ----------
+def check_pattern_7():
+    """GHA daily-notion-sync が success でも upsert 件数 0件なら Notion 同期 silent failure を疑い alert"""
+    try:
+        run_info = subprocess.run(
+            ['gh', 'run', 'list',
+             '--workflow=daily-notion-sync.yml',
+             '--repo=saneaki/obsidian',
+             '--limit=1',
+             '--json', 'status,conclusion,databaseId'],
+            capture_output=True, text=True, timeout=30)
+        if run_info.returncode != 0 or not run_info.stdout.strip():
+            return
+        runs = json.loads(run_info.stdout)
+        if not runs:
+            return
+        run = runs[0]
+        if run.get('status') != 'completed':
+            return
+        if run.get('conclusion') != 'success':
+            return
+        run_id = run.get('databaseId')
+        if not run_id:
+            return
+        log_result = subprocess.run(
+            ['gh', 'run', 'view', str(run_id),
+             '--repo=saneaki/obsidian', '--log'],
+            capture_output=True, text=True, timeout=60)
+        if log_result.returncode != 0:
+            return
+        log = log_result.stdout
+        upsert_count = log.count('[UPDATE]') + log.count('[CREATE]')
+        if upsert_count == 0:
+            out('P7-GHA-upsert-0件',
+                f"daily-notion-sync success but 0 Notion entries updated "
+                f"(run_id={run_id}). Notion同期 silent failure を疑え。")
+    except (subprocess.TimeoutExpired, json.JSONDecodeError, FileNotFoundError):
+        return
+    except Exception:
+        return
+
 check_pattern_1()
 check_pattern_2()
 check_pattern_3()
 check_pattern_4()
 check_pattern_5()
 check_pattern_6()
+check_pattern_7()
 
 for r in RESULTS:
     print(r)
@@ -396,7 +439,7 @@ fi
 if [ "${DRY_RUN}" = "yes" ]; then
     echo "${JST_NOW} [in_progress_monitor] DRY-RUN: ${ALERTS_FOUND}件検出"
 elif [ "${ALERTS_FOUND}" -eq 0 ]; then
-    echo "${JST_NOW} [in_progress_monitor] 全6パターン異常なし"
+    echo "${JST_NOW} [in_progress_monitor] 全7パターン異常なし"
 else
     echo "${JST_NOW} [in_progress_monitor] ${ALERTS_FOUND}件のアラートを将軍 inbox に送信"
 fi
