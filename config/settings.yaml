@@ -105,11 +105,11 @@ cli:
       effort: max
     ashigaru6:
       cli_type: codex
-      model: gpt-5.5
+      model: gpt-5.5  # 2026-05-02: switch_cli.sh による切替
       effort: max
     ashigaru7:
       cli_type: codex
-      model: gpt-5.5
+      model: gpt-5.5  # 2026-05-02: switch_cli.sh による切替
       effort: max
     gunshi:
       cli_type: claude

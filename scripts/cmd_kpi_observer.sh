@@ -5,8 +5,8 @@
 # cron:  0 9 * * * bash /home/ubuntu/shogun/scripts/cmd_kpi_observer.sh >> /home/ubuntu/shogun/logs/kpi_observer.log 2>&1
 #
 # 収集 KPI (今日, JST):
-#   1. /pub-us 起動回数      (logs/cmd_squash_pub_hook.log: "claude -p '/pub-us")
-#   2. /pub-us 成功 / 失敗 / kill-switch (現状ログに明示パターンなし → 0 default)
+#   1. publish 成功相当       (当日 JST の git commit 数)
+#   2. publish 失敗           (現状は実 push 失敗を永続化する信頼できる経路なし → 0 default)
 #   3. karo auto-compact     (compact_observer.sh karo: AGENT_TODAY)
 #   4. gunshi auto-compact   (compact_observer.sh gunshi: AGENT_TODAY)
 #   5. safe_window_judge 発動 (logs/safe_window/{karo,gunshi}.log の START 件数合計)
@@ -20,7 +20,6 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DASHBOARD="${SCRIPT_DIR}/dashboard.md"
 DASHBOARD_YAML="${SCRIPT_DIR}/dashboard.yaml"
-PUB_LOG="${SCRIPT_DIR}/logs/cmd_squash_pub_hook.log"
 SAFE_WINDOW_DIR="${SCRIPT_DIR}/logs/safe_window"
 SAFE_CLEAR_DIR="${SCRIPT_DIR}/logs/safe_clear"
 COMPACT_OBSERVER="${SCRIPT_DIR}/scripts/compact_observer.sh"
@@ -49,26 +48,27 @@ _log "=== START (dry_run=${DRY_RUN}) ==="
 # 従来の「昨日」集計は safe_window 判定に1日遅延を生むため、日次KPIは当日値を直接扱う。
 TODAY="${TARGET_DATE:-$(bash "${SCRIPT_DIR}/scripts/jst_now.sh" --date)}"
 
-# ── KPI 1: /pub-us 起動回数 (today) ──────────────────────────────────────────
-PUB_US_INVOKE=0
-if [ -f "$PUB_LOG" ]; then
-    PUB_US_INVOKE=$(grep -c "^\[${TODAY}.*claude -p '/pub-us" "$PUB_LOG" 2>/dev/null | tr -d '\n' || true)
-fi
-PUB_US_INVOKE=${PUB_US_INVOKE:-0}
-
-# ── KPI 2: /pub-us 成功 / 失敗 / kill-switch (today) ─────────────────────────
-# 現状ログに明示パターンが無いため 0 default。将来パターン整備後に拡張する。
+# ── KPI 1-2: publish 成功 / 失敗 (today, JST) ────────────────────────────────
 PUB_US_SUCCESS=0
 PUB_US_FAIL=0
-PUB_US_KILL=0
-if [ -f "$PUB_LOG" ]; then
-    PUB_US_SUCCESS=$(grep -c "^\[${TODAY}.*\(success\|成功\|completed\)" "$PUB_LOG" 2>/dev/null | tr -d '\n' || true)
-    PUB_US_FAIL=$(grep -c "^\[${TODAY}.*\(failed\|失敗\|error\)" "$PUB_LOG" 2>/dev/null | tr -d '\n' || true)
-    PUB_US_KILL=$(grep -c "^\[${TODAY}.*\(kill-switch\|kill_switch\)" "$PUB_LOG" 2>/dev/null | tr -d '\n' || true)
+NEXT_DAY="$(python3 - "$TODAY" <<'PYEOF'
+import datetime as dt
+import sys
+
+print((dt.datetime.strptime(sys.argv[1], "%Y-%m-%d") + dt.timedelta(days=1)).strftime("%Y-%m-%d"))
+PYEOF
+)"
+if git -C "$SCRIPT_DIR" rev-parse --git-dir >/dev/null 2>&1; then
+    PUB_US_SUCCESS=$(
+        git -C "$SCRIPT_DIR" log \
+            --since="${TODAY} 00:00:00 +0900" \
+            --until="${NEXT_DAY} 00:00:00 +0900" \
+            --format=%H 2>/dev/null \
+        | wc -l | tr -d '[:space:]'
+    )
 fi
 PUB_US_SUCCESS=${PUB_US_SUCCESS:-0}
 PUB_US_FAIL=${PUB_US_FAIL:-0}
-PUB_US_KILL=${PUB_US_KILL:-0}
 
 # ── KPI 3-4: karo / gunshi auto-compact (today) ─────────────────────────────
 KARO_COMPACT=0
@@ -151,26 +151,26 @@ if [ -f "${SAFE_CLEAR_DIR}/karo.log" ]; then
 fi
 SELF_CLEAR_COUNT=${SELF_CLEAR_COUNT:-0}
 
-_log "KPI: pub_us_invoke=${PUB_US_INVOKE} success=${PUB_US_SUCCESS} fail=${PUB_US_FAIL} kill=${PUB_US_KILL}"
+_log "KPI: git_commit_success=${PUB_US_SUCCESS} fail=${PUB_US_FAIL}"
 _log "KPI: karo_compact=${KARO_COMPACT} gunshi_compact=${GUNSHI_COMPACT} safe_window=${SAFE_WINDOW_COUNT} self_clear=${SELF_CLEAR_COUNT}"
 
 if [ "$DRY_RUN" -eq 1 ]; then
     _log "DRY RUN — would update dashboard.yaml metrics:"
-    _log "date=${TODAY} pub_us=${PUB_US_INVOKE} success=${PUB_US_SUCCESS} fail=${PUB_US_FAIL} kill=${PUB_US_KILL} karo_compact=${KARO_COMPACT} gunshi_compact=${GUNSHI_COMPACT} safe_window=${SAFE_WINDOW_COUNT}"
+    _log "date=${TODAY} success=${PUB_US_SUCCESS} fail=${PUB_US_FAIL} karo_compact=${KARO_COMPACT} gunshi_compact=${GUNSHI_COMPACT} safe_window=${SAFE_WINDOW_COUNT}"
     _log "=== END (dry_run) ==="
     exit 0
 fi
 
 # ── dashboard.yaml metrics 更新 + dashboard.md 再生成 ───────────────────────
 python3 - "$DASHBOARD_YAML" "$TODAY" \
-    "$PUB_US_INVOKE" "$PUB_US_SUCCESS" "$PUB_US_FAIL" "$PUB_US_KILL" \
+    "$PUB_US_SUCCESS" "$PUB_US_FAIL" \
     "$KARO_COMPACT" "$GUNSHI_COMPACT" "$SAFE_WINDOW_COUNT" <<'PYEOF'
 import yaml, sys, subprocess
 from pathlib import Path
 
 dashboard_yaml, today = sys.argv[1], sys.argv[2]
-pub_us, success, failure, kill_switch = sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6]
-karo_compact, gunshi_compact, safe_window = sys.argv[7], sys.argv[8], sys.argv[9]
+success, failure = sys.argv[3], sys.argv[4]
+karo_compact, gunshi_compact, safe_window = sys.argv[5], sys.argv[6], sys.argv[7]
 
 def to_int_or_str(v):
     return int(v) if v.lstrip('-').isdigit() else v
@@ -181,15 +181,15 @@ with open(dashboard_yaml) as f:
 metrics = d.get('metrics', [])
 row = next((m for m in metrics if str(m.get('date', '')) == today), None)
 if row is None:
-    row = {'date': today, 'pub_us': 0, 'success': 0, 'failure': 0, 'kill_switch': 0,
+    row = {'date': today, 'success': 0, 'failure': 0,
            'karo_compact': '-', 'gunshi_compact': '-', 'safe_window': '-'}
     metrics.append(row)
 
+row.pop('pub_us', None)
+row.pop('kill_switch', None)
 row.update({
-    'pub_us': to_int_or_str(pub_us),
     'success': to_int_or_str(success),
     'failure': to_int_or_str(failure),
-    'kill_switch': to_int_or_str(kill_switch),
     'karo_compact': to_int_or_str(karo_compact),
     'gunshi_compact': to_int_or_str(gunshi_compact),
     'safe_window': to_int_or_str(safe_window),

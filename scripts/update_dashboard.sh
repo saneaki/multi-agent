@@ -143,13 +143,13 @@ if os.path.exists(daily_yaml):
             metrics = d.get('metrics', [])
             row = next((m for m in metrics if str(m.get('date', '')) == date_jst), None)
             if row is None:
-                row = {'date': date_jst, 'pub_us': 0, 'success': 0, 'failure': 0,
-                       'kill_switch': 0, 'karo_compact': '-', 'gunshi_compact': '-', 'safe_window': '-'}
+                row = {'date': date_jst, 'success': 0, 'failure': 0,
+                       'karo_compact': '-', 'gunshi_compact': '-', 'safe_window': '-'}
                 metrics.append(row)
-            row['pub_us'] = int(daily.get('attempt_total', 0) or 0)
+            row.pop('pub_us', None)
+            row.pop('kill_switch', None)
             row['success'] = int(daily.get('success_total', 0) or 0)
             row['failure'] = int(daily.get('failure_total', 0) or 0)
-            row['kill_switch'] = int(daily.get('kill_count', 0) or 0)
             d['metrics'] = sorted(metrics, key=lambda m: str(m.get('date', '')))[-7:]
     except Exception as e:
         print(f'[WARN] metrics update failed: {e}', file=sys.stderr)

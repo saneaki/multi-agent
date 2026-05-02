@@ -79,10 +79,8 @@
         "additionalProperties": false,
         "required": [
           "date",
-          "pub_us",
           "success",
           "failure",
-          "kill_switch",
           "karo_compact",
           "gunshi_compact",
           "safe_window"
@@ -92,10 +90,8 @@
             "type": "string",
             "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
           },
-          "pub_us": { "type": "integer", "minimum": 0 },
           "success": { "type": "integer", "minimum": 0 },
           "failure": { "type": "integer", "minimum": 0 },
-          "kill_switch": { "type": "integer", "minimum": 0 },
           "karo_compact": {
             "oneOf": [
               { "type": "integer", "minimum": 0 },

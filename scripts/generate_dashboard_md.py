@@ -198,13 +198,15 @@ def generate_markdown(data: dict[str, Any]) -> str:
     metrics_rows = [
         [
             r.get("date", ""),
-            r.get("pub_us", ""),
             r.get("success", ""),
             r.get("failure", ""),
-            r.get("kill_switch", ""),
             r.get("karo_compact", ""),
             r.get("gunshi_compact", ""),
             r.get("safe_window", ""),
+            r.get("karo_self_clear", ""),
+            r.get("gunshi_self_clear", ""),
+            r.get("karo_self_compact", ""),
+            r.get("gunshi_self_compact", ""),
         ]
         for r in data.get("metrics", [])
     ]
@@ -212,13 +214,15 @@ def generate_markdown(data: dict[str, Any]) -> str:
         render_table(
             [
                 "日付(JST)",
-                "/pub-us起動",
                 "成功",
                 "失敗",
-                "kill-switch発動",
                 "karo auto-compact",
                 "gunshi auto-compact",
                 "safe_window発動",
+                "karo self_clear",
+                "gunshi self_clear",
+                "karo self_compact",
+                "gunshi self_compact",
             ],
             metrics_rows,
         )

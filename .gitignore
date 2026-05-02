@@ -155,6 +155,7 @@
 !scripts/shogun_reality_check.sh
 !scripts/dashboard_lint.py
 !scripts/compact_observer.sh
+!scripts/detect_compact.sh
 !scripts/get_context_pct.sh
 !scripts/cmd_kpi_observer.sh
 !scripts/suggestions_digest.sh

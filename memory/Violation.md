@@ -70,6 +70,11 @@ subtask_566a (ash3) 調査により、完全 Rule Inventory は **54 Rule IDs / 
 | 14 | dashboard運用整合 | action-1/action-2 | 完了移動条件と表示文言が乖離しやすい | 進捗誤読 | 状態遷移の自動生成化 | 2-4回 |
 | 15 | rule-source分散 | instructions/AGENTS/.claude | 同義ルールが多箇所に分散し更新差分が生まれる | 解釈ブレ | ルールカタログ集約 | 5回以上 |
 | 16 | manual process dependence | clasp運用 | 認証期限切れ時の手順が明文化前は属人対応 | 再発時停止 | fallback skill + runbook固定 | 2-4回 |
+| 17 | F007 / report品質 / L014再発 | cmd_632 ash6/7 GPT-5.5切替誤報 (2026-05-02) | 家老が settings.yaml 更新のみで「GPT-5.5 切替完了」と完遂報告。実 tmux pane は依然 gpt-5.3-codex のまま。将軍 tmux 直視で発覚 | 殿への誤情報、運用判断ミス誘発リスク | cmd_634 AC8.1 で完遂報告に tmux capture-pane 必須化。Layer 5 報告品質検証で機械検出 | 1回 (新規パターン) |
+| 18 | dashboard運用 / SO-19違反 | dashboard.md 22h鮮度崩壊 (2026-05-02) | 家老一次責任で MD 再生成漏れ。5/1 17:44 → 5/2 16:30 の間に cmd_628/629/631/632 完遂が反映されず | 戦況把握不能、殿の判断材料欠落、誤報リスク | 案A: dashboard 即時是正 / 案B: cmd_634 AC9 で MD 鮮度自動検証組込 / 案C: 将軍 L020 自律規律 (会話ターン毎確認) | 1回 (新規構造問題) |
+| 19 | Action Required規律違反 / F007派生 | 殿令1 ash6/7 切替手作業依頼 (2026-05-02) | 家老が inbox 通知のみで完了扱い、dashboard.yaml.action_required への追加を怠った。殿は inbox を能動確認しないと見えない | 殿が手作業要件を見落とす、cmd 進行停滞 | 案B (cmd_634 AC9.2) + 案C (L020) で二重防護。Action Required は MUST dashboard 記載 | 1回 (規律明文化されているが実施漏れ) |
+| 20 | architecture違反 / self-contained原則 | cmd_631 daily-notion-sync.yml curl依存 (2026-05-02) | obsidian repo の workflow が shogun repo の script を `curl raw.githubusercontent.com/saneaki/multi-agent` で外部取得。仕様書 §5.2「shogun リポジトリには配置しない」原則違反 | 多 repo 依存で運用脆弱化、self-contained 性喪失 | cmd_632 Scope H で是正 (script を obsidian repo に複製 + ローカル参照化) / skill 化候補: shogun-multi-repo-script-vendor-pattern | 1回 (新規パターン) |
+| 21 | end-to-end検証ギャップ / verifier側違反 | cmd_631 implementation-verifier 4-Layer (2026-05-02) | unit ごと PASS で完結し、end-to-end pipeline 稼働を確認せず。GHA test run の md_exists=false graceful skip を見逃し、cron 未登録 + git未init の shelf-ware を検出失敗 | end-to-end ギャップ放置、運用稼働 NG なまま完遂判定 | cmd_634 で Layer 5 (報告品質検証) + 4段確認 (commit/配置/登録/実ログ) を組込み verifier 側を強化 | 2回目 (cmd_586 cron未登録と同型) |
 
 ### AC3 必須5事例の明示
 - (a) `cmd_486 status field 欠落`: `queue/shogun_to_karo.yaml` の `cmd_486` ブロック（`cmd_id` 形式、status 欠落）
@@ -80,26 +85,31 @@ subtask_566a (ash3) 調査により、完全 Rule Inventory は **54 Rule IDs / 
 
 ## 分類 (violation type × severity × frequency)
 
-### type 別件数
+### type 別件数 (No.1-21 集計)
 | violation type | 件数 |
 |---|---:|
 | schema field / schema strictness | 5 |
 | operational pattern gap | 4 |
 | documentation gap | 2 |
-| unverified / reporting quality | 3 |
+| unverified / reporting quality | 5 (No.17/19 追加) |
 | rule-source governance | 2 |
+| architecture / self-contained 原則違反 | 1 (No.20 追加) |
+| end-to-end verification gap | 1 (No.21 追加) |
+| dashboard 運用規律違反 | 1 (No.18 追加) |
 
-### severity 別件数
+### severity 別件数 (No.1-21 集計)
 | severity | 件数 |
 |---|---:|
-| critical | 5 |
-| high | 7 |
+| critical | 6 (No.18 追加) |
+| high | 9 (No.17/19/20/21 追加) |
 | medium | 4 |
+| low | 2 |
 
-### frequency 別件数
+### frequency 別件数 (No.1-21 集計)
 | frequency | 件数 |
 |---|---:|
-| 1回 | 0 |
+| 1回 (新規) | 4 (No.17/18/19/20) |
+| 2回目以上 (反復) | 1 (No.21 = cmd_586 同型) |
 | 2-4回 | 11 |
 | 5回以上 | 5 |
 
@@ -321,8 +331,33 @@ subtask_566a (ash3) 調査により、完全 Rule Inventory は **54 Rule IDs / 
 | 月次 retrospective | gunshi | karo | shogun | ashigaru |
 | 四半期 rule棚卸し | gunshi + karo | shogun | ashigaru | — |
 
+## 2026-05-02 追記: cmd_631/cmd_632 incident cluster
+
+### 経緯
+2026-05-02 (cmd_631 完遂後 / cmd_632 進行中) に 5 件の violation (No.17-21) が連続発生・発覚した。
+将軍 (拙者) の reality check と implementation-verifier 強化版 (Layer 5) で検出。
+
+### 構造的位置づけ
+| violation | root_cause_category | 既存対策案カバー | 新規対策 |
+|---|---|---|---|
+| No.17 (ash6/7切替誤報) | Verification Protocol Gap | 案B 部分対応 | cmd_634 AC8.1 (Layer 5: tmux capture-pane 必須) |
+| No.18 (dashboard 22h鮮度) | State Visibility Gap | 案A 部分対応 | cmd_634 AC9 (鮮度自動検証) + L020 将軍規律 |
+| No.19 (Action Required漏れ) | Enforcement Gap | 案B 部分対応 | cmd_634 AC9.2 (action_required 記載確認) |
+| No.20 (curl 外部依存) | Single Point of Failure | 案C 部分対応 | shogun-multi-repo-script-vendor-pattern skill |
+| No.21 (verifier ギャップ) | Verification Protocol Gap | 案A 部分対応 | cmd_634 4段確認 (commit/配置/登録/実ログ) |
+
+### 教訓: L014 教訓の構造化
+L014 (家老申告を鵜呑み禁止) は 2026-04-17 に明文化されたが、cmd_632 で再発。
+**規律明文化単独では予防不能** という命題 (本稿 §「殿の問題提起への直接回答」) が再証明された。
+構造的予防は cmd_634 verifier 強化 (Layer 5 報告品質検証) に集約される。
+
+### 新規 root_cause_category 候補 (検討中)
+- **Verifier Coverage Gap**: 検証側 (verifier 自身) が end-to-end pipeline を確認しない構造的欠陥
+  → No.21 (cmd_631) で初観測。cmd_634 で予防対策実装中。
+
 ## 注記
 本稿は gunshi (subtask_566e) による分類深化 + 根本解決策3案 + Recommendation 完成版。
+2026-05-02 追記分は 将軍 (shogun) が Lord 直命により実施。RACI 上は gunshi 維持責任ゆえ、次回 gunshi QC で本追記の構造整合性を検証されたし。
 566a(ash3) / 566b(ash4) の調査継続中の追加知見があれば追補する。
 
 ## 調査データソース

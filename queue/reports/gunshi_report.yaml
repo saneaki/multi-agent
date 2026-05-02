@@ -1,66 +1,69 @@
 worker_id: gunshi
-task_id: subtask_631_scope_e1_gunshi_qc
-parent_cmd: cmd_631
-timestamp: "2026-05-02T15:37:58+09:00"
+task_id: subtask_633_scope_d_gunshi_qc
+parent_cmd: cmd_633
+timestamp: "2026-05-02T16:50:16+09:00"
 status: done
 report_to: karo
 type: qc
 
 result:
-  type: scope_e1_gunshi_qc_report
+  type: scope_d_kpi_overhaul_qc_report
   summary: |
-    cmd_631 Scope E1 (北極星 N1-N4 全 PASS QC) 完遂。判定: **Go**。
-    N1 (S1+S2+S3+S5 完全性): session_to_obsidian.sh L55-L58 で 4 source 参照確認
-    N2 (cmd 境界分離): dry-run で ## cmd_NNN H2 構造確認 (軽微 G1: 当日範囲外混入あり)
-    N3 (narrative 品質): system prompt 3 要素 + 500字 完備、D2 実 API 29/29 PASS avg=468字
-    N4 (二重記録解消): crontab=0件 / archive 配置 / 参照 0 件
-    AC1 PASS (Go 判定)。Scope F (ash1 commit) dispatch 可。
+    cmd_633 Scope D (KPI オーバーホール QC) 完遂。判定: **Go**。
+    N1 (dashboard 運用指標 field) PASS: pub_us/kill_switch 撤去確認, karo_self_clear/
+    gunshi_self_clear/karo_self_compact/gunshi_self_compact 4 新 field 追加確認
+    N2 (殿の運用把握) PASS: dashboard.md 運用指標 section 10 列ヘッダ + 6 日分表示
+    N3 (計測ロジック) PASS: generate_dashboard_md.py 書換 + detect_compact.sh +
+    gunshi_self_clear_check.sh + cron 3 行 + .gitignore whitelist 完備
+    AC1 PASS, Scope E (ash1 commit) dispatch 可。
+    軽微 G1: gunshi_self_clear_check.sh 実行権限 (-rw-rw-r-- → 推奨は -rwxrwxr-x)
+    AC6 (翌日 5/3 metrics 反映) は明日確認。
 
   ac_verification:
     - id: AC1
       verification: |
-        北極星 N1-N4 全 PASS 確認:
-        - N1: session_to_obsidian.sh で
-          S1_DIR=~/.claude/sessions (L55) /
-          S2_FILE=queue/reports/gunshi_report.yaml (L56) /
-          S3_FILE=queue/inbox/shogun.yaml (L57) /
-          S5_FILE=dashboard.md (L58) を全件参照、存在チェック L60-L63
-        - N2: dry-run 出力に ## cmd_NNN: H2 セクション存在、
-          H3 (殿令/将軍検討/足軽軍師提案/完遂報告) 固定形式
-        - N3: SYSTEM_PROMPT で「考え/作って/結果」3 要素 + 500字制約 +
-          機械羅列禁止 + ストーリー形式 明記、D2 実 API 29/29 avg=468字
-        - N4: crontab -l notion_session_log = 0 件、
-          scripts/archived/notion_session_log.sh 存在 (917行)、
-          scripts/+instructions/ 参照 0 件 (archived 除外)
-        判定: **Go** (Scope F dispatch 可)
+        N1 PASS (dashboard.yaml metrics field 構造):
+        - pub_us field: 撤去確認 (grep で不在)
+        - kill_switch field: 撤去確認
+        - karo_self_clear / gunshi_self_clear / karo_self_compact /
+          gunshi_self_compact: 4 新 field 全件存在
+        - generate_dashboard_md.py 実行: エラーなし
+        N2 PASS (dashboard.md 表示):
+        - 10 列ヘッダ (日付/成功/失敗/karo auto-compact/gunshi auto-compact/
+          safe_window発動/karo self_clear/gunshi self_clear/karo self_compact/
+          gunshi self_compact)
+        - 6 日分データ表示 (4/22, 4/26, 4/27, 4/28, 4/29, 5/1)
+        N3 PASS (実装):
+        - generate_dashboard_md.py L201 'success' 計測確認 (旧 pub_us 文字列なし)
+        - detect_compact.sh: syntax OK, 5152 bytes
+        - gunshi_self_clear_check.sh: syntax OK, 10354 bytes (実行権限なし - G1)
+        - cron 3 行登録 (gunshi_self_clear_check + detect_compact karo + gunshi)
+        - .gitignore whitelist 両 script 追加確認
+        判定: **Go** (Scope E dispatch 可)
       status: PASS
     - id: AC2
       verification: |
         Go 判定のため No-Go 是正方針記述は不要。
-        Go 妨げない軽微所見 G1-G3 を §4 に記載:
-        - G1 (low): N2 dry-run で当日範囲外 cmd_486 混入
-        - G2 (low): LLM 変更後の仕様書 Anthropic 残存箇所
-        - G3 (low): cmd 0 件日の挙動未検証
-      status: PASS
+      status: N/A
 
 means_ends_classification:
   schema_version: "1.0"
   ac_classification:
     - id: AC1
       type: ends
-      rationale: "N1-N4 全 PASS 確認 + Go/NoGo 判定は本 cmd の最終 ends"
+      rationale: "N1-N3 全 PASS 確認 + Go 判定は本 cmd の最終 ends"
       corresponding_ends_ac: null
     - id: AC2
       type: means
-      rationale: "No-Go 是正方針は手段、Go の場合は不要"
+      rationale: "Go 判定により No-Go 是正方針は不要"
       corresponding_ends_ac: AC1
   ends_coverage_note: |
-    本 cmd は QC cmd。AC1 (Go 判定) で ends 達成。
-    実 commit + push は Scope F (ash1) へ委譲。
-    実運用での G1/G3 挙動検証は Scope F 後の 1 週間運用観察推奨。
+    本 cmd は QC cmd。AC1 PASS で本 cmd の ends は達成。
+    実 commit + push は Scope E (ash1) へ委譲。
+    AC6 (翌日 5/3 metrics 反映) は明日確認、本 cmd の判定範囲外。
   both_systems_verified: true
   verdict: |
-    means 系 1 (AC2 N/A、Go 判定のため)。
+    means 系: AC2 N/A (Go のため)。
     ends 系: AC1 PASS で本 cmd の ends 完遂。
 
 so24_verification:
@@ -70,92 +73,80 @@ so24_verification:
   overall: WILL_VERIFY_AFTER_KARO_INBOX
   note: |
     本報告書込み + karo inbox 通知後に so24 三点照合が成立。
-    artifact = output/cmd_631_scope_e1_qc_report.md PASS 済。
+    artifact = output/cmd_633_scope_d_qc_report.md PASS 済。
 
-scope_e1_qc_summary:
-  n1_source_completeness: PASS
-  n2_cmd_boundary_separation: PASS
-  n3_narrative_quality: PASS
-  n4_dual_record_elimination: PASS
+scope_d_qc_summary:
+  n1_dashboard_field_overhaul: PASS
+  n2_lord_visibility: PASS
+  n3_measurement_logic: PASS
   go_nogo: Go
-  scope_f_recommended:
+  scope_e_recommended:
     target: "ash1 (Sonnet)"
-    scope: "commit + push (shogun repo のみ)"
+    scope: "commit + push"
     files_to_commit:
-      - "scripts/session_to_obsidian.sh (新規, 182行)"
-      - "scripts/generate_notion_summary.sh (新規, 332行)"
-      - "scripts/archived/notion_session_log.sh (移動, 917行)"
-      - "instructions/artifact_registration.md (D4 修正)"
-      - "difference.md (D4 修正)"
-      - "memory/skill_history.md (D4 廃止記録)"
+      - "scripts/generate_dashboard_md.py (Scope A: pub_us/kill_switch 撤去 + git log 計測)"
+      - "scripts/detect_compact.sh (Scope B 新規, 5152 bytes)"
+      - "scripts/gunshi_self_clear_check.sh (Scope C 新規, 10354 bytes)"
+      - "dashboard.yaml (4 新 field 追加)"
+      - "dashboard.md (再生成版)"
+      - ".gitignore (whitelist 2 行)"
     push_target: "git push origin main"
-    note: |
-      saneaki/obsidian repo の D3 成果物 (daily-notion-sync.yml + notion_upsert.py)
-      は GHA run_id=25245901096 で動作確認済、別 repo の commit/push 完了前提。
-  scope_d_evidence_alignment:
-    D1_session_to_obsidian: "exit=0 / cmds:[cmd_631] / dry-run 1712 行"
-    D2_generate_summary: "29/29 件 PASS / avg=468字 / 3 要素 PASS / 実 API"
-    D3_gha_workflow: "conclusion=success / run_id=25245901096 / 4s 完了"
-    D4_archive_deprecation: "cron=0件 / archived=PASS / 参照クリーン"
+  ac6_deferred: "翌日 5/3 早朝に殿/家老/軍師が dashboard.yaml の 5/2 entry 出現確認"
 
 suggestions:
   - id: G1
     priority: low
     content: |
-      N2 dry-run 出力で当日範囲外 cmd_486 が混入する現象。S5 dashboard.md
-      または S3 shogun.yaml に過去 cmd 言及があり拾われた可能性。
-      実害は Obsidian 出力に過去 cmd 言及混入 (情報重複)。
-      cmd 境界判定アルゴリズムを timestamp 厳格化に改修推奨。
-    action_needed: "Scope F 実運用で過去 cmd 混入が問題視されたら別 cmd で改修起案"
+      gunshi_self_clear_check.sh の実行権限が detect_compact.sh と非統一。
+      detect_compact.sh: -rwxrwxr-x / gunshi_self_clear_check.sh: -rw-rw-r--
+      cron は bash <script> 経由のため実害なしだが、統一性の観点で chmod +x 推奨。
+    action_needed: "Scope E commit 時に git update-index --chmod=+x で統一推奨"
   - id: G2
     priority: low
     content: |
-      Q2 LLM 変更 (Anthropic Haiku 4.5 → Gemini 3.1 Flash-Lite Preview) は
-      殿が直接編集。仕様書 §4.3 に Anthropic 残存記述箇所あり。
-      実装は Gemini で正常動作、ドキュメント不整合のみ。
-    action_needed: "Scope F commit 前または別 cmd で仕様書整合性修正"
+      AC6 (翌日反映) は明日 5/3 早朝に殿/家老/軍師が初の 5/2 metrics 書込確認。
+      期待値: dashboard.yaml に date='2026-05-02' entry 出現 + 各 KPI 妥当値
+      (例: karo_self_clear が 0 でない値、cron 経由カウンタ更新確認)。
+    action_needed: "明日 5/3 06:00 以降に gunshi が dashboard.yaml 5/2 entry 確認"
   - id: G3
     priority: low
     content: |
-      cmd 0 件日の挙動未検証。D3 GHA で if-md-exists graceful skip 済の
-      可能性あるが、Scope F 完了後の運用観察で確認推奨。
-    action_needed: "Scope F 完了後 1 週間で殿不在日の Obsidian 出力動作確認"
+      generate_dashboard_md.py 書換 (Scope A: pub_us → git log 計測) の深い review は
+      本 QC で grep 1 件のみ。Scope E commit 後の運用観察で、chore commit が
+      success として誤計測されないか (例: docs commit + chore commit を含む日に
+      success 値が膨張しないか) を 1 週間ペースで確認推奨。
+    action_needed: "Scope E commit + 1 週間運用観察で git log 計測精度確認"
 
-concerns_flagged:
-  - "N2 軽微所見 G1 (当日範囲外 cmd 混入) は情報重複の実害あり、
-    Scope F 実運用の経過観察必要"
+concerns_flagged: []
 
 skill_candidate:
-  found: true
-  candidate_id: "shogun-multi-scope-parallel-dispatch-pattern"
+  found: false
   reason: |
-    cmd_631 は要件定義 (Scope A) → 仕様書 (Scope B) → 4 並列実装 (Scope C/D 4 件) →
-    QC (Scope E1) → commit (Scope F) の段階分けで、殿令「Scope B 完了 → 即 4 並列
-    dispatch (殿確認 skip)」が奏功し、独立 4 ash 実装が完遂 + 全 N PASS。
-    本 dispatch 設計 + 並列実行管理 + QC 統合の流れは将来「shogun multi-scope
-    parallel dispatch pattern」として skill 化候補。
-    Phase 4 (実運用 1 ヶ月) を経て効果検証後にスキル化推奨。
+    本 cmd は QC cmd。KPI オーバーホールパターン (旧 KPI 撤去 + 新 KPI 追加 +
+    cron 計測 + dashboard 反映) は再利用可能性ある汎用パターンだが、cmd_633 単独では
+    スキル化早計。1 ヶ月運用観察で AC6 達成 + git log 計測精度実証後に再評価推奨。
 
 files_modified:
-  - "output/cmd_631_scope_e1_qc_report.md"
+  - "output/cmd_633_scope_d_qc_report.md"
   - "queue/reports/gunshi_report.yaml"
   - "queue/inbox/gunshi.yaml"
 
 north_star_alignment:
   status: aligned
   reason: |
-    cmd_631 Scope E1 北極星 N1-N4 を全達成。Scope A 要件定義 →
-    Scope B 仕様書 → Scope C/D 4 並列実装 → Scope E1 QC が一貫整合し、
-    silent failure / partial PASS リスクなく Go 判定に到達。
-    殿令「殿確認 skip」が奏功し、家老の並列 dispatch 設計と
-    各 ash の実装精度が高水準で揃った優良事例。
+    cmd_633 Scope D 北極星 N1-N3 を全達成。Scope A (pub_us/kill_switch 撤去 +
+    git log 計測) + Scope B (detect_compact.sh + karo_self_compact) +
+    Scope C (gunshi_self_clear_check.sh + 3 新 field) の 3 Scope 整合確認。
+    shogun 多 agent 運用基盤の計測精度向上が構造的に達成。
   risks_to_north_star:
-    - "G1 (当日範囲外 cmd 混入) は実運用で情報重複として顕在化する可能性。
-      Scope F 後の運用観察で別 cmd 改修判断"
-    - "G2 仕様書 Anthropic 残存記述は新規開発者の混乱要因。
-      Scope F commit 前修正推奨"
-    - "Scope F commit + push 後、cmd_628 implementation-verifier L4 Pattern で
-      自動検証されるため、PUSH漏れ / DASHBOARD漏れの自己検出が可能"
+    - "AC6 (翌日 5/3 metrics 反映) が cron 動作に依存。cron 実行漏れがあれば
+      明日 dashboard.yaml に 5/2 entry が書込まれない → 殿/家老/軍師の
+      明日早朝確認で検知必要"
+    - "git log 当日 commit 計測ロジック (Scope A) の精度は本 QC で深く検証
+      できず。Scope E commit 後の 1 週間運用で誤計測 (chore success 膨張等)
+      を確認"
+    - "gunshi_self_clear_check.sh 実行権限統一 (G1) は Scope E commit に
+      含めることが望ましい (chmod +x で統一性確保)"
 
 skip_count: 0
 test_self_sufficient: true
