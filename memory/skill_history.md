@@ -83,3 +83,9 @@ dashboard.md 🛠️スキル欄から溢れた全エントリ。最新順（上
 ## 既存スキルファイル参照
 
 他17件 → `~/.claude/skills/` 参照（SKILL.md作成済みのもの）
+
+## 2026-05-02 cmd_631 で廃止: notion_session_log.sh
+
+二重記録問題解消のため廃止。新システム (session_to_obsidian.sh + generate_notion_summary.sh
++ daily-notion-sync.yml on saneaki/obsidian) に置換。詳細は output/cmd_631_requirements.md
++ output/cmd_631_specification.md 参照。アーカイブ: scripts/archived/notion_session_log.sh

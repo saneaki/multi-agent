@@ -108,7 +108,6 @@
 !scripts/ratelimit_check.sh
 !scripts/update_dashboard.sh
 !scripts/update_dashboard_timestamp.sh
-!scripts/notion_session_log.sh
 !scripts/shc.sh
 !scripts/switch_cli.sh
 !scripts/cmd_complete_notifier.sh
@@ -160,6 +159,9 @@
 !scripts/cmd_kpi_observer.sh
 !scripts/suggestions_digest.sh
 !scripts/generate_dashboard_md.py
+!scripts/session_to_obsidian.sh
+!scripts/generate_notion_summary.sh
+!scripts/archived/notion_session_log.sh
 !scripts/karo_dispatch.sh
 !scripts/karo_auto_clear.sh
 !scripts/validate_idle_members.sh
@@ -172,6 +174,9 @@
 !scripts/suggestion_db.py
 !output/cmd_618_phase1_vectors.json
 !output/cmd_618_phase0_mining_output.jsonl
+!output/cmd_631_requirements.md
+!output/cmd_631_specification.md
+!output/cmd_631_scope_e1_qc_report.md
 
 # cmd_544: 3 安全装置 state files (kill-switch/rate-limit/pending/daily-metric)
 !logs/cmd_squash_pub_hook.disabled

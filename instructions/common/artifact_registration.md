@@ -30,8 +30,7 @@ cmd で生成する成果物は以下の規則で Notion 成果物DB + Drive に
 
 ## Stop hook との関係
 
-既存 Stop hook (`notion_session_log.sh`) はセッション活動ログ目的で継続。
-成果物登録のバッチ fallback としても動作する (リアルタイム登録済のファイルは冪等にスキップ)。
+セッション活動ログは cmd_631 で実装した session_to_obsidian.sh + daily-notion-sync.yml (cron JST 23:00) に移行済み。旧直接書込みスクリプトは廃止し scripts/archived/ へ移管済み。
 
 ## Notion-Version 固定
 

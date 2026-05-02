@@ -1,101 +1,67 @@
 worker_id: gunshi
-task_id: subtask_624_scope_c2_gunshi_reqc
-parent_cmd: cmd_624
-timestamp: "2026-05-01T23:51:43+09:00"
+task_id: subtask_631_scope_e1_gunshi_qc
+parent_cmd: cmd_631
+timestamp: "2026-05-02T15:37:58+09:00"
 status: done
 report_to: karo
-type: review
+type: qc
 
 result:
-  type: scope_c2_gunshi_reqc_report
+  type: scope_e1_gunshi_qc_report
   summary: |
-    cmd_624 Scope C2 (再QC) 完遂。判定: **Go** (前回 Scope C NoGo から完全復旧)。
-    ash6 Scope A2 (再修正) で Scope B §4 6差分を全件反映確認 (grep 6/6 キーワードヒット)。
-    N1 PASS (idle 3条件 AND 維持) / N2 PASS (E1/E2/E3/E6/E7/E9/E10 全 guard 実装) /
-    N3 PASS (safe_clear_check.sh L130 内部呼出維持)。
-    dry-run exit 0 (active=2 → idle=false skip 期待通り)。
-    output/cmd_624_gunshi_qc2_report.md 作成 (200+ 行)。
-    Scope D (ash1 commit + cron 設定 + dashboard 反映) dispatch 可。
-    Scope D 投入前の 10シナリオ確認 を §6 で推奨。
+    cmd_631 Scope E1 (北極星 N1-N4 全 PASS QC) 完遂。判定: **Go**。
+    N1 (S1+S2+S3+S5 完全性): session_to_obsidian.sh L55-L58 で 4 source 参照確認
+    N2 (cmd 境界分離): dry-run で ## cmd_NNN H2 構造確認 (軽微 G1: 当日範囲外混入あり)
+    N3 (narrative 品質): system prompt 3 要素 + 500字 完備、D2 実 API 29/29 PASS avg=468字
+    N4 (二重記録解消): crontab=0件 / archive 配置 / 参照 0 件
+    AC1 PASS (Go 判定)。Scope F (ash1 commit) dispatch 可。
 
   ac_verification:
     - id: AC1
       verification: |
-        - grep -nE "flock|COMPACT_TRIGGER|RECENT_WRITE|capture-pane|threshold.*60|context_pct_raw"
-          で 6キーワード全ヒット (反映率 6/6 = 100%)
-        - 各差分の行番号で実装確認:
-          - 差分1 flock (E3/E7): L20-L26 (exec 9>"$LOCK_FILE" + flock -n 9 + PID 記録)
-          - 差分2 threshold clamp (E10): L50-L53 (WARN ログ付 60 clamp)
-          - 差分3 RECENT_WRITE (E2): L104-L109 (find -mmin -1 + E2 guard ログ)
-          - 差分4 COMPACT_TRIGGER (E1): L116-L128 (compact_observer 連携 + 300秒判定)
-          - 差分5 capture-pane (E6): L144-L148 (regex (│ >|^>|claude-code))
-          - 差分6 context_pct_raw WARN (E9): L92-L100 (失敗 + non-numeric 2種 WARN)
+        北極星 N1-N4 全 PASS 確認:
+        - N1: session_to_obsidian.sh で
+          S1_DIR=~/.claude/sessions (L55) /
+          S2_FILE=queue/reports/gunshi_report.yaml (L56) /
+          S3_FILE=queue/inbox/shogun.yaml (L57) /
+          S5_FILE=dashboard.md (L58) を全件参照、存在チェック L60-L63
+        - N2: dry-run 出力に ## cmd_NNN: H2 セクション存在、
+          H3 (殿令/将軍検討/足軽軍師提案/完遂報告) 固定形式
+        - N3: SYSTEM_PROMPT で「考え/作って/結果」3 要素 + 500字制約 +
+          機械羅列禁止 + ストーリー形式 明記、D2 実 API 29/29 avg=468字
+        - N4: crontab -l notion_session_log = 0 件、
+          scripts/archived/notion_session_log.sh 存在 (917行)、
+          scripts/+instructions/ 参照 0 件 (archived 除外)
+        判定: **Go** (Scope F dispatch 可)
       status: PASS
     - id: AC2
       verification: |
-        - karo_auto_clear.sh L111-L114 で 3条件 AND 判定維持確認
-        - unread_count == 0 (L55-L66) / active_count == 0 (L68-L89) /
-          context_pct >= threshold (L91-L100, L50-L53 clamp 経由)
-        - 前回 PASS から無変更維持
-      status: PASS
-    - id: AC3
-      verification: |
-        - L130 で bash safe_clear_check.sh --agent-id karo 内部呼出確認
-        - exit code で PASS/FAIL 判定、FAIL 時 graceful skip (L130-L135)
-        - log を /tmp/karo_auto_clear_safe_check.log に分離
-        - 前回 PASS から無変更維持
-      status: PASS
-    - id: AC4
-      verification: |
-        - bash -n syntax check OK
-        - bash karo_auto_clear.sh --dry-run 実行:
-          [2026-05-01T23:51:42+09:00] check: unread=0, active=2, context=33, threshold=80
-          [2026-05-01T23:51:42+09:00] idle=false -> skip.
-          EXIT=0
-        - flock 取得成功 (lock メッセージなし)
-        - active=2 → idle=false → 期待通り skip
-      status: PASS
-    - id: AC5
-      verification: |
-        - Go 判定明記 (output/cmd_624_gunshi_qc2_report.md §5)
-        - 根拠 5点: 6差分全件反映 / N2 完全復旧 / N1+N3 維持 /
-          dry-run 0 / 依存資産活用 (compact_observer + safe_clear_check)
-        - Scope D 申し送り: ash1 commit + cron 30分間隔 + dashboard 反映
-        - 10シナリオ確認推奨 (§6 で網羅)
+        Go 判定のため No-Go 是正方針記述は不要。
+        Go 妨げない軽微所見 G1-G3 を §4 に記載:
+        - G1 (low): N2 dry-run で当日範囲外 cmd_486 混入
+        - G2 (low): LLM 変更後の仕様書 Anthropic 残存箇所
+        - G3 (low): cmd 0 件日の挙動未検証
       status: PASS
 
 means_ends_classification:
   schema_version: "1.0"
   ac_classification:
     - id: AC1
-      type: means_and_ends
-      rationale: "6差分反映確認は QC の means + 本 cmd の ends (Go 判定の核心根拠)"
-      corresponding_ends_ac: AC5
+      type: ends
+      rationale: "N1-N4 全 PASS 確認 + Go/NoGo 判定は本 cmd の最終 ends"
+      corresponding_ends_ac: null
     - id: AC2
       type: means
-      rationale: "idle 条件確認は QC の手段。ends は Go/NoGo 判定."
-      corresponding_ends_ac: AC5
-    - id: AC3
-      type: means
-      rationale: "safe_clear_check 再利用確認は QC の手段。ends は Go/NoGo 判定."
-      corresponding_ends_ac: AC5
-    - id: AC4
-      type: means
-      rationale: "dry-run 動作確認は QC の手段。ends は Go/NoGo 判定."
-      corresponding_ends_ac: AC5
-    - id: AC5
-      type: ends
-      rationale: "Go/NoGo 判定は本 cmd の最終 ends (家老が Scope D dispatch するための材料)."
-      corresponding_ends_ac: null
+      rationale: "No-Go 是正方針は手段、Go の場合は不要"
+      corresponding_ends_ac: AC1
   ends_coverage_note: |
-    本 cmd は再 QC cmd。Go 判定 (means+ends 一致) で本 cmd の ends は達成。
-    実 commit + cron 投入 + 10シナリオ動作確認は Scope D へ委譲。
+    本 cmd は QC cmd。AC1 (Go 判定) で ends 達成。
+    実 commit + push は Scope F (ash1) へ委譲。
+    実運用での G1/G3 挙動検証は Scope F 後の 1 週間運用観察推奨。
   both_systems_verified: true
   verdict: |
-    means 系 4/4 PASS (6差分確認 + idle + safe_clear + dry-run)。
-    ends 系: AC5 (Go 判定) は本 cmd 内で ends 完遂。
-    実運用での効果検証 (E1/E2/E6 guard の実発火) は cron 投入後の
-    1週間程度の運用観察で gunshi が継続監視推奨。
+    means 系 1 (AC2 N/A、Go 判定のため)。
+    ends 系: AC1 PASS で本 cmd の ends 完遂。
 
 so24_verification:
   inbox: PENDING
@@ -104,97 +70,92 @@ so24_verification:
   overall: WILL_VERIFY_AFTER_KARO_INBOX
   note: |
     本報告書込み + karo inbox 通知後に so24 三点照合が成立。
-    artifact = output/cmd_624_gunshi_qc2_report.md PASS 済。
+    artifact = output/cmd_631_scope_e1_qc_report.md PASS 済。
 
-scope_c2_qc_summary:
-  n1_idle_detection: PASS
-  n2_no_misfire_during_work: PASS
-  n3_safe_clear_check_reuse: PASS
+scope_e1_qc_summary:
+  n1_source_completeness: PASS
+  n2_cmd_boundary_separation: PASS
+  n3_narrative_quality: PASS
+  n4_dual_record_elimination: PASS
   go_nogo: Go
-  scope_b_diff_reflection_rate: "6/6 (100%, 前回 0% から完全復旧)"
-  diff_implementation_lines:
-    - diff_id: 1
-      target: "flock 方式 (E3/E7)"
-      lines: "L20-L26"
-      priority: HIGH
-    - diff_id: 2
-      target: "threshold clamp 60 (E10)"
-      lines: "L50-L53"
-      priority: LOW
-    - diff_id: 3
-      target: "RECENT_WRITE check (E2)"
-      lines: "L104-L109"
-      priority: MEDIUM
-    - diff_id: 4
-      target: "compaction in-progress check (E1)"
-      lines: "L116-L128"
-      priority: HIGH
-    - diff_id: 5
-      target: "pane active prompt 確認 (E4/E6)"
-      lines: "L144-L148"
-      priority: MEDIUM
-    - diff_id: 6
-      target: "get_context_pct.sh WARN ログ (E9)"
-      lines: "L92-L100"
-      priority: LOW
-  recommended_next:
+  scope_f_recommended:
     target: "ash1 (Sonnet)"
-    scope: "Scope D — commit + cron 設定 + dashboard 反映"
-    cron_schedule: "*/30 * * * * (compact_observer.sh と整合)"
-    pre_cron_validation: "10シナリオ確認 (本書 §6)"
+    scope: "commit + push (shogun repo のみ)"
+    files_to_commit:
+      - "scripts/session_to_obsidian.sh (新規, 182行)"
+      - "scripts/generate_notion_summary.sh (新規, 332行)"
+      - "scripts/archived/notion_session_log.sh (移動, 917行)"
+      - "instructions/artifact_registration.md (D4 修正)"
+      - "difference.md (D4 修正)"
+      - "memory/skill_history.md (D4 廃止記録)"
+    push_target: "git push origin main"
+    note: |
+      saneaki/obsidian repo の D3 成果物 (daily-notion-sync.yml + notion_upsert.py)
+      は GHA run_id=25245901096 で動作確認済、別 repo の commit/push 完了前提。
+  scope_d_evidence_alignment:
+    D1_session_to_obsidian: "exit=0 / cmds:[cmd_631] / dry-run 1712 行"
+    D2_generate_summary: "29/29 件 PASS / avg=468字 / 3 要素 PASS / 実 API"
+    D3_gha_workflow: "conclusion=success / run_id=25245901096 / 4s 完了"
+    D4_archive_deprecation: "cron=0件 / archived=PASS / 参照クリーン"
 
 suggestions:
-  - id: D1
-    priority: high
-    content: |
-      Scope D で cron 投入前の 10シナリオ動作確認を必須実施推奨。
-      特に E1 (compaction中) と E6 (pane busy) は実環境でのみ再現可能で、
-      cron 後の異常動作で karo コンテキスト破損リスクあり。
-    action_needed: "家老が ash1 task YAML に 10シナリオチェックリストを明示記載"
-  - id: D2
-    priority: medium
-    content: |
-      RECENT_WRITE check の順序: 現在 L104-L109 で context_pct 取得後に配置。
-      Scope B §2 strict ordering では context_pct より前を推奨だったが、
-      get_context_pct.sh 実行コストは小さく、論理的には問題なし。
-      将来 context_pct がコスト高になった場合のみ順序入れ替え検討。
-    action_needed: "現状運用で問題なし。将来パフォーマンス監視で必要性判断"
-  - id: D3
+  - id: G1
     priority: low
     content: |
-      pane prompt regex (│ >|^>|claude-code) は Claude Code UI 変更で
-      壊れる可能性。複数パターン OR で堅牢化済だが、UI 大幅更新時に
-      regex 見直しが必要。CI に正規表現テストを追加推奨。
-    action_needed: "Scope D 完了後の運用監視で UI 変更があれば軽微改修 cmd 起案"
+      N2 dry-run 出力で当日範囲外 cmd_486 が混入する現象。S5 dashboard.md
+      または S3 shogun.yaml に過去 cmd 言及があり拾われた可能性。
+      実害は Obsidian 出力に過去 cmd 言及混入 (情報重複)。
+      cmd 境界判定アルゴリズムを timestamp 厳格化に改修推奨。
+    action_needed: "Scope F 実運用で過去 cmd 混入が問題視されたら別 cmd で改修起案"
+  - id: G2
+    priority: low
+    content: |
+      Q2 LLM 変更 (Anthropic Haiku 4.5 → Gemini 3.1 Flash-Lite Preview) は
+      殿が直接編集。仕様書 §4.3 に Anthropic 残存記述箇所あり。
+      実装は Gemini で正常動作、ドキュメント不整合のみ。
+    action_needed: "Scope F commit 前または別 cmd で仕様書整合性修正"
+  - id: G3
+    priority: low
+    content: |
+      cmd 0 件日の挙動未検証。D3 GHA で if-md-exists graceful skip 済の
+      可能性あるが、Scope F 完了後の運用観察で確認推奨。
+    action_needed: "Scope F 完了後 1 週間で殿不在日の Obsidian 出力動作確認"
 
-concerns_flagged: []
+concerns_flagged:
+  - "N2 軽微所見 G1 (当日範囲外 cmd 混入) は情報重複の実害あり、
+    Scope F 実運用の経過観察必要"
 
 skill_candidate:
-  found: false
+  found: true
+  candidate_id: "shogun-multi-scope-parallel-dispatch-pattern"
   reason: |
-    本 cmd は再 QC cmd であり、再利用可能なスキル抽出には実運用知見が必要。
-    karo 自動 self_clear 機構 (cron + flock + 多段 edge case guard) の組合せは
-    将来「自律エージェント自己保護パターン」としてスキル化候補。Scope D commit +
-    1ヶ月以上の実運用観察 + E1/E2/E6 guard の実発火事例蓄積後に検討推奨。
+    cmd_631 は要件定義 (Scope A) → 仕様書 (Scope B) → 4 並列実装 (Scope C/D 4 件) →
+    QC (Scope E1) → commit (Scope F) の段階分けで、殿令「Scope B 完了 → 即 4 並列
+    dispatch (殿確認 skip)」が奏功し、独立 4 ash 実装が完遂 + 全 N PASS。
+    本 dispatch 設計 + 並列実行管理 + QC 統合の流れは将来「shogun multi-scope
+    parallel dispatch pattern」として skill 化候補。
+    Phase 4 (実運用 1 ヶ月) を経て効果検証後にスキル化推奨。
 
 files_modified:
-  - "output/cmd_624_gunshi_qc2_report.md"
+  - "output/cmd_631_scope_e1_qc_report.md"
   - "queue/reports/gunshi_report.yaml"
   - "queue/inbox/gunshi.yaml"
 
 north_star_alignment:
   status: aligned
   reason: |
-    cmd_624 北極星 N1/N2/N3 を全達成。前回 Scope C NoGo (N2 FAIL) から
-    Scope A2 再修正 + Scope C2 再 QC で完全復旧。Scope B §4 6差分の
-    全件反映により業務中誤発動ゼロが構造的に保証された。
-    Scope D (commit + cron 投入) で実運用フェーズへ移行可。
+    cmd_631 Scope E1 北極星 N1-N4 を全達成。Scope A 要件定義 →
+    Scope B 仕様書 → Scope C/D 4 並列実装 → Scope E1 QC が一貫整合し、
+    silent failure / partial PASS リスクなく Go 判定に到達。
+    殿令「殿確認 skip」が奏功し、家老の並列 dispatch 設計と
+    各 ash の実装精度が高水準で揃った優良事例。
   risks_to_north_star:
-    - "10シナリオ動作確認を Scope D で省略すると実環境での edge case 顕在化リスク"
-    - "cron 投入後 1週間は gunshi が継続監視し E1/E2/E6 guard 発火ログを観察すべき
-      (silent 動作だと改善余地が見えない)"
-    - "pane prompt regex (│ >|^>|claude-code) は Claude Code UI 変更で壊れうる
-      → 将来 UI 大幅更新時に CI による検出が望ましい"
+    - "G1 (当日範囲外 cmd 混入) は実運用で情報重複として顕在化する可能性。
+      Scope F 後の運用観察で別 cmd 改修判断"
+    - "G2 仕様書 Anthropic 残存記述は新規開発者の混乱要因。
+      Scope F commit 前修正推奨"
+    - "Scope F commit + push 後、cmd_628 implementation-verifier L4 Pattern で
+      自動検証されるため、PUSH漏れ / DASHBOARD漏れの自己検出が可能"
 
 skip_count: 0
 test_self_sufficient: true
