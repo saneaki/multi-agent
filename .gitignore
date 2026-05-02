@@ -179,6 +179,9 @@
 !output/cmd_631_requirements.md
 !output/cmd_631_specification.md
 !output/cmd_631_scope_e1_qc_report.md
+!output/cmd_634_scope_b_cmd_type_design.md
+!output/cmd_634_scope_c_regression_report.md
+!output/cmd_634_scope_f_qc_report.md
 
 # cmd_544: 3 安全装置 state files (kill-switch/rate-limit/pending/daily-metric)
 !logs/cmd_squash_pub_hook.disabled

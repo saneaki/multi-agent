@@ -1059,6 +1059,89 @@ send_wakeup_with_escape() {
     return 0  # Never return 1 — set -euo pipefail would kill the watcher daemon
 }
 
+# ─── Auto-done: task_completed → task YAML status=done (karo only) ───
+# AC11: REGISTRY_UPDATE_LAG 防止。karo inbox の task_completed を検出して
+# 送信元の task YAML を自動的に done に更新する。エラー時はログして継続。
+auto_done_on_task_completed() {
+    [ "${AGENT_ID:-}" = "karo" ] || return 0
+    ROOT="$SCRIPT_DIR" INBOX_PATH="$INBOX" "$SCRIPT_DIR/.venv/bin/python3" - << 'PYEOF' 2>&1 || true
+import os, sys, yaml, tempfile, subprocess, re
+
+root = os.environ.get("ROOT", "")
+inbox_path = os.environ.get("INBOX_PATH", "")
+if not os.path.exists(inbox_path):
+    sys.exit(0)
+
+try:
+    with open(inbox_path, encoding="utf-8", errors="replace") as f:
+        data = yaml.safe_load(f) or {}
+except Exception as e:
+    print(f"[auto-done] ERROR reading inbox: {e}")
+    sys.exit(0)
+
+messages = data.get("messages", []) or []
+for msg in messages:
+    if msg.get("read", False):
+        continue
+    if msg.get("type") != "task_completed":
+        continue
+    from_agent = msg.get("from", "").strip()
+    if not re.fullmatch(r'[a-z0-9_-]+', from_agent):
+        print(f"[auto-done] skip: invalid from_agent '{from_agent}'")
+        continue
+    task_path = os.path.join(root, "queue", "tasks", f"{from_agent}.yaml")
+    if not os.path.exists(task_path):
+        print(f"[auto-done] skip: {task_path} not found")
+        continue
+    try:
+        with open(task_path, encoding="utf-8") as f:
+            task_data = yaml.safe_load(f) or {}
+    except Exception as e:
+        print(f"[auto-done] ERROR reading {task_path}: {e}")
+        continue
+    # Determine status location
+    status = None
+    if isinstance(task_data.get("task"), dict):
+        status = task_data["task"].get("status")
+    elif "status" in task_data:
+        status = task_data["status"]
+    if status in ("done", "completed", "failed"):
+        print(f"[auto-done] skip {from_agent}: already {status}")
+        continue
+    # Get JST timestamp
+    try:
+        now_jst = subprocess.check_output(
+            ["bash", os.path.join(root, "scripts", "jst_now.sh"), "--yaml"],
+            stderr=subprocess.DEVNULL
+        ).decode().strip()
+    except Exception:
+        from datetime import datetime, timezone, timedelta
+        now_jst = datetime.now(timezone(timedelta(hours=9))).strftime("%Y-%m-%dT%H:%M:%S+09:00")
+    # Update status atomically
+    if isinstance(task_data.get("task"), dict):
+        task_data["task"]["status"] = "done"
+        task_data["task"]["completed_at"] = now_jst
+    elif "status" in task_data:
+        task_data["status"] = "done"
+        task_data["completed_at"] = now_jst
+    dir_name = os.path.dirname(task_path)
+    tmp_path = None
+    try:
+        with tempfile.NamedTemporaryFile("w", dir=dir_name, delete=False, suffix=".tmp", encoding="utf-8") as tmp:
+            yaml.dump(task_data, tmp, allow_unicode=True, default_flow_style=False)
+            tmp_path = tmp.name
+        os.replace(tmp_path, task_path)
+        print(f"[auto-done] {from_agent}: status=done completed_at={now_jst}")
+    except Exception as e:
+        print(f"[auto-done] ERROR writing {task_path}: {e}")
+        if tmp_path:
+            try:
+                os.unlink(tmp_path)
+            except Exception:
+                pass
+PYEOF
+}
+
 # ─── Process cycle ───
 process_unread() {
     local trigger="${1:-event}"
@@ -1097,6 +1180,9 @@ process_unread() {
 
     local info
     info=$(get_unread_info)
+
+    # AC11: task_completed auto-done (karo only, non-blocking)
+    auto_done_on_task_completed 2>&1 | while IFS= read -r _line; do echo "[$(date)] $_line" >&2; done || true
 
     local read_bytes=0
     if [ -f "$INBOX" ]; then

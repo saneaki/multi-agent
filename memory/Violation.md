@@ -396,3 +396,22 @@ L014 (家老申告を鵜呑み禁止) は 2026-04-17 に明文化されたが、
 | Violated | SO-17 North Star alignment (列追加で運用指標を充実させる ends と、実値が流れない means の semantic gap) |
 | Cleanup 提案 | cmd_637 Scope C (ash6) で data 供給 logic 実装。「失敗」列の方針: cmd_637 Scope B (本書 No.23 起案者 gunshi) で **案 X2 redefine = `cron 実行失敗件数`** を推奨。詳細: `output/cmd_637_scope_b_failure_col_proposal.md` |
 | Positive Feedback | 同型再発 (台帳更新漏れ) を cmd_638 (`shogun_in_progress_monitor.sh`) が **2026-05-02 22:00 JST 初回 cron 実行で 1h 以内に自動検出 (P2 真陽性 first hit)**。詳細: `memory/MechanismSuccessLog.md` No.1 — 失敗→機構実装→自動検出の三段サイクル成立 |
+
+---
+
+### No.25 | cmd_634 真未発令 (Reporting Quality Gap)
+
+> Note: No.24 は cmd_639 (self-clear 自律化) で先行記録予定。本項は task 指示通り No.25 として記載 (連番空欠は cmd_639 完了で解消)。
+
+| 項目 | 内容 |
+|---|---|
+| 発生 | 2026-05-02 |
+| 発見 | 将軍 reality check (cmd_634 着手宣言後 / Scope 進行中) |
+| 影響 | 将軍が「cmd_634 発令済み」と発言したが、実態は `queue/shogun_to_karo.yaml` への書込と formal `inbox_write.sh` の実行を行っておらず、口頭予告止まりだった。家老側で task entry が未生成のまま Scope A-E 各 ashigaru へ task 落とし込みが進行 — 公式系統の発令記録なし、報告連鎖が脆い状態が継続。 |
+| 根因 | **Reporting Quality Gap (発言と実態の乖離)** — 「発令済み」という言葉と、実装系統 (shogun_to_karo.yaml + inbox_write) の間に check 機構が無く、口頭で済ませると agent 側ですら実体検証されず通過する。L014 (家老申告を鵜呑み禁止) の鏡像問題: 将軍申告も鵜呑み禁止が必要。 |
+| 連鎖 | 口頭発令 → shogun_to_karo.yaml 未記入 → 公式 inbox 未投函 → ただし karo は別経路 (将軍直接発言) を信用して着手 → 後続 QC で audit trail 不足が発覚 → 本 violation 記録 |
+| 発覚 | cmd_634 Scope 進行中の状況確認時、shogun_to_karo.yaml に entry が無く、karo inbox にも cmd_634 task_assigned が無いことを発見 |
+| 対策 | cmd_634 AC9 / Layer 5 Reporting Quality Check で「報告の真偽確認」を機械化。具体: 将軍が「発令済み」と発言した cmd について、(a) `queue/shogun_to_karo.yaml` 該当 entry 存在、(b) karo inbox に formal task_assigned 着信、(c) timestamp 整合 — の 3 点を verifier が grep して PASS/FAIL する。さらに L020 将軍規律 / SO-24 (報告前検証義務) を強化。 |
+| Violated | SO-17 North Star alignment (発令という ends と、formal 系統経由という means の semantic gap) / SO-24 (Verification Before Report) |
+| Cleanup 提案 | cmd_634 完遂報告時に `queue/shogun_to_karo.yaml` へ retroactive entry を追記し audit trail を補完する。今後の予防は本 cmd_634 で実装した 5-Layer verifier (Layer 5 Reporting Quality Check) と P6 dashboard stale alert に集約。 |
+| 参照 | `queue/shogun_to_karo.yaml` (cmd_634 entry 該当箇所) / `memory/Violation.md` No.17-21 (cmd_631/632 incident cluster 内の reporting quality 系) / `output/cmd_634_scope_f_qc_report.md` |

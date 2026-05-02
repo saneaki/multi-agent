@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# shogun_in_progress_monitor.sh — 進行中乖離 1h 監視 (5パターン検出)
+# shogun_in_progress_monitor.sh — 進行中乖離 1h 監視 (6パターン検出)
 # cmd_638 Scope A
 #
 # 検出対象:
@@ -11,6 +11,7 @@
 #       → ash 滞留 (tmux pane idle 相当)
 #   P4: dashboard last_updated > 90分前 → 進行中 stale
 #   P5: shogun inbox に未処理 action_required > 30分 → 殿手作業滞留
+#   P6: dashboard.md の「最終更新:」が 2h 以上前 → dashboard stale alert
 #
 # 重複 alert 抑制: 1h 内同種は再送付しない (alert_key で識別)
 #
@@ -105,7 +106,7 @@ handle_alert() {
     fi
 }
 
-# ===== 5パターン検出ロジック (Python 一括実行) =====
+# ===== 6パターン検出ロジック (Python 一括実行) =====
 RESULTS=$("${PYTHON}" - <<'PYEOF'
 import os, re, glob, yaml
 from datetime import datetime, timedelta, timezone
@@ -342,11 +343,42 @@ def check_pattern_5():
         out('P5-殿手作業滞留',
             f"shogun inbox 未処理 {len(unread_action)}件: {sample}{more}")
 
+# ---------- Pattern 6: dashboard.md last_updated 鮮度 ----------
+def check_pattern_6():
+    dashboard_path = os.path.join(ROOT, 'dashboard.md')
+    if not os.path.exists(dashboard_path):
+        return
+
+    last_updated_str = None
+    with open(dashboard_path, encoding='utf-8') as f:
+        for line in f:
+            m = re.search(r'最終更新:\s*(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2})\s+JST', line)
+            if m:
+                last_updated_str = m.group(1)
+                break
+
+    if not last_updated_str:
+        return
+
+    try:
+        last_updated = datetime.strptime(last_updated_str, '%Y-%m-%d %H:%M').replace(tzinfo=JST)
+    except ValueError:
+        return
+
+    elapsed_minutes = (now_jst() - last_updated).total_seconds() / 60
+
+    if elapsed_minutes > 120:
+        out('P6-dashboard鮮度stale',
+            f"dashboard.md 最終更新から {int(elapsed_minutes)}分経過 "
+            f"(last_updated={last_updated_str} JST). "
+            f"rotate 失敗 / karo 更新漏れを確認せよ。")
+
 check_pattern_1()
 check_pattern_2()
 check_pattern_3()
 check_pattern_4()
 check_pattern_5()
+check_pattern_6()
 
 for r in RESULTS:
     print(r)
@@ -364,7 +396,7 @@ fi
 if [ "${DRY_RUN}" = "yes" ]; then
     echo "${JST_NOW} [in_progress_monitor] DRY-RUN: ${ALERTS_FOUND}件検出"
 elif [ "${ALERTS_FOUND}" -eq 0 ]; then
-    echo "${JST_NOW} [in_progress_monitor] 全5パターン異常なし"
+    echo "${JST_NOW} [in_progress_monitor] 全6パターン異常なし"
 else
     echo "${JST_NOW} [in_progress_monitor] ${ALERTS_FOUND}件のアラートを将軍 inbox に送信"
 fi
