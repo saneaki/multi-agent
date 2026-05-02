@@ -1,34 +1,38 @@
 worker_id: gunshi
-task_id: subtask_638_scope_c_gunshi_qc
+task_id: subtask_638_followup_violation_success_log
 parent_cmd: cmd_638
-timestamp: "2026-05-02T21:13:17+09:00"
+timestamp: "2026-05-02T22:02:58+09:00"
 status: done
 report_to: karo
 type: analysis
 
 result:
-  type: scope_c_qc_report_go
+  type: mechanism_success_log_decision_and_implementation
   summary: |
-    cmd_638 Scope C (5 パターン + cron + ntfy 全検証) 完遂。判定: **Go**。
-    N1 (5 パターン実装) PASS: P1-P5 全 check_pattern_N 関数実装確認
-    N2 (dry-run false positive) PASS: 0 件検出, exit 0
-    N3 (cron 登録) PASS: 毎時 0 分 cron 登録 + log redirect
-    N4 (ntfy + 重複抑制) PASS: alert_key + 1h 内重複抑制 + 二重通知 (ntfy+inbox)
-    **cmd_638 完遂**, ash1 Scope D (cmd_637+cmd_638 両変更 commit+push) dispatch 可。
+    cmd_638 followup (Violation.md success log 追記判断) 完遂。判断: **追記 (案B 採択)**。
+    Violation.md タイトル「.md ルール遵守違反の体系調査」が失敗事例専用のため、
+    成功事例を別ファイル `memory/MechanismSuccessLog.md` 新設で記録。
+    No.1: cmd_638 進行中乖離自動検出 初回成功 (P2 真陽性 first hit, 2026-05-02 22:00 JST)。
+    Violation.md No.23 末尾に Positive Feedback 行を追記し相互参照確立。
+    失敗 (cmd_633 shelf-ware) → 機構実装 (cmd_637+cmd_638) → 自動検出 (cmd_638 P2)
+    の三段サイクル成立を組織知化。
 
   ac_verification:
     - id: AC1
       verification: |
-        N1-N4 全 PASS:
-        - N1: 5 パターン全実装 (P1=L137 / P2=L197 / P3=L239 / P4=L274 / P5=L308)
-              全 check_pattern_N 呼出 (L345-L349)
-        - N2: bash scripts/shogun_in_progress_monitor.sh --dry-run
-              → "DRY-RUN: 0件検出" + EXIT=0, false positive なし
-        - N3: crontab "0 * * * * cd /home/ubuntu/shogun && bash scripts/shogun_in_progress_monitor.sh
-              >> logs/in_progress_monitor.log 2>&1" 登録確認
-        - N4: 重複抑制 (L15 コメント + L44-L65 alert_key 識別 + 1h 内 inbox content 確認)
-              + ntfy 通知 (L86) + inbox 投函 (L368-L369) 二重通知
-        判定: **Go (cmd_638 完遂)**
+        追記可否の判断 + 根拠:
+        - Violation.md タイトル「.md ルール遵守違反の体系調査」確認 → 失敗事例専用
+        - 案A (Violation.md 内別セクション): ファイル名と内容の乖離リスク
+        - 案B (別ファイル新設): ファイル目的明確、将来拡張性、対比価値維持
+        - 案C (省略): 機構成功の組織知化が薄れる、positive feedback 価値喪失
+        判断: **案B 採択**
+        実装:
+        1. memory/MechanismSuccessLog.md 新設 (46 行)
+           - 索引 + No.1 (cmd_638 進行中乖離自動検出 初回成功) 詳細記録
+           - 失敗→機構実装→自動検出の三段サイクル明示
+        2. Violation.md No.23 末尾に Positive Feedback 行追記
+           - 「同型再発を cmd_638 が 1h 以内に自動検出」相互参照
+        3. 両 file の相互参照リンク (Violation.md ↔ MechanismSuccessLog.md)
       status: PASS
 
 means_ends_classification:
@@ -36,15 +40,15 @@ means_ends_classification:
   ac_classification:
     - id: AC1
       type: ends
-      rationale: "N1-N4 全 PASS 確認 + cmd_638 完遂判定が本 cmd の最終 ends"
+      rationale: "判断 + 実装が本 cmd の最終 ends (gunshi 判断 + Lord 直命に応える)"
       corresponding_ends_ac: null
   ends_coverage_note: |
-    本 cmd は QC cmd。AC1 PASS で cmd_638 全工程完遂。
-    実 commit + push は Scope D (ash1, cmd_637+cmd_638 両変更含む) で実施。
+    本 cmd は analysis cmd (将軍直命の judgment task)。AC1 PASS で ends 達成。
+    実装 (新ファイル + 相互参照) も同時実施し、家老の追加作業ゼロで完了。
   both_systems_verified: true
   verdict: |
-    ends 系 1/1 PASS。cmd_638 Scope A (ash5) + Scope B (ash7) + Scope C (gunshi) 完遂。
-    家老が ash1 Scope D へ commit+push dispatch 可。
+    ends 系 1/1 PASS。判断 (案B 採択) + 実装 (MechanismSuccessLog.md 新設 + Violation.md
+    相互参照) が同セッションで完遂。
 
 so24_verification:
   inbox: PENDING
@@ -53,88 +57,93 @@ so24_verification:
   overall: WILL_VERIFY_AFTER_KARO_INBOX
   note: |
     本報告書込み + karo inbox 通知後に so24 三点照合が成立。
-    artifact = output/cmd_638_scope_c_qc_report.md PASS 済。
+    artifact: memory/MechanismSuccessLog.md (46 行) + memory/Violation.md No.23 拡張
+    の 2 ファイル。
 
-scope_c_qc_summary:
-  n1_5_patterns_implemented: PASS
-  n2_dry_run_false_positive: PASS  # 0 件検出
-  n3_cron_registered: PASS  # 毎時 0 分
-  n4_ntfy_and_dedup: PASS  # alert_key + 1h 抑制 + 二重通知
-  go_nogo: Go
-  cmd_638_overall_status: completed
-  pattern_summary:
-    P1: "家老 dispatch 漏れ (shogun_to_karo.yaml + inbox/karo.yaml 参照)"
-    P2: "dashboard 鮮度乖離 (in_progress 空 + task assigned 不整合)"
-    P3: "ash 滞留 (promoted_at > 60 分超過)"
-    P4: "進行中 stale (dashboard last_updated > 90 分前)"
-    P5: "殿手作業滞留 (action_required 30 分超)"
-  scope_d_recommended:
-    target: "ash1 (Sonnet)"
-    scope: "commit + push (cmd_637 + cmd_638 両変更)"
-    cmd_637_files:
-      - "scripts/cmd_kpi_observer.sh"
-      - "dashboard.yaml / dashboard.md"
-      - "memory/Violation.md (No.23 追記)"
-      - "output/cmd_637_scope_b_failure_col_proposal.md"
-      - "output/cmd_637_scope_d_qc_report.md"
-    cmd_638_files:
-      - "scripts/shogun_in_progress_monitor.sh (新規, 370 行)"
-      - "output/cmd_638_scope_c_qc_report.md (本書, 新規)"
-    push_target: "git push origin main"
-    note: "crontab は git 対象外、殿/家老が手動管理"
+scope_followup_summary:
+  decision: "案B 採択 (別ファイル新設)"
+  rationale_count: 4
+  options_evaluated:
+    case_a:
+      name: "Violation.md 内別セクション追加"
+      pros: "失敗・成功が同 file で参照可能、対比的価値"
+      cons: "ファイル名と内容の乖離 (`.md ルール遵守違反`)"
+      status: rejected
+    case_b:
+      name: "別ファイル新設 (memory/MechanismSuccessLog.md)"
+      pros: "ファイル目的明確 + 将来拡張性 + 管理コスト軽微 + 対比価値維持"
+      cons: "ファイル数 +1"
+      status: ADOPTED
+    case_c:
+      name: "省略 (cmd 完遂報告で対応済とする)"
+      pros: "作業ゼロ"
+      cons: "機構成功の組織知化が薄れる、positive feedback 価値喪失"
+      status: rejected
+  files_created:
+    - "memory/MechanismSuccessLog.md (46 行, 新規)"
+  files_updated:
+    - "memory/Violation.md (No.23 末尾に Positive Feedback 行追記, 397→398 行)"
+  three_step_cycle_established: |
+    失敗 (Violation No.23: cmd_633 shelf-ware) →
+    機構実装 (cmd_637 hotfix + cmd_638 monitor) →
+    自動検出 (cmd_638 P2 初回成功 2026-05-02 22:00 JST)
+  ash1_dispatch_pre_recovered: |
+    karo が ash1 task YAML を status=done + completed_at に修正済 (機構が検出 → 人間判断介在 → 復旧)
 
 suggestions:
-  - id: G1
+  - id: S1
     priority: low
     content: |
-      5/3 以降の cron 動作で誤検知 0 件継続を 5-10 回観察推奨。
-      false positive 発生時は alert_key + 過去 inbox 内容で原因特定可。
-    action_needed: "5/3 以降の logs/in_progress_monitor.log 観察"
-  - id: G2
+      MechanismSuccessLog.md の今後の拡張: cmd_628 implementation-verifier の L4
+      Pattern が初検出した事例 (例: 将来 PUSH 漏れ自動検出 first hit) を No.2 以降に
+      追記推奨。記録対象を「真陽性 first hit」または「構造的成功事例」に限定する
+      方針を本ファイル「記録方針」セクションで明文化済。
+    action_needed: "今後の機構初検出時に gunshi が随時追記"
+  - id: S2
     priority: low
     content: |
-      shogun_in_progress_monitor (能動監視) と implementation-verifier (受動検証) の
-      棲み分けは明確 (進行中 cmd の停滞 vs 完遂報告の真偽)。両者の連携 (例:
-      verifier が L4 で「DASHBOARD漏れ」検出 → monitor が同 incident で P2 を引く)
-      の整合性を将来 cmd で確認推奨。
-    action_needed: "1 ヶ月運用観察後に整合性検証 cmd 起案"
-  - id: G3
+      Violation.md と MechanismSuccessLog.md の相互参照は本回 No.23 ↔ No.1 で
+      初確立。今後の追記時にも相互参照を維持することで、失敗→成功の対比価値を
+      組織知として強化可能。
+    action_needed: "両 file 編集時の相互参照記載を運用ルール化検討 (instructions/shogun.md 候補)"
+  - id: S3
     priority: low
     content: |
-      cmd_628 implementation-verifier の L4 第 10 Pattern「STATE_VISIBILITY_GAP」
-      (cmd_637 で提案) と本 monitor の P1-P5 は将来統合 / 整理する余地あり。
-      現状は別機構 (verifier=報告検証 / monitor=進行監視) で独立運用が適切。
-    action_needed: "1 ヶ月運用観察後に統合可能性評価"
+      cmd_638 P2 の真陽性検出は cron 初回実行 (5/2 22:00 JST) で発生。今後 1 週間で
+      P1/P3/P4/P5 の真陽性も観察できれば、5 パターン全件の実機能を実証可能。
+    action_needed: "1 週間運用観察で各 P の検出事例を継続記録"
 
 concerns_flagged: []
 
 skill_candidate:
   found: true
-  candidate_id: "shogun-in-progress-monitor-pattern"
+  candidate_id: "shogun-mechanism-success-log-pattern"
   reason: |
-    cmd_638 で確立した「5 パターン分離 + 重複抑制 alert_key + 二重通知 (ntfy+inbox)
-    + dry-run/本番フラグ」の構造は、自律エージェント運用基盤の能動監視メタパターン
-    として再利用可能性高。cmd_628 implementation-verifier (受動検証) と並ぶ
-    監視機構の双璧。1 ヶ月運用観察 + 誤検知 0 件継続後に skill 化推奨。
+    Violation.md (失敗集約) + MechanismSuccessLog.md (成功集約) の対比構造は、
+    自律エージェント運用基盤における「失敗→機構実装→成功検出」の三段サイクル
+    組織知化のメタパターン。1 ヶ月運用観察で No.2 以降の追記事例蓄積後に
+    skill 化推奨。
 
 files_modified:
-  - "output/cmd_638_scope_c_qc_report.md"
+  - "memory/MechanismSuccessLog.md (新規, 46 行)"
+  - "memory/Violation.md (No.23 末尾に Positive Feedback 行追記)"
   - "queue/reports/gunshi_report.yaml"
   - "queue/inbox/gunshi.yaml"
 
 north_star_alignment:
   status: aligned
   reason: |
-    cmd_638 Scope C 北極星 N1-N4 全達成。Scope A (ash5 monitor.sh 370 行) +
-    Scope B (ash7 cron + ntfy) + Scope C (本 QC) で cmd_638 完遂。
-    shogun 多 agent 運用基盤の能動監視機構が確立、cmd_628 implementation-verifier
-    (受動検証) と相補的に運用品質を確保。
+    cmd_638 followup 北極星 (positive feedback の追記判断 + 実装) を達成。
+    案B (別ファイル新設) 採択で Violation.md の趣旨を尊重しつつ、機構成功の
+    組織知化を確立。No.23 ↔ MechanismSuccessLog No.1 の相互参照で、
+    失敗→機構実装→自動検出の三段サイクルを明示的に記録。
   risks_to_north_star:
-    - "5/3 以降の cron 実機運用で false positive 発生時に alert_key 別の修正が必要"
-    - "shogun_in_progress_monitor と implementation-verifier の棲み分けは現状明確だが、
-      将来 alert 重複が顕在化したら統合可能性を検討"
-    - "cmd_637 + cmd_638 両変更の commit (Scope D) 後、cmd_628 L4 PUSH漏れ /
-      DASHBOARD漏れ / DIFF反映漏れ の遵守を ash1 が確実に実施することが最終要件"
+    - "MechanismSuccessLog.md が将来「過剰記録」されると価値希薄化。本ファイルの
+      「記録方針」(真陽性 first hit / 構造的成功事例のみ) を維持必要"
+    - "Violation.md と MechanismSuccessLog.md の相互参照ルールが運用で守られないと
+      対比価値が薄れる。instructions/shogun.md への記載候補 (S2)"
+    - "cmd_638 P2 以外の P1/P3/P4/P5 の真陽性検出が将来発生したら同 file へ追記、
+      組織知の継続蓄積が必要"
 
 skip_count: 0
 test_self_sufficient: true

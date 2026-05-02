@@ -395,3 +395,4 @@ L014 (家老申告を鵜呑み禁止) は 2026-04-17 に明文化されたが、
 | 対策 | cmd_637 hotfix (data 供給 logic 追加: ash6 担当) + cmd_634 AC10 (列添加系 cmd の Layer 4 必須化) で再発防止。さらに cmd_628 implementation-verifier L4 Pattern 「DIFF反映漏れ」「SILENT_FAILURE_PARSE」と並ぶ新規 Pattern として **「STATE_VISIBILITY_GAP」を Layer 4 拡充候補** とする (列・field・property 添加時の整合性検証) |
 | Violated | SO-17 North Star alignment (列追加で運用指標を充実させる ends と、実値が流れない means の semantic gap) |
 | Cleanup 提案 | cmd_637 Scope C (ash6) で data 供給 logic 実装。「失敗」列の方針: cmd_637 Scope B (本書 No.23 起案者 gunshi) で **案 X2 redefine = `cron 実行失敗件数`** を推奨。詳細: `output/cmd_637_scope_b_failure_col_proposal.md` |
+| Positive Feedback | 同型再発 (台帳更新漏れ) を cmd_638 (`shogun_in_progress_monitor.sh`) が **2026-05-02 22:00 JST 初回 cron 実行で 1h 以内に自動検出 (P2 真陽性 first hit)**。詳細: `memory/MechanismSuccessLog.md` No.1 — 失敗→機構実装→自動検出の三段サイクル成立 |
