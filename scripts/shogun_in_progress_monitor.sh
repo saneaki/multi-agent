@@ -15,7 +15,7 @@
 # 重複 alert 抑制: 1h 内同種は再送付しない (alert_key で識別)
 #
 # Usage:
-#   bash scripts/shogun_in_progress_monitor.sh           # 本番モード (inbox 投函)
+#   bash scripts/shogun_in_progress_monitor.sh           # 本番モード (inbox + ntfy 投函)
 #   bash scripts/shogun_in_progress_monitor.sh --dry-run # 検出結果のみ stdout 表示
 
 set -euo pipefail
@@ -83,6 +83,8 @@ send_alert() {
     local content="$1"
     bash "${SCRIPT_DIR}/scripts/inbox_write.sh" \
         shogun "${content}" in_progress_monitor_alert shogun_in_progress_monitor
+    bash "${SCRIPT_DIR}/scripts/ntfy.sh" \
+        "${content}" "⚠️ 進行中見回り検知" "見回り-IP" 2>/dev/null || true
 }
 
 handle_alert() {

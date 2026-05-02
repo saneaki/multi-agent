@@ -379,3 +379,19 @@ L014 (家老申告を鵜呑み禁止) は 2026-04-17 に明文化されたが、
 - `memory/global_context.md`
 - `dashboard.md`
 - `instructions/**/*.md`, `AGENTS.md`, `/home/ubuntu/.claude/rules/common/*.md`
+
+---
+
+### No.23 | cmd_633 4新列 shelf-ware (cmd_637 hotfix)
+
+| 項目 | 内容 |
+|---|---|
+| 発生 | 2026-05-02 |
+| 発見 | 将軍 reality check (cmd_633 完遂後 約3時間) |
+| 影響 | dashboard 運用指標に「karo_self_clear / gunshi_self_clear / karo_self_compact / gunshi_self_compact」「failure (失敗)」を含む新列が cmd_633 で追加されたが、cmd_kpi_observer.sh への data 供給 logic を追加せずに列だけ追加 → 常時 None (実質 0) で表示され、KPI として意味をなさず (= shelf-ware 状態) |
+| 根因 | **State Visibility Gap (列添加系の Layer 4 検証ギャップ)** — cmd_633 Scope A-C の実装で「列定義 (schema)」と「data 供給 logic」が論理的に独立しており、列を追加した実装者と data 供給 logic を実装する者が暗黙のうちに別工程とされ、結果として schema 整合のみで QC PASS、実運用で常時 0 が顕在化 |
+| 連鎖 | dashboard 列追加 → schema 整合 → 実値供給は別工程 → 整合性検証 (列に値が流れ込むか) 抜け → 運用で常時 0 顕在化 |
+| 発覚 | 将軍 reality check (cmd_633 完遂約 3 時間後の dashboard 観察) |
+| 対策 | cmd_637 hotfix (data 供給 logic 追加: ash6 担当) + cmd_634 AC10 (列添加系 cmd の Layer 4 必須化) で再発防止。さらに cmd_628 implementation-verifier L4 Pattern 「DIFF反映漏れ」「SILENT_FAILURE_PARSE」と並ぶ新規 Pattern として **「STATE_VISIBILITY_GAP」を Layer 4 拡充候補** とする (列・field・property 添加時の整合性検証) |
+| Violated | SO-17 North Star alignment (列追加で運用指標を充実させる ends と、実値が流れない means の semantic gap) |
+| Cleanup 提案 | cmd_637 Scope C (ash6) で data 供給 logic 実装。「失敗」列の方針: cmd_637 Scope B (本書 No.23 起案者 gunshi) で **案 X2 redefine = `cron 実行失敗件数`** を推奨。詳細: `output/cmd_637_scope_b_failure_col_proposal.md` |

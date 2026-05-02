@@ -2,15 +2,18 @@
 # cmd_kpi_observer.sh — 完遂 cmd の KPI を観測し dashboard 運用指標に書込む (cmd_593 Scope C / AC5)
 #
 # Usage: bash scripts/cmd_kpi_observer.sh [--dry-run] [--date YYYY-MM-DD]
-# cron:  0 9 * * * bash /home/ubuntu/shogun/scripts/cmd_kpi_observer.sh >> /home/ubuntu/shogun/logs/kpi_observer.log 2>&1
+# cron:  0 9 * * * SHOGUN_KPI_CRON_RUN=1 bash /home/ubuntu/shogun/scripts/cmd_kpi_observer.sh >> /home/ubuntu/shogun/logs/kpi_observer.log 2>&1
 #
 # 収集 KPI (今日, JST):
 #   1. publish 成功相当       (当日 JST の git commit 数)
-#   2. publish 失敗           (現状は実 push 失敗を永続化する信頼できる経路なし → 0 default)
+#   2. cron 実行失敗          (logs/cron-status.log の当日 exit != 0 / FAILED 件数)
 #   3. karo auto-compact     (compact_observer.sh karo: AGENT_TODAY)
 #   4. gunshi auto-compact   (compact_observer.sh gunshi: AGENT_TODAY)
 #   5. safe_window_judge 発動 (logs/safe_window/{karo,gunshi}.log の START 件数合計)
-#   6. karo_self_clear_check 発動 (logs/safe_clear/karo.log の START 件数, 報告用; dashboard 列なし)
+#   6. karo_self_clear_check 発動 (logs/safe_clear/karo.log の START 件数)
+#   7. gunshi_self_clear_check 発動 (logs/safe_clear/gunshi.log の START 件数)
+#   8. karo self_compact 発動 (detect_compact.sh karo + logs/compact_log/karo.log の当日件数)
+#   9. gunshi self_compact 発動 (detect_compact.sh gunshi + logs/compact_log/gunshi.log の当日件数)
 #
 # 出力先:
 #   dashboard.md ## 📊 運用指標 セクションに今日の日付行を追記または更新
@@ -23,7 +26,23 @@ DASHBOARD_YAML="${SCRIPT_DIR}/dashboard.yaml"
 SAFE_WINDOW_DIR="${SCRIPT_DIR}/logs/safe_window"
 SAFE_CLEAR_DIR="${SCRIPT_DIR}/logs/safe_clear"
 COMPACT_OBSERVER="${SCRIPT_DIR}/scripts/compact_observer.sh"
+DETECT_COMPACT="${SCRIPT_DIR}/scripts/detect_compact.sh"
 COMPACT_HISTORY_LOG="${SCRIPT_DIR}/logs/compact_history.log"
+SELF_COMPACT_DIR="${SCRIPT_DIR}/logs/compact_log"
+CRON_STATUS_LOG="${SCRIPT_DIR}/logs/cron-status.log"
+
+record_cron_status() {
+    local exit_code="$1"
+    local status="OK"
+    local ts
+    [ "${SHOGUN_KPI_CRON_RUN:-0}" = "1" ] || return 0
+    [ "$exit_code" -eq 0 ] || status="FAILED"
+    mkdir -p "$(dirname "$CRON_STATUS_LOG")"
+    ts="$(bash "${SCRIPT_DIR}/scripts/jst_now.sh" 2>/dev/null || date '+%Y-%m-%d %H:%M %Z')"
+    printf '[%s] cmd_kpi_observer exit %s %s\n' "$ts" "$exit_code" "$status" >> "$CRON_STATUS_LOG"
+}
+
+trap 'rc=$?; record_cron_status "$rc"; exit "$rc"' EXIT
 
 DRY_RUN=0
 TARGET_DATE=""
@@ -48,9 +67,9 @@ _log "=== START (dry_run=${DRY_RUN}) ==="
 # 従来の「昨日」集計は safe_window 判定に1日遅延を生むため、日次KPIは当日値を直接扱う。
 TODAY="${TARGET_DATE:-$(bash "${SCRIPT_DIR}/scripts/jst_now.sh" --date)}"
 
-# ── KPI 1-2: publish 成功 / 失敗 (today, JST) ────────────────────────────────
+# ── KPI 1-2: publish 成功 / cron 実行失敗 (today, JST) ─────────────────────
 PUB_US_SUCCESS=0
-PUB_US_FAIL=0
+CRON_FAILURE_COUNT=0
 NEXT_DAY="$(python3 - "$TODAY" <<'PYEOF'
 import datetime as dt
 import sys
@@ -68,7 +87,15 @@ if git -C "$SCRIPT_DIR" rev-parse --git-dir >/dev/null 2>&1; then
     )
 fi
 PUB_US_SUCCESS=${PUB_US_SUCCESS:-0}
-PUB_US_FAIL=${PUB_US_FAIL:-0}
+
+if [ -f "$CRON_STATUS_LOG" ]; then
+    CRON_FAILURE_COUNT=$(
+        grep -E "^\[${TODAY} .*cmd_kpi_observer" "$CRON_STATUS_LOG" 2>/dev/null \
+        | grep -Ec "(FAILED|exit [1-9][0-9]*)" \
+        | tr -d '[:space:]' || true
+    )
+fi
+CRON_FAILURE_COUNT=${CRON_FAILURE_COUNT:-0}
 
 # ── KPI 3-4: karo / gunshi auto-compact (today) ─────────────────────────────
 KARO_COMPACT=0
@@ -144,33 +171,58 @@ for log in "${SAFE_WINDOW_DIR}/karo.log" "${SAFE_WINDOW_DIR}/gunshi.log"; do
     SAFE_WINDOW_COUNT=$((SAFE_WINDOW_COUNT + ${count:-0}))
 done
 
-# ── KPI 6: karo_self_clear_check 発動回数 (today, 報告用) ───────────────────
-SELF_CLEAR_COUNT=0
+# ── KPI 6-7: self_clear_check 発動回数 (today, karo/gunshi) ────────────────
+KARO_SELF_CLEAR=0
+GUNSHI_SELF_CLEAR=0
 if [ -f "${SAFE_CLEAR_DIR}/karo.log" ]; then
-    SELF_CLEAR_COUNT=$(grep -c "^\[${TODAY}.*safe_clear_check START" "${SAFE_CLEAR_DIR}/karo.log" 2>/dev/null | tr -d '\n' || true)
+    KARO_SELF_CLEAR=$(grep -c "^\[${TODAY}.*karo_self_clear_check START" "${SAFE_CLEAR_DIR}/karo.log" 2>/dev/null | tr -d '\n' || true)
 fi
-SELF_CLEAR_COUNT=${SELF_CLEAR_COUNT:-0}
+if [ -f "${SAFE_CLEAR_DIR}/gunshi.log" ]; then
+    GUNSHI_SELF_CLEAR=$(grep -c "^\[${TODAY}.*gunshi_self_clear_check START" "${SAFE_CLEAR_DIR}/gunshi.log" 2>/dev/null | tr -d '\n' || true)
+fi
+KARO_SELF_CLEAR=${KARO_SELF_CLEAR:-0}
+GUNSHI_SELF_CLEAR=${GUNSHI_SELF_CLEAR:-0}
 
-_log "KPI: git_commit_success=${PUB_US_SUCCESS} fail=${PUB_US_FAIL}"
-_log "KPI: karo_compact=${KARO_COMPACT} gunshi_compact=${GUNSHI_COMPACT} safe_window=${SAFE_WINDOW_COUNT} self_clear=${SELF_CLEAR_COUNT}"
+# ── KPI 8-9: self_compact 検出回数 (today, karo/gunshi) ────────────────────
+KARO_SELF_COMPACT=0
+GUNSHI_SELF_COMPACT=0
+if [ -f "$DETECT_COMPACT" ]; then
+    bash "$DETECT_COMPACT" karo >/dev/null 2>&1 || true
+    bash "$DETECT_COMPACT" gunshi >/dev/null 2>&1 || true
+fi
+if [ -f "${SELF_COMPACT_DIR}/karo.log" ]; then
+    KARO_SELF_COMPACT=$(grep -c "^${TODAY}T.* karo self_compact detected" "${SELF_COMPACT_DIR}/karo.log" 2>/dev/null | tr -d '\n' || true)
+fi
+if [ -f "${SELF_COMPACT_DIR}/gunshi.log" ]; then
+    GUNSHI_SELF_COMPACT=$(grep -c "^${TODAY}T.* gunshi self_compact detected" "${SELF_COMPACT_DIR}/gunshi.log" 2>/dev/null | tr -d '\n' || true)
+fi
+KARO_SELF_COMPACT=${KARO_SELF_COMPACT:-0}
+GUNSHI_SELF_COMPACT=${GUNSHI_SELF_COMPACT:-0}
+
+_log "KPI: git_commit_success=${PUB_US_SUCCESS} cron_fail=${CRON_FAILURE_COUNT}"
+_log "KPI: karo_compact=${KARO_COMPACT} gunshi_compact=${GUNSHI_COMPACT} safe_window=${SAFE_WINDOW_COUNT}"
+_log "KPI: karo_self_clear=${KARO_SELF_CLEAR} gunshi_self_clear=${GUNSHI_SELF_CLEAR} karo_self_compact=${KARO_SELF_COMPACT} gunshi_self_compact=${GUNSHI_SELF_COMPACT}"
 
 if [ "$DRY_RUN" -eq 1 ]; then
     _log "DRY RUN — would update dashboard.yaml metrics:"
-    _log "date=${TODAY} success=${PUB_US_SUCCESS} fail=${PUB_US_FAIL} karo_compact=${KARO_COMPACT} gunshi_compact=${GUNSHI_COMPACT} safe_window=${SAFE_WINDOW_COUNT}"
+    _log "date=${TODAY} success=${PUB_US_SUCCESS} cron_fail=${CRON_FAILURE_COUNT} karo_compact=${KARO_COMPACT} gunshi_compact=${GUNSHI_COMPACT} safe_window=${SAFE_WINDOW_COUNT} karo_self_clear=${KARO_SELF_CLEAR} gunshi_self_clear=${GUNSHI_SELF_CLEAR} karo_self_compact=${KARO_SELF_COMPACT} gunshi_self_compact=${GUNSHI_SELF_COMPACT}"
     _log "=== END (dry_run) ==="
     exit 0
 fi
 
 # ── dashboard.yaml metrics 更新 + dashboard.md 再生成 ───────────────────────
 python3 - "$DASHBOARD_YAML" "$TODAY" \
-    "$PUB_US_SUCCESS" "$PUB_US_FAIL" \
-    "$KARO_COMPACT" "$GUNSHI_COMPACT" "$SAFE_WINDOW_COUNT" <<'PYEOF'
+    "$PUB_US_SUCCESS" "$CRON_FAILURE_COUNT" \
+    "$KARO_COMPACT" "$GUNSHI_COMPACT" "$SAFE_WINDOW_COUNT" \
+    "$KARO_SELF_CLEAR" "$GUNSHI_SELF_CLEAR" "$KARO_SELF_COMPACT" "$GUNSHI_SELF_COMPACT" <<'PYEOF'
 import yaml, sys, subprocess
 from pathlib import Path
 
 dashboard_yaml, today = sys.argv[1], sys.argv[2]
 success, failure = sys.argv[3], sys.argv[4]
 karo_compact, gunshi_compact, safe_window = sys.argv[5], sys.argv[6], sys.argv[7]
+karo_self_clear, gunshi_self_clear = sys.argv[8], sys.argv[9]
+karo_self_compact, gunshi_self_compact = sys.argv[10], sys.argv[11]
 
 def to_int_or_str(v):
     return int(v) if v.lstrip('-').isdigit() else v
@@ -193,6 +245,10 @@ row.update({
     'karo_compact': to_int_or_str(karo_compact),
     'gunshi_compact': to_int_or_str(gunshi_compact),
     'safe_window': to_int_or_str(safe_window),
+    'karo_self_clear': to_int_or_str(karo_self_clear),
+    'gunshi_self_clear': to_int_or_str(gunshi_self_clear),
+    'karo_self_compact': to_int_or_str(karo_self_compact),
+    'gunshi_self_compact': to_int_or_str(gunshi_self_compact),
 })
 d['metrics'] = sorted(metrics, key=lambda m: str(m.get('date', '')))[-7:]
 

@@ -1,65 +1,50 @@
 worker_id: gunshi
-task_id: subtask_636_scope_f_gunshi_qc
-parent_cmd: cmd_636
-timestamp: "2026-05-02T17:46:44+09:00"
+task_id: subtask_638_scope_c_gunshi_qc
+parent_cmd: cmd_638
+timestamp: "2026-05-02T21:13:17+09:00"
 status: done
 report_to: karo
-type: qc
+type: analysis
 
 result:
-  type: scope_f_final_qc_report
+  type: scope_c_qc_report_go
   summary: |
-    cmd_636 Scope F (A-E 全件 + 北極星 QC) 完遂。判定: **Go**。
-    N1 (sync 経路根絶) PASS: ACTIVITY_LOG ref 0 件 (active scripts/)
-    N2 (frog.completed_today) PASS: 実装 + 実値 21=21 一致
-    N3 (再発防止記録) PASS: Violation No.22 + L020/Dashboard Freshness 4 件
-    N4 (action-9 dashboard) PASS: 殿裁可要請 + DB ID 齟齬指摘反映済
-    AC1 PASS。Scope G (ash1 commit) dispatch 可。
-    5/3 実機検証 (cron + GHA + DIARY_DB) は別レイヤーで並行実施推奨。
+    cmd_638 Scope C (5 パターン + cron + ntfy 全検証) 完遂。判定: **Go**。
+    N1 (5 パターン実装) PASS: P1-P5 全 check_pattern_N 関数実装確認
+    N2 (dry-run false positive) PASS: 0 件検出, exit 0
+    N3 (cron 登録) PASS: 毎時 0 分 cron 登録 + log redirect
+    N4 (ntfy + 重複抑制) PASS: alert_key + 1h 内重複抑制 + 二重通知 (ntfy+inbox)
+    **cmd_638 完遂**, ash1 Scope D (cmd_637+cmd_638 両変更 commit+push) dispatch 可。
 
   ac_verification:
     - id: AC1
       verification: |
         N1-N4 全 PASS:
-        - N1 PASS: grep "a0eda711|ACTIVITY_LOG" scripts/ (excl archived/yaml) = 0 件
-        - N2 PASS: cmd_kpi_observer.sh L202 frog['completed_today']=len(today_items) +
-                  python assert で achievements.today=21 == frog.completed_today=21
-        - N3 PASS: Violation.md No.22 (1件) + instructions/shogun.md L020 (4件)
-        - N4 PASS: dashboard.yaml に [action-9] cmd_636 誤報entry処置方針 裁可要請
-                  detail に「対象DB: Activity Log DB (a0eda711)」明記、軍師の
-                  Scope E §0 DB ID 齟齬指摘が反映確認
-        Scope A-E artifact 整合:
-        - A: cmd_636_scope_a_sync_audit.md (10314B)
-        - B: 停止確認 (output 不要)
-        - C: scripts/cmd_kpi_observer.sh frog logic
-        - D: cmd_636_scope_d_db_clarify.md (2901B)
-        - E: cmd_636_scope_e_errata_proposal.md (10960B)
-        判定: **Go**
+        - N1: 5 パターン全実装 (P1=L137 / P2=L197 / P3=L239 / P4=L274 / P5=L308)
+              全 check_pattern_N 呼出 (L345-L349)
+        - N2: bash scripts/shogun_in_progress_monitor.sh --dry-run
+              → "DRY-RUN: 0件検出" + EXIT=0, false positive なし
+        - N3: crontab "0 * * * * cd /home/ubuntu/shogun && bash scripts/shogun_in_progress_monitor.sh
+              >> logs/in_progress_monitor.log 2>&1" 登録確認
+        - N4: 重複抑制 (L15 コメント + L44-L65 alert_key 識別 + 1h 内 inbox content 確認)
+              + ntfy 通知 (L86) + inbox 投函 (L368-L369) 二重通知
+        判定: **Go (cmd_638 完遂)**
       status: PASS
-    - id: AC2
-      verification: |
-        Go 判定のため No-Go 是正方針記述は不要。
-      status: N/A
 
 means_ends_classification:
   schema_version: "1.0"
   ac_classification:
     - id: AC1
       type: ends
-      rationale: "N1-N4 全 PASS 確認 + Go 判定は本 cmd の最終 ends"
+      rationale: "N1-N4 全 PASS 確認 + cmd_638 完遂判定が本 cmd の最終 ends"
       corresponding_ends_ac: null
-    - id: AC2
-      type: means
-      rationale: "Go 判定により No-Go 是正方針は不要"
-      corresponding_ends_ac: AC1
   ends_coverage_note: |
-    本 cmd は QC cmd。AC1 PASS で本 cmd の ends は達成。
-    実 commit + push は Scope G (ash1) へ委譲。
-    5/3 実機検証は別レイヤーで並行実施推奨。
+    本 cmd は QC cmd。AC1 PASS で cmd_638 全工程完遂。
+    実 commit + push は Scope D (ash1, cmd_637+cmd_638 両変更含む) で実施。
   both_systems_verified: true
   verdict: |
-    means 系: AC2 N/A (Go のため)。
-    ends 系: AC1 PASS で本 cmd の ends 完遂。
+    ends 系 1/1 PASS。cmd_638 Scope A (ash5) + Scope B (ash7) + Scope C (gunshi) 完遂。
+    家老が ash1 Scope D へ commit+push dispatch 可。
 
 so24_verification:
   inbox: PENDING
@@ -68,81 +53,88 @@ so24_verification:
   overall: WILL_VERIFY_AFTER_KARO_INBOX
   note: |
     本報告書込み + karo inbox 通知後に so24 三点照合が成立。
-    artifact = output/cmd_636_scope_f_qc_report.md PASS 済。
+    artifact = output/cmd_638_scope_c_qc_report.md PASS 済。
 
-scope_f_qc_summary:
-  n1_sync_path_eliminated: PASS
-  n2_frog_completed_today_logic: PASS
-  n3_recurrence_prevention_record: PASS
-  n4_action_required_lord_request: PASS
+scope_c_qc_summary:
+  n1_5_patterns_implemented: PASS
+  n2_dry_run_false_positive: PASS  # 0 件検出
+  n3_cron_registered: PASS  # 毎時 0 分
+  n4_ntfy_and_dedup: PASS  # alert_key + 1h 抑制 + 二重通知
   go_nogo: Go
-  five_three_field_verification_required: true
-  scope_g_recommended:
+  cmd_638_overall_status: completed
+  pattern_summary:
+    P1: "家老 dispatch 漏れ (shogun_to_karo.yaml + inbox/karo.yaml 参照)"
+    P2: "dashboard 鮮度乖離 (in_progress 空 + task assigned 不整合)"
+    P3: "ash 滞留 (promoted_at > 60 分超過)"
+    P4: "進行中 stale (dashboard last_updated > 90 分前)"
+    P5: "殿手作業滞留 (action_required 30 分超)"
+  scope_d_recommended:
     target: "ash1 (Sonnet)"
-    scope: "commit + push"
-    files_to_commit:
-      - "scripts/cmd_kpi_observer.sh (Scope C frog logic)"
-      - "output/cmd_636_scope_a_sync_audit.md"
-      - "output/cmd_636_scope_d_db_clarify.md"
-      - "output/cmd_636_scope_e_errata_proposal.md"
-      - "output/cmd_636_scope_f_qc_report.md"
-      - "dashboard.yaml ([action-9] 追加分)"
+    scope: "commit + push (cmd_637 + cmd_638 両変更)"
+    cmd_637_files:
+      - "scripts/cmd_kpi_observer.sh"
+      - "dashboard.yaml / dashboard.md"
+      - "memory/Violation.md (No.23 追記)"
+      - "output/cmd_637_scope_b_failure_col_proposal.md"
+      - "output/cmd_637_scope_d_qc_report.md"
+    cmd_638_files:
+      - "scripts/shogun_in_progress_monitor.sh (新規, 370 行)"
+      - "output/cmd_638_scope_c_qc_report.md (本書, 新規)"
     push_target: "git push origin main"
-  field_verification_5_3:
-    - "session_to_obsidian.sh cron (JST 22:30 = UTC 13:30) 5/2 分 MD 生成 + push 確認"
-    - "daily-notion-sync.yml GHA (UTC 14:00 = JST 23:00) DIARY_DB に 5/2 cmd entry 反映確認"
-    - "frog.completed_today が当日 cmd 数と一致確認"
+    note: "crontab は git 対象外、殿/家老が手動管理"
 
 suggestions:
   - id: G1
     priority: low
     content: |
-      cron 時刻乖離 (cmd_632 Scope E2 で軍師指摘): 30 13 * * * (JST 22:30) vs
-      Scope A AC10 「JST 23:00」。本 cmd では対象外、別 cmd で 0 14 * * * へ
-      時刻調整推奨。
-    action_needed: "別 cmd で対応、優先度低"
+      5/3 以降の cron 動作で誤検知 0 件継続を 5-10 回観察推奨。
+      false positive 発生時は alert_key + 過去 inbox 内容で原因特定可。
+    action_needed: "5/3 以降の logs/in_progress_monitor.log 観察"
   - id: G2
     priority: low
     content: |
-      5/02 削除 entry の運用方針: ash3 自動 script 採用時、削除前に
-      「title=0cmd完了 + cmd_id property 不在」の AND 条件で対象を厳格絞り、
-      新 GHA が同日 upsert した cmd 単位 entry との混在を回避。
-    action_needed: "殿裁可後の Scope G2 (ash3 cleanup) task YAML に注記"
+      shogun_in_progress_monitor (能動監視) と implementation-verifier (受動検証) の
+      棲み分けは明確 (進行中 cmd の停滞 vs 完遂報告の真偽)。両者の連携 (例:
+      verifier が L4 で「DASHBOARD漏れ」検出 → monitor が同 incident で P2 を引く)
+      の整合性を将来 cmd で確認推奨。
+    action_needed: "1 ヶ月運用観察後に整合性検証 cmd 起案"
   - id: G3
     priority: low
     content: |
-      5/3 実機検証の通知体制。既存 shogun_reality_check.sh に
-      「前日 cron 実行確認」項目追加で自動通知可。
-    action_needed: "5/3 朝の手動確認で代替可、別 cmd で改修候補"
+      cmd_628 implementation-verifier の L4 第 10 Pattern「STATE_VISIBILITY_GAP」
+      (cmd_637 で提案) と本 monitor の P1-P5 は将来統合 / 整理する余地あり。
+      現状は別機構 (verifier=報告検証 / monitor=進行監視) で独立運用が適切。
+    action_needed: "1 ヶ月運用観察後に統合可能性評価"
 
 concerns_flagged: []
 
 skill_candidate:
-  found: false
+  found: true
+  candidate_id: "shogun-in-progress-monitor-pattern"
   reason: |
-    本 cmd は QC cmd。一連の pipeline 整備 (cmd_631+632+633+635+636) のメタパターン
-    は将来 skill 化候補だが、5/3 実機検証 + 1 ヶ月運用観察後に再評価推奨。
+    cmd_638 で確立した「5 パターン分離 + 重複抑制 alert_key + 二重通知 (ntfy+inbox)
+    + dry-run/本番フラグ」の構造は、自律エージェント運用基盤の能動監視メタパターン
+    として再利用可能性高。cmd_628 implementation-verifier (受動検証) と並ぶ
+    監視機構の双璧。1 ヶ月運用観察 + 誤検知 0 件継続後に skill 化推奨。
 
 files_modified:
-  - "output/cmd_636_scope_f_qc_report.md"
+  - "output/cmd_638_scope_c_qc_report.md"
   - "queue/reports/gunshi_report.yaml"
   - "queue/inbox/gunshi.yaml"
 
 north_star_alignment:
   status: aligned
   reason: |
-    cmd_636 Scope F 北極星 N1-N4 全達成。Scope A (sync 監査) + Scope B (停止確認)
-    + Scope C (frog logic) + Scope D (DB 一本化) + Scope E (誤報処置提案) の 5 Scope
-    が整合し、誤報根因解消 + 再発防止記録 + 殿裁可要請の三点が構造的に確立。
-    軍師 Scope E §0 DB ID 齟齬指摘が dashboard.yaml に反映、cmd_628 L4
-    DIFF反映漏れ Pattern 防止が実効した好例。
+    cmd_638 Scope C 北極星 N1-N4 全達成。Scope A (ash5 monitor.sh 370 行) +
+    Scope B (ash7 cron + ntfy) + Scope C (本 QC) で cmd_638 完遂。
+    shogun 多 agent 運用基盤の能動監視機構が確立、cmd_628 implementation-verifier
+    (受動検証) と相補的に運用品質を確保。
   risks_to_north_star:
-    - "5/3 早朝の実機検証 (cron + GHA + DIARY_DB) で構造的 Go が裏付けされない場合
-      別 cmd で改修。本 Scope F 判定とは別レイヤー"
-    - "Scope G commit + push 時に PUSH漏れ / DASHBOARD漏れ / DIFF反映漏れ の
-      L4 Pattern 自己検証で実装verifier 動作確認"
-    - "5/02 削除 entry の運用 (殿裁可 [action-9] 待ち) は cmd_636 完遂後の別 cmd
-      で実施、本 Scope F Go 判定とは独立"
+    - "5/3 以降の cron 実機運用で false positive 発生時に alert_key 別の修正が必要"
+    - "shogun_in_progress_monitor と implementation-verifier の棲み分けは現状明確だが、
+      将来 alert 重複が顕在化したら統合可能性を検討"
+    - "cmd_637 + cmd_638 両変更の commit (Scope D) 後、cmd_628 L4 PUSH漏れ /
+      DASHBOARD漏れ / DIFF反映漏れ の遵守を ash1 が確実に実施することが最終要件"
 
 skip_count: 0
 test_self_sufficient: true

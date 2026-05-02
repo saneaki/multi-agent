@@ -215,7 +215,7 @@ def generate_markdown(data: dict[str, Any]) -> str:
             [
                 "日付(JST)",
                 "成功",
-                "失敗",
+                "失敗(cron)",
                 "karo auto-compact",
                 "gunshi auto-compact",
                 "safe_window発動",
