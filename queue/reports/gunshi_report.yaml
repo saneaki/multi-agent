@@ -1,45 +1,40 @@
 worker_id: gunshi
-task_id: subtask_633_scope_d_gunshi_qc
-parent_cmd: cmd_633
-timestamp: "2026-05-02T16:50:16+09:00"
+task_id: subtask_636_scope_f_gunshi_qc
+parent_cmd: cmd_636
+timestamp: "2026-05-02T17:46:44+09:00"
 status: done
 report_to: karo
 type: qc
 
 result:
-  type: scope_d_kpi_overhaul_qc_report
+  type: scope_f_final_qc_report
   summary: |
-    cmd_633 Scope D (KPI オーバーホール QC) 完遂。判定: **Go**。
-    N1 (dashboard 運用指標 field) PASS: pub_us/kill_switch 撤去確認, karo_self_clear/
-    gunshi_self_clear/karo_self_compact/gunshi_self_compact 4 新 field 追加確認
-    N2 (殿の運用把握) PASS: dashboard.md 運用指標 section 10 列ヘッダ + 6 日分表示
-    N3 (計測ロジック) PASS: generate_dashboard_md.py 書換 + detect_compact.sh +
-    gunshi_self_clear_check.sh + cron 3 行 + .gitignore whitelist 完備
-    AC1 PASS, Scope E (ash1 commit) dispatch 可。
-    軽微 G1: gunshi_self_clear_check.sh 実行権限 (-rw-rw-r-- → 推奨は -rwxrwxr-x)
-    AC6 (翌日 5/3 metrics 反映) は明日確認。
+    cmd_636 Scope F (A-E 全件 + 北極星 QC) 完遂。判定: **Go**。
+    N1 (sync 経路根絶) PASS: ACTIVITY_LOG ref 0 件 (active scripts/)
+    N2 (frog.completed_today) PASS: 実装 + 実値 21=21 一致
+    N3 (再発防止記録) PASS: Violation No.22 + L020/Dashboard Freshness 4 件
+    N4 (action-9 dashboard) PASS: 殿裁可要請 + DB ID 齟齬指摘反映済
+    AC1 PASS。Scope G (ash1 commit) dispatch 可。
+    5/3 実機検証 (cron + GHA + DIARY_DB) は別レイヤーで並行実施推奨。
 
   ac_verification:
     - id: AC1
       verification: |
-        N1 PASS (dashboard.yaml metrics field 構造):
-        - pub_us field: 撤去確認 (grep で不在)
-        - kill_switch field: 撤去確認
-        - karo_self_clear / gunshi_self_clear / karo_self_compact /
-          gunshi_self_compact: 4 新 field 全件存在
-        - generate_dashboard_md.py 実行: エラーなし
-        N2 PASS (dashboard.md 表示):
-        - 10 列ヘッダ (日付/成功/失敗/karo auto-compact/gunshi auto-compact/
-          safe_window発動/karo self_clear/gunshi self_clear/karo self_compact/
-          gunshi self_compact)
-        - 6 日分データ表示 (4/22, 4/26, 4/27, 4/28, 4/29, 5/1)
-        N3 PASS (実装):
-        - generate_dashboard_md.py L201 'success' 計測確認 (旧 pub_us 文字列なし)
-        - detect_compact.sh: syntax OK, 5152 bytes
-        - gunshi_self_clear_check.sh: syntax OK, 10354 bytes (実行権限なし - G1)
-        - cron 3 行登録 (gunshi_self_clear_check + detect_compact karo + gunshi)
-        - .gitignore whitelist 両 script 追加確認
-        判定: **Go** (Scope E dispatch 可)
+        N1-N4 全 PASS:
+        - N1 PASS: grep "a0eda711|ACTIVITY_LOG" scripts/ (excl archived/yaml) = 0 件
+        - N2 PASS: cmd_kpi_observer.sh L202 frog['completed_today']=len(today_items) +
+                  python assert で achievements.today=21 == frog.completed_today=21
+        - N3 PASS: Violation.md No.22 (1件) + instructions/shogun.md L020 (4件)
+        - N4 PASS: dashboard.yaml に [action-9] cmd_636 誤報entry処置方針 裁可要請
+                  detail に「対象DB: Activity Log DB (a0eda711)」明記、軍師の
+                  Scope E §0 DB ID 齟齬指摘が反映確認
+        Scope A-E artifact 整合:
+        - A: cmd_636_scope_a_sync_audit.md (10314B)
+        - B: 停止確認 (output 不要)
+        - C: scripts/cmd_kpi_observer.sh frog logic
+        - D: cmd_636_scope_d_db_clarify.md (2901B)
+        - E: cmd_636_scope_e_errata_proposal.md (10960B)
+        判定: **Go**
       status: PASS
     - id: AC2
       verification: |
@@ -51,7 +46,7 @@ means_ends_classification:
   ac_classification:
     - id: AC1
       type: ends
-      rationale: "N1-N3 全 PASS 確認 + Go 判定は本 cmd の最終 ends"
+      rationale: "N1-N4 全 PASS 確認 + Go 判定は本 cmd の最終 ends"
       corresponding_ends_ac: null
     - id: AC2
       type: means
@@ -59,8 +54,8 @@ means_ends_classification:
       corresponding_ends_ac: AC1
   ends_coverage_note: |
     本 cmd は QC cmd。AC1 PASS で本 cmd の ends は達成。
-    実 commit + push は Scope E (ash1) へ委譲。
-    AC6 (翌日 5/3 metrics 反映) は明日確認、本 cmd の判定範囲外。
+    実 commit + push は Scope G (ash1) へ委譲。
+    5/3 実機検証は別レイヤーで並行実施推奨。
   both_systems_verified: true
   verdict: |
     means 系: AC2 N/A (Go のため)。
@@ -73,80 +68,81 @@ so24_verification:
   overall: WILL_VERIFY_AFTER_KARO_INBOX
   note: |
     本報告書込み + karo inbox 通知後に so24 三点照合が成立。
-    artifact = output/cmd_633_scope_d_qc_report.md PASS 済。
+    artifact = output/cmd_636_scope_f_qc_report.md PASS 済。
 
-scope_d_qc_summary:
-  n1_dashboard_field_overhaul: PASS
-  n2_lord_visibility: PASS
-  n3_measurement_logic: PASS
+scope_f_qc_summary:
+  n1_sync_path_eliminated: PASS
+  n2_frog_completed_today_logic: PASS
+  n3_recurrence_prevention_record: PASS
+  n4_action_required_lord_request: PASS
   go_nogo: Go
-  scope_e_recommended:
+  five_three_field_verification_required: true
+  scope_g_recommended:
     target: "ash1 (Sonnet)"
     scope: "commit + push"
     files_to_commit:
-      - "scripts/generate_dashboard_md.py (Scope A: pub_us/kill_switch 撤去 + git log 計測)"
-      - "scripts/detect_compact.sh (Scope B 新規, 5152 bytes)"
-      - "scripts/gunshi_self_clear_check.sh (Scope C 新規, 10354 bytes)"
-      - "dashboard.yaml (4 新 field 追加)"
-      - "dashboard.md (再生成版)"
-      - ".gitignore (whitelist 2 行)"
+      - "scripts/cmd_kpi_observer.sh (Scope C frog logic)"
+      - "output/cmd_636_scope_a_sync_audit.md"
+      - "output/cmd_636_scope_d_db_clarify.md"
+      - "output/cmd_636_scope_e_errata_proposal.md"
+      - "output/cmd_636_scope_f_qc_report.md"
+      - "dashboard.yaml ([action-9] 追加分)"
     push_target: "git push origin main"
-  ac6_deferred: "翌日 5/3 早朝に殿/家老/軍師が dashboard.yaml の 5/2 entry 出現確認"
+  field_verification_5_3:
+    - "session_to_obsidian.sh cron (JST 22:30 = UTC 13:30) 5/2 分 MD 生成 + push 確認"
+    - "daily-notion-sync.yml GHA (UTC 14:00 = JST 23:00) DIARY_DB に 5/2 cmd entry 反映確認"
+    - "frog.completed_today が当日 cmd 数と一致確認"
 
 suggestions:
   - id: G1
     priority: low
     content: |
-      gunshi_self_clear_check.sh の実行権限が detect_compact.sh と非統一。
-      detect_compact.sh: -rwxrwxr-x / gunshi_self_clear_check.sh: -rw-rw-r--
-      cron は bash <script> 経由のため実害なしだが、統一性の観点で chmod +x 推奨。
-    action_needed: "Scope E commit 時に git update-index --chmod=+x で統一推奨"
+      cron 時刻乖離 (cmd_632 Scope E2 で軍師指摘): 30 13 * * * (JST 22:30) vs
+      Scope A AC10 「JST 23:00」。本 cmd では対象外、別 cmd で 0 14 * * * へ
+      時刻調整推奨。
+    action_needed: "別 cmd で対応、優先度低"
   - id: G2
     priority: low
     content: |
-      AC6 (翌日反映) は明日 5/3 早朝に殿/家老/軍師が初の 5/2 metrics 書込確認。
-      期待値: dashboard.yaml に date='2026-05-02' entry 出現 + 各 KPI 妥当値
-      (例: karo_self_clear が 0 でない値、cron 経由カウンタ更新確認)。
-    action_needed: "明日 5/3 06:00 以降に gunshi が dashboard.yaml 5/2 entry 確認"
+      5/02 削除 entry の運用方針: ash3 自動 script 採用時、削除前に
+      「title=0cmd完了 + cmd_id property 不在」の AND 条件で対象を厳格絞り、
+      新 GHA が同日 upsert した cmd 単位 entry との混在を回避。
+    action_needed: "殿裁可後の Scope G2 (ash3 cleanup) task YAML に注記"
   - id: G3
     priority: low
     content: |
-      generate_dashboard_md.py 書換 (Scope A: pub_us → git log 計測) の深い review は
-      本 QC で grep 1 件のみ。Scope E commit 後の運用観察で、chore commit が
-      success として誤計測されないか (例: docs commit + chore commit を含む日に
-      success 値が膨張しないか) を 1 週間ペースで確認推奨。
-    action_needed: "Scope E commit + 1 週間運用観察で git log 計測精度確認"
+      5/3 実機検証の通知体制。既存 shogun_reality_check.sh に
+      「前日 cron 実行確認」項目追加で自動通知可。
+    action_needed: "5/3 朝の手動確認で代替可、別 cmd で改修候補"
 
 concerns_flagged: []
 
 skill_candidate:
   found: false
   reason: |
-    本 cmd は QC cmd。KPI オーバーホールパターン (旧 KPI 撤去 + 新 KPI 追加 +
-    cron 計測 + dashboard 反映) は再利用可能性ある汎用パターンだが、cmd_633 単独では
-    スキル化早計。1 ヶ月運用観察で AC6 達成 + git log 計測精度実証後に再評価推奨。
+    本 cmd は QC cmd。一連の pipeline 整備 (cmd_631+632+633+635+636) のメタパターン
+    は将来 skill 化候補だが、5/3 実機検証 + 1 ヶ月運用観察後に再評価推奨。
 
 files_modified:
-  - "output/cmd_633_scope_d_qc_report.md"
+  - "output/cmd_636_scope_f_qc_report.md"
   - "queue/reports/gunshi_report.yaml"
   - "queue/inbox/gunshi.yaml"
 
 north_star_alignment:
   status: aligned
   reason: |
-    cmd_633 Scope D 北極星 N1-N3 を全達成。Scope A (pub_us/kill_switch 撤去 +
-    git log 計測) + Scope B (detect_compact.sh + karo_self_compact) +
-    Scope C (gunshi_self_clear_check.sh + 3 新 field) の 3 Scope 整合確認。
-    shogun 多 agent 運用基盤の計測精度向上が構造的に達成。
+    cmd_636 Scope F 北極星 N1-N4 全達成。Scope A (sync 監査) + Scope B (停止確認)
+    + Scope C (frog logic) + Scope D (DB 一本化) + Scope E (誤報処置提案) の 5 Scope
+    が整合し、誤報根因解消 + 再発防止記録 + 殿裁可要請の三点が構造的に確立。
+    軍師 Scope E §0 DB ID 齟齬指摘が dashboard.yaml に反映、cmd_628 L4
+    DIFF反映漏れ Pattern 防止が実効した好例。
   risks_to_north_star:
-    - "AC6 (翌日 5/3 metrics 反映) が cron 動作に依存。cron 実行漏れがあれば
-      明日 dashboard.yaml に 5/2 entry が書込まれない → 殿/家老/軍師の
-      明日早朝確認で検知必要"
-    - "git log 当日 commit 計測ロジック (Scope A) の精度は本 QC で深く検証
-      できず。Scope E commit 後の 1 週間運用で誤計測 (chore success 膨張等)
-      を確認"
-    - "gunshi_self_clear_check.sh 実行権限統一 (G1) は Scope E commit に
-      含めることが望ましい (chmod +x で統一性確保)"
+    - "5/3 早朝の実機検証 (cron + GHA + DIARY_DB) で構造的 Go が裏付けされない場合
+      別 cmd で改修。本 Scope F 判定とは別レイヤー"
+    - "Scope G commit + push 時に PUSH漏れ / DASHBOARD漏れ / DIFF反映漏れ の
+      L4 Pattern 自己検証で実装verifier 動作確認"
+    - "5/02 削除 entry の運用 (殿裁可 [action-9] 待ち) は cmd_636 完遂後の別 cmd
+      で実施、本 Scope F Go 判定とは独立"
 
 skip_count: 0
 test_self_sufficient: true

@@ -196,6 +196,12 @@ row.update({
 })
 d['metrics'] = sorted(metrics, key=lambda m: str(m.get('date', '')))[-7:]
 
+achievements = d.get('achievements') or {}
+today_items = achievements.get('today') or []
+frog = d.get('frog') or {}
+frog['completed_today'] = len(today_items)
+d['frog'] = frog
+
 with open(dashboard_yaml, 'w') as f:
     yaml.dump(d, f, allow_unicode=True, default_flow_style=False)
 
