@@ -153,6 +153,7 @@
 !scripts/clasp_age_check.sh
 !scripts/README_SA_SETUP.md
 !scripts/shogun_reality_check.sh
+!scripts/shogun_in_progress_monitor.sh
 !scripts/dashboard_lint.py
 !scripts/compact_observer.sh
 !scripts/detect_compact.sh
