@@ -355,6 +355,19 @@ L014 (家老申告を鵜呑み禁止) は 2026-04-17 に明文化されたが、
 - **Verifier Coverage Gap**: 検証側 (verifier 自身) が end-to-end pipeline を確認しない構造的欠陥
   → No.21 (cmd_631) で初観測。cmd_634 で予防対策実装中。
 
+### No.22 | 「0cmd完了」誤報連鎖 (cmd_635 incident)
+
+| 項目 | 内容 |
+|---|---|
+| 発生 | 2026-04-27 〜 2026-05-02 (6日間) |
+| 影響 | Notion Activity Log DB に `0cmd完了` 誤報が 6件生成された |
+| 根因 | `scripts/archived/notion_session_log.sh` の `COMPLETED=$(grep -oP '今日の完了 \| \K[0-9]+' dashboard.md)` が dashboard.md の stale/不整合な統計値 `0` を採用し、同時に本日の戦果テーブルからは実完了行を抽出していたため、title/完了cmd数だけが `0cmd完了` になった |
+| 連鎖 | dashboard.md 22h 鮮度崩壊 (No.18) → `今日の完了` 0件 → Notion Activity Log DB へ `0cmd完了` 誤報 → 6日間継続 |
+| 発覚 | cmd_635 Scope C retrospective で Notion Activity Log DB 過去7日を実照合 |
+| 対策 | cmd_631/632/635 で session→Obsidian→Notion パイプライン刷新。旧 `notion_session_log.sh` は cmd_631 で archive 済み。今後の再発防止は L020 Dashboard Freshness Check (`instructions/shogun.md`) と cmd_634 verifier 強化で担保 |
+| Violated | SO-17 North Star alignment (Reality Check 失敗) |
+| Cleanup 提案 | 2026-04-27〜2026-05-02 の該当 6ページは削除ではなく修正推奨。詳細・要約には実完了行が残っているため、title と `完了cmd数` を dashboard/Obsidian 由来の正値へ補正する。2026-05-02 の空 detail ページのみ削除候補 |
+
 ## 注記
 本稿は gunshi (subtask_566e) による分類深化 + 根本解決策3案 + Recommendation 完成版。
 2026-05-02 追記分は 将軍 (shogun) が Lord 直命により実施。RACI 上は gunshi 維持責任ゆえ、次回 gunshi QC で本追記の構造整合性を検証されたし。
