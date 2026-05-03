@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# shogun_in_progress_monitor.sh — 進行中乖離 1h 監視 (8パターン検出)
-# cmd_638 Scope A + cmd_640 Scope B (P7) + cmd_641 Scope A (P8)
+# shogun_in_progress_monitor.sh — 進行中乖離 1h 監視 (9パターン検出)
+# cmd_638 Scope A + cmd_640 Scope B (P7) + cmd_641 Scope A (P8) + cmd_642 Scope A (P9)
 #
 # 検出対象:
 #   P1: shogun_to_karo.yaml に status=pending かつ inbox/karo.yaml に shogun→karo
@@ -14,8 +14,11 @@
 #   P6: dashboard.md の「最終更新:」が 2h 以上前 → dashboard stale alert
 #   P7: GHA daily-notion-sync が success でも upsert 0件 → Notion同期 silent failure
 #   P8: tmux pane 末尾に interactive prompt → agent 凍結リスク
+#   P9: dashboard.yaml action_required の高優先/提案タグが 24h+ 滞留
+#       → daily 8:00 JST ntfy
 #
-# 重複 alert 抑制: 1h 内同種は再送付しない (alert_key で識別)
+# 重複 alert 抑制: 原則 1h 内同種は再送付しない (alert_key で識別)
+#                  P9 は 24h 内同種を抑制
 #
 # Usage:
 #   bash scripts/shogun_in_progress_monitor.sh           # 本番モード (inbox + ntfy 投函)
@@ -38,6 +41,7 @@ while [[ $# -gt 0 ]]; do
         *) echo "Unknown option: $1" >&2; exit 1 ;;
     esac
 done
+export DRY_RUN
 
 JST_NOW=$(TZ=Asia/Tokyo date '+%Y-%m-%d %H:%M JST')
 ALERTS_FOUND=0
@@ -57,7 +61,8 @@ try:
         data = yaml.safe_load(f) or {}
     msgs = data.get('messages') or []
     now = datetime.now(timezone.utc)
-    one_hour_ago = now - timedelta(hours=1)
+    dedup_hours = 24 if alert_key.startswith('P9_') else 1
+    cutoff = now - timedelta(hours=dedup_hours)
     for m in msgs:
         if m.get('type') != 'in_progress_monitor_alert':
             continue
@@ -70,7 +75,7 @@ try:
             t = datetime.fromisoformat(ts)
             if t.tzinfo is None:
                 t = t.replace(tzinfo=timezone.utc)
-            if t >= one_hour_ago:
+            if t >= cutoff:
                 print('yes'); sys.exit(0)
         except ValueError:
             continue
@@ -108,9 +113,9 @@ handle_alert() {
     fi
 }
 
-# ===== 8パターン検出ロジック (Python 一括実行) =====
+# ===== 9パターン検出ロジック (Python 一括実行) =====
 RESULTS=$("${PYTHON}" - <<'PYEOF'
-import os, re, glob, yaml, json, subprocess
+import os, re, glob, yaml, json, subprocess, hashlib
 from datetime import datetime, timedelta, timezone
 
 ROOT = os.environ['SCRIPT_DIR']
@@ -484,6 +489,57 @@ def check_pattern_8():
         out(f'P8_{pane_id}',
             f"interactive_prompt_detected: pane={pane} agent={agent}")
 
+def check_pattern_9():
+    """dashboard.yaml action_required の高優先・滞留 24h+ 項目を daily 8:00 に通知"""
+    now = now_jst()
+
+    # 時刻ゲート: 本番は 8:00 JST のみ。dry-run では検証のため常時実行。
+    if os.environ.get('DRY_RUN') != 'yes' and now.hour != 8:
+        return
+
+    dash_path = os.path.join(ROOT, 'dashboard.yaml')
+    if not os.path.exists(dash_path):
+        return
+
+    try:
+        with open(dash_path) as f:
+            d = yaml.safe_load(f) or {}
+    except Exception:
+        return
+
+    items = d.get('action_required') or []
+    if not isinstance(items, list):
+        return
+
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+
+        tag = str(item.get('tag') or '').strip()
+        title = str(item.get('title') or '').strip()
+        priority = str(item.get('priority') or '').strip().lower()
+        created_at = parse_ts(item.get('created_at') or '')
+        if created_at is None:
+            continue
+
+        target_tag = bool(re.search(r'\[(提案|action)-\d+\]', tag))
+        high_priority = priority == 'high'
+        if not (target_tag or high_priority):
+            continue
+
+        elapsed = now - created_at.astimezone(JST)
+        hours = int(elapsed.total_seconds() // 3600)
+        if hours < 24:
+            continue
+
+        days = hours // 24
+        remaining_h = hours % 24
+        tag_key = hashlib.sha256(f'{tag}:{title}'.encode('utf-8')).hexdigest()[:16]
+        alert_key = f'P9_{tag_key}'
+        out(alert_key,
+            f"【要対応 滞留{days}日{remaining_h}時間】{tag} {title} "
+            f"— dashboard 要対応欄を確認されたし")
+
 check_pattern_1()
 check_pattern_2()
 check_pattern_3()
@@ -492,6 +548,7 @@ check_pattern_5()
 check_pattern_6()
 check_pattern_7()
 check_pattern_8()
+check_pattern_9()
 
 for r in RESULTS:
     print(r)
@@ -509,7 +566,7 @@ fi
 if [ "${DRY_RUN}" = "yes" ]; then
     echo "${JST_NOW} [in_progress_monitor] DRY-RUN: ${ALERTS_FOUND}件検出"
 elif [ "${ALERTS_FOUND}" -eq 0 ]; then
-    echo "${JST_NOW} [in_progress_monitor] 全8パターン異常なし"
+    echo "${JST_NOW} [in_progress_monitor] 全9パターン異常なし"
 else
     echo "${JST_NOW} [in_progress_monitor] ${ALERTS_FOUND}件のアラートを将軍 inbox に送信"
 fi

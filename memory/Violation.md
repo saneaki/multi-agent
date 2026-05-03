@@ -429,3 +429,17 @@ L014 (家老申告を鵜呑み禁止) は 2026-04-17 に明文化されたが、
 | Violated | SO-17 North Star alignment (発令という ends と、formal 系統経由という means の semantic gap) / SO-24 (Verification Before Report) |
 | Cleanup 提案 | cmd_634 完遂報告時に `queue/shogun_to_karo.yaml` へ retroactive entry を追記し audit trail を補完する。今後の予防は本 cmd_634 で実装した 5-Layer verifier (Layer 5 Reporting Quality Check) と P6 dashboard stale alert に集約。 |
 | 参照 | `queue/shogun_to_karo.yaml` (cmd_634 entry 該当箇所) / `memory/Violation.md` No.17-21 (cmd_631/632 incident cluster 内の reporting quality 系) / `output/cmd_634_scope_f_qc_report.md` |
+
+---
+
+### No.26 | 殿判断待ち案件の通知パス宙吊り (2026-05-03)
+
+| 項目 | 内容 |
+|---|---|
+| 発生 | 2026-04-27〜2026-05-03 (6日間) |
+| 対象 | [提案-4] 家老役割集中問題 P1-P3 殿判断セッション提案 |
+| 問題 | dashboard 🚨要対応 欄に登録はされたが、能動的な通知パスが存在せず 6日間放置 |
+| 根本原因 | shogun_in_progress_monitor.sh に action_required 監視パターンが未実装。登録=通知 の自動連結がなかった |
+| 影響 | 殿が dashboard を自発的に確認しない限り、判断待ち案件が indefinitely 宙吊りになる構造 |
+| 是正 | cmd_642: P9 (action_required 滞留 24h+ → daily 8:00 ntfy) 実装 |
+| 関連 | No.7 (shelf-ware), No.23 (cmd_633 4新列 shelf-ware), P2/P4/P6 (各種乖離検知) |
