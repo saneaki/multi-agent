@@ -15,6 +15,7 @@
 | ID | タイトル | 機構 | 日時 | 関連 Violation |
 |----|---------|------|------|----------------|
 | [No.1](#no1--cmd_638-進行中乖離自動検出-初回成功) | cmd_638 進行中乖離自動検出 初回成功 | shogun_in_progress_monitor.sh | 2026-05-02 22:00 JST | No.23 (cmd_633 shelf-ware) と対 |
+| No.2 候補 | P8 interactive prompt 検出 | shogun_in_progress_monitor.sh | 2026-05-03 JST | No.24 (cmd_641 Claude Code interactive prompt 凍結) と対 |
 
 ---
 
@@ -32,6 +33,20 @@
 | 関連 Violation | **No.23 (cmd_633 4新列 shelf-ware) と対** — 失敗 (cmd_633 shelf-ware) → 解消 (cmd_637) → 同型再発の自動検出 (cmd_638) という三段サイクル |
 | Earned by | cmd_638 Scope A (ash5) + Scope B (ash7) + Scope C (gunshi QC, Go 判定) の協働実装 |
 | Future reference | 列・field・property 添加系の State Visibility Gap が再発した場合、本機構が自動検出することで silent failure 化を防止 |
+
+---
+
+### No.2 候補 | P8 interactive prompt 検出
+
+| 項目 | 内容 |
+|---|---|
+| 状態 | 候補。AC7 gunshi 実動作確認後に正式 No.2 化 |
+| 発端 | 2026-05-03 04:00 JST、karo pane が Claude Code feedback prompt で 1h+ 凍結 |
+| 機構 | `scripts/shogun_in_progress_monitor.sh` P8 interactive prompt 検出 |
+| 検出対象 | 全 agent pane (`multiagent:0.0`〜`multiagent:0.8`) の末尾3行に出る `"How is Claude doing"` / `Choose option` / `[Y/n]` / `?` 終端 / 数字選択肢 |
+| 成功条件 | gunshi QC で意図的な interactive prompt を発生させ、5分以内に shogun ntfy alert が発火すること |
+| 関連 Violation | No.24 (cmd_641 Claude Code interactive prompt による agent 凍結) |
+| 意義 | 既存 P1-P7 では拾えない UI 入力待ちを pane 実状態から検出し、tmux multi-agent 運用の停止を早期 alert に変換する |
 
 ---
 

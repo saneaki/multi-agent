@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# shogun_in_progress_monitor.sh — 進行中乖離 1h 監視 (7パターン検出)
-# cmd_638 Scope A + cmd_640 Scope B (P7)
+# shogun_in_progress_monitor.sh — 進行中乖離 1h 監視 (8パターン検出)
+# cmd_638 Scope A + cmd_640 Scope B (P7) + cmd_641 Scope A (P8)
 #
 # 検出対象:
 #   P1: shogun_to_karo.yaml に status=pending かつ inbox/karo.yaml に shogun→karo
@@ -13,6 +13,7 @@
 #   P5: shogun inbox に未処理 action_required > 30分 → 殿手作業滞留
 #   P6: dashboard.md の「最終更新:」が 2h 以上前 → dashboard stale alert
 #   P7: GHA daily-notion-sync が success でも upsert 0件 → Notion同期 silent failure
+#   P8: tmux pane 末尾に interactive prompt → agent 凍結リスク
 #
 # 重複 alert 抑制: 1h 内同種は再送付しない (alert_key で識別)
 #
@@ -107,7 +108,7 @@ handle_alert() {
     fi
 }
 
-# ===== 7パターン検出ロジック (Python 一括実行) =====
+# ===== 8パターン検出ロジック (Python 一括実行) =====
 RESULTS=$("${PYTHON}" - <<'PYEOF'
 import os, re, glob, yaml, json, subprocess
 from datetime import datetime, timedelta, timezone
@@ -415,6 +416,74 @@ def check_pattern_7():
     except Exception:
         return
 
+# ---------- Pattern 8: tmux interactive prompt 検出 ----------
+def check_pattern_8():
+    """Claude Code などの interactive prompt で agent pane が入力待ちになる状態を検出"""
+    panes = [
+        ('multiagent:0.0', 'karo'),
+        ('multiagent:0.1', 'ashigaru1'),
+        ('multiagent:0.2', 'ashigaru2'),
+        ('multiagent:0.3', 'ashigaru3'),
+        ('multiagent:0.4', 'ashigaru4'),
+        ('multiagent:0.5', 'ashigaru5'),
+        ('multiagent:0.6', 'ashigaru6'),
+        ('multiagent:0.7', 'ashigaru7'),
+        ('multiagent:0.8', 'gunshi'),
+    ]
+
+    yn_prompt_re = re.compile(r'(\[[Yy]/[Nn]\]|\([Yy]/[Nn]\)|\[[Yy]/n\]|\([Yy]/n\)|\[y/[Nn]\]|\(y/[Nn]\))')
+
+    for pane, fallback_agent in panes:
+        try:
+            captured = subprocess.run(
+                ['tmux', 'capture-pane', '-t', pane, '-p'],
+                capture_output=True, text=True, timeout=5)
+        except (subprocess.TimeoutExpired, FileNotFoundError):
+            continue
+        except Exception:
+            continue
+        if captured.returncode != 0:
+            continue
+
+        lines = captured.stdout.splitlines()[-15:]
+        text = '\n'.join(lines)
+        numbered_streak = 0
+        numbered_choice_detected = False
+        for line in lines:
+            if re.search(r'^\s*\d+\.', line):
+                numbered_streak += 1
+                if numbered_streak >= 2:
+                    numbered_choice_detected = True
+            else:
+                numbered_streak = 0
+
+        prompt_detected = (
+            any(re.search(r'\?\s*$', line) for line in lines)
+            or 'How is Claude doing' in text
+            or bool(yn_prompt_re.search(text))
+            or 'Choose option' in text
+            or numbered_choice_detected
+        )
+        if not prompt_detected:
+            continue
+
+        agent = fallback_agent
+        try:
+            agent_info = subprocess.run(
+                ['tmux', 'display-message', '-t', pane, '-p', '#{@agent_id}'],
+                capture_output=True, text=True, timeout=5)
+            candidate = agent_info.stdout.strip()
+            if agent_info.returncode == 0 and candidate:
+                agent = candidate
+        except (subprocess.TimeoutExpired, FileNotFoundError):
+            pass
+        except Exception:
+            pass
+
+        pane_id = pane.replace(':', '_').replace('.', '_')
+        out(f'P8_{pane_id}',
+            f"interactive_prompt_detected: pane={pane} agent={agent}")
+
 check_pattern_1()
 check_pattern_2()
 check_pattern_3()
@@ -422,6 +491,7 @@ check_pattern_4()
 check_pattern_5()
 check_pattern_6()
 check_pattern_7()
+check_pattern_8()
 
 for r in RESULTS:
     print(r)
@@ -439,7 +509,7 @@ fi
 if [ "${DRY_RUN}" = "yes" ]; then
     echo "${JST_NOW} [in_progress_monitor] DRY-RUN: ${ALERTS_FOUND}件検出"
 elif [ "${ALERTS_FOUND}" -eq 0 ]; then
-    echo "${JST_NOW} [in_progress_monitor] 全7パターン異常なし"
+    echo "${JST_NOW} [in_progress_monitor] 全8パターン異常なし"
 else
     echo "${JST_NOW} [in_progress_monitor] ${ALERTS_FOUND}件のアラートを将軍 inbox に送信"
 fi

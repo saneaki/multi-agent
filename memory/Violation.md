@@ -399,9 +399,23 @@ L014 (家老申告を鵜呑み禁止) は 2026-04-17 に明文化されたが、
 
 ---
 
+### No.24 | cmd_641 Claude Code interactive prompt による agent 凍結 (構造的弱点)
+
+| 項目 | 内容 |
+|---|---|
+| 発生 | 2026-05-03 04:00 JST。karo pane が 1h+ 凍結 |
+| 影響 | Claude Code feedback prompt が tmux pane 上で入力待ちとなり、agent が自律継続できない状態が発生 |
+| 根本原因 | Claude Code feedback/choice UI は tmux 非インタラクティブ運用で agent をブロックし得るが、cmd_638 P1-P7 では pane 末尾の interactive prompt を検出対象にしていなかった |
+| 連鎖 | feedback prompt 表示 → agent 入力待ち → Karo coordination 停止 → cmd_638 既存監視パターンでは未検出 → 将軍の手動観測で発覚 |
+| 対処 | cmd_641 Scope A で `scripts/shogun_in_progress_monitor.sh` に P8 interactive prompt 検出を追加。将軍が `"0"` 送信で dismiss する運用は F001 例外として扱う |
+| 教訓 | Claude Code feedback/choice UI は agent が自力 dismiss 不可。tmux pane 末尾の `"How is Claude doing"` / `Choose option` / `[Y/n]` / `?` 終端 / 数字選択肢を監視し、alert で人間介入へ接続する必要がある |
+| 再発防止 | P8 により全 agent pane (`multiagent:0.0`〜`multiagent:0.8`) の末尾3行を巡回し、interactive prompt 検出時に 1h dedup 付き alert を送る |
+
+---
+
 ### No.25 | cmd_634 真未発令 (Reporting Quality Gap)
 
-> Note: No.24 は cmd_639 (self-clear 自律化) で先行記録予定。本項は task 指示通り No.25 として記載 (連番空欠は cmd_639 完了で解消)。
+> Note: No.24 は cmd_641 P8 追加により Claude Code interactive prompt 凍結事案として記録済み。
 
 | 項目 | 内容 |
 |---|---|
