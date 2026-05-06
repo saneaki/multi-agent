@@ -134,6 +134,48 @@ def _get_clasp_badge(
     return f"clasp: 🟢 {days}日 ({updated}更新)"
 
 
+def collect_violations(base_dir: Path, last_updated: str) -> list[tuple[str, str, str, str]]:
+    """Collect violation rows: (tag, count, last_seen, recommended_action)."""
+    rows: list[tuple[str, str, str, str]] = []
+
+    # L019-skip: count shogun replies without cross-source check — static 0 (git-log analysis not yet automated)
+    rows.append(("L019-skip", "0", "—", "—"))
+
+    # L020-stale: dashboard staleness violation — stale if last_updated > 4h ago
+    stale_last_seen = "—"
+    stale_action = "—"
+    try:
+        date_part = last_updated.split()[0]  # "YYYY-MM-DD"
+        time_part = last_updated.split()[1] if len(last_updated.split()) > 1 else "00:00"
+        lu_dt = datetime.datetime.strptime(f"{date_part} {time_part}", "%Y-%m-%d %H:%M")
+        elapsed_min = (datetime.datetime.now() - lu_dt).total_seconds() / 60
+        if elapsed_min > 240:
+            stale_last_seen = f"{date_part} {time_part}"
+            stale_action = "dashboard 再生成"
+            rows.append(("L020-stale", "1", stale_last_seen, stale_action))
+        else:
+            rows.append(("L020-stale", "0", "—", "—"))
+    except Exception:
+        rows.append(("L020-stale", "—", "—", "—"))
+
+    # Step1.5-skip: shogun_session_start.sh 未実行検出 — not yet automated
+    rows.append(("Step1.5-skip", "—", "—", "shogun_session_start.sh 実行"))
+
+    return rows
+
+
+def violation_section(last_updated: str) -> list[str]:
+    """Generate the '⚠️ 違反検出 (last 24h)' section."""
+    lines = ["## ⚠️ 違反検出 (last 24h)", ""]
+    rows = collect_violations(Path("."), last_updated)
+    lines.extend(render_table(
+        ["tag", "count", "last_seen", "recommended_action"],
+        list(rows),
+    ))
+    lines.append("")
+    return lines
+
+
 def generate_markdown(data: dict[str, Any]) -> str:
     meta = data.get("metadata", {})
     last_updated = meta.get("last_updated", "")
@@ -192,6 +234,8 @@ def generate_markdown(data: dict[str, Any]) -> str:
     ]
     lines.extend(render_table(["タグ", "項目", "詳細"], action_rows, TABLE_4_EMPTY_ROW))
     lines.append("")
+
+    lines.extend(violation_section(last_updated))
 
     lines.append("## 📊 運用指標")
     lines.append("")
