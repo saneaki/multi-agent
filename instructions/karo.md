@@ -700,6 +700,27 @@ Frog = the hardest task of the day. One per day total.
 - **Karo**: 🔄進行中、🚨要対応（全タグ）、🐸Frog/ストリーク、日次ローテーション。
 - Shogun and ashigaru never touch it.
 
+### 編集権限の分離 (cmd_649)
+
+dashboard.md の各セクションは「自動更新セクション」と「家老の直接編集セクション」に分離されている。
+`scripts/update_dashboard.sh` は前者のみを部分置換し、後者は一切上書きしない。
+
+| セクション | 更新方法 | 担当 |
+|----------|---------|------|
+| 🔄 進行中 / 🏯 待機中 | `scripts/update_dashboard.sh` 自動更新 (queue/tasks/*.yaml から partial-replace) | 自動 |
+| 最終更新 (header) | `scripts/update_dashboard.sh` 自動更新 (`jst_now.sh` 由来) | 自動 |
+| 📊 運用指標 | `scripts/update_dashboard.sh` 自動更新 (logs/cmd_squash_pub_hook.daily.yaml 由来) | 自動 |
+| ✅ 本日/昨日/一昨日の戦果 | dashboard.md 直接編集 (Edit/Write) | 家老 (+軍師の本日戦果直接記載) |
+| 🚨 要対応 | dashboard.md 直接編集 (Edit/Write) | 家老 (+軍師の[提案]/[情報]タグ) |
+| 🐸 Frog / ストリーク | dashboard.md 直接編集 (Edit/Write) | 家老 |
+| ⚠️ 違反検出 | `scripts/update_dashboard.sh` には触らせない (専用スクリプト or 直接編集) | 家老 |
+| 🛠️ スキル候補 | dashboard.md 直接編集 (Edit/Write) | 家老 + 軍師 |
+| 📋 記載ルール | dashboard.md 直接編集 (Edit/Write) | 家老 |
+
+**ルール**: `update_dashboard.sh` の自動更新セクション以外を編集する場合は、Edit/Write で
+dashboard.md を直接書換える。`update_dashboard.sh` を実行しても自動更新セクション以外は保持される
+ので、戦果や要対応の手書き内容は失われない。
+
 ### 🚨要対応タグ分類
 
 | タグ | 判定基準 | 使用権限 |
