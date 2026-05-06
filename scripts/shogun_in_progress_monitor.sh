@@ -61,7 +61,8 @@ try:
         data = yaml.safe_load(f) or {}
     msgs = data.get('messages') or []
     now = datetime.now(timezone.utc)
-    dedup_hours = 24 if alert_key.startswith('P9_') else 1
+    # cmd_644 Scope B: P9b also uses 24h dedup (P9c uses auto_cmd_log instead)
+    dedup_hours = 24 if alert_key.startswith('P9') else 1
     cutoff = now - timedelta(hours=dedup_hours)
     for m in msgs:
         if m.get('type') != 'in_progress_monitor_alert':
@@ -140,6 +141,164 @@ def parse_ts(ts_str):
 
 def now_jst():
     return datetime.now(JST)
+
+# ===== cmd_644 Scope B: Auto-Remediation helpers =====
+DRY_RUN_FLAG = (os.environ.get('DRY_RUN') == 'yes')
+
+def auto_cmd_log_today_count(pattern):
+    """Count today's auto-cmd dispatches for a pattern (B-1 rate limit)."""
+    log_path = os.path.join(ROOT, 'queue/auto_cmd_log.yaml')
+    if not os.path.exists(log_path):
+        return 0
+    try:
+        with open(log_path) as f:
+            data = yaml.safe_load(f) or {}
+    except Exception:
+        return 0
+    entries = data.get('auto_cmds') or []
+    today = now_jst().date()
+    count = 0
+    for e in entries:
+        if not isinstance(e, dict) or e.get('pattern') != pattern:
+            continue
+        ts = parse_ts(e.get('dispatched_at') or '')
+        if ts and ts.astimezone(JST).date() == today:
+            count += 1
+    return count
+
+def auto_cmd_log_within_hours(pattern, key, hours):
+    """Check if (pattern,key) was logged within the last N hours (B-2 P9c dedup)."""
+    log_path = os.path.join(ROOT, 'queue/auto_cmd_log.yaml')
+    if not os.path.exists(log_path):
+        return False
+    try:
+        with open(log_path) as f:
+            data = yaml.safe_load(f) or {}
+    except Exception:
+        return False
+    entries = data.get('auto_cmds') or []
+    cutoff = now_jst() - timedelta(hours=hours)
+    for e in entries:
+        if not isinstance(e, dict):
+            continue
+        if e.get('pattern') != pattern:
+            continue
+        if (e.get('key') or '') != key:
+            continue
+        ts = parse_ts(e.get('dispatched_at') or '')
+        if ts and ts.astimezone(JST) >= cutoff:
+            return True
+    return False
+
+def has_pending_auto_cmd(pattern, key):
+    """Check shogun_to_karo.yaml for an existing pending auto cmd matching (pattern,key)."""
+    s2k = os.path.join(ROOT, 'queue/shogun_to_karo.yaml')
+    if not os.path.exists(s2k):
+        return False
+    try:
+        content = open(s2k, encoding='utf-8', errors='replace').read()
+    except Exception:
+        return False
+    parts = re.split(r'^(?=- id: cmd_)', content, flags=re.MULTILINE)
+    for part in parts:
+        if not part.strip() or 'auto: true' not in part:
+            continue
+        m_pat = re.search(r'^\s*auto_pattern:\s*(\S+)', part, re.MULTILINE)
+        m_key = re.search(r'^\s*auto_key:\s*(\S+)', part, re.MULTILINE)
+        m_st  = re.search(r'^\s*status:\s*(\S+)', part, re.MULTILINE)
+        if not (m_pat and m_st):
+            continue
+        if m_pat.group(1).strip("'\"") != pattern:
+            continue
+        if m_st.group(1).strip("'\"") != 'pending':
+            continue
+        if key and (not m_key or m_key.group(1).strip("'\"") != key):
+            continue
+        return True
+    return False
+
+def append_auto_cmd_log(pattern, cmd_id, key, purpose):
+    """Append entry to queue/auto_cmd_log.yaml."""
+    log_path = os.path.join(ROOT, 'queue/auto_cmd_log.yaml')
+    try:
+        if os.path.exists(log_path):
+            with open(log_path) as f:
+                data = yaml.safe_load(f) or {}
+        else:
+            data = {}
+    except Exception:
+        data = {}
+    if not isinstance(data.get('auto_cmds'), list):
+        data['auto_cmds'] = []
+    data['auto_cmds'].append({
+        'cmd_id': cmd_id,
+        'pattern': pattern,
+        'key': key,
+        'dispatched_at': now_jst().isoformat(timespec='seconds'),
+        'purpose': purpose,
+    })
+    with open(log_path, 'w', encoding='utf-8') as f:
+        yaml.safe_dump(data, f, allow_unicode=True, sort_keys=False)
+
+def append_auto_cmd_to_shogun_to_karo(cmd_id, pattern, key, purpose, command, priority='high'):
+    """Append auto cmd block to queue/shogun_to_karo.yaml (text-mode append)."""
+    s2k = os.path.join(ROOT, 'queue/shogun_to_karo.yaml')
+    timestamp = now_jst().isoformat(timespec='seconds')
+    purpose_esc = purpose.replace('"', '\\"')
+    indented_cmd = '\n'.join('    ' + ln for ln in command.split('\n'))
+    block = (
+        f"- id: {cmd_id}\n"
+        f"  auto: true\n"
+        f"  auto_pattern: {pattern}\n"
+        f"  auto_key: {key}\n"
+        f"  timestamp: '{timestamp}'\n"
+        f"  purpose: \"{purpose_esc}\"\n"
+        f"  command: |\n"
+        f"{indented_cmd}\n"
+        f"  project: shogun\n"
+        f"  priority: {priority}\n"
+        f"  status: pending\n"
+    )
+    with open(s2k, 'a', encoding='utf-8') as f:
+        f.write(block)
+
+def trigger_auto_remediation(pattern, key, purpose, command, brief):
+    """B-1/B-2: dispatch an auto cmd if rate/dedup checks allow. Returns True if dispatched."""
+    # B-1 rate limit (P6: 3/day)
+    if pattern == 'P6':
+        today_count = auto_cmd_log_today_count('P6')
+        if today_count >= 3:
+            out(f'{pattern}-RATE_LIMITED',
+                f"P6 auto cmd 1日3回制限到達 (today_count={today_count}, skip)")
+            return False
+    # B-2 P9c 168h dedup
+    if pattern == 'P9c':
+        if auto_cmd_log_within_hours('P9c', key, 168):
+            return False
+    # Pending duplicate guard (shared)
+    if has_pending_auto_cmd(pattern, key):
+        return False
+
+    cmd_id = f"cmd_auto_{int(now_jst().timestamp())}_{pattern.lower()}"
+
+    if DRY_RUN_FLAG:
+        out(f'AUTO_CMD_{pattern}',
+            f"[DRY-RUN] auto cmd dispatch candidate: id={cmd_id} key={key} purpose={purpose}")
+        return True
+
+    append_auto_cmd_to_shogun_to_karo(cmd_id, pattern, key, purpose, command)
+    append_auto_cmd_log(pattern, cmd_id, key, purpose)
+    msg = f"【Auto-Remediation】{cmd_id}: {brief} (pattern={pattern}, key={key})"
+    try:
+        subprocess.run(
+            ['bash', os.path.join(ROOT, 'scripts/inbox_write.sh'),
+             'karo', msg, 'task_assigned', 'system'],
+            check=False, timeout=15)
+    except Exception:
+        pass
+    out(f'AUTO_CMD_{pattern}',
+        f"auto cmd dispatched: id={cmd_id} key={key} purpose={purpose}")
+    return True
 
 # ---------- Pattern 1: 家老 dispatch 漏れ ----------
 def check_pattern_1():
@@ -380,6 +539,20 @@ def check_pattern_6():
             f"(last_updated={last_updated_str} JST). "
             f"rotate 失敗 / karo 更新漏れを確認せよ。")
 
+    # cmd_644 Scope B (B-1): 4h 超過で auto cmd 自動発令 (rate limit 1日3回)
+    if elapsed_minutes > 240:
+        trigger_auto_remediation(
+            pattern='P6',
+            key='dashboard_refresh',
+            purpose=f"dashboard 鮮度低下 ({int(elapsed_minutes)}分) による自動 cmd",
+            command=(
+                "dashboard.md を再生成し last_updated を更新せよ。\n"
+                "queue/dispatch_log.yaml + queue/tasks/*.yaml を集計し進行中欄を反映、\n"
+                "rotation バグ・field 名不一致が無いか scripts/dashboard_validator.py で検証せよ。"
+            ),
+            brief=f"dashboard 4h+ stale ({int(elapsed_minutes)}min)",
+        )
+
 # ---------- Pattern 7: GHA daily-notion-sync upsert 0件 ----------
 def check_pattern_7():
     """GHA daily-notion-sync が success でも upsert 件数 0件なら Notion 同期 silent failure を疑い alert"""
@@ -539,6 +712,27 @@ def check_pattern_9():
         out(alert_key,
             f"【要対応 滞留{days}日{remaining_h}時間】{tag} {title} "
             f"— dashboard 要対応欄を確認されたし")
+
+        # cmd_644 Scope B (B-2): P9b 72h SLA — ntfy 直通 + shogun inbox 記録
+        if hours >= 72:
+            p9b_key = f'P9b_{tag_key}'
+            out(p9b_key,
+                f"🚨 SLA 72h超過: {tag} {title} (滞留{days}日{remaining_h}時間) "
+                f"— 殿の判断を要請")
+
+        # cmd_644 Scope B (B-2): P9c 7日 SLA — 家老 inbox に判断資料生成 cmd を dispatch (168h dedup)
+        if hours >= 168:
+            trigger_auto_remediation(
+                pattern='P9c',
+                key=tag_key,
+                purpose=f"P9c 7日SLA: {tag} {title} 判断資料整備",
+                command=(
+                    f"action_required {tag} {title} が 7日以上滞留している。\n"
+                    f"判断材料 (現状/選択肢/推奨/影響) を整理し殿に提示する。\n"
+                    f"output/cmd_auto_decision_prep_{tag_key}.md として作成せよ。"
+                ),
+                brief=f"7d SLA action_required: {tag}",
+            )
 
 check_pattern_1()
 check_pattern_2()
