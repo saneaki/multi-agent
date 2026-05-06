@@ -732,6 +732,30 @@ See `memory/global_context.md §Context % Reality Check Lapse — 4回目再発 
 
 See `memory/global_context.md §Reality Check 5度連発 — 構造解消 (2026-04-29)` for the incident analysis and structural defense design.
 
+---
+
+## L020: Dashboard 鮮度管理ルール
+
+**Definition**: `dashboard.md` の `last_updated` は常に現実の状態を反映していなければならない。
+Karo が dashboard を更新せずに 4 時間を超えた場合、これは **L020 violation** と見なす。
+
+**Responsible**: Karo (一次責任)。Gunshi は QC 時に鮮度を確認し、stale なら karo へ上申する。
+
+**Staleness threshold**: `last_updated` から 4h 超過 = stale。240min 超 = shogun_in_progress_monitor が P6 アラートを発行。
+
+**Recovery**: `scripts/generate_dashboard_md.py` を実行して dashboard を再生成し、`last_updated` を現在時刻 (JST) に更新する。
+
+**L020b**: dashboard `last_updated` から **4h 超過** を shogun_in_progress_monitor が検出した場合、B-1 として auto cmd (dashboard 再生成) を自動生成する。
+- Trigger: P6 アラート発行時点で 4h 超過
+- Action: `cmd_XXX: dashboard 再生成` を karo inbox へ自動投入 (cmd 採番は jst_now ベース)
+- Responsibility: shogun_in_progress_monitor スクリプト (B-1 実装後)
+
+**L020c**: `action_required` 欄のアイテムが以下の期間を超えて滞留した場合にエスカレーション:
+- **72h 超** → P9b: ntfy 経由で殿に直接通知 (件名 + 滞留時間を含む)
+- **7d 超** → P9c: shogun_in_progress_monitor.sh が AUTO_CMD_P9c を karo inbox に自動 dispatch する
+
+**Rationale**: cmd_644 Forcing Function 3層モデルの Governance 層 (Phase C)。検出 (P6/P9) だけでは自己治癒しないため、auto cmd 生成 (B-1) と SLA エスカレーション (B-2) を規則化して構造的に対処する。
+
 # Task Flow
 
 ## Workflow: Shogun → Karo → Ashigaru
