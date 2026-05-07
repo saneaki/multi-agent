@@ -227,3 +227,41 @@ result:
     E-1: "Pass — output/cmd_662_shp_command_report.md 生成 (5186 bytes)"
 
   action_required_candidates: []
+
+---
+worker_id: gunshi
+task_id: subtask_663_scope_c_integrated_qc
+parent_cmd: cmd_663
+timestamp: "2026-05-08T05:03:27+09:00"
+status: done
+trigger: karo_assigned
+note: |
+  cmd_663 Scope C 統合QC: ash5(ScopeA)+ash6(ScopeB) north_star 3点照合 + 統合レポート作成。
+
+result:
+  type: quality_check
+  task_type: integrated_formal_qc
+  qa_decision: conditional_go
+  north_star:
+    N1: "aligned — 3役職とも○(一部修正で起動可)。合計工数15.5h (共通6.5h+将軍2.5h+家老3.5h+軍師3h)"
+    N2: "aligned — skill 232件 matrix: ◎197/○29/×6。AGENTS.md経由で大半活用可能"
+    N3: "aligned — 段階移行(家老→軍師→将軍)で1-2ヶ月での体制確立可能"
+  ac_check:
+    A-1: "Pass — AGENTS.md/codex_tools.md/過去ash6関連ファイル特定"
+    A-2: "Pass — 6軸 (persona/tmux/inbox/hooks/MCP/sandbox) 評価完了"
+    A-3: "Pass — 将軍○/家老○/軍師○ + 必要対応リスト"
+    A-4: "Pass — output/cmd_663_codex_role_compatibility.md 生成 (24074 bytes)"
+    B-1: "Pass — .claude skill 232件 全網羅"
+    B-2: "Pass — Codex でのskill活用方法比較"
+    B-3: "Pass — 互換性 matrix ◎197/○29/×6 作成"
+    B-4: "Pass — output/cmd_663_skill_codex_compat.md 生成 (14810 bytes)"
+    C-1: "Pass — north_star N1/N2/N3 全aligned"
+    D-1: "Pass — output/cmd_663_integrated.md 生成 (5914 bytes)"
+  issues:
+    - "Conditional: 3大課題 (AGENTS.md 32KiB上限/hook不発火/msg 5h上限) は後続cmdで解消要"
+    - "Conditional: ×6件 skill は Codex 不可 — 個別代替策が別途必要"
+  action_required_candidates: []
+  後続cmd候補:
+    - "cmd_664: 共通fix 6.5h (AGENTS.md分割/hook代替/msg上限対応)"
+    - "cmd_665〜667: 段階移行 (家老→軍師→将軍)"
+    - "cmd_668: ×6件 skill 個別評価"
