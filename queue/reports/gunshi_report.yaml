@@ -265,3 +265,36 @@ result:
     - "cmd_664: 共通fix 6.5h (AGENTS.md分割/hook代替/msg上限対応)"
     - "cmd_665〜667: 段階移行 (家老→軍師→将軍)"
     - "cmd_668: ×6件 skill 個別評価"
+---
+worker_id: gunshi
+task_id: subtask_664_scope_d_north_star_qc
+parent_cmd: cmd_664
+timestamp: "2026-05-08T05:37:02+09:00"
+status: done
+trigger: karo_assigned
+note: |
+  cmd_664 Scope D north_star QC: ash1 Discord能動反応機構実装の独立検証 + north_star 3点照合。
+
+result:
+  type: quality_check
+  task_type: formal_qc
+  qa_decision: go
+  north_star:
+    N1: "aligned — stop_hook_inbox.sh が AGENT_ID=shogun 時に discord_received 未読を自動検知 → block JSON で将軍次ターンに自動注入。殿の操作負荷ゼロ実現"
+    N2: "aligned — dry-run テスト: 8-48秒で検知 (5min SLA 内)。AC A-3 PASS"
+    N3: "aligned — AC C-2設計: 5min非応答 → 家老 escalation。inbox_watcher の既存 4min escalation を流用"
+  ac_check:
+    A-1: "Pass — stop_hook_inbox.sh に discord_received 専用ロジック追加。AGENT_ID=shogun 時 queue/inbox/shogun.yaml チェック"
+    A-2: "Pass — block JSON で将軍次ターン自動注入 (decision=block + reason=Discord受信メッセージ内容)"
+    A-3: "Pass — dry-run テスト 8-48秒で検知、stop_hook_active=True で無限ループ防止"
+    B-1: "Pass — discord_received 検知時に Discord ack 送信 (discord_notify.py 経由)"
+    B-2: "Pass — 完遂通知設計 (discord_notify.py 経由)"
+    C-1: "Pass — dry-run (inbox手動投入) テスト PASS。decision=block 確認"
+    C-2: "Pass — fallback: 5min非応答 → 家老 escalation 設計 (inbox_watcher流用)"
+    E-1: "Pass — output/cmd_664_discord_proactive_reaction.md 生成 (4715 bytes)"
+  independent_verification:
+    commit: "f2d9474 — feat(cmd_664): Discord能動反応機構"
+    bash_n: "PASS"
+    artifact_size: "4715 bytes"
+    stop_hook_size: "10290 bytes"
+  action_required_candidates: []
