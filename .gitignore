@@ -207,6 +207,7 @@
 !output/cmd_662_shp_command_report.md
 !output/cmd_663_codex_role_compatibility.md
 !output/cmd_663_skill_codex_compat.md
+!output/cmd_663_integrated.md
 
 # cmd_544: 3 安全装置 state files (kill-switch/rate-limit/pending/daily-metric)
 !logs/cmd_squash_pub_hook.disabled
