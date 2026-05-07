@@ -92,8 +92,29 @@ send_alert() {
     local content="$1"
     bash "${SCRIPT_DIR}/scripts/inbox_write.sh" \
         shogun "${content}" in_progress_monitor_alert shogun_in_progress_monitor
-    bash "${SCRIPT_DIR}/scripts/ntfy.sh" \
-        "${content}" "⚠️ 進行中見回り検知" "見回り-IP" 2>/dev/null || true
+
+    # D-1: ntfy 6h dedup (D-2: persist, D-3: auto-purge)
+    local dedup_dir="${HOME}/.cache/shogun"
+    local dedup_file="${dedup_dir}/ntfy_sent.txt"
+    local dedup_key
+    dedup_key=$(printf '%s' "${content}" | sha256sum | awk '{print $1}')
+    local now_epoch
+    now_epoch=$(date +%s)
+    local cutoff_epoch=$(( now_epoch - 6 * 3600 ))
+
+    mkdir -p "${dedup_dir}"
+    # D-3: purge entries older than 6h
+    if [[ -f "${dedup_file}" ]]; then
+        awk -F'\t' -v c="${cutoff_epoch}" '$1+0 > c' "${dedup_file}" > "${dedup_file}.tmp" \
+            && mv "${dedup_file}.tmp" "${dedup_file}" || true
+    fi
+
+    # D-1/D-2: skip ntfy if key was sent within 6h; persist on send
+    if ! grep -qF "${dedup_key}" "${dedup_file}" 2>/dev/null; then
+        bash "${SCRIPT_DIR}/scripts/ntfy.sh" \
+            "${content}" "⚠️ 進行中見回り検知" "見回り-IP" 2>/dev/null || true
+        printf '%s\t%s\n' "${now_epoch}" "${dedup_key}" >> "${dedup_file}"
+    fi
 }
 
 handle_alert() {
@@ -451,7 +472,7 @@ def check_pattern_4():
     if not in_progress:
         return  # P2 が拾う
 
-    last_updated = d.get('last_updated')
+    last_updated = d.get('metadata', {}).get('last_updated')
     age_min = None
     if last_updated:
         # "2026-05-02 18:20 JST" 形式
@@ -610,11 +631,14 @@ def check_pattern_8():
     ]
 
     yn_prompt_re = re.compile(r'(\[[Yy]/[Nn]\]|\([Yy]/[Nn]\)|\[[Yy]/n\]|\([Yy]/n\)|\[y/[Nn]\]|\(y/[Nn]\))')
+    # question_re: ❯ カーソル待機や通常 ? を含む行と区別するため、Claude Code 固有フレーズに限定
+    question_prompt_re = re.compile(r'(How is Claude doing|Do you want to proceed|Would you like to|Are you sure|Confirm\?)\s*$')
 
     for pane, fallback_agent in panes:
         try:
+            # -S 0 でスクロールバックを除外し live state のみ取得
             captured = subprocess.run(
-                ['tmux', 'capture-pane', '-t', pane, '-p'],
+                ['tmux', 'capture-pane', '-t', pane, '-p', '-S', '0'],
                 capture_output=True, text=True, timeout=5)
         except (subprocess.TimeoutExpired, FileNotFoundError):
             continue
@@ -624,7 +648,9 @@ def check_pattern_8():
             continue
 
         lines = captured.stdout.splitlines()[-15:]
-        text = '\n'.join(lines)
+        # 末尾行のみで Y/n prompt を判定 (C-2)
+        last_lines = lines[-3:] if lines else []
+        last_text = '\n'.join(last_lines)
         numbered_streak = 0
         numbered_choice_detected = False
         for line in lines:
@@ -636,10 +662,9 @@ def check_pattern_8():
                 numbered_streak = 0
 
         prompt_detected = (
-            any(re.search(r'\?\s*$', line) for line in lines)
-            or 'How is Claude doing' in text
-            or bool(yn_prompt_re.search(text))
-            or 'Choose option' in text
+            any(question_prompt_re.search(line) for line in last_lines)
+            or bool(yn_prompt_re.search(last_text))
+            or 'Choose option' in last_text
             or numbered_choice_detected
         )
         if not prompt_detected:

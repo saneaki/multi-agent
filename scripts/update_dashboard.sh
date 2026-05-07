@@ -251,9 +251,7 @@ def update_dashboard_yaml(
         print(f"[WARN] dashboard.yaml read failed: {e}", file=sys.stderr)
         d = {}
 
-    d["in_progress"] = in_progress or [
-        {"cmd": "—", "content": "進行中なし", "assignee": "—", "status": "—"}
-    ]
+    d["in_progress"] = in_progress or []
     d["idle_members"] = idle_members or [
         {"name": "—", "model": "", "status": "待機なし", "last_task": "—"}
     ]
