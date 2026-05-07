@@ -115,6 +115,7 @@
 !scripts/jst_now.sh
 !scripts/send_test_email.py
 !scripts/dashboard_rotate.sh
+!scripts/action_required_sync.sh
 !scripts/watch_gmail_trigger.sh
 !scripts/context_snapshot.sh
 !scripts/shogun-discord.service.template
@@ -190,6 +191,8 @@
 !output/cmd_594_kpi_verification.md
 !output/cmd_594_scope_b_qc_report.md
 !output/cmd_658_phase01_report.md
+!output/cmd_659_risk_mitigation_plan.md
+!output/cmd_659_implementation_report.md
 
 # cmd_544: 3 安全装置 state files (kill-switch/rate-limit/pending/daily-metric)
 !logs/cmd_squash_pub_hook.disabled
@@ -297,6 +300,7 @@ tests/specs/osato_lms_*
 !tests/
 !tests/*.bats
 !tests/*.sh
+!tests/dashboard_pipeline_test.sh
 !tests/fixtures/
 !tests/fixtures/*.yaml
 !tests/unit/

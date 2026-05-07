@@ -15,11 +15,16 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-DASHBOARD="$SCRIPT_DIR/dashboard.md"
-DASHBOARD_YAML="$SCRIPT_DIR/dashboard.yaml"
-STREAKS="$SCRIPT_DIR/saytask/streaks.yaml"
+# Test override (cmd_659 Scope E): redirect targets without modifying real dashboard
+DASHBOARD="${DASHBOARD_ROTATE_MD:-$SCRIPT_DIR/dashboard.md}"
+DASHBOARD_YAML="${DASHBOARD_ROTATE_YAML:-$SCRIPT_DIR/dashboard.yaml}"
+STREAKS="${DASHBOARD_ROTATE_STREAKS:-$SCRIPT_DIR/saytask/streaks.yaml}"
 LOG_PREFIX="[$(TZ=Asia/Tokyo date '+%Y-%m-%d %H:%M:%S JST')]"
 DRY_RUN=false
+
+# cmd_659 Scope C-5: flock /var/lock/shogun_dashboard.lock (R6)
+# 同 lock を action_required_sync.sh と共有 → race condition ゼロ
+LOCK_FILE="${DASHBOARD_ROTATE_LOCK:-/var/lock/shogun_dashboard.lock}"
 
 if [[ "${1:-}" == "--dry-run" ]]; then
     DRY_RUN=true
@@ -33,6 +38,21 @@ die() {
     log "ERROR: $1" >&2
     exit 1
 }
+
+# C-5: acquire flock first (test 環境用に project-local fallback)
+if ! ( : > "$LOCK_FILE" ) 2>/dev/null; then
+    LOCK_FILE="$SCRIPT_DIR/.shogun_dashboard.lock"
+    : > "$LOCK_FILE" 2>/dev/null || die "cannot create lock file: $LOCK_FILE"
+fi
+
+exec {LOCK_FD}>"$LOCK_FILE"
+trap 'exec {LOCK_FD}>&- 2>/dev/null || true' EXIT
+
+if ! flock --timeout 30 "$LOCK_FD"; then
+    die "flock timeout (30s): $LOCK_FILE — another sync/rotate process holding the lock"
+fi
+
+log "Lock acquired: $LOCK_FILE"
 
 # === Skill Entry FIFO Trim ===
 trim_skill_entries() {
@@ -228,9 +248,27 @@ d['achievements'] = ach
 with open(dashboard_yaml, 'w') as f:
     yaml.dump(d, f, allow_unicode=True, default_flow_style=False)
 
-# Regenerate dashboard.md
-subprocess.run(['python3', 'scripts/generate_dashboard_md.py'], check=True,
-               cwd=str(Path(dashboard_yaml).parent))
+# Regenerate dashboard.md (cmd_659 Scope C: auto-mode → partial when markers exist)
+import os as _os
+renderer = _os.environ.get('DASHBOARD_ROTATE_RENDERER',
+                            str(Path(__file__).resolve().parent / 'scripts' / 'generate_dashboard_md.py'))
+# Heuristic fallback: __file__ is "<stdin>" when run via heredoc, so try repo path
+if not _os.path.exists(renderer):
+    renderer = _os.environ.get('DASHBOARD_ROTATE_RENDERER',
+                                _os.path.join(_os.path.dirname(_os.path.abspath(dashboard_yaml)),
+                                              'scripts', 'generate_dashboard_md.py'))
+dashboard_md_path = _os.environ.get('DASHBOARD_ROTATE_MD',
+                                     str(Path(dashboard_yaml).parent / 'dashboard.md'))
+# fallback: derive from yaml path if env unset
+if not _os.path.exists(renderer):
+    # try the upstream repo location
+    candidate = '/home/ubuntu/shogun/scripts/generate_dashboard_md.py'
+    if _os.path.exists(candidate):
+        renderer = candidate
+subprocess.run(
+    ['python3', renderer, '--input', dashboard_yaml, '--output', dashboard_md_path],
+    check=True,
+)
 print(f'achievements rotated: {current_md} → {today_jst} ({completed_count}件)')
 PYEOF
 

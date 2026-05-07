@@ -1,11 +1,31 @@
 #!/usr/bin/env python3
-"""Generate dashboard.md from dashboard.yaml (SoT)."""
+"""Generate dashboard.md from dashboard.yaml (SoT).
+
+Modes (cmd_659 Scope C):
+  - "partial" (default when markers exist in output md):
+      Replace only the content between
+      <!-- ACTION_REQUIRED:START --> ... <!-- ACTION_REQUIRED:END -->
+      Outside-boundary sections are copied verbatim from the existing md
+      (touch-禁止 — protects achievements/frog/skill 等の直編集領域).
+  - "full" (legacy, used when no markers / fresh init):
+      Regenerate the entire dashboard.md from dashboard.yaml.
+      Used by Scope F for the initial markered template injection.
+
+Severity sort + badge prefix (R5):
+  P0 → HIGH → MEDIUM → INFO → 提案/情報 (legacy tag entries last)
+  badges: 🔥 P0 / ⚠️ HIGH / 📌 MEDIUM / ℹ️ INFO
+
+Atomic write (R3):
+  tempfile + fsync + os.rename. validation 失敗時は前回 md を保持。
+"""
 
 from __future__ import annotations
 
 import argparse
 import datetime
+import os
 import sys
+import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -16,6 +36,20 @@ TABLE_4_EMPTY_ROW = "| （まだなし） | | | |"
 IN_PROGRESS_REQUIRED_FIELDS = {"cmd", "content", "status", "assignee"}
 IN_PROGRESS_KNOWN_FIELDS = IN_PROGRESS_REQUIRED_FIELDS | {"agent"}
 ACHIEVEMENTS_REQUIRED_FIELDS = {"time", "battlefield", "task", "result"}
+
+# Boundary markers (cmd_659 Scope C / R1)
+ACTION_REQUIRED_START = "<!-- ACTION_REQUIRED:START -->"
+ACTION_REQUIRED_END = "<!-- ACTION_REQUIRED:END -->"
+
+# Severity ordering (R5)
+SEVERITY_ORDER = {"P0": 0, "HIGH": 1, "MEDIUM": 2, "INFO": 3}
+SEVERITY_BADGE = {
+    "P0": "🔥 P0",
+    "HIGH": "⚠️ HIGH",
+    "MEDIUM": "📌 MEDIUM",
+    "INFO": "ℹ️ INFO",
+}
+VALID_SEVERITIES = ("P0", "HIGH", "MEDIUM", "INFO")
 
 
 def md_cell(value: Any) -> str:
@@ -176,6 +210,117 @@ def violation_section(last_updated: str) -> list[str]:
     return lines
 
 
+def _action_required_sort_key(entry: dict[str, Any]) -> tuple[int, str]:
+    """Sort by severity (P0 first), then created_at (oldest first within severity).
+
+    Legacy entries without severity rank after all severity-tagged entries
+    (using order index 99 to push them down).
+    """
+    sev = entry.get("severity")
+    sev_idx = SEVERITY_ORDER.get(sev, 99)
+    created = entry.get("created_at", "9999-99-99")
+    return (sev_idx, str(created))
+
+
+def render_action_required_section(action_required: list[dict[str, Any]]) -> str:
+    """Render the🚨 section markdown (header + table) for boundary replacement.
+
+    Severity sort + badge prefix (R5). Legacy entries (no severity) keep their tag.
+    """
+    lines: list[str] = []
+    lines.append("## 🚨 要対応 - 殿のご判断をお待ちしております")
+    lines.append("")
+
+    sorted_items = sorted(
+        [r for r in action_required if isinstance(r, dict)],
+        key=_action_required_sort_key,
+    )
+
+    rows: list[list[str]] = []
+    for r in sorted_items:
+        sev = r.get("severity")
+        if sev in VALID_SEVERITIES:
+            tag_cell = f"{SEVERITY_BADGE[sev]} {r.get('tag', '')}".strip()
+        else:
+            # Legacy entry — preserve tag as-is
+            tag_cell = r.get("tag", "")
+        rows.append([
+            tag_cell,
+            r.get("title", ""),
+            r.get("detail", ""),
+        ])
+
+    lines.extend(render_table(["タグ", "項目", "詳細"], rows, TABLE_4_EMPTY_ROW))
+    lines.append("")
+    return "\n".join(lines)
+
+
+def partial_replace(
+    existing_md: str,
+    start_marker: str,
+    end_marker: str,
+    new_content: str,
+) -> str | None:
+    """Replace content between start and end markers (markers themselves preserved).
+
+    Returns the modified md, or None if either marker is missing (safe fallback —
+    R3: validation 失敗時は前回 md を保持).
+    """
+    s = existing_md.find(start_marker)
+    if s == -1:
+        return None
+    e = existing_md.find(end_marker, s + len(start_marker))
+    if e == -1:
+        return None
+
+    head = existing_md[: s + len(start_marker)]
+    tail = existing_md[e:]
+    # new_content gets surrounded by newlines so it stays on its own block
+    return head + "\n" + new_content.rstrip("\n") + "\n" + tail
+
+
+def validate_dashboard_yaml(data: dict[str, Any]) -> list[str]:
+    """Schema validation (R3): return list of errors (empty = ok)."""
+    errors: list[str] = []
+    ar = data.get("action_required") or []
+    if not isinstance(ar, list):
+        errors.append("action_required must be a list")
+        return errors
+    for i, item in enumerate(ar):
+        if not isinstance(item, dict):
+            errors.append(f"action_required[{i}]: not a dict")
+            continue
+        # New-format entries must have severity in valid set
+        sev = item.get("severity")
+        if sev is not None and sev not in VALID_SEVERITIES:
+            errors.append(
+                f"action_required[{i}]: invalid severity '{sev}'"
+            )
+    return errors
+
+
+def write_atomic(output_path: Path, content: str) -> None:
+    """Atomic write: tempfile + fsync + os.rename (R3 atomic rename)."""
+    dir_path = str(output_path.parent) if output_path.parent.as_posix() else "."
+    tmp_fd, tmp_name = tempfile.mkstemp(
+        dir=dir_path,
+        prefix=f".{output_path.name}.",
+        suffix=".tmp",
+    )
+    try:
+        with os.fdopen(tmp_fd, "w", encoding="utf-8") as f:
+            f.write(content)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(tmp_name, str(output_path))
+    except Exception:
+        try:
+            os.unlink(tmp_name)
+        except Exception:
+            pass
+        raise
+
+
 def generate_markdown(data: dict[str, Any]) -> str:
     meta = data.get("metadata", {})
     last_updated = meta.get("last_updated", "")
@@ -226,13 +371,10 @@ def generate_markdown(data: dict[str, Any]) -> str:
     lines.extend(render_table(["項目", "値"], frog_rows))
     lines.append("")
 
-    lines.append("## 🚨 要対応 - 殿のご判断をお待ちしております")
-    lines.append("")
-    action_rows = [
-        [r.get("tag", ""), r.get("title", ""), r.get("detail", "")]
-        for r in data.get("action_required", [])
-    ]
-    lines.extend(render_table(["タグ", "項目", "詳細"], action_rows, TABLE_4_EMPTY_ROW))
+    # cmd_659 Scope C: action_required section is renderer-managed (boundary protected)
+    lines.append(ACTION_REQUIRED_START)
+    lines.append(render_action_required_section(data.get("action_required") or []))
+    lines.append(ACTION_REQUIRED_END)
     lines.append("")
 
     lines.extend(violation_section(last_updated))
@@ -362,22 +504,118 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Generate dashboard.md from dashboard.yaml")
     parser.add_argument("--input", default="dashboard.yaml", help="Input YAML path")
     parser.add_argument("--output", default="dashboard.md", help="Output Markdown path")
+    parser.add_argument(
+        "--mode",
+        choices=("auto", "partial", "full"),
+        default="auto",
+        help="auto (default): partial if markers exist in output md; full otherwise. "
+             "partial: replace only ACTION_REQUIRED boundary content (R1+R3 safe). "
+             "full: legacy full regeneration (used by Scope F initial injection).",
+    )
     args = parser.parse_args()
 
     input_path = Path(args.input)
     output_path = Path(args.output)
 
-    with input_path.open("r", encoding="utf-8") as f:
-        data = yaml.safe_load(f) or {}
+    # Load yaml
+    try:
+        with input_path.open("r", encoding="utf-8") as f:
+            data = yaml.safe_load(f) or {}
+    except Exception as exc:
+        print(f"ERROR: failed to parse {input_path}: {exc}", file=sys.stderr)
+        # R3: validation 失敗時は md を変更しない
+        sys.exit(3)
 
+    # R3 schema validate (action_required only — other sections are legacy/lenient)
+    schema_errors = validate_dashboard_yaml(data)
+    if schema_errors:
+        print(
+            f"ERROR: dashboard.yaml schema validation failed "
+            f"({len(schema_errors)} errors):",
+            file=sys.stderr,
+        )
+        for e in schema_errors:
+            print(f"  - {e}", file=sys.stderr)
+        # Persist last_render_error for observability (best-effort)
+        try:
+            data_copy = dict(data)
+            data_copy["last_render_error"] = {
+                "errors": schema_errors,
+                "timestamp": datetime.datetime.now(
+                    datetime.timezone(datetime.timedelta(hours=9))
+                ).strftime("%Y-%m-%dT%H:%M:%S+09:00"),
+            }
+            # We deliberately don't write back to yaml — caller decides
+        except Exception:
+            pass
+        sys.exit(3)
+
+    # Lenient warnings (legacy)
     validate_in_progress(data.get("in_progress", []))
     achievements = data.get("achievements", {})
     validate_achievements(achievements.get("today", {}), "today")
     validate_achievements(achievements.get("yesterday", {}), "yesterday")
     validate_achievements(achievements.get("day_before", {}), "day_before")
 
-    markdown = generate_markdown(data)
-    output_path.write_text(markdown, encoding="utf-8")
+    # Determine effective mode
+    mode = args.mode
+    existing_md = ""
+    if output_path.exists():
+        try:
+            existing_md = output_path.read_text(encoding="utf-8")
+        except Exception:
+            existing_md = ""
+
+    has_markers = (
+        ACTION_REQUIRED_START in existing_md
+        and ACTION_REQUIRED_END in existing_md
+    )
+
+    if mode == "auto":
+        mode = "partial" if has_markers else "full"
+
+    if mode == "partial":
+        if not has_markers:
+            print(
+                f"ERROR: --mode=partial requires both '{ACTION_REQUIRED_START}' and "
+                f"'{ACTION_REQUIRED_END}' markers in {output_path}. "
+                f"dashboard.md not modified (safe fallback). "
+                f"Run with --mode=full to bootstrap.",
+                file=sys.stderr,
+            )
+            sys.exit(3)
+        section_md = render_action_required_section(
+            data.get("action_required") or []
+        )
+        new_md = partial_replace(
+            existing_md, ACTION_REQUIRED_START, ACTION_REQUIRED_END, section_md
+        )
+        if new_md is None:
+            print(
+                "ERROR: marker boundary replacement failed; md not modified.",
+                file=sys.stderr,
+            )
+            sys.exit(3)
+        # Idempotent: skip write if unchanged
+        if new_md == existing_md:
+            print(
+                "[generate_dashboard_md] partial: no change (idempotent skip)",
+                file=sys.stderr,
+            )
+            return
+        write_atomic(output_path, new_md)
+        print(
+            f"[generate_dashboard_md] partial replace complete: {output_path}",
+            file=sys.stderr,
+        )
+    else:
+        # full mode: regenerate everything from yaml
+        markdown = generate_markdown(data)
+        write_atomic(output_path, markdown)
+        print(
+            f"[generate_dashboard_md] full regeneration complete: {output_path}",
+            file=sys.stderr,
+        )
 
 
 if __name__ == "__main__":

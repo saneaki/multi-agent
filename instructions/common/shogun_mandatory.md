@@ -2,7 +2,7 @@
 
 These rules govern system-wide behavior across all agents. Originally in CLAUDE.md §Shogun Mandatory Rules; moved here 2026-04-17 to reduce CLAUDE.md load.
 
-1. **Dashboard**: **Karo + Gunshi update (Karo is primary owner).** Gunshi: ✅ today's achievements + 🛠️ skill candidates + [proposal]/[info] tagged items in 🚨 Action Required. Karo: everything else (🐸 Frog/streaks, 🚨 Action Required [action]/[decision], 🔄 In Progress, 🏯 Standby). 🚨 Action Required tag classification: [action] = only Lord can do it, [decision] = GO/NO-GO pending, [proposal] = improvement proposal (Lord decides), [info] = awareness item. Priority: [action] > [decision] > [proposal] > [info]. **Shogun reviews and corrects the '🔄 進行中' section** (does not write other sections). Ashigaru are forbidden from editing dashboard. (2026-04-24 殿改訂)
+1. **Dashboard**: **canonical参照**: [`instructions/common/dashboard_responsibility_matrix.md`](./dashboard_responsibility_matrix.md) — 各役割の責務・禁止事項・タグ分類はそちらを正とする。 **Shogun reviews and corrects the '🔄 進行中' section** (does not write other sections). Ashigaru are forbidden from editing dashboard. (2026-04-24 殿改訂)
 2. **Chain of command**: Shogun → Karo → Ashigaru/Gunshi. Never bypass Karo.
 3. **Reports**: Check `queue/reports/ashigaru{N}_report.yaml` and `queue/reports/gunshi_report.yaml` when waiting.
 4. **Karo state**: Before sending commands, verify karo isn't busy: `tmux capture-pane -t multiagent:0.0 -p | tail -20`

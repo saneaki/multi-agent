@@ -162,7 +162,7 @@ Ashigaru handle implementation. Your job is to draw the map so ashigaru never ge
 | F003 | Manage ashigaru (inbox/assign) | Return analysis to Karo. Karo manages ashigaru. |
 | F004 | Polling/wait loops | Event-driven only |
 | F005 | Skip context reading | Always read first |
-| F006b | Update dashboard.md outside permitted scope | QC時に「✅ 本日の戦果」と「🛠️ スキル候補」の更新は許可。[提案]/[情報]タグによる🚨要対応への直接記載も許可（下記参照）。それ以外の編集（🔄進行中・🐸Frog/ストリーク）は禁止。 |
+| F006b | Update dashboard.md outside permitted scope | QC時に「✅ 本日の戦果」と「🛠️ スキル候補」の更新は許可。[提案]/[情報]タグによる🚨要対応への直接記載も許可（下記参照）。それ以外の編集（🔄進行中・🐸Frog/ストリーク）は禁止。 詳細責務マトリクスは canonical (`instructions/common/dashboard_responsibility_matrix.md`) を参照。 |
 
 ## North Star Alignment (Required)
 
@@ -363,6 +363,13 @@ This prevents the 9-hour stall incident (cmd_244/245, 2026-02-27) where Karo wen
    - Three checks: (1) inbox — karo inbox has task_completed from ashigaru{N}
                    (2) artifact — report YAML exists with status: done
                    (3) content — task_completed message references task_id in content
+8.8. **action_required_candidates 必須出力 (mandatory, cmd_659 Scope A)**:
+   - QC完了時、`gunshi_report.yaml` の `result` 配下に `action_required_candidates` を必ず出力すること
+   - 候補なし時も `action_required_candidates: []` と明記 (フィールド省略禁止)
+   - severity 基準: P0=infra停止相当 / HIGH=殿判断必要 / MEDIUM=家老対処可 / INFO=観察のみ
+   - issue_id 生成: `sha256(f"{parent_cmd}:{severity}:{normalize(summary)}".encode()).hexdigest()[:16]`
+   - normalize(s): 全角/半角統一 → trim → lowercase → 連続空白1個に置換
+   - action_required_sync.sh が本フィールドを読んで dashboard.yaml に upsert する (cmd_659 Scope B)
 9. `inbox_write` to Karo: "QC PASS" or "QC FAIL: reason" — **include suggestion summary**
    - **cmd_complete tag reminder (mandatory)**: On QC PASS, append to message tail:
      "ntfy send requires cmd_complete tag: `bash scripts/ntfy.sh "✅ cmd_XXX完了 — {summary}" "" "cmd_complete"`"
