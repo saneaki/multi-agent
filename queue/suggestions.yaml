@@ -13557,3 +13557,19 @@ suggestions:
     恒久化は artifact_register.sh を Stop hook に組込み、cmd 完了毎に
     自動 GDrive→Notion 登録する仕組みを構築する。
   action_needed: "Karo: artifact_register.sh Stop hook 組込み設計を別 cmd として検討 (中優先度)"
+
+- id: sug_subtask_663_scope_a_codex_role_compat
+  from: ashigaru5
+  cmd_ref: cmd_663
+  task_ref: subtask_663_scope_a_codex_role_compat
+  created_at: '2026-05-08T05:01:04+09:00'
+  status: pending
+  priority: medium
+  title: shogun-codex-role-migration-checklist
+  content: |
+    shogun system の役職 (shogun/karo/gunshi) を Claude Code から Codex CLI に
+    移行する際の 6軸チェックリスト (persona/tmux/inbox/hooks/MCP/sandbox) +
+    共通/個別 fix リスト + 段階移行手順 (家老→軍師→将軍) を体系化したスキル候補。
+    AGENTS.md サイズ上限 / hook 不発火 / MCP 移植 / sandbox network / msg/5h 上限の
+    5 大課題群は今後の copilot / kimi 等 他 CLI 移行でも再利用可能なパターン。
+  action_needed: "Karo: skill 化判断 (cmd_663 完遂後、軍師統合 QC 結果を踏まえて検討)"
