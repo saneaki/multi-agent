@@ -189,6 +189,7 @@
 !output/cmd_640_scope_e_qc_report.md
 !output/cmd_594_kpi_verification.md
 !output/cmd_594_scope_b_qc_report.md
+!output/cmd_658_phase01_report.md
 
 # cmd_544: 3 安全装置 state files (kill-switch/rate-limit/pending/daily-metric)
 !logs/cmd_squash_pub_hook.disabled
