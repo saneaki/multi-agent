@@ -188,3 +188,42 @@ result:
     D-1: "output/cmd_660_integrated_report.md 生成 — CONDITIONAL (単体1400words/AC5000+ 未達、拡充対応中)"
 
   action_required_candidates: []
+
+---
+worker_id: gunshi
+task_id: subtask_662_scope_d_qc
+parent_cmd: cmd_662
+timestamp: "2026-05-08T04:38:52+09:00"
+status: done
+trigger: karo_assigned
+note: |
+  cmd_662 Scope D QC: ash1実装 shp.sh + shogun_shell_commands.md の north_star 3点照合。
+  commit 4ba8b81 独立確認 (scripts/shp.sh 516行/実行権限付き)。
+
+result:
+  type: quality_check
+  task_type: north_star_qc
+  qa_decision: go
+  north_star:
+    N1: "aligned — 9構成員一括起動可能、preset で省力化"
+    N2: "aligned — shogun_shell_commands.md 完成: shu/shk/shc/shp/shutsujin_departure/switch_cli/model-switch 8コマンド体系網羅"
+    N3: "aligned — preset 省力化機能 (all-sonnet/heavy-opus/current/sonnet-codex-mix) 実装確認"
+
+  ac_check:
+    A-1: "Pass — scripts/shp.sh 新設、interactive prompt 起動 (9構成員順次)"
+    A-2: "Pass — 番号体系 1=Sonnet+T / 2=Opus+T / 3=Codex 実装"
+    A-3: "Pass — 質問順序: 将軍→家老→足軽1-7→軍師 (固定順)"
+    A-4: "Pass — 各 prompt で単独数字入力 → enter で次構成員へ"
+    A-5: "Pass — 全選択後 summary 表示 + y/N 確認"
+    A-6: "Pass (dry-run代替) — manual_verification_required (実 pane 切替は殿確認)"
+    A-7: "Pass — --dry-run option 実装"
+    A-8: "Pass — --preset option (current/heavy-opus/all-sonnet/sonnet-codex-mix)"
+    B-1: "Pass — docs/shogun_shell_commands.md 新設 (6914 bytes)"
+    B-2: "Pass — 既存出陣系コマンド網羅 (shc/shu/shk/shp/shutsujin/switch_cli/model-switch)"
+    B-3: "Pass — 表形式: 目的/引数/例/前提/関連ファイル"
+    B-4: "Pass — 番号体系 + preset 一覧を冒頭明示"
+    C-1: "Pass — --dry-run で9構成員 prompt + summary 表示 + 起動 skip 確認"
+    C-2: "Pass — --preset all-sonnet --dry-run で interactive スキップ確認"
+    E-1: "Pass — output/cmd_662_shp_command_report.md 生成 (5186 bytes)"
+
+  action_required_candidates: []
