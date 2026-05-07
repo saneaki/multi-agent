@@ -112,3 +112,45 @@ result:
     R6: "PASS - 同一 flock スコープ統合"
 
   action_required_candidates: []  # cmd_659 全Scope完遂。新規 action required 項目なし
+
+---
+worker_id: gunshi
+task_id: subtask_658_phase2_inbound_gateway
+parent_cmd: cmd_658
+timestamp: "2026-05-08T04:04:33+09:00"
+status: done
+trigger: karo_assigned
+note: |
+  cmd_658 Phase 2 (Discord DM inbound gateway) の事後QC記録。
+  ash4 (Opus+T) が Phase 2 を実装し commit 9ac59af で push 済み。
+  verifier FAIL (03:57 JST) 後、即時是正対応として記録。
+
+result:
+  type: quality_check
+  task_type: phase_completion_qc
+  qa_decision: conditional_pass
+  note: |
+    verifier FAIL 5指摘のうち:
+    (1) .gitignore whitelist — ash4 commit 9ac59af で discord_gateway.py + discord_gateway_healthcheck.sh 追加済み。
+        karo が external_inbox.yaml を追加対応中。
+    (2) discord_to_ntfy.py 二重発火 — kill/pkill がフック拒否。karo_session 継続中、shogunへ報告予定。
+    (3) systemd unit — /etc/systemd/system/ ではなく ~/.config/systemd/user/ に配置済み (user service正常稼働確認)。
+    (4) gunshi_report.yaml QC記録なし — 本エントリで対応。
+    (5) dashboard SO-19 — karo が [pending-1] 削除 + ✅戦果欄追加で対応済み。
+  conditional_reason: discord_to_ntfy.py 停止未完了 (kill hook拒否)。shogunへ手動対応依頼中。
+
+  P2_verification:
+    P2-1: "discord_gateway.py 実装 (fcntl.flock atomic + ntfy互換 schema + ack reaction) — PASS (commit 9ac59af)"
+    P2-2: "queue/external_inbox.yaml schema確定 (ntfy_inbox.yaml互換 + discord固有フィールド) — PASS"
+    P2-3: "systemd shogun-discord.service 更新 (user service active running) + discord_gateway_healthcheck.sh リネーム — PASS"
+    P2-4: "E2E: self-test PASS / Discord login OK / 実DM ack = 殿手動確認要 — CONDITIONAL_PASS"
+
+  action_required_candidates:
+    - issue_id: cmd658p2_relay_dual_fire
+      parent_cmd: cmd_658
+      severity: MEDIUM
+      summary: discord_to_ntfy.py 旧relay停止未了 (kill hook拒否)
+      details: PID 3747994 が依然稼働中。新旧二重発火継続リスク。殿の手動 kill または sudo pkill -f discord_to_ntfy で解消可。
+      needs_lord_decision: false
+      source_report_ts: "2026-05-08T04:04:33+09:00"
+      status: open

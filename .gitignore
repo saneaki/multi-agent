@@ -195,11 +195,14 @@
 !output/cmd_658_phase2_report.md
 !output/cmd_659_risk_mitigation_plan.md
 !output/cmd_659_implementation_report.md
+!queue/external_inbox.yaml
 !output/cmd_660_ash1_role_split_review.md
 !output/cmd_660_ash4_role_split_review.md
 !output/cmd_660_ash5_verification_phase3.md
 !output/cmd_660_ash6_codex_pattern_analysis.md
 !output/cmd_660_ash7_codex_proposal_4_review.md
+!output/cmd_660_gunshi_integrated_strategy.md
+!output/cmd_660_integrated_report.md
 
 # cmd_544: 3 安全装置 state files (kill-switch/rate-limit/pending/daily-metric)
 !logs/cmd_squash_pub_hook.disabled
