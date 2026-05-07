@@ -39,8 +39,58 @@ if [ -z "$AGENT_ID" ]; then
     exit 0
 fi
 
-# Shogun is the Lord's conversation pane — skip stop hook entirely
+# Shogun: check for discord_received unread messages only (AC A-1/A-2/A-3, cmd_664)
+# Regular inbox delivery is skipped for shogun (handled by inbox_watcher.sh nudges).
+# Only discord_received type triggers a block to ensure SLA ≤5min (A-3).
 if [ "$AGENT_ID" = "shogun" ]; then
+    SHOGUN_INBOX="$SCRIPT_DIR/queue/inbox/shogun.yaml"
+    if [ ! -f "$SHOGUN_INBOX" ]; then
+        exit 0
+    fi
+
+    # Skip if already in stop_hook_active loop to prevent infinite re-block
+    STOP_HOOK_ACTIVE_SHOGUN=$(echo "$INPUT" | python3 -c "import sys,json; print(json.load(sys.stdin).get('stop_hook_active', False))" 2>/dev/null || echo "False")
+    if [ "$STOP_HOOK_ACTIVE_SHOGUN" = "True" ]; then
+        exit 0
+    fi
+
+    DISCORD_MSG=$(SHOGUN_INBOX="$SHOGUN_INBOX" python3 - <<'PYEOF'
+import yaml, os, sys
+inbox = os.environ['SHOGUN_INBOX']
+try:
+    with open(inbox) as f:
+        data = yaml.safe_load(f) or {}
+    msgs = data.get('messages', [])
+    unread = [m for m in msgs if not m.get('read', True) and m.get('type') == 'discord_received']
+    if unread:
+        m = unread[0]
+        author = m.get('from', '?')
+        content = str(m.get('content', ''))[:300]
+        print(f"Discord受信: [{author}] {content}")
+    else:
+        print("")
+except Exception:
+    print("")
+PYEOF
+)
+
+    if [ -z "$DISCORD_MSG" ]; then
+        exit 0
+    fi
+
+    # Scope B-1: Send Discord ack (non-blocking, best-effort)
+    python3 "$SCRIPT_DIR/scripts/discord_notify.py" \
+        --body "✅ 将軍: Discord メッセージを受信しました。5min以内に処理します。" \
+        --type "discord_ack" &
+
+    # Block stop — inject discord message content into shogun's next turn (A-2)
+    python3 -c "
+import json, sys
+msg = sys.argv[1]
+reason = msg + '\n\nqueue/inbox/shogun.yaml の当該エントリを read:true に更新してから返答せよ。'
+print(json.dumps({'decision': 'block', 'reason': reason}, ensure_ascii=False))
+" "$DISCORD_MSG" 2>/dev/null \
+    || echo "{\"decision\":\"block\",\"reason\":\"Discord未読メッセージあり。queue/inbox/shogun.yamlを読んで処理せよ。\"}"
     exit 0
 fi
 
