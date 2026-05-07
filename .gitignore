@@ -193,6 +193,7 @@
 !output/cmd_658_phase01_report.md
 !output/cmd_659_risk_mitigation_plan.md
 !output/cmd_659_implementation_report.md
+!output/cmd_660_ash5_verification_phase3.md
 
 # cmd_544: 3 安全装置 state files (kill-switch/rate-limit/pending/daily-metric)
 !logs/cmd_squash_pub_hook.disabled
