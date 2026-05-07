@@ -30,7 +30,7 @@ TOKEN_PATH="$(read_setting token_path /home/ubuntu/.clasprc.json)"
 # .clasprc.json の存在確認
 if [[ ! -f "$TOKEN_PATH" ]]; then
   log "ERROR: $TOKEN_PATH が見つかりません。clasp login が必要です。"
-  bash "$SCRIPT_DIR/scripts/ntfy.sh" "clasp_age_check: .clasprc.json 不在 — clasp login が必要" clasp_age_warn
+  bash "$SCRIPT_DIR/scripts/notify.sh" "clasp_age_check: .clasprc.json 不在 — clasp login が必要" clasp_age_warn
   exit 2
 fi
 
@@ -51,7 +51,7 @@ if (( ELAPSED_DAYS >= CRITICAL_DAYS )); then
   MSG="【緊急】clasp token ${ELAPSED_DAYS}日経過 — 即 re-login 必要"
   BADGE="🔴"
   log "${BADGE} ${STATUS}: ${MSG}"
-  bash "$SCRIPT_DIR/scripts/ntfy.sh" "clasp_age_check: ${MSG}" clasp_age_warn
+  bash "$SCRIPT_DIR/scripts/notify.sh" "clasp_age_check: ${MSG}" clasp_age_warn
   exit 2
 
 elif (( ELAPSED_DAYS >= WARN_DAYS )); then
@@ -59,7 +59,7 @@ elif (( ELAPSED_DAYS >= WARN_DAYS )); then
   MSG="clasp token ${ELAPSED_DAYS}日経過 — 再 login を検討してください"
   BADGE="🟡"
   log "${BADGE} ${STATUS}: ${MSG}"
-  bash "$SCRIPT_DIR/scripts/ntfy.sh" "clasp_age_check: ${MSG}" clasp_age_warn
+  bash "$SCRIPT_DIR/scripts/notify.sh" "clasp_age_check: ${MSG}" clasp_age_warn
   exit 1
 
 elif (( ELAPSED_DAYS >= 16 )); then

@@ -163,13 +163,13 @@ check_and_notify() {
         summary=$(echo "$line" | awk -F'|' '{print $4}' | sed 's/✅.*//' | sed 's/^ *//; s/ *$//')
         summary="${summary:0:60}"
 
-        # ntfy 送信
-        log "Sending ntfy for $cmd_id: $summary"
-        if bash "$SCRIPT_DIR/scripts/ntfy.sh" "✅ ${cmd_id} 完了 — ${summary}" "家老より" "cmd_complete" >> "$LOG_FILE" 2>&1; then
+        # 通知送信 (Discord/ntfy)
+        log "Sending notify for $cmd_id: $summary"
+        if bash "$SCRIPT_DIR/scripts/notify.sh" "✅ ${cmd_id} 完了 — ${summary}" "家老より" "cmd_complete" >> "$LOG_FILE" 2>&1; then
             echo "$cmd_id" >> "$STATE_FILE"
-            log "ntfy sent: $cmd_id"
+            log "notify sent: $cmd_id"
         else
-            log "ntfy FAILED for $cmd_id"
+            log "notify FAILED for $cmd_id"
         fi
     done < <(grep -P '^\| \d\d:\d\d \|' "$DASHBOARD" | grep -P '🏆🏆cmd_\d+' || true)
 

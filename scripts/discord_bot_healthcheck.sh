@@ -16,11 +16,9 @@ SHOGUN_DIR="/home/ubuntu/shogun"
 STATE_FILE="/tmp/discord_bot_health.state"
 COOLDOWN_SEC=900  # 15分 重複通知抑制
 
-# ── DI-05: ntfy topic を settings.yaml から動的取得 ──────────────
-NTFY_TOPIC=$(grep '^ntfy_topic:' "${SHOGUN_DIR}/config/settings.yaml" \
-    | awk -F: '{print $2}' | tr -d ' "' | head -1)
-NTFY_TOPIC="${NTFY_TOPIC:-hananoen}"
-NTFY_URL="https://ntfy.sh/${NTFY_TOPIC}"
+# ── 通知 backend 設定 ────────────────────────────────────────────
+# cmd_658 Phase 1 以降は notify.sh wrapper 経由で Discord/ntfy 自動切替。
+# ntfy_topic は notify.sh の ntfy fallback 経路で参照される。
 
 # ── 死活確認 ─────────────────────────────────────────────────────
 TIMESTAMP="$(date '+%Y-%m-%d %H:%M:%S')"
@@ -47,14 +45,12 @@ if [ -f "${STATE_FILE}" ]; then
     fi
 fi
 
-# ── ntfy 通知 ─────────────────────────────────────────────────────
-echo "[${TIMESTAMP}] ALERT: Bot停止検出。ntfy通知+自動復旧試行"
-curl -s \
-    -H "Title: Discord Bot 停止検出" \
-    -H "Tags: warning,robot" \
-    -H "Priority: high" \
-    -d "discord_to_ntfy プロセスが停止しています。systemd による自動復旧を試みます。" \
-    "${NTFY_URL}" > /dev/null 2>&1 || true
+# ── 通知 (Discord/ntfy 自動切替) ──────────────────────────────────
+echo "[${TIMESTAMP}] ALERT: Bot停止検出。notify.sh で通知+自動復旧試行"
+bash "${SHOGUN_DIR}/scripts/notify.sh" \
+    "discord_to_ntfy プロセスが停止しています。systemd による自動復旧を試みます。" \
+    "Discord Bot 停止検出" \
+    "warning" > /dev/null 2>&1 || true
 
 # cooldown state 更新
 date +%s > "${STATE_FILE}"

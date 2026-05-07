@@ -166,9 +166,9 @@ if new_content != content:
                         NTFY_BODY="$CONTENT"
                     fi
 
-                    # Call ntfy.sh with new format (non-blocking, log errors only)
-                    if ! bash "$SCRIPT_DIR/scripts/ntfy.sh" "$NTFY_BODY" "$NTFY_TITLE" "$TYPE" 2>/dev/null; then
-                        echo "[inbox_write] ntfy notification failed for $TYPE to $TARGET" >&2
+                    # Call notify.sh (NOTIFY_BACKEND=discord by default; ntfy fallback)
+                    if ! bash "$SCRIPT_DIR/scripts/notify.sh" "$NTFY_BODY" "$NTFY_TITLE" "$TYPE" 2>/dev/null; then
+                        echo "[inbox_write] notify dispatch failed for $TYPE to $TARGET" >&2
                     fi
                 fi
             fi

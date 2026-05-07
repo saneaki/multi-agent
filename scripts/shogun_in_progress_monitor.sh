@@ -109,9 +109,9 @@ send_alert() {
             && mv "${dedup_file}.tmp" "${dedup_file}" || true
     fi
 
-    # D-1/D-2: skip ntfy if key was sent within 6h; persist on send
+    # D-1/D-2: skip notify if key was sent within 6h; persist on send
     if ! grep -qF "${dedup_key}" "${dedup_file}" 2>/dev/null; then
-        bash "${SCRIPT_DIR}/scripts/ntfy.sh" \
+        bash "${SCRIPT_DIR}/scripts/notify.sh" \
             "${content}" "⚠️ 進行中見回り検知" "見回り-IP" 2>/dev/null || true
         printf '%s\t%s\n' "${now_epoch}" "${dedup_key}" >> "${dedup_file}"
     fi

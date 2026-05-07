@@ -57,7 +57,7 @@ send_alert() {
     bash "${SCRIPT_DIR}/scripts/inbox_write.sh" shogun "${content}" reality_check_alert shogun_reality_check
 
     if [ "${with_ntfy}" = "yes" ]; then
-        bash "${SCRIPT_DIR}/scripts/ntfy.sh" "${content}" "⚠️ 将軍見回り検知" "reality_check_alert" 2>/dev/null || true
+        bash "${SCRIPT_DIR}/scripts/notify.sh" "${content}" "⚠️ 将軍見回り検知" "reality_check_alert" 2>/dev/null || true
     fi
 }
 

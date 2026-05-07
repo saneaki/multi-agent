@@ -141,6 +141,8 @@
 !scripts/statusline_with_counter.sh
 !scripts/qc_auto_check.sh
 !scripts/discord_to_ntfy.py
+!scripts/discord_notify.py
+!scripts/notify.sh
 !scripts/start_discord_bot.sh
 !scripts/discord_bot_healthcheck.sh
 !scripts/artifact_register.sh
@@ -204,6 +206,7 @@
 
 # Discord Bot config (sample only, not actual env)
 !config/discord_bot.env.sample
+!config/discord.env.sample
 
 # SayTask (sample template only, not actual data)
 !saytask/

@@ -11,7 +11,7 @@ log() {
 
 notify_error() {
   local message="$1"
-  bash scripts/ntfy.sh "$message" gas_oauth_error || true
+  bash scripts/notify.sh "$message" gas_oauth_error || true
 }
 
 die() {
