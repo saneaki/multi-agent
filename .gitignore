@@ -109,6 +109,7 @@
 !scripts/update_dashboard.sh
 !scripts/update_dashboard_timestamp.sh
 !scripts/shc.sh
+!scripts/shp.sh
 !scripts/switch_cli.sh
 !scripts/cmd_complete_notifier.sh
 !scripts/shogun_inbox_notifier.sh
@@ -203,6 +204,7 @@
 !output/cmd_660_ash7_codex_proposal_4_review.md
 !output/cmd_660_gunshi_integrated_strategy.md
 !output/cmd_660_integrated_report.md
+!output/cmd_662_shp_command_report.md
 
 # cmd_544: 3 安全装置 state files (kill-switch/rate-limit/pending/daily-metric)
 !logs/cmd_squash_pub_hook.disabled
@@ -250,6 +252,7 @@
 !docs/feedback-system-guide.md
 !docs/DISCORD_BOT_SETUP.md
 !docs/dashboard_schema.json
+!docs/shogun_shell_commands.md
 
 # Screenshots (masked — no secrets)
 !images/
