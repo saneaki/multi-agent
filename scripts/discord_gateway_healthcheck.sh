@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Discord Bot 死活監視スクリプト
-# cron で 5分ごとに実行: */5 * * * * /home/ubuntu/shogun/scripts/discord_bot_healthcheck.sh >> /home/ubuntu/shogun/logs/discord_bot_health.log 2>&1
+# Discord Gateway 死活監視スクリプト (cmd_658 Phase 2 — discord_bot_healthcheck.sh からリネーム)
+# cron で 5分ごとに実行: */5 * * * * /home/ubuntu/shogun/scripts/discord_gateway_healthcheck.sh >> /home/ubuntu/shogun/logs/discord_gateway_health.log 2>&1
 
 set -uo pipefail
 
@@ -13,8 +13,9 @@ export PATH="/usr/bin:/bin:/usr/local/bin:/usr/sbin:/sbin:$PATH"
 
 # ── 設定 ─────────────────────────────────────────────────────────
 SHOGUN_DIR="/home/ubuntu/shogun"
-STATE_FILE="/tmp/discord_bot_health.state"
+STATE_FILE="/tmp/discord_gateway_health.state"
 COOLDOWN_SEC=900  # 15分 重複通知抑制
+GATEWAY_PROC="discord_gateway"
 
 # ── 通知 backend 設定 ────────────────────────────────────────────
 # cmd_658 Phase 1 以降は notify.sh wrapper 経由で Discord/ntfy 自動切替。
@@ -23,14 +24,13 @@ COOLDOWN_SEC=900  # 15分 重複通知抑制
 # ── 死活確認 ─────────────────────────────────────────────────────
 TIMESTAMP="$(date '+%Y-%m-%d %H:%M:%S')"
 
-if pgrep -f discord_to_ntfy > /dev/null 2>&1; then
-    echo "[${TIMESTAMP}] OK: discord_to_ntfy running"
-    # Bot 正常稼働中 → state ファイル削除(cooldown リセット)
+if pgrep -f "${GATEWAY_PROC}" > /dev/null 2>&1; then
+    echo "[${TIMESTAMP}] OK: ${GATEWAY_PROC} running"
     rm -f "${STATE_FILE}"
     exit 0
 fi
 
-echo "[${TIMESTAMP}] WARN: discord_to_ntfy not found"
+echo "[${TIMESTAMP}] WARN: ${GATEWAY_PROC} not found"
 
 # ── cooldown チェック (重複通知抑制) ─────────────────────────────
 if [ -f "${STATE_FILE}" ]; then
@@ -39,17 +39,16 @@ if [ -f "${STATE_FILE}" ]; then
     ELAPSED=$(( NOW - LAST_NOTIFY ))
     if [ "${ELAPSED}" -lt "${COOLDOWN_SEC}" ]; then
         echo "[${TIMESTAMP}] INFO: cooldown中 (${ELAPSED}s / ${COOLDOWN_SEC}s). 通知スキップ"
-        # 復旧試行のみ実施 (通知なし)
         systemctl --user restart shogun-discord.service 2>/dev/null || true
         exit 0
     fi
 fi
 
 # ── 通知 (Discord/ntfy 自動切替) ──────────────────────────────────
-echo "[${TIMESTAMP}] ALERT: Bot停止検出。notify.sh で通知+自動復旧試行"
+echo "[${TIMESTAMP}] ALERT: Gateway停止検出。notify.sh で通知+自動復旧試行"
 bash "${SHOGUN_DIR}/scripts/notify.sh" \
-    "discord_to_ntfy プロセスが停止しています。systemd による自動復旧を試みます。" \
-    "Discord Bot 停止検出" \
+    "${GATEWAY_PROC} プロセスが停止しています。systemd による自動復旧を試みます。" \
+    "Discord Gateway 停止検出" \
     "warning" > /dev/null 2>&1 || true
 
 # cooldown state 更新

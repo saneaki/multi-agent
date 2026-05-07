@@ -143,9 +143,10 @@
 !scripts/qc_auto_check.sh
 !scripts/discord_to_ntfy.py
 !scripts/discord_notify.py
+!scripts/discord_gateway.py
 !scripts/notify.sh
 !scripts/start_discord_bot.sh
-!scripts/discord_bot_healthcheck.sh
+!scripts/discord_gateway_healthcheck.sh
 !scripts/artifact_register.sh
 !scripts/session_start_checklist.sh
 !scripts/cmd_squash_pub_hook.sh
@@ -191,9 +192,14 @@
 !output/cmd_594_kpi_verification.md
 !output/cmd_594_scope_b_qc_report.md
 !output/cmd_658_phase01_report.md
+!output/cmd_658_phase2_report.md
 !output/cmd_659_risk_mitigation_plan.md
 !output/cmd_659_implementation_report.md
+!output/cmd_660_ash1_role_split_review.md
+!output/cmd_660_ash4_role_split_review.md
 !output/cmd_660_ash5_verification_phase3.md
+!output/cmd_660_ash6_codex_pattern_analysis.md
+!output/cmd_660_ash7_codex_proposal_4_review.md
 
 # cmd_544: 3 安全装置 state files (kill-switch/rate-limit/pending/daily-metric)
 !logs/cmd_squash_pub_hook.disabled
