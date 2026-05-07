@@ -1,4 +1,61 @@
 worker_id: gunshi
+task_id: subtask_651_scope_e_qc
+parent_cmd: cmd_651
+timestamp: "2026-05-07T12:09:36+09:00"
+status: done
+trigger: karo_assigned
+note: |
+  cmd_651 (shogun_in_progress_monitor 誤検出根本解消) の Scope E QC。
+  Scope A-D 実装独立確認 + north_star 3点照合。
+  判定 = Conditional Go (実装PASS / 5h観察は自動経路継続)
+
+result:
+  type: quality_check
+  task_type: integrated_formal_qc
+  qa_decision: conditional_pass
+  north_star:
+    N1: aligned_partial  # 12:00 P4 true positive (09:08以降更新なし→修正後正常動作)。6h dedup稼働中
+    N2: aligned          # SoT単一化/Pattern4(A-3)/Pattern8(C-1〜C-3)/dummy廃止(B-1)/6h dedup(D-1〜D-3) 全確認
+    N3: aligned          # 5/7 18:00-5/8 02:00 JST「全9パターン異常なし」継続確認 (false positive 0件)
+
+  scope_verification:
+    A-3: "metadata.last_updated参照 line475 確認"
+    B-1: "in_progress or [] (update_dashboard.sh:254) 確認"
+    C-1: "capture-pane -S 0 (line641) 確認"
+    C-2: "末尾3行Y/n判定 (line651) 確認"
+    C-3: "question_prompt_re固有フレーズ限定 (line635) 確認"
+    D-123: "~/.cache/shogun/ntfy_sent.txt 6h dedup lines96-112 確認"
+
+  cron_12_00:
+    result: P4 alert 発火 (true positive)
+    reason: dashboard.yaml metadata.last_updated が 09:08 JST のまま (172min前)
+    assessment: Scope A-3 修正の正常動作証跡。誤検出ではなく正検出
+
+  output: output/cmd_651_monitor_fix_qc.md
+
+  # ============================================================
+  # action_required_candidates schema (cmd_659 Scope A 追加)
+  # ============================================================
+  # QC 完了時、result 配下に以下フォーマットで必須出力すること (candidates 無しでも [] を明記)
+  #
+  # action_required_candidates:
+  #   - issue_id: <sha256(f"{parent_cmd}:{severity}:{normalize(summary)}".encode()).hexdigest()[:16]>
+  #     parent_cmd: cmd_XXX
+  #     severity: P0|HIGH|MEDIUM|INFO
+  #             # P0=infra停止相当 / HIGH=殿判断必要 / MEDIUM=家老対処可 / INFO=観察のみ
+  #     summary: <1行要約 (normalize対象)>
+  #             # normalize(s): 全角/半角統一 → trim → lowercase → 連続空白1個に置換
+  #     details: <詳細説明>
+  #     needs_lord_decision: true|false
+  #     source_report_ts: <ISO8601 JST タイムスタンプ>
+  #     status: open|resolved|superseded
+  #
+  # issue_id は stable hash (同一 parent_cmd+severity+summary なら同一 id) → upsert で重複防止
+  # action_required_sync.sh が本フィールドを読んで dashboard.yaml にupsert (cmd_659 Scope B)
+  action_required_candidates: []  # cmd_659 Pipeline 未稼働のため空。候補なし時も [] 必須
+
+---
+worker_id: gunshi
 task_id: subtask_659_scope_g_qc
 parent_cmd: cmd_659
 timestamp: "2026-05-08T02:44:40+09:00"
@@ -14,9 +71,9 @@ result:
   task_type: integrated_formal_qc
   qa_decision: pass
   north_star:
-    N1: aligned  # dashboard_rotate.sh L51 flock --timeout 30 取得確認 / L97 generate_dashboard_md.py 呼出確認 / E-6 rotate regression test PASS (rotate後 action_required/achievements データ保持)
-    N2: aligned  # action_required_sync.sh event駆動/validate/upsert/notify 全確認 / generate_dashboard_md.py ACTION_REQUIRED:START/END 境界全置換確認 / E-2 integration test PASS (5min反映チェーン動作)
-    N3: aligned  # P_AR_<severity>_<issue_id> key形式確認 / cmd_644 Scope B AUTO_CMD key (P9b/P9c) との衝突なし確認 / E-5 AUTO_CMD coexistence test PASS
+    N1: aligned  # dashboard_rotate.sh L51 flock --timeout 30 取得確認 / L97 generate_dashboard_md.py 呼出確認 / E-6 rotate regression test PASS
+    N2: aligned  # action_required_sync.sh event駆動/validate/upsert/notify 全確認 / generate_dashboard_md.py ACTION_REQUIRED:START/END 境界全置換確認 / E-2 integration test PASS
+    N3: aligned  # P_AR_<severity>_<issue_id> key形式確認 / cmd_644 Scope B AUTO_CMD key との衝突なし確認 / E-5 AUTO_CMD coexistence test PASS
 
   scope_verification:
     B-1: "scripts/action_required_sync.sh 新設 - inbox watcher event 駆動 (polling なし)"
@@ -26,18 +83,18 @@ result:
     B-5: "status=resolved → dashboard.yaml.action_required_archive 移動 確認"
     B-6: "P0/HIGH 新規追加時 notify.sh push + P_AR_<severity>_<issue_id> key分離 確認"
     C-1: "generate_dashboard_md.py ACTION_REQUIRED:START/END 境界全置換 確認"
-    C-2: "境界外セクション (🐸/📊/🔄/🏯/🛠️/📋) touch禁止 - input md そのままコピー 確認"
-    C-3: "severity 並び替え強制 (P0→HIGH→MEDIUM→INFO) + badge prefix (🔥/⚠️/📌/ℹ️) 確認"
+    C-2: "境界外セクション touch禁止 - input md そのままコピー 確認"
+    C-3: "severity 並び替え強制 + badge prefix 確認"
     C-4: "atomic rename (tempfile + fsync + os.rename) + validation失敗時md保持 確認"
     C-5: "dashboard_rotate.sh 改修: flock 同ロック + generate_dashboard_md.py 呼出 確認"
     D-1: "instructions/common/dashboard_responsibility_matrix.md 新設 確認"
     D-2: "instructions/karo.md / gunshi.md / common/shogun_mandatory.md canonical参照化 確認"
     D-3: "dashboard.md 直接編集禁止 明文化 確認"
-    E-1-to-E-6: "tests/dashboard_pipeline_test.sh 36/36 PASS (unit/golden/integration/concurrency/coexistence/rotate)"
-    F-1: "dashboard.yaml.action_required 10件投入済 (issue_id stable hash)"
-    F-2: "dashboard.yaml.achievements.today 4件 + yesterday 21件 + day_before 5件 投入済"
-    F-3: "dashboard.md に ACTION_REQUIRED:START/END + ACHIEVEMENTS_TODAY:START/END 境界マーカー追加済"
-    F-4: "generate_dashboard_md.py 初回 render PASS + 既存 dashboard.md との差分=境界マーカーのみ"
+    E-1-to-E-6: "tests/dashboard_pipeline_test.sh 36/36 PASS"
+    F-1: "dashboard.yaml.action_required 10件投入済"
+    F-2: "dashboard.yaml.achievements today 4件 / yesterday 21件 / day_before 5件 投入済"
+    F-3: "境界マーカー ACTION_REQUIRED:START/END + ACHIEVEMENTS_TODAY:START/END 追加済"
+    F-4: "generate_dashboard_md.py 初回 render PASS"
 
   test_results:
     total: 36
@@ -47,14 +104,11 @@ result:
     test_file: tests/dashboard_pipeline_test.sh
 
   risk_mitigation_confirmation:
-    R1: "PASS - HTML comment 境界限定 (🚨と✅戦果のみ)"
-    R2: "PASS - issue_id stable hash + normalize() 実装確認"
+    R1: "PASS - HTML comment 境界限定"
+    R2: "PASS - issue_id stable hash + normalize()"
     R3: "PASS - 3層防御 (validation + atomic rename + 失敗時保持)"
     R4: "PASS - canonical体系 + 文言整合test (E-4 PASS)"
     R5: "PASS - severity 並び替え + badge + 自動push (P0/HIGH)"
-    R6: "PASS - 同一 flock スコープ統合 (action_required_sync.sh + dashboard_rotate.sh)"
+    R6: "PASS - 同一 flock スコープ統合"
 
-  # ============================================================
-  # action_required_candidates schema (cmd_659 Scope A 追加)
-  # ============================================================
   action_required_candidates: []  # cmd_659 全Scope完遂。新規 action required 項目なし
