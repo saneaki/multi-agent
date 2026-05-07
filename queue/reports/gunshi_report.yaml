@@ -154,3 +154,37 @@ result:
       needs_lord_decision: false
       source_report_ts: "2026-05-08T04:04:33+09:00"
       status: open
+
+---
+worker_id: gunshi
+task_id: subtask_660_scope_b_integrated_qc
+parent_cmd: cmd_660
+timestamp: "2026-05-08T04:04:33+09:00"
+status: done
+trigger: karo_assigned
+note: |
+  cmd_660 Scope B 統合QC + Z案策定。
+  5足軽 (ash1/ash4/ash5/ash6/ash7) の独立調査レポートを統合し、
+  Verified Completion Gate (Z案) を策定。殿への判断資料として dashboard [decision-1] 追記済。
+
+result:
+  type: quality_check
+  task_type: integrated_formal_qc
+  qa_decision: conditional_pass
+  note: |
+    integrated_report.md 単体 ~1400 words (AC D-1 5000+ words 未達)。
+    verifier 指摘: 足軽5本合計 11,697 words での解釈可能だが、AC単一ファイル基準では未達。
+    gunshi に integrated_report.md 拡充タスクを dispatch 中。
+  north_star:
+    N1: aligned  # #40 + #45 + [提案-4] 全件カバー確認
+    N2: aligned  # cmd_658/659 再発防止に直結 (Verified Completion Gate)
+    N3: aligned  # 殿の判断「cmd_661 発令: Z案採択」1行で裁可可能
+
+  scope_verification:
+    B-1: "output/cmd_660_gunshi_integrated_strategy.md 生成 (Z案+比較表+north_star照合) — PASS"
+    B-2: "north_star 3点 N1/N2/N3 全aligned — PASS"
+    C-1: "dashboard.md 🚨要対応欄 [decision-1] 追記済 — PASS"
+    C-2: "後続cmd確定 (cmd_661=Phase3-A基幹実装 / cmd_662=試運用観察) — PASS"
+    D-1: "output/cmd_660_integrated_report.md 生成 — CONDITIONAL (単体1400words/AC5000+ 未達、拡充対応中)"
+
+  action_required_candidates: []
