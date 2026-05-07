@@ -1,10 +1,50 @@
 worker_id: ashigaru1
-task_id: subtask_592f_crontab_fixup
-parent_cmd: cmd_592
+task_id: subtask_660_scope_a2_role_split_review
+parent_cmd: cmd_660
 status: done
-timestamp: "2026-04-26T14:20:46+09:00"
+timestamp: "2026-05-08T03:54:37+09:00"
 report_to: karo
-type: implement
+type: analysis
+
+result:
+  summary: |
+    cmd_660 Scope A-2 完了。#40 家老役割集中問題の本日 2026-05-08 事象を踏まえた再分析。
+    output/cmd_660_ash1_role_split_review.md 生成 (1550+ words, RCA + 案A-D再評価 + 新対策案)。
+
+    RCA: 問題の重心が「dispatch フェーズの漏れ」から「完遂確認フェーズの漏れ」に移動。
+    Type A (commit/push漏れ) / Type B (staging漏れ) / Type C (dashboard反映漏れ) / Type D (スキーマ違反)
+    の 4 類型に分類。共通根本原因は「完了の定義が作業完了=done になっている」ことと
+    「家老の認知負荷飽和」および「verifier の随意性」。
+
+    推奨案: 案 C+ (verifier mandatory gate + commit-before-done 順序変更) を cmd_661 として即時発令。
+    P1-C+ / P3-B を正式採択。P2 は cmd_659 で解決済み。案 D は C+ 定着後に再評価。
+
+  files_created:
+    - output/cmd_660_ash1_role_split_review.md
+
+  acceptance_criteria:
+    - id: A-2
+      status: PASS
+      detail: "output/cmd_660_ash1_role_split_review.md 生成 (1550 words / RCA + 案A-D再評価表 + 新対策案)"
+
+  notes: |
+    ash4/ash5/ash6/ash7 のレポートは参照せず独立分析。
+    案 C+ の新対策として verifier 必須 gate 化 / commit-before-done 順序変更 / git hook 強化 /
+    Karo 同時 cmd 上限 (SO-25) / dashboard pipeline 定着確認を提案。
+
+agent_tool_used: false
+
+skill_candidate:
+  found: false
+  reason: "分析・方針提案のみ。実装なし。スキル化対象外。"
+
+history:
+  - task_id: subtask_592f_crontab_fixup
+    parent_cmd: cmd_592
+    status: done
+    timestamp: "2026-04-26T14:20:46+09:00"
+    report_to: karo
+    type: implement
 
 result:
   summary: |
