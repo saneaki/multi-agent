@@ -3,7 +3,7 @@
 **実施日**: 2026-05-08 14:35-15:00 JST
 **実施者**: 足軽7号 (Opus+T)
 **親 cmd**: cmd_676
-**status**: **partially_blocked** — clasp push 完了 (15:02 JST, 7 files), clasp run は OAuth scope `script.scriptapp` 欠落で実行不可。実機検証は明日 09:00 JST daily trigger 自然発火 or 殿手動 GAS editor run 待ち。
+**status**: **awaiting_verification** — clasp push 完了 (15:31 JST, Smart Chip URL 抽出修正反映)。殿の dryRunCmd676 再実行待ち。前回の rootDriveId=null/pdfFolderId=null は Sheets API v4 chipRuns 経由で解決見込み。
 
 ---
 
@@ -284,5 +284,106 @@ scope: email profile cloud-platform drive.file drive.metadata.readonly
 1. 殿に **案B** (GAS editor から dryRunCmd676 手動実行) を打診し即時検証実施
 2. 不可なら **案A** (明日 09:00 JST 自然発火) を採用、05/09 09:30 JST に clasp logs 検証
 3. 同時並行で **案C** (clasp re-login with --use-project-scopes --include-clasp-scopes) を将来運用整備として進言
+
+---
+
+## 11. 進捗更新 (2026-05-08 15:31 JST: Smart Chip URL 抽出 修正)
+
+### 11.1 殿 GAS editor 手動 dryRunCmd676 結果 (修正前)
+
+```
+G=on customers=1 (寺地淳子様)
+rootDriveId=null, pdfFolderId=null, customerWbId=null
+```
+
+G='on'/'off' フィルタは正常動作 (圓真諒 G='off' は除外、寺地淳子様 G='on' のみ抽出)。
+ただし C列 root Drive / E列 PDF保存先 の URL 抽出が全て null。
+
+### 11.2 根本原因
+
+元帳 C/D/E 列の URL は **Smart Chip** 形式で挿入されている (殿が `@drive` で
+Drive ファイル/フォルダを参照したと推定)。Apps Script の以下 API はいずれも
+Smart Chip 非対応:
+
+| API | Smart Chip 対応 |
+|-----|----------------|
+| `Range.getValue()` | ❌ (空文字 or chip 表示テキスト) |
+| `Range.getRichTextValue().getLinkUrl()` | ❌ (Smart Chip は RichTextValue link ではない) |
+| `Range.getRichTextValue().getRuns()[i].getLinkUrl()` | ❌ (同上) |
+
+Smart Chip メタデータは Sheets API v4 の `CellData.chipRuns` フィールドから
+読み取る必要がある (2024 公開):
+https://developers.google.com/sheets/api/reference/rest/v4/sheets#ChipRun
+
+```
+ChipRun {
+  startIndex: int32,
+  chip: {
+    richLinkProperties: { uri: string, mimeType: string }
+  }
+}
+```
+
+### 11.3 修正実装
+
+#### 11.3.1 sheets.gs に追加
+
+| 関数 | 役割 |
+|------|------|
+| `fetchChipUrlsFromMaster()` | UrlFetchApp + ScriptApp.getOAuthToken() で Sheets API v4 を呼び、元帳 C:E 全行の chipRuns / hyperlink / textFormatRuns / userEnteredValue を取得し rowIndex → URL マップに変換 |
+| `extractUrlFromChipCellData(cell)` | Sheets API CellData から URL を抽出 (chipRuns → hyperlink → textFormatRuns → plain URL の優先順) |
+
+REST 直接呼出のため Advanced Sheets サービス追加不要。
+既存 `oauthScopes` (`script.external_request` + `spreadsheets`) で動作するため
+**再認可不要** (manifest 変更なし)。
+
+#### 11.3.2 getCustomerList() 改修
+
+```javascript
+var chipUrlMap = fetchChipUrlsFromMaster();
+// ...各行ループ内...
+var chipRow = chipUrlMap[rowIndex] || {};
+var rootDriveUrl = chipRow.rootUrl || extractUrlFromCell(cRootCell);
+var pdfFolderUrl = chipRow.pdfUrl || extractUrlFromCell(ePdfCell);
+var customerWbUrl = chipRow.customerWbUrl || extractUrlFromCell(dWbCell);
+```
+
+Sheets API v4 chipRuns 優先 → 既存 Apps Script フォールバック。
+
+#### 11.3.3 dryRunCmd676() 診断強化
+
+修正後は chipUrlMap raw entry + summary に rootDriveUrl/pdfFolderUrl も Logger.log。
+殿の再 dryRun 実行で Smart Chip URL が null でないことを検証可能。
+
+### 11.4 反映
+
+```
+$ cd /home/ubuntu/gas-mail-manager && clasp push
+Pushed 7 files at 3:31:00 PM.
+```
+
+```
+$ cd /home/ubuntu/gas-mail-manager && git push
+   7b802ff..dd5fc3c  main -> main
+```
+
+gas-mail-manager commit: `dd5fc3c fix(cmd_676): Smart Chip URL 抽出を Sheets API v4 chipRuns 経由で実装`
+
+### 11.5 殿への依頼 (検証手順)
+
+1. GAS editor (https://script.google.com/home/projects/1a7zxw0jBja2hzR6BPnkX2XT_z9ys19Afrat6PK3TovSuVqQWkTBdkzkS/edit) を開く
+2. 関数選択 → `dryRunCmd676` → 実行
+3. 実行ログを家老/足軽7号へ共有
+
+期待値:
+- chipUrlMap に row=2 (寺地淳子様) の rootUrl / pdfUrl / (D列リンクは初回 null) が記録される
+- summary に `rootDriveId`, `pdfFolderId` が非 null (`/folders/{id}` パターンから抽出)
+- G='off' 圓真諒は依然除外 (filter 動作維持)
+
+### 11.6 注意点
+
+- UrlFetchApp 初回呼出時、殿の Apps Script 実行ダイアログで「外部サービス」承認が必要な場合あり (oauthScopes 既宣言だが、Smart Chip 用の API 経路は新規)
+- chipRuns API は 2024 公開ゆえ、稀に未対応セルが存在する可能性あり。
+  fallback chain (chipRuns → hyperlink → textFormatRuns → plain URL) で対応
 
 
