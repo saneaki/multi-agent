@@ -1,12 +1,15 @@
 #!/usr/bin/env bash
 # ═══════════════════════════════════════════════════════════════
-# shp.sh — 番号指定一括出陣コマンド (Shogun Preset Launcher)
+# shp.sh — 番号指定一括出陣・撤収コマンド (Shogun Preset Launcher)
 #
 # Usage:
-#   bash scripts/shp.sh                         # interactive
-#   bash scripts/shp.sh --dry-run               # confirm only
-#   bash scripts/shp.sh --preset <name>         # preset (skip interactive)
+#   bash scripts/shp.sh                              # interactive (deploy)
+#   bash scripts/shp.sh --dry-run                    # confirm only
+#   bash scripts/shp.sh --preset <name>              # preset (skip interactive)
 #   bash scripts/shp.sh --preset <name> --dry-run
+#   bash scripts/shp.sh --kill                       # interactive (retreat)
+#   bash scripts/shp.sh --retreat                    # same as --kill
+#   bash scripts/shp.sh --kill --dry-run             # retreat dry-run
 #   bash scripts/shp.sh --help
 #
 # 番号体系:
@@ -40,6 +43,9 @@ NC='\033[0m'
 
 # ─── 構成員 (prompt順: 固定) ───
 MEMBER_IDS=(shogun karo ashigaru1 ashigaru2 ashigaru3 ashigaru4 ashigaru5 ashigaru6 ashigaru7 gunshi)
+
+# ─── 撤収対象構成員 (shogun除く 9名) ───
+RETREAT_MEMBER_IDS=(karo ashigaru1 ashigaru2 ashigaru3 ashigaru4 ashigaru5 ashigaru6 ashigaru7 gunshi)
 
 member_label() {
     case "$1" in
@@ -85,30 +91,42 @@ num_model() {
 
 # ─── Usage ───
 usage() {
-    echo -e "${BOLD}shp${NC} — 番号指定一括出陣コマンド"
+    echo -e "${BOLD}shp${NC} — 番号指定一括出陣・撤収コマンド"
     echo ""
     echo "Usage:"
-    echo "  shp                          interactive (番号を順番に選択)"
+    echo "  shp                          interactive (番号を順番に選択して出陣)"
     echo "  shp --dry-run                確認のみ (settings.yaml/pane変更なし)"
     echo "  shp --preset <name>          プリセット使用"
     echo "  shp --preset <name> --dry-run  プリセット確認のみ"
+    echo "  shp --kill                   撤収モード interactive (対象を選択して /exit 送信)"
+    echo "  shp --retreat                --kill の同義語"
+    echo "  shp --kill --dry-run         撤収確認のみ (pane/process 変更なし)"
     echo "  shp --help                   このヘルプを表示"
     echo ""
-    echo "番号体系:"
+    echo "番号体系 (出陣モード):"
     echo -e "  ${CYAN}1${NC} = Sonnet+T  (claude-sonnet-4-6, thinking ON)"
     echo -e "  ${CYAN}2${NC} = Opus+T    (claude-opus-4-7, thinking ON)"
     echo -e "  ${CYAN}3${NC} = Codex     (gpt-5.5)"
     echo ""
-    echo "プリセット:"
+    echo "プリセット (出陣モード):"
     echo "  current          現在の settings.yaml の値をそのまま使用"
     echo "  heavy-opus       全員 Opus+T"
     echo "  all-sonnet       全員 Sonnet+T"
     echo "  sonnet-codex-mix 将軍/家老/軍師=Sonnet+T, 足軽=交互(Sonnet/Codex)"
     echo ""
-    echo "例:"
+    echo "撤収モード:"
+    echo "  --kill / --retreat で撤収モードに入る"
+    echo "  各構成員 (将軍除く 9名) の撤収フラグを y/N で選択"
+    echo "  --dry-run 併用時は /exit 送信を行わず、撤収予定を表示のみ"
+    echo ""
+    echo "例 (出陣):"
     echo "  shp                              # 全員インタラクティブに選択"
     echo "  shp --preset all-sonnet          # 全員 Sonnet+T で出陣"
     echo "  shp --preset heavy-opus --dry-run  # Opus 陣形の確認のみ"
+    echo ""
+    echo "例 (撤収):"
+    echo "  shp --kill                       # 対象を選択して撤収"
+    echo "  shp --retreat --dry-run          # 撤収対象の確認のみ"
     exit 0
 }
 
@@ -440,12 +458,165 @@ execute_deploy() {
 }
 
 # ═══════════════════════════════════════════════════════════════
+# 撤収モード関数群
+# ═══════════════════════════════════════════════════════════════
+
+# ─── Agent ID → tmux pane 解決 (撤収用) ───
+resolve_pane_retreat() {
+    local agent_id="$1"
+    local pane_count i aid pane_base
+
+    # Phase 1: @agent_id メタデータから動的検索
+    pane_count=$(tmux list-panes -t "multiagent:agents" 2>/dev/null | wc -l)
+    if [[ "$pane_count" -gt 0 ]]; then
+        for i in $(seq 0 $((pane_count - 1))); do
+            aid=$(tmux display-message -t "multiagent:agents.$i" -p '#{@agent_id}' 2>/dev/null || true)
+            if [[ "$aid" == "$agent_id" ]]; then
+                echo "multiagent:agents.$i"
+                return 0
+            fi
+        done
+    fi
+
+    # Phase 2: フォールバック（固定マッピング）
+    pane_base=$(tmux show-options -t multiagent -v @pane_base 2>/dev/null || echo "0")
+    case "$agent_id" in
+        karo)       echo "multiagent:agents.$((pane_base + 0))" ;;
+        ashigaru1)  echo "multiagent:agents.$((pane_base + 1))" ;;
+        ashigaru2)  echo "multiagent:agents.$((pane_base + 2))" ;;
+        ashigaru3)  echo "multiagent:agents.$((pane_base + 3))" ;;
+        ashigaru4)  echo "multiagent:agents.$((pane_base + 4))" ;;
+        ashigaru5)  echo "multiagent:agents.$((pane_base + 5))" ;;
+        ashigaru6)  echo "multiagent:agents.$((pane_base + 6))" ;;
+        ashigaru7)  echo "multiagent:agents.$((pane_base + 7))" ;;
+        gunshi)     echo "multiagent:agents.$((pane_base + 8))" ;;
+        *)          return 1 ;;
+    esac
+}
+
+# ─── 撤収インタラクティブ選択 ───
+# 各構成員 (shogun除く 9名) の撤収フラグを RETREAT_TARGETS に格納する
+interactive_select_retreat() {
+    local agent_id label input
+
+    echo ""
+    echo -e "${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${BOLD}  shp 撤収モード (--kill / --retreat)${NC}"
+    echo -e "${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo ""
+    echo -e "  ${YELLOW}将軍 (shogun) は撤収対象外 (手動での停止が必要)${NC}"
+    echo ""
+    echo -e "${BOLD}  各構成員の撤収フラグを選択:${NC}"
+    echo ""
+
+    for agent_id in "${RETREAT_MEMBER_IDS[@]}"; do
+        label=$(member_label "$agent_id")
+        while true; do
+            printf "  [%s] 撤収? (y/N): " "$label"
+            read -r input || true
+            input="${input:-N}"
+            if [[ "$input" =~ ^[Yy]$ ]]; then
+                RETREAT_TARGETS["$agent_id"]="yes"
+                break
+            elif [[ "$input" =~ ^[Nn]$ ]]; then
+                RETREAT_TARGETS["$agent_id"]="no"
+                break
+            else
+                echo -e "  ${RED}無効な入力です${NC}。y または N を入力してください。"
+            fi
+        done
+    done
+}
+
+# ─── 撤収サマリー表示 ───
+show_retreat_summary() {
+    local agent_id label target retreat_count=0
+
+    echo ""
+    echo -e "${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${BOLD}  撤収サマリー${NC}"
+    echo -e "${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo ""
+
+    for agent_id in "${RETREAT_MEMBER_IDS[@]}"; do
+        label=$(member_label "$agent_id")
+        target="${RETREAT_TARGETS[$agent_id]:-no}"
+        if [[ "$target" == "yes" ]]; then
+            printf "  %-6s : ${RED}撤収${NC}\n" "$label"
+            retreat_count=$((retreat_count + 1))
+        else
+            printf "  %-6s : -\n" "$label"
+        fi
+    done
+
+    echo ""
+    echo -e "  撤収対象: ${BOLD}${retreat_count} 名${NC}"
+    echo ""
+}
+
+# ─── 撤収実行 ───
+execute_retreat() {
+    local dry_run="${1:-false}"
+    local total=0 success=0 failed=0
+    local agent_id label pane_target current_cli
+
+    echo ""
+    if [[ "$dry_run" == "true" ]]; then
+        echo -e "  ${YELLOW}[DRY-RUN]${NC} 実行シミュレーション (tmux pane/process に変更なし)"
+    fi
+    echo ""
+
+    for agent_id in "${RETREAT_MEMBER_IDS[@]}"; do
+        [[ "${RETREAT_TARGETS[$agent_id]:-no}" != "yes" ]] && continue
+
+        label=$(member_label "$agent_id")
+        total=$((total + 1))
+
+        if [[ "$dry_run" == "true" ]]; then
+            echo -e "  [DRY-RUN] ${label} (${agent_id}) → /exit 送信予定"
+        else
+            echo -ne "  撤収: ${label} (${agent_id}) ... "
+            pane_target=$(resolve_pane_retreat "$agent_id" 2>/dev/null || true)
+            if [[ -n "$pane_target" ]]; then
+                current_cli=$(tmux show-options -p -t "$pane_target" -v @agent_cli 2>/dev/null | tr -d '[:space:]' || echo "claude")
+                case "$current_cli" in
+                    codex)
+                        tmux send-keys -t "$pane_target" Escape 2>/dev/null || true
+                        sleep 0.3
+                        tmux send-keys -t "$pane_target" C-c 2>/dev/null || true
+                        sleep 0.3
+                        tmux send-keys -t "$pane_target" "/exit" Enter 2>/dev/null || true
+                        ;;
+                    *)
+                        tmux send-keys -t "$pane_target" "/exit" Enter 2>/dev/null || true
+                        ;;
+                esac
+                echo -e "${GREEN}OK${NC}"
+                success=$((success + 1))
+            else
+                echo -e "${RED}FAILED (pane not found)${NC}"
+                failed=$((failed + 1))
+            fi
+        fi
+    done
+
+    if [[ "$dry_run" != "true" ]]; then
+        echo ""
+        echo -e "${BOLD}結果:${NC} ${GREEN}${success} success${NC}, ${RED}${failed} failed${NC} (${total} total)"
+        if [[ $failed -gt 0 ]]; then
+            echo -e "${YELLOW}WARN:${NC} 失敗した構成員は手動で switch_cli.sh を実行してください"
+        fi
+    fi
+}
+
+# ═══════════════════════════════════════════════════════════════
 # メイン処理
 # ═══════════════════════════════════════════════════════════════
 
 # 引数パース
 DRY_RUN=false
 PRESET=""
+RETREAT_MODE=false
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -462,6 +633,10 @@ while [[ $# -gt 0 ]]; do
             PRESET="$2"
             shift 2
             ;;
+        --kill|--retreat)
+            RETREAT_MODE=true
+            shift
+            ;;
         --help|-h|help)
             usage
             ;;
@@ -473,9 +648,60 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+# 組み合わせ検証
+if [[ "$RETREAT_MODE" == "true" && -n "$PRESET" ]]; then
+    echo -e "${RED}ERROR:${NC} --kill/--retreat と --preset は同時に使用できません" >&2
+    exit 1
+fi
+
 check_prerequisites
 
-# 連想配列宣言 (bash 4.0+)
+# ─── 撤収モード ───
+if [[ "$RETREAT_MODE" == "true" ]]; then
+    declare -A RETREAT_TARGETS
+
+    interactive_select_retreat
+    show_retreat_summary
+
+    if [[ "$DRY_RUN" == "true" ]]; then
+        echo -e "  ${YELLOW}[DRY-RUN モード]${NC} tmux pane/process 変更は行われません。"
+    fi
+
+    # 撤収対象0人チェック
+    RETREAT_COUNT=0
+    for _aid in "${RETREAT_MEMBER_IDS[@]}"; do
+        [[ "${RETREAT_TARGETS[$_aid]:-no}" == "yes" ]] && RETREAT_COUNT=$((RETREAT_COUNT + 1))
+    done
+
+    if [[ "$RETREAT_COUNT" -eq 0 ]]; then
+        echo "  撤収対象が選択されていません。中止します。"
+        echo ""
+        exit 0
+    fi
+
+    printf "  撤収しますか? (y/N): "
+    read -r CONFIRM || CONFIRM=""
+    echo ""
+
+    if [[ "$CONFIRM" =~ ^[Yy]$ ]]; then
+        execute_retreat "$DRY_RUN"
+        if [[ "$DRY_RUN" != "true" ]]; then
+            echo ""
+            echo -e "${GREEN}撤収完了！${NC}"
+        else
+            echo ""
+            echo -e "  ${YELLOW}[DRY-RUN]${NC} 上記が実際の撤収対象になります。"
+            echo "  実際に撤収するには --dry-run なしで実行してください。"
+        fi
+    else
+        echo "  撤収を中止しました。"
+    fi
+
+    echo ""
+    exit 0
+fi
+
+# ─── 出陣モード ───
 declare -A SELECTIONS
 
 if [[ -n "$PRESET" ]]; then

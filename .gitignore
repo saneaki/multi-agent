@@ -119,6 +119,7 @@
 !scripts/action_required_sync.sh
 !scripts/watch_gmail_trigger.sh
 !scripts/context_snapshot.sh
+!scripts/codex_context.sh
 !scripts/shogun-discord.service.template
 !scripts/install-shogun-discord-service.sh
 !scripts/hooks/
@@ -210,6 +211,7 @@
 !output/cmd_663_integrated.md
 !output/cmd_664_discord_proactive_reaction.md
 !output/cmd_668_codex_0129_upgrade.md
+!output/cmd_666_shp_retreat_report.md
 
 # cmd_544: 3 安全装置 state files (kill-switch/rate-limit/pending/daily-metric)
 !logs/cmd_squash_pub_hook.disabled
