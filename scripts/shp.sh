@@ -7,6 +7,11 @@
 #   bash scripts/shp.sh --dry-run                    # confirm only
 #   bash scripts/shp.sh --preset <name>              # preset (skip interactive)
 #   bash scripts/shp.sh --preset <name> --dry-run
+#   bash scripts/shp.sh 1                            # positional: 全員 = 1
+#   bash scripts/shp.sh 2 1                          # positional: 将軍=2, 他全員=1
+#   bash scripts/shp.sh 1 2 1 1                      # positional: 将軍=1, 家老=2, 軍師=1, 足軽全員=1
+#   bash scripts/shp.sh 1 2 1 1 1 1 1 1 1 2 [--yes]  # positional: 10名個別指定 (将軍/家老/足軽1-7/軍師)
+#   bash scripts/shp.sh --yes                        # confirm prompt skip (interactive 後)
 #   bash scripts/shp.sh --kill                       # interactive (retreat)
 #   bash scripts/shp.sh --retreat                    # same as --kill
 #   bash scripts/shp.sh --kill --dry-run             # retreat dry-run
@@ -98,6 +103,8 @@ usage() {
     echo "  shp --dry-run                確認のみ (settings.yaml/pane変更なし)"
     echo "  shp --preset <name>          プリセット使用"
     echo "  shp --preset <name> --dry-run  プリセット確認のみ"
+    echo "  shp <N> [...]                positional args 一括指定 (詳細下記)"
+    echo "  shp --yes / -y               y/N 確認 prompt をスキップ (自動 Yes)"
     echo "  shp --kill                   撤収モード interactive (対象を選択して /exit 送信)"
     echo "  shp --retreat                --kill の同義語"
     echo "  shp --kill --dry-run         撤収確認のみ (pane/process 変更なし)"
@@ -107,6 +114,13 @@ usage() {
     echo -e "  ${CYAN}1${NC} = Sonnet+T  (claude-sonnet-4-6, thinking ON)"
     echo -e "  ${CYAN}2${NC} = Opus+T    (claude-opus-4-7, thinking ON)"
     echo -e "  ${CYAN}3${NC} = Codex     (gpt-5.5)"
+    echo ""
+    echo "positional args (出陣モード, 1/2/3 の数字のみ):"
+    echo "  shp <N1>                       全員 = N1"
+    echo "  shp <N1> <N2>                  将軍 = N1, 他全員 = N2"
+    echo "  shp <N1> <N2> <N3> <N4>        将軍=N1, 家老=N2, 軍師=N3, 足軽全員=N4"
+    echo "  shp <N1>...<N10>               構成員 10名を個別指定 (順: 将軍/家老/足軽1-7/軍師)"
+    echo "  ※ 1/2/4/10 個以外はエラー。--yes / --dry-run と併用可。"
     echo ""
     echo "プリセット (出陣モード):"
     echo "  current          現在の settings.yaml の値をそのまま使用"
@@ -119,10 +133,17 @@ usage() {
     echo "  各構成員 (将軍除く 9名) の撤収フラグを y/N で選択"
     echo "  --dry-run 併用時は /exit 送信を行わず、撤収予定を表示のみ"
     echo ""
-    echo "例 (出陣):"
+    echo "例 (出陣 interactive/preset):"
     echo "  shp                              # 全員インタラクティブに選択"
     echo "  shp --preset all-sonnet          # 全員 Sonnet+T で出陣"
     echo "  shp --preset heavy-opus --dry-run  # Opus 陣形の確認のみ"
+    echo ""
+    echo "例 (出陣 positional):"
+    echo "  shp 1                            # 全員 Sonnet+T"
+    echo "  shp 2                            # 全員 Opus+T"
+    echo "  shp 2 1                          # 将軍=Opus+T, 他全員=Sonnet+T"
+    echo "  shp 1 2 1 1                      # 将軍=Sonnet+T, 家老=Opus+T, 軍師=Sonnet+T, 足軽全員=Sonnet+T"
+    echo "  shp 1 2 1 1 1 1 1 1 1 2 --yes    # 構成員10名個別指定 + 確認スキップ"
     echo ""
     echo "例 (撤収):"
     echo "  shp --kill                       # 対象を選択して撤収"
@@ -217,6 +238,53 @@ interactive_select() {
             fi
         done
     done
+}
+
+# ─── positional args 適用 ───
+# POSITIONAL_NUMS 配列の長さに応じて SELECTIONS に値を展開する
+# 1個: 全員=N1 / 2個: 将軍=N1, 他全員=N2 / 4個: 将軍=N1, 家老=N2, 軍師=N3, 足軽全員=N4
+# 10個: MEMBER_IDS 順 (将軍/家老/足軽1-7/軍師)
+apply_positional() {
+    local count="${#POSITIONAL_NUMS[@]}"
+    local agent_id i
+
+    case "$count" in
+        1)
+            for agent_id in "${MEMBER_IDS[@]}"; do
+                SELECTIONS["$agent_id"]="${POSITIONAL_NUMS[0]}"
+            done
+            ;;
+        2)
+            SELECTIONS[shogun]="${POSITIONAL_NUMS[0]}"
+            for agent_id in "${MEMBER_IDS[@]}"; do
+                [[ "$agent_id" == "shogun" ]] && continue
+                SELECTIONS["$agent_id"]="${POSITIONAL_NUMS[1]}"
+            done
+            ;;
+        4)
+            SELECTIONS[shogun]="${POSITIONAL_NUMS[0]}"
+            SELECTIONS[karo]="${POSITIONAL_NUMS[1]}"
+            SELECTIONS[gunshi]="${POSITIONAL_NUMS[2]}"
+            for i in 1 2 3 4 5 6 7; do
+                SELECTIONS["ashigaru${i}"]="${POSITIONAL_NUMS[3]}"
+            done
+            ;;
+        10)
+            for i in "${!MEMBER_IDS[@]}"; do
+                SELECTIONS["${MEMBER_IDS[$i]}"]="${POSITIONAL_NUMS[$i]}"
+            done
+            ;;
+        *)
+            echo -e "${RED}ERROR:${NC} positional 引数は 1 / 2 / 4 / 10 個のみ対応 (指定: ${count} 個)" >&2
+            echo ""
+            echo "使用例:"
+            echo "  shp 1                       # 全員 = 1"
+            echo "  shp 2 1                     # 将軍=2, 他=1"
+            echo "  shp 1 2 1 1                 # 将軍/家老/軍師/足軽全員"
+            echo "  shp 1 2 1 1 1 1 1 1 1 2     # 構成員10名個別 (将軍/家老/足軽1-7/軍師)"
+            exit 1
+            ;;
+    esac
 }
 
 # ─── プリセット適用 ───
@@ -617,6 +685,8 @@ execute_retreat() {
 DRY_RUN=false
 PRESET=""
 RETREAT_MODE=false
+YES_FLAG=false
+POSITIONAL_NUMS=()
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -637,8 +707,16 @@ while [[ $# -gt 0 ]]; do
             RETREAT_MODE=true
             shift
             ;;
+        --yes|-y)
+            YES_FLAG=true
+            shift
+            ;;
         --help|-h|help)
             usage
+            ;;
+        [123])
+            POSITIONAL_NUMS+=("$1")
+            shift
             ;;
         *)
             echo -e "${RED}ERROR:${NC} 不明なオプション: '$1'" >&2
@@ -651,6 +729,14 @@ done
 # 組み合わせ検証
 if [[ "$RETREAT_MODE" == "true" && -n "$PRESET" ]]; then
     echo -e "${RED}ERROR:${NC} --kill/--retreat と --preset は同時に使用できません" >&2
+    exit 1
+fi
+if [[ "${#POSITIONAL_NUMS[@]}" -gt 0 && -n "$PRESET" ]]; then
+    echo -e "${RED}ERROR:${NC} positional 引数 と --preset は同時に使用できません" >&2
+    exit 1
+fi
+if [[ "${#POSITIONAL_NUMS[@]}" -gt 0 && "$RETREAT_MODE" == "true" ]]; then
+    echo -e "${RED}ERROR:${NC} positional 引数 と --kill/--retreat は同時に使用できません" >&2
     exit 1
 fi
 
@@ -679,9 +765,15 @@ if [[ "$RETREAT_MODE" == "true" ]]; then
         exit 0
     fi
 
-    printf "  撤収しますか? (y/N): "
-    read -r CONFIRM || CONFIRM=""
-    echo ""
+    if [[ "$YES_FLAG" == "true" ]]; then
+        CONFIRM="y"
+        echo "  --yes フラグにより撤収確認スキップ (自動 Yes)"
+        echo ""
+    else
+        printf "  撤収しますか? (y/N): "
+        read -r CONFIRM || CONFIRM=""
+        echo ""
+    fi
 
     if [[ "$CONFIRM" =~ ^[Yy]$ ]]; then
         execute_retreat "$DRY_RUN"
@@ -704,7 +796,11 @@ fi
 # ─── 出陣モード ───
 declare -A SELECTIONS
 
-if [[ -n "$PRESET" ]]; then
+if [[ "${#POSITIONAL_NUMS[@]}" -gt 0 ]]; then
+    echo ""
+    echo -e "${BOLD}positional args (${#POSITIONAL_NUMS[@]} 個) を適用します...${NC}"
+    apply_positional
+elif [[ -n "$PRESET" ]]; then
     echo ""
     echo -e "${BOLD}プリセット '${PRESET}' を適用します...${NC}"
     apply_preset "$PRESET"
@@ -718,9 +814,15 @@ if [[ "$DRY_RUN" == "true" ]]; then
     echo -e "  ${YELLOW}[DRY-RUN モード]${NC} settings.yaml/pane 変更は行われません。"
 fi
 
-printf "  出陣しますか? (y/N): "
-read -r CONFIRM || CONFIRM=""
-echo ""
+if [[ "$YES_FLAG" == "true" ]]; then
+    CONFIRM="y"
+    echo "  --yes フラグにより出陣確認スキップ (自動 Yes)"
+    echo ""
+else
+    printf "  出陣しますか? (y/N): "
+    read -r CONFIRM || CONFIRM=""
+    echo ""
+fi
 
 if [[ "$CONFIRM" =~ ^[Yy]$ ]]; then
     execute_deploy "$DRY_RUN"
