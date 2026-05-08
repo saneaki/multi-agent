@@ -3,7 +3,7 @@
 **実施日**: 2026-05-08 14:35-15:00 JST
 **実施者**: 足軽7号 (Opus+T)
 **親 cmd**: cmd_676
-**status**: **blocked** (clasp RAPT auth 期限切れ — 殿の clasp login 必要)
+**status**: **partially_blocked** — clasp push 完了 (15:02 JST, 7 files), clasp run は OAuth scope `script.scriptapp` 欠落で実行不可。実機検証は明日 09:00 JST daily trigger 自然発火 or 殿手動 GAS editor run 待ち。
 
 ---
 
@@ -210,3 +210,79 @@ production 反映 (C-1, C-2, C-3) は clasp 認証復旧後に家老が実行し
 
 karo (inbox_write task_completed)。
 本 report 作成後、shogun-side commit/push → blocked status で報告。
+
+---
+
+## 10. 進捗更新 (2026-05-08 15:06 JST: 殿 clasprc 転送後再開)
+
+### 10.1 clasp push 結果
+
+```
+$ cd /home/ubuntu/gas-mail-manager && clasp push
+Pushed 7 files at 3:02:09 PM.
+└─ appsscript.json
+└─ src/config.gs
+└─ src/gmail.gs
+└─ src/main.gs
+└─ src/pdf.gs
+└─ src/sheets.gs
+└─ src/summary.gs
+```
+
+**production 反映 = ✅ DONE**。新 code は scriptId=`1a7zxw0jBja2hzR6BPnkX2XT_z9ys19Afrat6PK3TovSuVqQWkTBdkzkS` 上に live。
+
+C-3 (clasp push 本番反映) は **PASS**。
+
+### 10.2 clasp run blocker (新事象)
+
+```
+$ cd /home/ubuntu/gas-mail-manager && clasp run dryRunCmd676
+Unable to run script function. Please make sure you have permission to run the script function.
+
+$ bash scripts/gas_run_oauth.sh dryRunCmd676
+HTTP response code: 403
+ERROR: script.scriptapp scope が必要。
+```
+
+OAuth token scope 検査結果 (Google tokeninfo endpoint):
+```
+scope: email profile cloud-platform drive.file drive.metadata.readonly
+       logging.read script.deployments script.projects script.webapp.deploy
+       service.management userinfo.email userinfo.profile openid
+```
+
+**`https://www.googleapis.com/auth/script.scriptapp` 欠落** → script.run API 使用不可。
+
+殿のローカルで実行された `clasp login` (default) は push に必要な scope のみ含み、run に必要な script.scriptapp scope を含まない。
+
+### 10.3 復旧 path (3案)
+
+| 案 | 内容 | 効率 | 推奨度 |
+|----|------|------|--------|
+| A | 明日 09:00 JST daily trigger の自然発火を待つ。clasp logs で結果検証 | 殿 0 action / 18 時間待機 | ⭐⭐ |
+| B | 殿が GAS editor (https://script.google.com/home/projects/1a7zxw0jBja2hzR6BPnkX2XT_z9ys19Afrat6PK3TovSuVqQWkTBdkzkS/edit) を開いて dryRunCmd676 を選択 → 実行 | 殿 1分 / 即時検証可 | ⭐⭐⭐ |
+| C | 殿ローカルで `clasp login --use-project-scopes --include-clasp-scopes` 再実行 → clasprc.json 再転送 | 殿 5 分 / 以降の clasp run も自動化可 | ⭐⭐⭐ |
+
+### 10.4 既存 daily trigger 動作確認 (clasp logs)
+
+`clasp logs --simplified` は機能するため過去 trigger 実行を確認:
+
+- `2026-05-08T00:46:04.876Z` (= **09:46 JST** today) に旧 code で processAllCustomers 自動実行 → 寺地淳子様 2件処理。**圓真諒 0件処理 (旧 schema 下では H='active' フィルタで通過していた事を示唆)**。
+- 過去 10 日分 daily trigger 実行記録あり、いずれも完了 ms < 30000。
+
+**要点**: daily trigger は健在。明日 09:00 JST の発火で新 code が初実行される。
+
+### 10.5 実機テスト残作業 (家老/軍師依頼)
+
+- C-1 寺地淳子様 G='on' 1サイクル成功 → 案B または案A 後に clasp logs 検証
+- C-2 圓真諒 G='off' 完全スキップ → 同上
+- A-2〜A-6 元帳/Drive/WB 確認 → 殿手動目視確認
+- B-1〜B-3 → 殿手動目視確認
+
+### 10.6 推奨次アクション (家老向け)
+
+1. 殿に **案B** (GAS editor から dryRunCmd676 手動実行) を打診し即時検証実施
+2. 不可なら **案A** (明日 09:00 JST 自然発火) を採用、05/09 09:30 JST に clasp logs 検証
+3. 同時並行で **案C** (clasp re-login with --use-project-scopes --include-clasp-scopes) を将来運用整備として進言
+
+
