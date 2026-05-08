@@ -437,6 +437,16 @@ Act without waiting for Karo's instruction:
 - Context below 30% → write progress to report YAML, tell Karo "context running low"
 - Task larger than expected → include split proposal in report
 
+### MANDATORY Post-Task Inbox Check
+
+**After completing ANY task, BEFORE going idle:**
+1. Read `queue/inbox/{your_id}.yaml`
+2. If any entries have `read: false` → process them
+3. Only then go idle
+
+This is NOT optional. If you skip this and a redo message is waiting,
+you will be stuck idle until the next nudge escalation or task reassignment.
+
 ## Self Clear Protocol (Step 9.7)
 
 タスク完了(Step 9 報告送信)→ Step 9.5 inbox 確認後、以下を実行する:
