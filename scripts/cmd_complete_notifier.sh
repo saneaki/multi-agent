@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
 # ═══════════════════════════════════════════════════════════════
-# cmd_complete_notifier.sh — dashboard.md 変更検知 → ntfy自動通知
+# cmd_complete_notifier.sh — dashboard.md 変更検知 → Discord自動通知
 #
 # 概要:
 #   dashboard.md の「本日の戦果」セクションの🏆🏆完了行を監視し、
-#   新しく追加された cmd 完了時に殿のスマートフォンへ ntfy 通知を送る。
+#   新しく追加された cmd 完了時に殿へ Discord 通知を送る。
 #
 # 動作:
 #   - inotifywait で dashboard.md を常時監視
 #   - 変更検知時: 🏆🏆マーカーを含む完了行のみ抽出（セマンティックゲート）
-#   - 未通知 cmd ID を state file（logs/ntfy_completed_cmds.txt）で管理
-#   - 未通知のものだけ ntfy 送信（重複防止）
+#   - 未通知 cmd ID を state file（logs/discord_completed_cmds.txt）で管理
+#   - 未通知のものだけ Discord 送信（重複防止）
 #
 # 🏆🏆セマンティックゲート設計 (cmd_538 Fix A):
 #   dashboard.mdには2種類の🏆行が書かれる:
@@ -38,7 +38,7 @@ cd "$SCRIPT_DIR"
 
 DASHBOARD="$SCRIPT_DIR/dashboard.md"
 YAML_DASHBOARD="$SCRIPT_DIR/dashboard.yaml"
-STATE_FILE="$SCRIPT_DIR/logs/ntfy_completed_cmds.txt"
+STATE_FILE="$SCRIPT_DIR/logs/discord_completed_cmds.txt"
 GUNSHI_QC_STATE="$SCRIPT_DIR/logs/gunshi_qc_dispatched_cmds.txt"
 LOG_FILE="$SCRIPT_DIR/logs/cmd_complete_notifier.log"
 
@@ -139,7 +139,7 @@ for item in today_items:
 PYEOF
 }
 
-# dashboard.md から完了行を抽出し、未通知 cmd を ntfy 送信
+# dashboard.md から完了行を抽出し、未通知 cmd を Discord 送信
 check_and_notify() {
     if [ ! -f "$DASHBOARD" ]; then
         return 0
@@ -163,7 +163,7 @@ check_and_notify() {
         summary=$(echo "$line" | awk -F'|' '{print $4}' | sed 's/✅.*//' | sed 's/^ *//; s/ *$//')
         summary="${summary:0:60}"
 
-        # 通知送信 (Discord/ntfy)
+        # 通知送信 (Discord)
         log "Sending notify for $cmd_id: $summary"
         if bash "$SCRIPT_DIR/scripts/notify.sh" "✅ ${cmd_id} 完了 — ${summary}" "家老より" "cmd_complete" >> "$LOG_FILE" 2>&1; then
             echo "$cmd_id" >> "$STATE_FILE"

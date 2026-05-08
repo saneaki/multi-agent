@@ -2,8 +2,8 @@
 
 ## 概要
 
-Discord DM → ntfy 中継 Bot (discord_to_ntfy.py) の運用手順。
-cmd_497 (2026-04-15) より systemd user service + healthcheck による自動管理体制。
+Discord DM → `queue/external_inbox.yaml` 直接書込 Gateway (`discord_gateway.py`) の運用手順。
+cmd_658 Phase 2 より systemd user service + healthcheck による自動管理体制。
 
 ## インストール
 
@@ -37,8 +37,8 @@ bash /home/ubuntu/shogun/scripts/install-shogun-discord-service.sh
 ## healthcheck 仕様
 
 - 5分ごとに cron で実行
-- `pgrep -f discord_to_ntfy` でプロセス確認
-- 停止検出時: ntfy 通知 + `systemctl --user restart` 自動復旧
+- `systemctl --user is-active shogun-discord` で service 確認
+- 停止検出時: Discord 通知 + `systemctl --user restart` 自動復旧
 - 15分 cooldown で重複通知を抑制
 - ログ: `/home/ubuntu/shogun/logs/discord_bot_health.log`
 
@@ -58,20 +58,20 @@ cat /home/ubuntu/shogun/config/discord_bot.env | grep DISCORD_BOT_TOKEN
 
 # 4. 手動起動テスト
 /home/ubuntu/shogun/.venv/discord-bot/bin/python3 \
-  /home/ubuntu/shogun/scripts/discord_to_ntfy.py
+  /home/ubuntu/shogun/scripts/discord_gateway.py
 ```
 
 ### 2重起動が疑われる場合 (DI-01)
 
 ```bash
 # プロセス数確認 (1つのみが正常)
-pgrep -af discord_to_ntfy
+pgrep -af discord_gateway.py
 
 # tmux window 確認
 tmux list-windows -t multiagent
 
 # 既存プロセス全停止
-pkill -f discord_to_ntfy || true
+pkill -f discord_gateway.py || true
 tmux kill-window -t multiagent:shogun-discord 2>/dev/null || true
 systemctl --user start shogun-discord
 ```

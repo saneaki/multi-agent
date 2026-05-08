@@ -18,8 +18,7 @@ COOLDOWN_SEC=900  # 15分 重複通知抑制
 GATEWAY_PROC="discord_gateway"
 
 # ── 通知 backend 設定 ────────────────────────────────────────────
-# cmd_658 Phase 1 以降は notify.sh wrapper 経由で Discord/ntfy 自動切替。
-# ntfy_topic は notify.sh の ntfy fallback 経路で参照される。
+# cmd_692 Phase 3 以降は notify.sh wrapper 経由で Discord 通知。
 
 # ── 死活確認 ─────────────────────────────────────────────────────
 TIMESTAMP="$(date '+%Y-%m-%d %H:%M:%S')"
@@ -44,7 +43,7 @@ if [ -f "${STATE_FILE}" ]; then
     fi
 fi
 
-# ── 通知 (Discord/ntfy 自動切替) ──────────────────────────────────
+# ── 通知 (Discord) ──────────────────────────────────
 echo "[${TIMESTAMP}] ALERT: Gateway停止検出。notify.sh で通知+自動復旧試行"
 bash "${SHOGUN_DIR}/scripts/notify.sh" \
     "${GATEWAY_PROC} プロセスが停止しています。systemd による自動復旧を試みます。" \
