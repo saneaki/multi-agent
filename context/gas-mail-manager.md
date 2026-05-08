@@ -5,6 +5,76 @@
 
 ---
 
+## cmd_676 仕様変更通知 (2026-05-08, ash7)
+
+> 本セクションは下記の旧設計 (cmd_455) を一部置換える。
+> 旧仕様も歴史的記録として残すが、**現行運用は本セクションに従う**。
+
+### 移行: 元帳統合 → 顧客毎独立WB
+G='on' 顧客ごとに、C列root Drive 配下へ「{A列}_総合シート」WB を作成し、
+メール一覧/PDF保存先をその顧客root配下へ集約する。
+
+### 元帳列スキーマ (新)
+
+| 列 | 名称 | 型 | 用途 |
+|----|------|-----|------|
+| A | 顧客名 | String | 敬称込みそのまま (例: 寺地淳子様) |
+| B | メールアドレス | String | Gmail検索 from/to |
+| C | 顧客root Driveリンク | URL/Chip | 顧客 root フォルダ |
+| D | 顧客WBリンク | URL/Chip (GAS書込) | 「{A}_総合シート」WB。欠落時のみGASが補填、既存は保持 |
+| E | PDF保存先「08 メール送受信」 | URL/Chip | PDF保存フォルダ。GAS は本フォルダへ直接保存 |
+| F | 最終チェック | DateTime | 実行毎更新 |
+| G | on/off | String | **'on' のみ処理**。'off'/空/他値は完全スキップ |
+| H | 担当弁護士 | String | 読取のみ(現状未使用) |
+| I | 担当事務 | String | 読取のみ(現状未使用) |
+
+### 顧客WB 内構造
+
+- ファイル名: 「{A列}_総合シート」 (例: `寺地淳子様_総合シート`)
+- 配置: C列root Drive 配下
+- シート: `メール一覧` (旧 `元帳` 内 `メール_{name}` シートと同カラム)
+- 列: A送受信日時 / B方向 / C送信者 / D宛先 / E件名 / F AI要約 / G PDFリンク / H GmailMessageId / I 処理日時
+
+### G='on' フィルタ厳守
+
+- `isCustomerOn(rawValue)`: `true` または `'on'` (case-insensitive, trim) のみ処理
+- 'off'/空/他値の行は **D/F/PDF/Gmailラベル/メール一覧 全て触らない**
+- 圓真諒 (G='off') 等の検証用顧客が存在することに留意
+
+### 新着のみ適用 / 既存遺物保護
+
+- 既存PDF移行は実装しない (`backfillSheetFromDrive` 等は撤去済)
+- 元帳内既存 `メール_{name}` シート群は GAS が touch しない (殿が手動削除)
+
+### チップ形式リンク
+
+- C列(read), E列(read): RichTextValue.getLinkUrl() を優先、plain URL 文字列に fallback
+- D列(write): 欠落時のみ `RichTextValue.setLinkUrl()` を書込み (既存値・既存リンクは保持)
+- 厳密な smart-chip (Sheets API chipRuns) は使用せず、RichTextValue ベースの hyperlinked text で代替
+
+### 関連ファイル
+
+- src/sheets.gs (cmd_676 全面書換): 列定数、URL/ID 抽出、getOrCreateCustomerWorkbook、ensureEmailListSheet、appendEmailRowToWb
+- src/main.gs (cmd_676 全面書換): processCustomer, processSingleEmail。backfill系関数は本cmdで撤去
+- src/{config,gmail,pdf,summary}.gs: 現行のまま流用 (修正なし)
+
+### 実機テスト基準 (cmd_676 受入条件)
+
+- 寺地淳子様 G='on': 1サイクル成功 (WB作成/再利用 + D列補填 + メール一覧追記 + PDF保存 + F列更新)
+- 圓真諒 G='off': D列 unchanged / PDF未保存 / F列更新なし
+
+### blocked 状況 (2026-05-08)
+
+clasp push 実行時に `invalid_rapt` エラーが発生 → `shogun-gas-clasp-rapt-reauth-fallback` skill の手順で殿のローカル `clasp login` 経由 `~/.clasprc.json` 更新が必要。
+更新後、家老がVPS側で `clasp push` 再実行 + `clasp run dryRunCmd676` → `clasp run processAllCustomers` で実機検証する手順。
+
+詳細: `output/cmd_676_gas_mail_manager_per_customer_workbook.md`
+
+---
+
+
+---
+
 ## 1. プロジェクト概要
 
 ### 1.1 システム概要
