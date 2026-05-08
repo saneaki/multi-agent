@@ -126,3 +126,66 @@ cat /tmp/gas_run_cmd_567.log
 - 構築完了: 2026-04-24 (cmd_565/cmd_567)
 - 認証: clasp 3.3.0 + --use-project-scopes + --include-clasp-scopes + GCP kaji-487204
 - Logger.log 動作確認: INFO レベルで clasp logs --simplified に出力確認済
+
+## 中期戦略: clasp run 依存からの脱却 (cmd_680 統合)
+
+`clasp run` / `scripts/gas_run_oauth.sh` は user OAuth refresh token 依存が強く、
+RAPT 再認証境界 / scope 変更 / refresh token policy の影響を受け続ける。
+日常 run を安定させる本命は **Web App endpoint 化** で、clasp は deploy と
+emergency debug 用に縮退させるのが、保守容易性 / 殿介在量 / RAPT 耐性の
+バランスが最もよい (cmd_680 Codex 独立調査結論)。
+
+### 役割分担表
+
+| 用途 | 推奨手段 | 認証主体 |
+|------|---------|---------|
+| 日常 run (定型処理) | Web App `doPost` + HMAC 署名 | GAS 側 installable trigger / Web App 実行主体 |
+| デプロイ | `gas_push_oauth.sh` / `clasp push` | user OAuth (refresh token) |
+| 緊急 debug / ad-hoc 検証 | `clasp run` | user OAuth + manifest scope |
+
+### Web App endpoint 設計 (cmd_682 候補)
+
+```javascript
+// Code.gs 側
+function doPost(e) {
+  // 1. HMAC 署名検証 (timestamp + nonce + body) 必須
+  // 2. route whitelist で関数を制限
+  // 3. ScriptApp.invoke 等は呼ばず、許可済 function を直接実行
+}
+```
+
+VPS 側は `gas_run_webapp.sh` で署名付き HTTP POST のみ行う:
+
+```bash
+# /home/ubuntu/shogun/scripts/gas_run_webapp.sh (cmd_682 候補)
+TS=$(date +%s); BODY='{"fn":"dryRunCmd676"}'
+SIG=$(printf '%s.%s' "$TS" "$BODY" | openssl dgst -sha256 -hmac "$WEBAPP_SECRET" | awk '{print $2}')
+curl -s -X POST "$WEBAPP_URL" -H "X-Ts: $TS" -H "X-Sig: $SIG" -d "$BODY"
+```
+
+### Service Account 制約 (cmd_680 確認)
+
+| 試みた方式 | 結果 | 一次情報 |
+|----------|------|--------|
+| `clasp login --adc` (Application Default Credentials) | EXPERIMENTAL/NOT WORKING | google/clasp README |
+| `scripts.run` を SA OAuth で直接呼ぶ | 公式不可 (`Service accounts cannot run scripts.run`) | developers.google.com/apps-script/api/how-tos/execute |
+| `clasp login --creds <SA-key>` | desktop OAuth client と互換でない | google/clasp Issue #225, #950 |
+
+**結論**: SA は `scripts.run` の caller としては使えない。Web App 経由で SA を
+caller に立てる (Cloud Run proxy / IAP 保護 endpoint) のが現実的設計。
+ただし gas-mail-manager 規模では HMAC + secret rotation で十分、IAP は過剰。
+
+### scope 不足エラーの runbook 分離
+
+| エラー文 | runbook |
+|---------|---------|
+| `invalid_grant` / `invalid_rapt` | `shogun-gas-clasp-rapt-reauth-fallback` 案A (ローカル再ログイン) |
+| HTTP 403 + `script.scriptapp scope` 必要 | 同上 + `--use-project-scopes --include-clasp-scopes --creds` 必須 |
+| HTTP 403 + Cloud Project 不一致 | `.clasp.json` `projectId` + GAS editor で GCP 関連付け確認 |
+
+### 関連 cmd
+
+- cmd_567: 本 skill 初版 (clasp 3.3.0 + Standard Cloud Project)
+- cmd_676: scope 不足 403 修正
+- cmd_680: 中期戦略 (Web App 化) と SA 制約の独立調査
+- cmd_682 (候補): Web App endpoint 実装 + `gas_run_webapp.sh` 作成

@@ -178,13 +178,166 @@ entries:
       cmd_675b audit gunshi 判定 c=1 事例のみで battle_tested 弱 + 0.129.0 specific。
       1ヶ月運用観察後 (2026-06-08)、battle_tested 強化されれば正式採用、変わらなければ削除判定。
 
+  # ───────── cmd_682 (2026-05-08) — cmd_500 以前の遡及処理 ─────────
+  # cmd_674 audit 残課題「cmd_500 以前 (3ヶ月以上) の遡及スキャン未実施」を解消。
+  # skill_history.md「承認待ち」7件 + silent inconsistency 1件 (notion-trigger-v1-flat-access) を整理。
+  # 既存スキルへの包含確認は §2 統合検討マトリクス (cmd_682 audit) で実施。
+
+  - id: SC-475
+    name: shogun-n8n-notion-trigger-v1-flat-access
+    status: created
+    skill_path: ~/.claude/skills/shogun-n8n-notion-trigger-v1-flat-access/SKILL.md
+    source_cmd: cmd_475
+    related_cmds:
+      - cmd_475
+    created_at: cmd_682
+    cmd_682_decision: silent_inconsistency_resolved
+    notes: |
+      既存 SKILL.md (105行) が ~/.claude/skills/ に存在するが skill_history.md 未登録 (silent inconsistency)。
+      cmd_682 で skill_history.md に append + ✅実装済 化。
+      cmd_475 報告: n8n Notion Trigger v1 の properties トップレベルフラット展開パターン。
+
+  - id: SC-296
+    name: shogun-n8n-manual-execution-api
+    status: created
+    skill_path: ~/.claude/skills/shogun-n8n-manual-execution-api/SKILL.md
+    source_cmd: cmd_296
+    related_cmds:
+      - cmd_296
+    created_at: cmd_682
+    cmd_682_decision: silent_inconsistency_resolved
+    notes: |
+      既存 SKILL.md (418行) が ~/.claude/skills/ に存在するが skill_history.md は「(補足)/承認待ち」表記。
+      cmd_682 で ✅実装済 化に格上げ。
+      cmd_296 報告: 内部 API /rest/workflows/{id}/run の workflowData/triggerToStartFrom + Cookie n8n-auth 必須仕様。
+
+  - id: SC-291
+    name: shogun-n8n-notion-stale-data-cleanup
+    status: merged
+    merged_into: ~/.claude/skills/shogun-n8n-notion-property-sync/SKILL.md
+    source_cmd: cmd_291
+    related_cmds:
+      - cmd_291
+      - cmd_293
+    merged_at: cmd_682
+    cmd_682_decision: existing_inclusion_confirmed
+    notes: |
+      shogun-n8n-notion-property-sync (461行) L345-/L406-/L458-459 に Notion stale draftId / 偽陽性 checkbox の
+      バッチ修復パターン (116件 + 328件) が既包含確認済。新規追記不要。
+      skill_history.md「承認待ち」表記を merged 化。
+
+  - id: SC-297a
+    name: shogun-n8n-gmail-trigger-manual-exec-single-item
+    status: merged
+    merged_into: ~/.claude/skills/shogun-n8n-sib-trigger-incompatibility/SKILL.md
+    source_cmd: cmd_297
+    related_cmds:
+      - cmd_297
+    merged_at: cmd_682
+    cmd_682_decision: existing_inclusion_confirmed
+    notes: |
+      shogun-n8n-sib-trigger-incompatibility (244行) §4 (Gmail Trigger 手動実行制約) に既包含確認済。
+      非アクティブ WF 手動実行が 1 通/exec のみ返す症状・原因・active 化 + ポーリング待機手順。
+      新規追記不要。skill_history.md「承認待ち」を merged 化。
+
+  - id: SC-297b
+    name: shogun-n8n-sib-loopback-multi-input-guard
+    status: merged
+    merged_into: ~/.claude/skills/shogun-n8n-sib-trigger-incompatibility/SKILL.md
+    source_cmd: cmd_297
+    related_cmds:
+      - cmd_297
+    merged_at: cmd_682
+    cmd_682_decision: existing_inclusion_confirmed
+    notes: |
+      shogun-n8n-sib-trigger-incompatibility §2 (SiB 複数ループバック入力の暗黙 JOIN 停止) に既包含確認済。
+      Merge(append) で loop-back を 1 本化する回避策・SC-022 設定詳細を含む。
+      新規追記不要。skill_history.md「承認待ち」を merged 化。
+
+  - id: SC-290
+    name: shogun-n8n-code-node-multi-item-index
+    status: merged
+    merged_into: ~/.claude/skills/shogun-n8n-sib-trigger-incompatibility/SKILL.md
+    source_cmd: cmd_290
+    related_cmds:
+      - cmd_290
+    merged_at: cmd_682
+    cmd_682_decision: existing_inclusion_confirmed
+    notes: |
+      shogun-n8n-sib-trigger-incompatibility §3 (Code node $input.all() インデックスバグ cmd_290) に既包含確認済。
+      $('nodeName').item がループ内で連動しない症状と $('nodeName').all()[index].json 解法。
+      n8n-code-javascript SC-023 (Cross-Node Index Access) にも関連記載。
+      新規追記不要。skill_history.md「承認待ち」を merged 化。
+
+  - id: SC-287c3
+    name: shogun-n8n-gmail-oauth2-http-request
+    status: merged
+    merged_into: ~/.claude/skills/n8n-http-credential-patterns/SKILL.md
+    source_cmd: cmd_287c3
+    related_cmds:
+      - cmd_287c3
+    merged_at: cmd_682
+    cmd_682_decision: existing_inclusion_confirmed
+    notes: |
+      n8n-http-credential-patterns (360行) §3 (Gmail OAuth2 HTTP Request 設定 SC-024) に既包含確認済。
+      authentication / nodeCredentialType 必須設定 + Gmail API エンドポイント早見表。
+      新規追記不要。skill_history.md「承認待ち」を merged 化。
+
+  - id: SC-277
+    name: n8n-http-predefined-credential
+    status: merged
+    merged_into: ~/.claude/skills/n8n-http-credential-patterns/SKILL.md
+    source_cmd: cmd_277
+    related_cmds:
+      - cmd_277
+    merged_at: cmd_682
+    cmd_682_decision: existing_inclusion_confirmed
+    notes: |
+      n8n-http-credential-patterns §2 (predefinedCredentialType パターン SC-026) に既包含確認済。
+      Code node の httpRequestWithAuthentication 不可の回避策 + 主要 Credential Type ID 一覧。
+      新規追記不要。skill_history.md「承認待ち」を merged 化。
+
+  # ───────── cmd_680 知見統合 (cmd_682 でshogun-gas-* 既存skillへ統合) ─────────
+  - id: SC-680-clasp-scope
+    name: gas-clasp-scope-vs-rapt-separation
+    status: merged
+    merged_into: skills/shogun-gas-clasp-rapt-reauth-fallback/SKILL.md
+    source_cmd: cmd_680
+    related_cmds:
+      - cmd_676
+      - cmd_680
+    merged_at: cmd_682
+    cmd_682_decision: integration_into_existing
+    notes: |
+      shogun-gas-clasp-rapt-reauth-fallback (62→110行) に「scope 不足 vs RAPT 切り分け」セクション追加。
+      切り分けマトリクス + 推奨フラグ (--use-project-scopes / --include-clasp-scopes) +
+      tokeninfo 確認手順 + Non-goals (clasp --adc / SA / OOB)。
+      cmd_676 fix → cmd_680 公式 docs/run.md 一致確認の battle-tested 記録。
+
+  - id: SC-680-webapp-pivot
+    name: gas-webapp-pivot-strategy
+    status: merged
+    merged_into: skills/shogun-gas-automated-verification/SKILL.md
+    source_cmd: cmd_680
+    related_cmds:
+      - cmd_680
+    merged_at: cmd_682
+    cmd_682_decision: integration_into_existing
+    notes: |
+      shogun-gas-automated-verification (129→191行) に「中期戦略: clasp run 依存からの脱却」セクション追加。
+      役割分担表 (日常 run = Web App / deploy = clasp push / 緊急 = clasp run) +
+      Web App endpoint 設計 + Service Account 制約マトリクス + scope 不足 runbook 分離。
+      cmd_680 Codex 独立調査結論を反映。
+
 # ─── サマリ ───
 summary:
-  total_entries: 12
+  total_entries: 22
   by_status:
-    created: 3            # 既存実装済 (gas-clasp / gas-automated / gemini-thinking-token-guard)
-    rejected: 2           # 棄却 (rule-inventory / qc-auto-naming)
-    merged: 5             # 統合 (codex-skill-index → skill-stocktake 等)
+    created: 5            # cmd_675b 3 + cmd_682 silent_inconsistency 解消 2
+    rejected: 2           # cmd_675b 棄却 (rule-inventory / qc-auto-naming)
+    merged: 13            # cmd_675b 5 + cmd_682 legacy 6 + cmd_680 既存統合 2
     deferred: 2           # 棚上げ 2026-06-08 (suggestions-lifecycle / codex-context-pane-border)
   cmd_675b_decision_basis: output/cmd_675_skill_integration_audit.md (gunshi audit 2026-05-08 13:48 JST)
   cmd_675b_implementation: output/cmd_675b_skill_integration_implementation.md
+  cmd_682_decision_basis: output/cmd_682_legacy_audit.md (skill-creation-workflow §2 統合検討マトリクス)
+  cmd_682_implementation: output/cmd_682_skill_legacy_integration.md

@@ -235,6 +235,8 @@
 !output/cmd_678_repo_health_check.md
 !output/cmd_681_dashboard_observation_queue.md
 !output/cmd_684_repo_health_red_runbook.md
+!output/cmd_682_legacy_audit.md
+!output/cmd_682_skill_legacy_integration.md
 # cmd_684: ashigaru4 report/tasks tracking
 !queue/reports/ashigaru4_report.yaml
 !queue/tasks/ashigaru4.yaml
@@ -328,6 +330,8 @@
 !skills/shogun-bash-cross-platform-ci/SKILL.md
 !skills/shogun-gas-automated-verification/
 !skills/shogun-gas-automated-verification/SKILL.md
+!skills/shogun-gas-clasp-rapt-reauth-fallback/
+!skills/shogun-gas-clasp-rapt-reauth-fallback/SKILL.md
 !skills/s-check/
 !skills/s-check/SKILL.md
 !skills/shogun-dashboard-sync-silent-failure-pattern/
