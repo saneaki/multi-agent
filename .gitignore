@@ -219,6 +219,8 @@
 !output/cmd_670_notifier_recovery.md
 !output/cmd_670_missed_cmds.md
 !output/cmd_669_instructions_unification.md
+!output/cmd_674_skill_candidate_audit.md
+!output/cmd_674_skill_candidate_strict_process.md
 
 # cmd_544: 3 安全装置 state files (kill-switch/rate-limit/pending/daily-metric)
 !logs/cmd_squash_pub_hook.disabled

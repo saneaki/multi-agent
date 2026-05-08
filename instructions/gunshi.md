@@ -311,11 +311,27 @@ This prevents the 9-hour stall incident (cmd_244/245, 2026-02-27) where Karo wen
 7. **QC PASS** → 戦果記載は不要。家老(karo)がcmd完了時に1行まとめて記載する(cmd_541以降)。
    - Gunshiはsubtask単位の戦果行をdashboard.mdに追記してはならない。
    - 降順厳守: dashboardの✅戦果は最新cmdが最上段になるよう家老が管理する。
-7.5. **skill_candidate handling**: If ashigaru report contains skill_candidate → append to dashboard.md 🛠️スキル候補（承認待ち）section (F006b permitted)
-   - Format: `| **{skill name}** | {cmd_ref}: {summary} | 承認待ち |`
+7.5. **skill_candidate scan and reflection (MANDATORY, cmd_674)**: Every QC MUST scan ash_report skill_candidate fields and reflect found candidates to dashboard 🛠️ + dashboard.yaml.skill_candidates. Silent failure (検出したが dashboard 未追記) は QC FAIL に等しい。
+   - **Scan procedure (mandatory before QC PASS judgment)**:
+     1. Read `queue/reports/ashigaru{N}_report.yaml` of the QC target — extract `skill_candidate.found: true` entries (top-level + history[] if present)
+     2. For each found candidate, cross-reference:
+        - `~/.claude/skills/{name}/` または `skills/{name}/` 存在? → 存在すれば skill 化済 (skill_history.md に append、dashboard 🛠️ には追記不要)
+        - `memory/skill_history.md` に同名 entry あり? → 反映済 (重複追記禁止)
+        - `dashboard.yaml.skill_candidates` に同名 entry あり? → 反映済 (重複追記禁止)
+        - 上記いずれにも該当しなければ **un-reflected** → 必ず dashboard 🛠️ + dashboard.yaml.skill_candidates へ追記
+   - **追記 format (dashboard.md 🛠️スキル候補)**:
+     `| **{skill name}** | {cmd_ref} {agent}: {summary} | 承認待ち |`
+   - **追記 format (dashboard.yaml.skill_candidates)**:
+     ```yaml
+     - name: {skill name}
+       source: {cmd_ref} {agent}
+       status: 承認待ち
+       summary: {summary}
+     ```
    - Dedup check (skip if same name exists). After Edit, Read to verify (max 2 retries)
-   - Skill column shows all candidates (no FIFO limit). On ✅実装済み, move to `memory/skill_history.md` and remove
+   - Skill column shows all candidates (no FIFO limit). On ✅実装済み, append to `memory/skill_history.md` (append-only) and remove from dashboard 🛠️
    - Candidates live in 🛠️ only; 🚨[提案] holds opinions (consolidation/removal), not bare candidate names
+   - **F006b 反映権限**: 軍師は dashboard.md 🛠️ + dashboard.yaml.skill_candidates への直接追記を許可される (cmd_674)
 7.7. **Autonomous skill extraction (mandatory)**: Even if ashigaru reports `skill_candidate.found: false`, Gunshi MUST extract when any applies:
    - Error-fix task where fix pattern applies to other workflows
    - Same error recurred within past 3 cmds
@@ -351,9 +367,10 @@ This prevents the 9-hour stall incident (cmd_244/245, 2026-02-27) where Karo wen
    - **Enforcement check (self-report on violation)**:
      1. Verify ≥1 suggestion exists (mandatory even on QC PASS)
      2. Confirm append to suggestions.yaml
-     3. If skill_candidate in ashigaru report, confirm transcription to dashboard 🛠️
+     3. **skill_candidate transcription (cmd_674 strict)**: If ashigaru report has `skill_candidate.found: true` and the entry is **un-reflected** (not in skills/, skill_history.md, dashboard 🛠️), MUST confirm transcription to BOTH dashboard.md 🛠️ AND dashboard.yaml.skill_candidates. Verification: re-Read both files after Edit and grep for the candidate name. Failure → QC FAIL (silent failure).
      4. If suggestion requires Lord's decision, confirm 🚨[提案] entry exists
      5. On any check failure → karo inbox "suggestions永続化漏れ ({cmd_ref})" as self-report
+     6. **skill_candidate reflection check minimum (cmd_674)**: 軍師 QC checklist に「ash_report の skill_candidate 走査 + 1 例以上の dashboard 反映実演」を必須項目化。candidate ゼロの QC でも「走査済 + 該当なし」を report に明記すること。
 8.6. **Concerns → suggestions.yaml 運用 (cmd_584 追加)**:
    - On QC completion, if concerns exist, append each concern to `queue/suggestions.yaml` with the same schema as step 8.5:
      `id/from/cmd_ref/task_ref/created_at/status/priority/content/action_needed`
