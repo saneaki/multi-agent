@@ -93,6 +93,8 @@ import yaml
 try:
     with open('$TASK_YAML') as f:
         d = yaml.safe_load(f) or {}
+    if 'task' in d:
+        d = d['task']
     print(d.get('status', 'unknown'))
 except Exception:
     print('unknown')

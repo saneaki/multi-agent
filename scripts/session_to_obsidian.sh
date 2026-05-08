@@ -505,6 +505,14 @@ if [[ "$DO_PUSH" -eq 1 ]]; then
     exit 1
   fi
 
+  # Ensure on main branch and up-to-date before committing (prevents non-fast-forward)
+  CURRENT_BRANCH=$(git branch --show-current 2>/dev/null || echo "")
+  if [[ "$CURRENT_BRANCH" != "main" ]]; then
+    echo "Warning: obsidian repo on branch '${CURRENT_BRANCH}', switching to main" >&2
+    git checkout main 2>/dev/null || { echo "git checkout main failed" >&2; exit 1; }
+  fi
+  git pull --rebase origin main 2>/dev/null || echo "Warning: git pull --rebase failed, continuing" >&2
+
   if ! git add "$OUT_PATH"; then
     echo "git add failed: $OUT_PATH" >&2
     exit 1

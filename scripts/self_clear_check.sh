@@ -53,7 +53,10 @@ fi
 STATUS=$("$SCRIPT_DIR/.venv/bin/python3" -c "
 import yaml, sys
 with open('$TASK_YAML') as f:
-    data = yaml.safe_load(f)
+    data = yaml.safe_load(f) or {}
+# Handle both wrapper structure {'task': {...}} and flat {'status': '...'}
+if 'task' in data:
+    data = data['task']
 print(data.get('status', 'unknown'))
 " 2>/dev/null || echo "unknown")
 

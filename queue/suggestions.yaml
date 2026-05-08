@@ -1,4 +1,140 @@
 suggestions:
+- action_needed: |
+    cmd_669 完遂に伴い家老が以下を実施:
+      1. dashboard.md 🚨要対応 から cmd_667/668 32KiB 関連エントリ (cmd_663 3大課題の 1) を SO-19 で削除
+      2. dashboard.md ✅本日の戦果 に cmd_669 (Claude/Codex 指示書統一) を記録
+      3. active Codex セッション (karo/ash1/2/3) への反映判断:
+         - 推奨: 自然な session 切替待ち (急な /new 再起動は context 損失リスク)
+         - 必要なら次タスク dispatch 前に 1 pane ずつ /new 順次実施
+    殿対応: なし (carryover INFO のみ — instructions/codex-ashigaru.md 旧版残存)
+  cmd_ref: cmd_669
+  content: |
+    cmd_669 (Claude/Codex 指示書統一) QC=go で完遂。
+    実装側 (commit a0e6f40 + d4dcea4 / AGENTS.md / 4 symlinks / build_instructions.sh +88行 /
+    output/cmd_669) 完璧、Q-3 build_instructions --check rc=0、Q-4 4 symlinks 全独立確認、
+    SO-24 三点照合 PASS。cmd_663 3大課題の 1つ (AGENTS.md 32KiB 上限) が完全解消、
+    project_doc_max_bytes=131072 (128KB) で karo.md (54KB) / gunshi.md (42KB) 両者とも
+    Codex CLI で完全読込可。
+  created_at: '2026-05-08T12:14:00+09:00'
+  from: gunshi
+  id: sug_cmd_669_001
+  priority: medium
+  status: pending
+  task_ref: subtask_669_scope_d_qc
+- action_needed: |
+    cmd_670 完遂に伴い家老が以下を実施:
+      1. dashboard.md 🚨要対応 cmd_complete_notifier 停止関連エントリを SO-19 で削除
+      2. dashboard.md ✅本日の戦果 に cmd_670 (notifier systemd 復旧) を記録
+      3. output/cmd_670_missed_cmds.md backfill 候補 10件 (cmd_658/659/660/662/663/664/665/666/668/672)
+         について殿の backfill 通知発出可否を判断
+         - 推奨: 4/30〜5/8 で約 8 日経過、後追い通知は混乱招致のため発出しない
+         - 殿 review が必要なら shogun.yaml inbox に判断仰ぎ送信
+    殿対応 (carryover MEDIUM, needs_lord_decision: true):
+      - missed list 10件 backfill 発出可否の最終判断
+  cmd_ref: cmd_670
+  content: |
+    cmd_670 (cmd_complete_notifier daemon systemd 復旧) QC=go で完遂。
+    実装側 (commit 9bf666c / scripts/watcher_supervisor.sh / systemd unit / output/cmd_670_*) 完璧、
+    Q-3 systemd 状態 + Q-4 E2E 撤去 全独立確認、SO-24 三点照合 PASS。
+    notifier 常駐 (cgroup 配下 cmd_complete_notifier 974404 + shogun_inbox_notifier 974543) 実機確認、
+    Restart=always/RestartSec=30 で恒久復旧確立。
+    残作業: 家老 SO-19 + 殿の missed list backfill 発出可否判断。
+  created_at: '2026-05-08T11:45:30+09:00'
+  from: gunshi
+  id: sug_cmd_670_001
+  priority: medium
+  status: pending
+  task_ref: subtask_670_scope_d_qc
+- action_needed: |
+    cmd_671 完遂に伴い家老が以下を実施:
+      1. dashboard.md 🚨[HIGH-3] 'cmd_667: Codex tmux context 残量表示 ... cmd_671 補完待ち' を削除
+      2. dashboard.md ✅本日の戦果 に cmd_671 (Codex context表示修復) と cmd_667 (補完完了) を記録
+      3. cmd_669 等 unblock 待機 cmd の dispatch 再開判定
+    殿対応 (carryover INFO):
+      - tmux a -t multiagent → agents window → karo pane border に '(Codex 64%)' 形式の
+        動的 % 表示が現れるか視認確認。cmd_667 (issue_id ac58054fd94be84c) と同質、
+        両者まとめて視認確認後 cmd_671/667 とも 🏆🏆 昇格可。
+  cmd_ref: cmd_671
+  content: |
+    cmd_671 (Codex context表示修復) QC=go で完遂。
+    実装側 (commit eca8c43 / scripts/codex_context.sh v2 SQLite 二段階照合 / instructions C-1/C-2 規律) 完璧、
+    runtime_check 独立確認 (Codex/Claude 両系) PASS、SO-24 三点照合 PASS。
+    残作業は (a) 家老の SO-19 dashboard cleanup と (b) 殿の tmux pane border 視認確認のみ。
+    cmd_667 の構造的不具合は v2 で完全解消、3重 QC 漏れの再発防止策 (実機 visual confirm 規律) も確立。
+  created_at: '2026-05-08T11:18:30+09:00'
+  from: gunshi
+  id: sug_cmd_671_001
+  priority: medium
+  status: pending
+  task_ref: subtask_671_scope_d_qc
+- action_needed: |
+    家老が ashigaru4 に対して、queue/reports/ashigaru4_report.yaml の history block に
+    subtask_672_shp_design_unification done エントリを append するよう指示する。
+    例 (ash4 task YAML 経由 dispatch):
+      - subtask_672_history_append: history 配下に下記を追加
+        task_id: subtask_672_shp_design_unification
+        parent_cmd: cmd_672
+        status: completed
+        completed_at: '2026-05-08T11:04:21+09:00'
+        commit_sha: 64a7d05
+        acceptance_criteria_status: (cmd_672 AC 全 PASS 一覧をコピー)
+        output_path: output/cmd_672_shp_design_unification.md
+        files_changed: (上記 4 ファイル列挙)
+        notes: (cmd_662/666 設計分裂解消、9 vs 10 統一、dry-run 10 パターン PASS)
+    補完後、家老が再 SO-24 三点照合を行い conditional_go → go 昇格を判定。
+    再発防止: ashigaru.md Step 5/6 (報告書作成) に「report YAML を上書きせず history append」を
+    再周知する運用改善も検討余地。
+  cmd_ref: cmd_672
+  content: |
+    cmd_672 (shp 9構成員設計統一) QC で発覚:
+    ashigaru4 が cmd_672 完了後、queue/reports/ashigaru4_report.yaml の history block への append を行わず、
+    トップレベルが subtask_665 (cmd_665) のまま上書きされて cmd_672 完了の YAML 記録が失われている。
+    SO-24 三点照合の artifact (報告 YAML) 確認に支障。
+    実装側 (commit 64a7d05 / scripts/shp.sh / docs / output) は完璧で再修正不要だが、
+    governance trail 補完が必要。
+    cmd_660 Verified Completion Gate (Z案) の趣旨にも反するため、構造的対処が望ましい。
+  created_at: '2026-05-08T11:10:52+09:00'
+  from: gunshi
+  id: sug_cmd_672_001
+  priority: medium
+  status: pending
+  task_ref: subtask_672_scope_d_qc
+- action_needed: |
+    家老が cmd_669 (もしくは即時 inline 対応) を発令し、ash5/6/7 の codex update prompt
+    停止を解消する。
+    案A 推奨 (Skip 送出):
+      for n in 5 6 7; do tmux send-keys -t multiagent:0.${n} "2" Enter; done
+    既存 0.128 in-memory セッション継続、次回 codex 再起動時に 0.129 切替。
+    殿には別途 tmux multiagent セッションで pane border の '(Codex 47%)' 表示を
+    視認確認いただく必要あり (cmd_667 L1 制約)。
+  cmd_ref: cmd_667_668
+  content: |
+    cmd_667/668 事後QC で 2件の追跡項目を検出:
+    (1) cmd_667 L1: 殿の pane border 画面確認 pending (tmux 3.4 #() 仕様)
+    (2) cmd_668 N2: ash5/6/7 update prompt 停止未解消 (家老追加対応必要)
+    両者とも実装作業は完璧 (AC 全 PASS)、追加対応のみ pending のため両 cmd 判定 conditional_go。
+  created_at: '2026-05-08T09:46:27+09:00'
+  from: gunshi
+  id: sug_cmd_667_668_001
+  priority: medium
+  status: pending
+  task_ref: subtask_667_668_retroactive_qc
+- action_needed: |
+    家老 dispatch 時に gunshi QC への dispatch を明示する運用を徹底。
+    cmd_660 Verified Completion Gate (Z案) の趣旨を再確認し、
+    pipeline 逸脱 (ashigaru → karo direct completion) を再発させない。
+    具体的: karo dispatch スクリプト or 手順に「QC step ありか」の確認 gate を組み込む。
+  cmd_ref: cmd_667_668
+  content: |
+    cmd_667/668 は ashigaru 完了後、軍師 QC を経ずに karo が完了処理した。
+    将軍より弁明要請 → cmd_667_668 retroactive QC が事後実施された経緯。
+    pipeline (ashigaru → gunshi QC → karo → completion) の逸脱は再発リスクあり。
+  created_at: '2026-05-08T09:46:27+09:00'
+  from: gunshi
+  id: sug_cmd_667_668_002
+  priority: high
+  status: pending
+  task_ref: subtask_667_668_retroactive_qc
 - action_needed: '1. karo が context/gas-mail-manager.md L682-699 の設計意図を再確認
 
     2. spreadsheets vs spreadsheets.currentonly のトレードオフを殿に説明
@@ -13216,333 +13352,333 @@ suggestions:
     cmd_641 完遂 (SHA=65edbf5) のはずだが、何らかの cleanup 漏れの可能性。別途 audit 必要。
   action_needed: "Karo: cmd_641 完遂時の shogun_to_karo entry status 更新 / task YAML 削除手順を確認"
 
-  - id: sug_cmd_640_d_reverify_001
-    from: gunshi
-    cmd_ref: cmd_640
-    task_ref: subtask_640_scope_d_cron_simulation
-    created_at: "2026-05-07T07:11:00+09:00"
-    status: pending
-    priority: low
-    content: |
-      ashigaru7 が完了済 cmd_640 (5/3 close, Issue#46 close) を 4 日後 (5/7) に
-      自発的に AC4 再検証実行。task YAML status=done のまま、karo 再 dispatch
-      履歴なし。/clear 漏れ or stale snapshot 反応疑惑。
-      AC4 自体は再検証でも PASS (gunshi 独立 dry-run 確認済)。
-    action_needed: |
-      Karo: ashigaru7 の現 tmux pane state + snapshot timestamp を確認し、
-      stale 状態と判定したら /clear を促す。今後同種の自発的再 verification 発生時に
-      早期検出する仕組み (例: ash report 受信時に task YAML status=done 警告) を検討。
+- id: sug_cmd_640_d_reverify_001
+  from: gunshi
+  cmd_ref: cmd_640
+  task_ref: subtask_640_scope_d_cron_simulation
+  created_at: "2026-05-07T07:11:00+09:00"
+  status: pending
+  priority: low
+  content: |
+    ashigaru7 が完了済 cmd_640 (5/3 close, Issue#46 close) を 4 日後 (5/7) に
+    自発的に AC4 再検証実行。task YAML status=done のまま、karo 再 dispatch
+    履歴なし。/clear 漏れ or stale snapshot 反応疑惑。
+    AC4 自体は再検証でも PASS (gunshi 独立 dry-run 確認済)。
+  action_needed: |
+    Karo: ashigaru7 の現 tmux pane state + snapshot timestamp を確認し、
+    stale 状態と判定したら /clear を促す。今後同種の自発的再 verification 発生時に
+    早期検出する仕組み (例: ash report 受信時に task YAML status=done 警告) を検討。
 
-  - id: sug_cmd_640_d_reverify_002
-    from: gunshi
-    cmd_ref: cmd_640
-    task_ref: subtask_640_scope_d_cron_simulation
-    created_at: "2026-05-07T07:11:00+09:00"
-    status: pending
-    priority: low
-    content: |
-      cmd_640 戦果は 5/3 dashboard entry に既記載。本 re-verification を契機とする
-      二重戦果追記は混乱を招くため避けるべし。dashboard 戦果は cmd 完了時 1 回のみ
-      原則を維持。
-    action_needed: |
-      Karo: dashboard.md 5/3 entry に cmd_640 戦果が既存することを確認し、
-      重複追記しないこと。本 inbox は QC PASS 通知のみで dashboard 操作は不要。
+- id: sug_cmd_640_d_reverify_002
+  from: gunshi
+  cmd_ref: cmd_640
+  task_ref: subtask_640_scope_d_cron_simulation
+  created_at: "2026-05-07T07:11:00+09:00"
+  status: pending
+  priority: low
+  content: |
+    cmd_640 戦果は 5/3 dashboard entry に既記載。本 re-verification を契機とする
+    二重戦果追記は混乱を招くため避けるべし。dashboard 戦果は cmd 完了時 1 回のみ
+    原則を維持。
+  action_needed: |
+    Karo: dashboard.md 5/3 entry に cmd_640 戦果が既存することを確認し、
+    重複追記しないこと。本 inbox は QC PASS 通知のみで dashboard 操作は不要。
 
-  - id: sug_cmd_644_d_qc_blocked_001
-    from: gunshi
-    cmd_ref: cmd_644
-    task_ref: subtask_644_scope_d_qc
-    created_at: "2026-05-07T07:38:00+09:00"
-    status: pending
-    priority: high
-    content: |
-      [BLOCKER] cmd_644 Scope D QC が前提未充足で開始不可。
-      dispatch 時刻 (5/6 22:35) から 9h 経過状態:
-        - ashigaru2 (Scope A: shogun_session_start.sh + s_check_full.sh): inbox read=false / deliverable 不在 / commit なし
-        - ashigaru3 (Scope C: dashboard 違反検出セクション + protocol.md L020b/L020c): inbox read=false / deliverable 不在 / commit なし
-        - ashigaru4 (Scope B: shogun_in_progress_monitor 拡張): inbox read=true だが完了報告なし / 未編集 (最終 5/3 16:37)
-      現時点 git log は cmd_640/641/642 までで cmd_644 関連 commit ゼロ。
-      ash2/3/4 共に snapshot 不在 = work 未着手の証拠。
-      (※ 5/6 22:35 dispatch 時刻が、ash の前回 /clear や夜間休止と重なった可能性。
-        9h stall は P8 interactive prompt 凍結検出 / P9 action_required 滞留通知の対象。)
-    action_needed: |
-      Karo:
-        1. ash2/3/4 の現 tmux pane state を tmux capture-pane で確認
-        2. 必要なら inbox_write で wakeup 再送 or /clear 後の再 dispatch
-           (ash4 は inbox 既読のため snapshot 確認 → 続行可否判定)
-        3. cmd_644 context_policy=preserve_across_stages のため軍師 status は blocked のまま維持
-        4. ash2/3/4 全員 task_completed 受信後、軍師に再 wakeup を願いたい
-        5. 9h stall は将軍報告対象。P8/P9 自動通知の有無も併せて確認推奨
+- id: sug_cmd_644_d_qc_blocked_001
+  from: gunshi
+  cmd_ref: cmd_644
+  task_ref: subtask_644_scope_d_qc
+  created_at: "2026-05-07T07:38:00+09:00"
+  status: pending
+  priority: high
+  content: |
+    [BLOCKER] cmd_644 Scope D QC が前提未充足で開始不可。
+    dispatch 時刻 (5/6 22:35) から 9h 経過状態:
+      - ashigaru2 (Scope A: shogun_session_start.sh + s_check_full.sh): inbox read=false / deliverable 不在 / commit なし
+      - ashigaru3 (Scope C: dashboard 違反検出セクション + protocol.md L020b/L020c): inbox read=false / deliverable 不在 / commit なし
+      - ashigaru4 (Scope B: shogun_in_progress_monitor 拡張): inbox read=true だが完了報告なし / 未編集 (最終 5/3 16:37)
+    現時点 git log は cmd_640/641/642 までで cmd_644 関連 commit ゼロ。
+    ash2/3/4 共に snapshot 不在 = work 未着手の証拠。
+    (※ 5/6 22:35 dispatch 時刻が、ash の前回 /clear や夜間休止と重なった可能性。
+      9h stall は P8 interactive prompt 凍結検出 / P9 action_required 滞留通知の対象。)
+  action_needed: |
+    Karo:
+      1. ash2/3/4 の現 tmux pane state を tmux capture-pane で確認
+      2. 必要なら inbox_write で wakeup 再送 or /clear 後の再 dispatch
+         (ash4 は inbox 既読のため snapshot 確認 → 続行可否判定)
+      3. cmd_644 context_policy=preserve_across_stages のため軍師 status は blocked のまま維持
+      4. ash2/3/4 全員 task_completed 受信後、軍師に再 wakeup を願いたい
+      5. 9h stall は将軍報告対象。P8/P9 自動通知の有無も併せて確認推奨
 
-  - id: sug_subtask_644_scope_b_monitor_auto_remediation_pattern
-    from: ashigaru4
-    cmd_ref: cmd_644
-    task_ref: subtask_644_scope_b_auto_remediation
-    created_at: "2026-05-07T07:44:10+09:00"
-    status: pending
-    priority: medium
-    title: "monitor-auto-remediation-pattern (skill candidate)"
-    content: |
-      cmd_640 (P7) → cmd_641 (P8) → cmd_642 (P9) → cmd_644 (P9b/P9c+B-1) と
-      shogun_in_progress_monitor.sh の拡張パターンが連続反復している。
-      Scope B で確立した「検出のみのモニタを auto-remediation ディスパッチャに昇格」
-      する 4 要素 (rate limit / time-window dedup / pending guard / DRY_RUN safe) を
-      skill 化することで、今後の monitor 拡張 (dispatch_log_monitor / hook_health_monitor 等)
-      で再利用可能。
-    action_needed: |
-      Karo / Gunshi:
-        1. skill 候補として skill_candidates.yaml に登録
-        2. 既存 skill (shogun-bash-daemon-restart-subcommand-pattern や
-           shogun-claude-code-posttooluse-hook-guard) との重複/差分を確認
-        3. 採用判断 → 殿に /skill-create 起動を仰ぐ
+- id: sug_subtask_644_scope_b_monitor_auto_remediation_pattern
+  from: ashigaru4
+  cmd_ref: cmd_644
+  task_ref: subtask_644_scope_b_auto_remediation
+  created_at: "2026-05-07T07:44:10+09:00"
+  status: pending
+  priority: medium
+  title: "monitor-auto-remediation-pattern (skill candidate)"
+  content: |
+    cmd_640 (P7) → cmd_641 (P8) → cmd_642 (P9) → cmd_644 (P9b/P9c+B-1) と
+    shogun_in_progress_monitor.sh の拡張パターンが連続反復している。
+    Scope B で確立した「検出のみのモニタを auto-remediation ディスパッチャに昇格」
+    する 4 要素 (rate limit / time-window dedup / pending guard / DRY_RUN safe) を
+    skill 化することで、今後の monitor 拡張 (dispatch_log_monitor / hook_health_monitor 等)
+    で再利用可能。
+  action_needed: |
+    Karo / Gunshi:
+      1. skill 候補として skill_candidates.yaml に登録
+      2. 既存 skill (shogun-bash-daemon-restart-subcommand-pattern や
+         shogun-claude-code-posttooluse-hook-guard) との重複/差分を確認
+      3. 採用判断 → 殿に /skill-create 起動を仰ぐ
 
-  - id: sug_cmd_645_scope_qc_followup_001
-    from: gunshi
-    cmd_ref: cmd_645
-    task_ref: subtask_645_scope_qc
-    created_at: "2026-05-07T07:51:00+09:00"
-    status: pending
-    priority: medium
-    content: |
-      cmd_645 PR #2 merge 後、明日 5/8 schedule cron 経由 E2E で AC5 完全 ends を確認する必要あり。
-      確認項目: (1) Verify md exists step pass (2) Generate Notion summary step 走破
-      (3) Notion DIARY_DB の 5/7 (or 5/8) 該当 entry に upsert 1件確認
-      (4) P7 alert 解消確認 (shogun_in_progress_monitor.sh check_pattern_7)。失敗時は PR revert + 再調査。
-    action_needed: |
-      Karo: PR #2 merge 後、5/8 朝に follow-up cmd を発令して E2E 確認。
-      または cmd_644 B-1/B-2 完成後の自動 cmd 経路で自動 dispatch されるなら本suggestionは不要。
+- id: sug_cmd_645_scope_qc_followup_001
+  from: gunshi
+  cmd_ref: cmd_645
+  task_ref: subtask_645_scope_qc
+  created_at: "2026-05-07T07:51:00+09:00"
+  status: pending
+  priority: medium
+  content: |
+    cmd_645 PR #2 merge 後、明日 5/8 schedule cron 経由 E2E で AC5 完全 ends を確認する必要あり。
+    確認項目: (1) Verify md exists step pass (2) Generate Notion summary step 走破
+    (3) Notion DIARY_DB の 5/7 (or 5/8) 該当 entry に upsert 1件確認
+    (4) P7 alert 解消確認 (shogun_in_progress_monitor.sh check_pattern_7)。失敗時は PR revert + 再調査。
+  action_needed: |
+    Karo: PR #2 merge 後、5/8 朝に follow-up cmd を発令して E2E 確認。
+    または cmd_644 B-1/B-2 完成後の自動 cmd 経路で自動 dispatch されるなら本suggestionは不要。
 
-  - id: sug_cmd_645_scope_qc_p7_validation_001
-    from: gunshi
-    cmd_ref: cmd_645
-    task_ref: subtask_645_scope_qc
-    created_at: "2026-05-07T07:51:00+09:00"
-    status: pending
-    priority: low
-    content: |
-      [MechanismSuccessLog 候補] cmd_640 P7 (GHA upsert 0件 silent failure 検出機構) が
-      想定通り機能し、cmd_645 で初検出 → 根本修復まで導いた実例。
-      memory/MechanismSuccessLog (No.3 候補) として記録価値高い。
-      検出 (cmd_640 P7) → 修復 (cmd_645 PR #2) → 確認 (cmd_644 完成後の自動経路 or follow-up)
-      の流れは「検出機構が想定通り機能した」rare な好事例。
-    action_needed: |
-      Karo: cmd_645 完全 ends 達成後 (明日 cron 確認後)、
-      memory/MechanismSuccessLog に No.3 候補として追記 → gunshi/shogun review。
+- id: sug_cmd_645_scope_qc_p7_validation_001
+  from: gunshi
+  cmd_ref: cmd_645
+  task_ref: subtask_645_scope_qc
+  created_at: "2026-05-07T07:51:00+09:00"
+  status: pending
+  priority: low
+  content: |
+    [MechanismSuccessLog 候補] cmd_640 P7 (GHA upsert 0件 silent failure 検出機構) が
+    想定通り機能し、cmd_645 で初検出 → 根本修復まで導いた実例。
+    memory/MechanismSuccessLog (No.3 候補) として記録価値高い。
+    検出 (cmd_640 P7) → 修復 (cmd_645 PR #2) → 確認 (cmd_644 完成後の自動経路 or follow-up)
+    の流れは「検出機構が想定通り機能した」rare な好事例。
+  action_needed: |
+    Karo: cmd_645 完全 ends 達成後 (明日 cron 確認後)、
+    memory/MechanismSuccessLog に No.3 候補として追記 → gunshi/shogun review。
 
-  - id: sug_cmd_645_scope_qc_session_content_001
-    from: gunshi
-    cmd_ref: cmd_645
-    task_ref: subtask_645_scope_qc
-    created_at: "2026-05-07T07:51:00+09:00"
-    status: pending
-    priority: low
-    content: |
-      ash5 cmd_645 残課題1番: session_to_obsidian.sh のセッション内容空問題
-      (5/6 md は `cmds: []` のみ「本日の発令 cmd は記録されていない」)。
-      jsonl 抽出ロジックの精度確認が必要。本 PR #2 は MD_PATH 修復のみで、
-      session 内容生成ロジックは別 cmd 範疇。
-    action_needed: |
-      Karo: 別 cmd を立てて cmd_635 系の jsonl 抽出ロジック精査。
-      cmd_645 とは独立に進めて良い。
+- id: sug_cmd_645_scope_qc_session_content_001
+  from: gunshi
+  cmd_ref: cmd_645
+  task_ref: subtask_645_scope_qc
+  created_at: "2026-05-07T07:51:00+09:00"
+  status: pending
+  priority: low
+  content: |
+    ash5 cmd_645 残課題1番: session_to_obsidian.sh のセッション内容空問題
+    (5/6 md は `cmds: []` のみ「本日の発令 cmd は記録されていない」)。
+    jsonl 抽出ロジックの精度確認が必要。本 PR #2 は MD_PATH 修復のみで、
+    session 内容生成ロジックは別 cmd 範疇。
+  action_needed: |
+    Karo: 別 cmd を立てて cmd_635 系の jsonl 抽出ロジック精査。
+    cmd_645 とは独立に進めて良い。
 
-  - id: sug_cmd_644_scope_e_scope_f_001
-    from: gunshi
-    cmd_ref: cmd_644
-    task_ref: subtask_644_scope_e_qc
-    created_at: "2026-05-07T08:01:30+09:00"
-    status: pending
-    priority: high
-    content: |
-      [Scope F dispatch 推奨] cmd_644 formal QC = Conditional Go 判定。
-      以下を Scope F として ash1 (or 適切な ash) に dispatch して cmd_644 完遂させたし:
-        1. .gitignore に scripts/shogun_session_start.sh / scripts/s_check_full.sh whitelist 追加 (line 122 付近)
-        2. Scope A 2 script + Scope C 2 ファイル (protocol.md / generate_dashboard_md.py) を 1 commit (squash) で push
-        3. protocol.md L020c 文言修正: 動作主体を Gunshi → shogun_in_progress_monitor.sh に変更
-           現状: "**7d 超** → P9c: Gunshi が判断資料 cmd を自動生成し karo に dispatch する"
-           推奨: "**7d 超** → P9c: shogun_in_progress_monitor.sh が AUTO_CMD_P9c (判断資料整備 cmd) を発火し karo に dispatch する (Gunshi は後続 QC で判断資料化を補佐)"
-    action_needed: |
-      Karo: subtask_644_scope_f_commit_and_finalize として ash1 に dispatch。
-      RACE-001 注意: protocol.md は ash3 が編集中の可能性 → ash3 完了後に ash1 が引き継ぎ。
+- id: sug_cmd_644_scope_e_scope_f_001
+  from: gunshi
+  cmd_ref: cmd_644
+  task_ref: subtask_644_scope_e_qc
+  created_at: "2026-05-07T08:01:30+09:00"
+  status: pending
+  priority: high
+  content: |
+    [Scope F dispatch 推奨] cmd_644 formal QC = Conditional Go 判定。
+    以下を Scope F として ash1 (or 適切な ash) に dispatch して cmd_644 完遂させたし:
+      1. .gitignore に scripts/shogun_session_start.sh / scripts/s_check_full.sh whitelist 追加 (line 122 付近)
+      2. Scope A 2 script + Scope C 2 ファイル (protocol.md / generate_dashboard_md.py) を 1 commit (squash) で push
+      3. protocol.md L020c 文言修正: 動作主体を Gunshi → shogun_in_progress_monitor.sh に変更
+         現状: "**7d 超** → P9c: Gunshi が判断資料 cmd を自動生成し karo に dispatch する"
+         推奨: "**7d 超** → P9c: shogun_in_progress_monitor.sh が AUTO_CMD_P9c (判断資料整備 cmd) を発火し karo に dispatch する (Gunshi は後続 QC で判断資料化を補佐)"
+  action_needed: |
+    Karo: subtask_644_scope_f_commit_and_finalize として ash1 に dispatch。
+    RACE-001 注意: protocol.md は ash3 が編集中の可能性 → ash3 完了後に ash1 が引き継ぎ。
 
-  - id: sug_cmd_644_scope_e_followup_001
-    from: gunshi
-    cmd_ref: cmd_644
-    task_ref: subtask_644_scope_e_qc
-    created_at: "2026-05-07T08:01:30+09:00"
-    status: pending
-    priority: medium
-    content: |
-      cmd_644 N1 (検出→自己治癒) 完全 ends は実 cron 経由 auto cmd 発火観察が必要。
-      Scope F commit 後、明日 5/8 以降の自然 cron で:
-        1. AUTO_CMD_P6 (dashboard 4h+ rate limit) — 通常運用では発火稀
-        2. AUTO_CMD_P9c (sug_cmd_597_integration_001 を tag_key とする 7d+ 判断資料 cmd)
-           ← 既に滞留10日8時間のため、本 cron で発火する可能性高い
-      auto_cmd_log.yaml と shogun_to_karo.yaml の append を観察し、
-      cmd_644 完了 (Scope F push 後) の N1 ends 達成を確認する follow-up cmd 推奨。
-    action_needed: |
-      Karo: 5/8 朝に cmd_auto_remediation_observation を発令、または cmd_644
-      完了戦果として「明日 cron 観察結果」を dashboard ✅戦果に追記する形で対応。
+- id: sug_cmd_644_scope_e_followup_001
+  from: gunshi
+  cmd_ref: cmd_644
+  task_ref: subtask_644_scope_e_qc
+  created_at: "2026-05-07T08:01:30+09:00"
+  status: pending
+  priority: medium
+  content: |
+    cmd_644 N1 (検出→自己治癒) 完全 ends は実 cron 経由 auto cmd 発火観察が必要。
+    Scope F commit 後、明日 5/8 以降の自然 cron で:
+      1. AUTO_CMD_P6 (dashboard 4h+ rate limit) — 通常運用では発火稀
+      2. AUTO_CMD_P9c (sug_cmd_597_integration_001 を tag_key とする 7d+ 判断資料 cmd)
+         ← 既に滞留10日8時間のため、本 cron で発火する可能性高い
+    auto_cmd_log.yaml と shogun_to_karo.yaml の append を観察し、
+    cmd_644 完了 (Scope F push 後) の N1 ends 達成を確認する follow-up cmd 推奨。
+  action_needed: |
+    Karo: 5/8 朝に cmd_auto_remediation_observation を発令、または cmd_644
+    完了戦果として「明日 cron 観察結果」を dashboard ✅戦果に追記する形で対応。
 
-  - id: sug_cmd_644_scope_e_mechsuc_001
-    from: gunshi
-    cmd_ref: cmd_644
-    task_ref: subtask_644_scope_e_qc
-    created_at: "2026-05-07T08:01:30+09:00"
-    status: pending
-    priority: low
-    content: |
-      [MechanismSuccessLog No.3 候補] cmd_644 全体は「3層自己治癒モデル
-      (Forcing → Auto-Remediation → Governance) を C-1 まで実装」した稀有な実例。
-      cmd_641 (P8) cmd_642 (P9) を経て cmd_644 (P9b/P9c+B-1+A-1+C-1) で
-      完成させた階層的進化。memory/MechanismSuccessLog 候補として記録価値高い。
-      No.2 は cmd_641 P8 と推定 (instructions/karo.md L702 周辺記載)。
-    action_needed: |
-      Karo: cmd_644 完遂後 (Scope F + 明日 cron 観察後)、
-      memory/MechanismSuccessLog に No.3 候補として追記 → gunshi/shogun review 経て正式化。
+- id: sug_cmd_644_scope_e_mechsuc_001
+  from: gunshi
+  cmd_ref: cmd_644
+  task_ref: subtask_644_scope_e_qc
+  created_at: "2026-05-07T08:01:30+09:00"
+  status: pending
+  priority: low
+  content: |
+    [MechanismSuccessLog No.3 候補] cmd_644 全体は「3層自己治癒モデル
+    (Forcing → Auto-Remediation → Governance) を C-1 まで実装」した稀有な実例。
+    cmd_641 (P8) cmd_642 (P9) を経て cmd_644 (P9b/P9c+B-1+A-1+C-1) で
+    完成させた階層的進化。memory/MechanismSuccessLog 候補として記録価値高い。
+    No.2 は cmd_641 P8 と推定 (instructions/karo.md L702 周辺記載)。
+  action_needed: |
+    Karo: cmd_644 完遂後 (Scope F + 明日 cron 観察後)、
+    memory/MechanismSuccessLog に No.3 候補として追記 → gunshi/shogun review 経て正式化。
 
-  - id: sug_cmd_646_qc_label_status_001
-    from: gunshi
-    cmd_ref: cmd_646
-    task_ref: subtask_646_scope_qc
-    created_at: "2026-05-07T08:09:00+09:00"
-    status: pending
-    priority: high
-    content: |
-      [事実確認要] upstream-sync label は軍師独立検証時 (8:09 JST) に既に存在 (#BFD4F2)。
-      ash6 audit 時刻 (7:38 JST) との 31分差で誰かが作成した可能性。
-      推定: ash6 が audit 中に self-improvement で label 作成 (但し報告 detail に記載なし)、
-      または別経路 (殿/家老の手動作成)。cmd_647 (label 作成) の scope 更新が必要。
-    action_needed: |
-      Karo:
-        1. ash6 に label 作成有無を確認 (inbox 質問)
-        2. cmd_647 task scope を「label 作成」→「fallback 追加 + label 作成 idempotent 化」に更新
-        3. cmd_647 工数 0.5h → 0.1h に短縮
+- id: sug_cmd_646_qc_label_status_001
+  from: gunshi
+  cmd_ref: cmd_646
+  task_ref: subtask_646_scope_qc
+  created_at: "2026-05-07T08:09:00+09:00"
+  status: pending
+  priority: high
+  content: |
+    [事実確認要] upstream-sync label は軍師独立検証時 (8:09 JST) に既に存在 (#BFD4F2)。
+    ash6 audit 時刻 (7:38 JST) との 31分差で誰かが作成した可能性。
+    推定: ash6 が audit 中に self-improvement で label 作成 (但し報告 detail に記載なし)、
+    または別経路 (殿/家老の手動作成)。cmd_647 (label 作成) の scope 更新が必要。
+  action_needed: |
+    Karo:
+      1. ash6 に label 作成有無を確認 (inbox 質問)
+      2. cmd_647 task scope を「label 作成」→「fallback 追加 + label 作成 idempotent 化」に更新
+      3. cmd_647 工数 0.5h → 0.1h に短縮
 
-  - id: sug_cmd_646_qc_priority_reorder_001
-    from: gunshi
-    cmd_ref: cmd_646
-    task_ref: subtask_646_scope_qc
-    created_at: "2026-05-07T08:09:00+09:00"
-    status: pending
-    priority: high
-    content: |
-      [優先度再評価] label 既存判明により cmd_647 (label fix) は重要度低下。
-      真の最優先は cmd_648 (upstream conflict 解決)。10 commits behind の解消なき限り
-      label fix しても次回 schedule run も失敗継続。30日範囲では 4/19, 4/26, 5/3 の
-      3週間連続失敗 + 5/6 dispatch failure = 4件確認済。
-    action_needed: |
-      Karo: 後続 cmd 順序を以下に更新推奨:
-        新 1位: cmd_648 (upstream conflict 解決) 2-4h
-        新 2位: cmd_649 (通知分離 hardening) 0.5-1h
-        新 3位: cmd_650 (observability 改善) 0.5h
-        新 4位: cmd_651 (Node 24 移行) 0.5h
-        新 5位: cmd_647 (label fallback 追加) 0.1h
+- id: sug_cmd_646_qc_priority_reorder_001
+  from: gunshi
+  cmd_ref: cmd_646
+  task_ref: subtask_646_scope_qc
+  created_at: "2026-05-07T08:09:00+09:00"
+  status: pending
+  priority: high
+  content: |
+    [優先度再評価] label 既存判明により cmd_647 (label fix) は重要度低下。
+    真の最優先は cmd_648 (upstream conflict 解決)。10 commits behind の解消なき限り
+    label fix しても次回 schedule run も失敗継続。30日範囲では 4/19, 4/26, 5/3 の
+    3週間連続失敗 + 5/6 dispatch failure = 4件確認済。
+  action_needed: |
+    Karo: 後続 cmd 順序を以下に更新推奨:
+      新 1位: cmd_648 (upstream conflict 解決) 2-4h
+      新 2位: cmd_649 (通知分離 hardening) 0.5-1h
+      新 3位: cmd_650 (observability 改善) 0.5h
+      新 4位: cmd_651 (Node 24 移行) 0.5h
+      新 5位: cmd_647 (label fallback 追加) 0.1h
 
-  - id: sug_cmd_646_qc_audit_window_001
-    from: gunshi
-    cmd_ref: cmd_646
-    task_ref: subtask_646_scope_qc
-    created_at: "2026-05-07T08:09:00+09:00"
-    status: pending
-    priority: medium
-    content: |
-      次回 GHA Health Audit は 30日範囲推奨。直近7日のみだと「3週間連続失敗」のような
-      長期 pattern を見逃す。今回も 7日範囲では 1件のみ、30日範囲では 4件 (頻度4倍) 検出。
-    action_needed: |
-      Karo: GHA Health Audit を月次 cmd 化する場合、--since 30日 デフォルト推奨。
-      または週次 audit + 月次 audit の併走運用。
+- id: sug_cmd_646_qc_audit_window_001
+  from: gunshi
+  cmd_ref: cmd_646
+  task_ref: subtask_646_scope_qc
+  created_at: "2026-05-07T08:09:00+09:00"
+  status: pending
+  priority: medium
+  content: |
+    次回 GHA Health Audit は 30日範囲推奨。直近7日のみだと「3週間連続失敗」のような
+    長期 pattern を見逃す。今回も 7日範囲では 1件のみ、30日範囲では 4件 (頻度4倍) 検出。
+  action_needed: |
+    Karo: GHA Health Audit を月次 cmd 化する場合、--since 30日 デフォルト推奨。
+    または週次 audit + 月次 audit の併走運用。
 
-  - id: sug_cmd_646_qc_cmd647_overlap_001
-    from: gunshi
-    cmd_ref: cmd_646
-    task_ref: subtask_646_scope_qc
-    created_at: "2026-05-07T08:09:00+09:00"
-    status: pending
-    priority: medium
-    content: |
-      cmd_647 (PRIVATE 13 repo 拡大監査) 発令時に cmd_645 で監査済の
-      obsidian/legal-vault は除外明示推奨。重複監査回避。
-    action_needed: |
-      Karo: cmd_647 task description に cmd_645 重複除外を明記。
+- id: sug_cmd_646_qc_cmd647_overlap_001
+  from: gunshi
+  cmd_ref: cmd_646
+  task_ref: subtask_646_scope_qc
+  created_at: "2026-05-07T08:09:00+09:00"
+  status: pending
+  priority: medium
+  content: |
+    cmd_647 (PRIVATE 13 repo 拡大監査) 発令時に cmd_645 で監査済の
+    obsidian/legal-vault は除外明示推奨。重複監査回避。
+  action_needed: |
+    Karo: cmd_647 task description に cmd_645 重複除外を明記。
 
-  - id: sug_cmd_646_qc_upstream_strategy_001
-    from: gunshi
-    cmd_ref: cmd_646
-    task_ref: subtask_646_scope_qc
-    created_at: "2026-05-07T08:09:00+09:00"
-    status: pending
-    priority: high
-    content: |
-      [戦略レビュー必須] cmd_648 で upstream conflict 解決時、AGENTS.md /
-      instructions/{ashigaru,karo}.md / agents/default/system.md の本 fork 改修内容を
-      保護する戦略策定が必須。単純 upstream 優先は本 fork の改修 (cmd_637/638/639/640/
-      641/642/644 等で構築した shogun/karo/gunshi/ashigaru/forcing function 体系) を
-      全て上書きするリスク大。conflict files 7点全てが本 fork の運用核心。
-    action_needed: |
-      Karo: cmd_648 dispatch 時、必ず軍師に事前戦略レビューを依頼。
-      fork 改修保護 + upstream 必要部分取込の merge 戦略を先に固める (案: 3-way merge +
-      semantic merge or upstream from scratch + fork patch 再適用)。
+- id: sug_cmd_646_qc_upstream_strategy_001
+  from: gunshi
+  cmd_ref: cmd_646
+  task_ref: subtask_646_scope_qc
+  created_at: "2026-05-07T08:09:00+09:00"
+  status: pending
+  priority: high
+  content: |
+    [戦略レビュー必須] cmd_648 で upstream conflict 解決時、AGENTS.md /
+    instructions/{ashigaru,karo}.md / agents/default/system.md の本 fork 改修内容を
+    保護する戦略策定が必須。単純 upstream 優先は本 fork の改修 (cmd_637/638/639/640/
+    641/642/644 等で構築した shogun/karo/gunshi/ashigaru/forcing function 体系) を
+    全て上書きするリスク大。conflict files 7点全てが本 fork の運用核心。
+  action_needed: |
+    Karo: cmd_648 dispatch 時、必ず軍師に事前戦略レビューを依頼。
+    fork 改修保護 + upstream 必要部分取込の merge 戦略を先に固める (案: 3-way merge +
+    semantic merge or upstream from scratch + fork patch 再適用)。
 
-  - id: sug_cmd_647_qc_ours_merge_strategy_001
-    from: gunshi
-    cmd_ref: cmd_647
-    task_ref: subtask_647_scope_qc
-    created_at: "2026-05-07T08:18:00+09:00"
-    status: pending
-    priority: high
-    content: |
-      [殿への報告事項] cmd_647 Scope A で ash2 が `git merge -s ours --no-ff yohey/main` を
-      実施し、upstream-sync 状態は達成 (15→0 commits behind) したが、yohey-w upstream の
-      15 commits は **全て破棄** された。本 fork は upstream から論理的に独立した状態。
-      短期的緊急復旧 (5/3 schedule failure 離脱) としては正解だが、中長期的に
-      upstream の bugfix / 改修を取り込むなら別戦略 (cherry-pick / patch / 三方向 merge) が必要。
-      cmd_646 QC で軍師は事前戦略レビューを提案したが、ash2 は cmd_647 dispatch 後即実行で
-      軍師レビューを経ず。process 課題として記録。
-    action_needed: |
-      Karo:
-        1. 殿に「ours merge により upstream の改修ゼロ取り込み」を報告 (🚨[情報] tag)
-        2. 今後 upstream 改修を取り込む方針の有無を殿に確認
-        3. 取り込む場合、選択的取り込み戦略 cmd を別途立案
-        4. process 改善: 重大判断 (merge 戦略) は軍師事前レビュー必須化を運用に反映
+- id: sug_cmd_647_qc_ours_merge_strategy_001
+  from: gunshi
+  cmd_ref: cmd_647
+  task_ref: subtask_647_scope_qc
+  created_at: "2026-05-07T08:18:00+09:00"
+  status: pending
+  priority: high
+  content: |
+    [殿への報告事項] cmd_647 Scope A で ash2 が `git merge -s ours --no-ff yohey/main` を
+    実施し、upstream-sync 状態は達成 (15→0 commits behind) したが、yohey-w upstream の
+    15 commits は **全て破棄** された。本 fork は upstream から論理的に独立した状態。
+    短期的緊急復旧 (5/3 schedule failure 離脱) としては正解だが、中長期的に
+    upstream の bugfix / 改修を取り込むなら別戦略 (cherry-pick / patch / 三方向 merge) が必要。
+    cmd_646 QC で軍師は事前戦略レビューを提案したが、ash2 は cmd_647 dispatch 後即実行で
+    軍師レビューを経ず。process 課題として記録。
+  action_needed: |
+    Karo:
+      1. 殿に「ours merge により upstream の改修ゼロ取り込み」を報告 (🚨[情報] tag)
+      2. 今後 upstream 改修を取り込む方針の有無を殿に確認
+      3. 取り込む場合、選択的取り込み戦略 cmd を別途立案
+      4. process 改善: 重大判断 (merge 戦略) は軍師事前レビュー必須化を運用に反映
 
-  - id: sug_cmd_647_qc_cmd648_redefine_001
-    from: gunshi
-    cmd_ref: cmd_647
-    task_ref: subtask_647_scope_qc
-    created_at: "2026-05-07T08:18:00+09:00"
-    status: pending
-    priority: high
-    content: |
-      [cmd_648 scope 再定義] 元案「upstream conflict 解決」は Scope A の ours merge で
-      実質完了。cmd_648 を gmail-to-markdown disk exhaustion fix (P0最優先) に
-      再定義推奨。発見 7件失敗、殿の Gmail 同期 pipeline 事実上停止状態。
-      戦略: sparse-checkout (`actions/checkout@v4 sparse-checkout`) +
-      `PIP_NO_CACHE_DIR=1` + `git add output/` 等出力先のみ。工数 1-2h。
-    action_needed: |
-      Karo:
-        1. cmd_648 task description を「upstream conflict 解決」→「gmail-to-markdown disk fix」に変更
-        2. AC を sparse-checkout + pip cache off + 1週間観察に再定義
-        3. ash2/4/6 から 1名選定 (PRIVATE repo PR 経験者推奨)
-        4. cmd_648 の旧案残務 (label fallback) は cmd_651 として後回し可
+- id: sug_cmd_647_qc_cmd648_redefine_001
+  from: gunshi
+  cmd_ref: cmd_647
+  task_ref: subtask_647_scope_qc
+  created_at: "2026-05-07T08:18:00+09:00"
+  status: pending
+  priority: high
+  content: |
+    [cmd_648 scope 再定義] 元案「upstream conflict 解決」は Scope A の ours merge で
+    実質完了。cmd_648 を gmail-to-markdown disk exhaustion fix (P0最優先) に
+    再定義推奨。発見 7件失敗、殿の Gmail 同期 pipeline 事実上停止状態。
+    戦略: sparse-checkout (`actions/checkout@v4 sparse-checkout`) +
+    `PIP_NO_CACHE_DIR=1` + `git add output/` 等出力先のみ。工数 1-2h。
+  action_needed: |
+    Karo:
+      1. cmd_648 task description を「upstream conflict 解決」→「gmail-to-markdown disk fix」に変更
+      2. AC を sparse-checkout + pip cache off + 1週間観察に再定義
+      3. ash2/4/6 から 1名選定 (PRIVATE repo PR 経験者推奨)
+      4. cmd_648 の旧案残務 (label fallback) は cmd_651 として後回し可
 
-  - id: sug_cmd_647_qc_fork_upstream_relation_001
-    from: gunshi
-    cmd_ref: cmd_647
-    task_ref: subtask_647_scope_qc
-    created_at: "2026-05-07T08:18:00+09:00"
-    status: pending
-    priority: medium
-    content: |
-      [fork-upstream 関係整理] saneaki/multi-agent の GitHub-registered fork 元 =
-      marucc/multi-agent-shogun だが、workflow .github/workflows/upstream-sync.yml が
-      参照する upstream は yohey-w/multi-agent-shogun。齟齬がある。
-      Scope A で ash2 は yohey/main に対して ours merge を実施 (workflow 仕様準拠)。
-      marucc/main は別途存在 (marucc upstream 3 commits behind を ash2 が確認、
-      この sync は別 commit 616eb76 で実施済)。
-    action_needed: |
-      Karo: 別 cmd で fork 元の正規化を整理 (workflow 参照先を marucc に統一 or
-      yohey-w に変更し GitHub-registered fork 元も yohey-w に変更)。
-      混乱回避のため fork 元と sync 対象を一致させる方針推奨。
+- id: sug_cmd_647_qc_fork_upstream_relation_001
+  from: gunshi
+  cmd_ref: cmd_647
+  task_ref: subtask_647_scope_qc
+  created_at: "2026-05-07T08:18:00+09:00"
+  status: pending
+  priority: medium
+  content: |
+    [fork-upstream 関係整理] saneaki/multi-agent の GitHub-registered fork 元 =
+    marucc/multi-agent-shogun だが、workflow .github/workflows/upstream-sync.yml が
+    参照する upstream は yohey-w/multi-agent-shogun。齟齬がある。
+    Scope A で ash2 は yohey/main に対して ours merge を実施 (workflow 仕様準拠)。
+    marucc/main は別途存在 (marucc upstream 3 commits behind を ash2 が確認、
+    この sync は別 commit 616eb76 で実施済)。
+  action_needed: |
+    Karo: 別 cmd で fork 元の正規化を整理 (workflow 参照先を marucc に統一 or
+    yohey-w に変更し GitHub-registered fork 元も yohey-w に変更)。
+    混乱回避のため fork 元と sync 対象を一致させる方針推奨。
 
 - id: sug_cmd_650_g_automation_001
   from: ashigaru3

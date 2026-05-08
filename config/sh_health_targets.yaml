@@ -281,19 +281,6 @@ targets:
     yellow_window_days: 30                   # 違反は稀なので長め
     note: "発火は違反検出時のみ。settings.json 登録存続が主判定"
 
-  # ═══════════════════════════════════════════════════
-  # 3E. ntfy_listener.sh (host_guard 付・Tier 1 例外)
-  # designated host のみ Tier 1。本ホストでは host mismatch exit が正常 → 監視除外
-  # ═══════════════════════════════════════════════════
-  - name: ntfy_listener
-    category: daemon
-    host_guard: srv1121380
-    expected_tick: 60
-    yellow_after: 600
-    red_after: 1800
-    log: ntfy_listener.log
-    process_pattern: 'ntfy_listener.sh'
-
 # ═══════════════════════════════════════════════════
 # 残課題 (家老判断確定後に追記):
 # - Q6: cmd_complete_notifier 起動経路 = supervisor (本config記載済)
