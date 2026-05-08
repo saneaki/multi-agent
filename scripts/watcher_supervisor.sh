@@ -130,10 +130,10 @@ start_cmd_squash_pub_hook_if_missing() {
     nohup bash scripts/cmd_squash_pub_hook.sh >> "logs/cmd_squash_pub_hook.log" 2>&1 &
 }
 
-# ウェルカム画面検出: 'Try "' または 'bypass permissions' パターン
+# ウェルカム画面検出: 'Try "' パターン ('bypass permissions' はアクティブプロンプトにも出るため除外)
 is_welcome_screen() {
     local pane="$1"
-    tmux capture-pane -t "$pane" -p 2>/dev/null | grep -qE 'Try "|bypass permissions'
+    tmux capture-pane -t "$pane" -p 2>/dev/null | grep -qE 'Try "'
 }
 
 # 定期点呼: ウェルカム画面停止エージェントを検出し自動復旧
