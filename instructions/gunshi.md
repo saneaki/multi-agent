@@ -466,6 +466,28 @@ Karo unblocks next tasks / updates 🔄進行中
 
 **例外**: `editable_files` が docs / 純粋 refactor のみの cmd はこのチェック skip 可。理由を `gunshi_report.yaml` の `qc_skip_reason` に明記。
 
+### REPO_HEALTH red 確認規律 (cmd_684)
+
+<!-- cmd_684: QC時に repo_health red の家老未対処 (silent failure) を検出するための軍師規律 -->
+
+QC 時に対象 cmd が `repo_health_check` 関連 (cmd_678/scripts/repo_health_*.sh 変更) の場合は必須。それ以外の cmd でも直近 24h で red ログがある場合は確認を推奨する。
+
+```bash
+# 直近 24h の red 発生確認
+tail -50 logs/repo_health_check.log | grep -i "red\|異常"
+cat logs/repo_health_status.yaml | grep -A3 "status: red" || echo "no red"
+```
+
+| チェック項目 | 確認内容 | NG 時の判定 |
+|------------|---------|------------|
+| red 発生時に家老が対処したか | dashboard の 🚨 or タスク発令履歴を確認 | WARN: karo inbox に "repo_health red 対処未確認" を通知 |
+| conflict/divergence が未解消か | `logs/repo_health_status.yaml` の current status を確認 | **QC NG**: 未解消のまま PASS 禁止 |
+
+**適用条件**:
+- repo_health 関連 cmd: 必須
+- その他の cmd: best-effort (直近ログ確認のみ)
+- docs 更新のみ cmd: skip 可 (理由を `gunshi_report.yaml` の `qc_skip_reason` に記載)
+
 ### GUI事前レビュープロトコル (gui_review_required: true)
 
 task YAML に `gui_review_required: true` がある場合、軍師は以下の手順を踏むこと:

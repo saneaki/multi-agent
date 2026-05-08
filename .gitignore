@@ -234,6 +234,10 @@
 !output/cmd_676_gas_mail_manager_per_customer_workbook.md
 !output/cmd_678_repo_health_check.md
 !output/cmd_681_dashboard_observation_queue.md
+!output/cmd_684_repo_health_red_runbook.md
+# cmd_684: ashigaru4 report/tasks tracking
+!queue/reports/ashigaru4_report.yaml
+!queue/tasks/ashigaru4.yaml
 
 # cmd_544: 3 安全装置 state files (kill-switch/rate-limit/pending/daily-metric)
 !logs/cmd_squash_pub_hook.disabled

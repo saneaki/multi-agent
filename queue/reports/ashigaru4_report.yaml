@@ -1,0 +1,220 @@
+worker_id: ashigaru4
+task_id: subtask_684_repo_health_red_runbook
+parent_cmd: cmd_684
+timestamp: '2026-05-08T16:57:32+09:00'
+status: done
+result:
+  summary: |
+    repo_health_check red 検知時の家老・軍師運用フローを文書化。
+    instructions/karo.md に「REPO_HEALTH red 検知時の運用フロー」セクション追記 (確認タイミング/対処マトリクス/通知方式将来案)。
+    instructions/gunshi.md に「REPO_HEALTH red 確認規律 (cmd_684)」サブセクション追記。
+    instructions/generated/codex-karo/gunshi.md は symlink のため自動反映。
+    output/cmd_684_repo_health_red_runbook.md を作成。AC A-1〜A-3/B-1/D-1 全 PASS。
+  files_modified:
+    - instructions/karo.md
+    - instructions/gunshi.md
+    - output/cmd_684_repo_health_red_runbook.md
+  output_path: output/cmd_684_repo_health_red_runbook.md
+  acceptance_criteria:
+    A-1: 'PASS — instructions/karo.md 末尾に「REPO_HEALTH red 検知時の運用フロー (cmd_684)」セクション追記 (確認タイミング表・対処フロー・対処マトリクス)'
+    A-2: 'PASS — red 検知時の家老アクション 3 ステップ (log確認 / 内容把握 / 判断対処マトリクス) + dashboard 要対応フォーマット明記'
+    A-3: 'PASS — 通知方式「現状 (SCRIPT_LOG のみ)」と「将来案 (Discord 通知/dashboard 自動追記)」を文書化。自動化は別 cmd と明記'
+    B-1: 'PASS — instructions/gunshi.md の Implementation cmd QC Checklist 直後に「REPO_HEALTH red 確認規律 (cmd_684)」追記 (適用条件・確認手順・チェックポイント表)'
+    D-1: 'PASS — output/cmd_684_repo_health_red_runbook.md 作成 (仕組み概要/家老フロー/軍師規律/通知将来案/AC確認)'
+  notes: |
+    codex-karo.md / codex-gunshi.md は ../karo.md / ../gunshi.md への symlink (cmd_669 で確立) のため、
+    karo.md / gunshi.md 編集で自動反映。build_instructions.sh 再実行不要。
+    instructions/roles/karo_role.md は editable_files に含まれないため編集せず。
+    将来、他 CLI (Copilot/Kimi) 向け generated ファイルへの反映が必要な場合は
+    roles/karo_role.md 編集 + build_instructions.sh 実行が必要 (別 cmd で対応)。
+agent_tool_used: false
+skill_candidate:
+  found: false
+  name: null
+  description: null
+  reason: null
+
+# ===== 履歴 (古い順 → 新しい順 / append-only) =====
+history:
+  - task_id: subtask_658_phase2_inbound_gateway
+    parent_cmd: cmd_658
+    status: completed
+    completed_at: '2026-05-08T03:59:05+09:00'
+    commit_sha: 9ac59af
+    agent_tool_used: false
+    tokens_used_estimate: 0
+    acceptance_criteria_status:
+      P2-1: PASS — discord_gateway.py 新規実装 + self-test PASS
+      P2-2: PASS — external_inbox.yaml schema 確定 (ntfy_inbox.yaml 互換)
+      P2-3: PASS — systemd unit 更新 + healthcheck rename + crontab 更新
+      P2-4: PASS (内部経路) / PENDING (実 DM ack 殿手動)
+      P2-5: WAIVED — 殿御裁可で 24h dual 観測不要
+    manual_verification_required: true
+    manual_verification_note: 殿に Discord DM を 1 通お送りいただき、✅ reaction が付くか目視確認
+    output_path: output/cmd_658_phase2_report.md
+    files_changed:
+      - scripts/discord_gateway.py (new)
+      - scripts/discord_gateway_healthcheck.sh (rename + content update)
+      - queue/external_inbox.yaml (new, empty init)
+      - config systemd shogun-discord.service (update — outside repo)
+      - crontab user (update — outside repo)
+      - output/cmd_658_phase2_report.md (new)
+      - .gitignore (whitelist update)
+    test_results:
+      syntax_check_python: PASS
+      syntax_check_bash: PASS
+      self_test: PASS — yaml atomic write + inbox_write shogun OK
+      systemd_active: 'PASS — Active: active (running)'
+      discord_login: PASS — logged in as shogun#7465 (allowlist={...})
+      healthcheck: 'PASS — OK: discord_gateway running'
+    notes: Phase 3 (ntfy 削除) と Phase 4 (Android) は未着手。Phase 3 で discord_to_ntfy.py 削除予定。
+  - task_id: subtask_668_codex_0129_upgrade
+    parent_cmd: cmd_668
+    status: completed
+    completed_at: '2026-05-08T09:30:00+09:00'
+    commit_sha: 12e2500
+    agent_tool_used: false
+    tokens_used_estimate: 0
+    acceptance_criteria_status:
+      A-1: 'PASS — 0.129 が Codex CLI update 確認'
+      A-2: 'PASS — 升級前 0.128.0 / 升級後 0.129.0 記録'
+      A-3: 'PASS — npm install -g @openai/codex@0.129.0 (sudo 未使用)'
+      A-4: 'PASS — codex --version → codex-cli 0.129.0'
+      A-5: 'PASS — codex --help 正常動作'
+      B-1: 'PASS — output/cmd_668_codex_0129_upgrade.md 作成'
+    output_path: output/cmd_668_codex_0129_upgrade.md
+    files_changed:
+      - output/cmd_668_codex_0129_upgrade.md (new)
+    notes: |
+      ash5/6/7 の codex update prompt 停止状態は次起動時に解消 (案A skip 推奨)。
+  - task_id: subtask_672_shp_design_unification
+    parent_cmd: cmd_672
+    status: done
+    completed_at: '2026-05-08T11:06:16+09:00'
+    commit_sha: 64a7d05
+    agent_tool_used: false
+    tokens_used_estimate: 0
+    acceptance_criteria_status:
+      A-1: 'PASS — dry-run 1構成員指定 全員同一モデル設定確認'
+      A-2: 'PASS — dry-run 2/3構成員指定 正常動作確認'
+      A-3: 'PASS — 出陣サマリ 9行表示確認 (実体験ベース)'
+      A-4: 'PASS — 出陣サマリ dry-run 正常動作確認'
+      A-5: 'PASS — 出陣実行時 SKIP 表示不在確認'
+      B-1: 'PASS — docs 改訂 (shp = 9構成員 明記)'
+      B-2: 'PASS — docs 改訂 (代替経路明文化)'
+      C-1: 'PASS — bash -n 構文チェック OK'
+      C-2: 'PASS — --help 出力で 9 構成員ベース統一確認'
+      C-3: 'PASS — dry-run 4 パターン全 PASS (positional args 動作実証)'
+      C-4: 'PASS — --kill --dry-run で 9名表示 + 実 tmux 不発確認'
+      C-5: 'PASS — --preset 両者 dry-run 9名一致確認'
+      E-1: 'PASS — output/cmd_672_shp_design_unification.md 生成'
+    output_path: output/cmd_672_shp_design_unification.md
+    files_changed:
+      - scripts/shp.sh
+      - docs/shogun_shell_commands.md
+      - output/cmd_672_shp_design_unification.md
+    notes: |
+      軍師 QC conditional_go の唯一残件 (report YAML 欠落) を補完。
+      実装は完璧 (commit 64a7d05 + AC 13項目全 PASS + north_star N1/N2/N3 aligned)。
+      SO-24 三点照合 artifact 欠落解消。
+  - task_id: subtask_669_instructions_unification
+    parent_cmd: cmd_669
+    status: completed
+    completed_at: '2026-05-08T12:05:49+09:00'
+    commit_sha: d4dcea4
+    agent_tool_used: false
+    tokens_used_estimate: 0
+    acceptance_criteria_status:
+      A-1: 'PASS — AGENTS.md の instructions パスを instructions/{role}.md に統一。Claude/Codex 両者同一経路'
+      A-2: 'PASS — instructions/generated/codex-*.md を symlink 化（実体廃止、重複なし）'
+      A-3: 'PASS — build_instructions.sh --check で AGENTS.md≈CLAUDE.md (CLI名のみ差分) 確認'
+      B-1: 'PASS — build_instructions.sh に --check モード追加 + symlink 保護実装 + 差分生成廃止'
+      B-2: 'PASS — ~/.codex/config.toml: project_doc_max_bytes=131072 (128KB) 確認'
+      C-1: 'PASS — 全4役職とも < 131072B (shogun=24KB, karo=54KB, gunshi=42KB, ashigaru=25KB)'
+      C-2: 'PASS — Claude agents は従前通り instructions/{role}.md を使用（変更なし）'
+      C-3: 'PASS — AGENTS.md=19KB < limit=128KB。32KiB 上限は project_doc_max_bytes=131072 で解消'
+      E-1: 'PASS — output/cmd_669_instructions_unification.md 作成'
+    output_path: output/cmd_669_instructions_unification.md
+    files_changed:
+      - AGENTS.md (instructions パス統一 + codex-ashigaru.md リンク修正)
+      - scripts/build_instructions.sh (symlink 保護 + --check モード + instructions パス置換廃止)
+      - instructions/generated/codex-shogun.md (symlink 化)
+      - instructions/generated/codex-karo.md (symlink 化)
+      - instructions/generated/codex-gunshi.md (symlink 化)
+      - instructions/generated/codex-ashigaru.md (symlink 化)
+      - output/cmd_669_instructions_unification.md (new)
+    notes: |
+      build_instructions.sh は引き続き copilot/kimi 向け生成を行う。
+      codex-*.md symlink 経由で旧参照も正本に誘導される。
+      次 Codex セッション起動時より新パスが反映される。
+  - task_id: subtask_675_skill_candidate_integration_core
+    parent_cmd: cmd_675
+    status: done
+    completed_at: '2026-05-08T13:45:00+09:00'
+    commit_sha: 3aafb82
+    agent_tool_used: false
+    tokens_used_estimate: 0
+    acceptance_criteria_status:
+      A-1: 'PASS — skills/codex-context-pane-border/SKILL.md 新規作成 (135行、SQLite二段階照合方式)'
+      A-2: 'PASS — skills/codex-skill-index/SKILL.md 新規作成 (143行、232スキル索引)'
+      A-3: 'PASS — memory/skill_history.md に SC-565/567 を追記'
+      A-4: 'PASS — queue/skill_candidates.yaml 新規作成 (schema_version:1.0、4件 status:created)'
+      C-1: 'PASS — wc -l≤499確認・front-matter・battle-tested・related・source 全要件満足・MD040エラーゼロ'
+      C-2: 'PASS — commit 3aafb82 / push to origin main 完了'
+      E-1: 'PASS — output/cmd_675_skill_candidate_integration.md 作成'
+    output_path: output/cmd_675_skill_candidate_integration.md
+    files_changed:
+      - skills/codex-context-pane-border/SKILL.md (new)
+      - skills/codex-skill-index/SKILL.md (new)
+      - memory/skill_history.md (SC-565/567 追記)
+      - queue/skill_candidates.yaml (new)
+      - output/cmd_675_skill_candidate_integration.md (new)
+      - .gitignore (whitelist 追加)
+    notes: |
+      dashboard 🛠️ 欄整理 (B-1) は RACE-001 により未実施。家老が次 cmd でシーケンシャル発令予定。
+      SC-565/567 は既配置 SKILL.md を skill_history.md に移行。
+      SC-667/663 は新規 SKILL.md 作成、Codex 0.129.0 対応知見を体系化。
+  - task_id: subtask_665_shp_positional_args
+    parent_cmd: cmd_665
+    timestamp: '2026-05-08T09:48:00+09:00'
+    status: done
+    result:
+      summary: |
+        shp.sh positional args (1/2/4/10引数) + --yes/-y フラグ実装完了。
+        apply_positional() 関数追加、引数パース拡張、排他検証、y/N prompt skip 対応。
+        AC 全 11 項目 PASS (A-1〜A-6, B-1〜B-3, C-1, D-1)、dry-run 検証完了、
+        既存 mode (interactive/--preset/--kill) regression なし。
+        docs/shogun_shell_commands.md に positional args 体系表 + 使い分けガイド追加。
+        output/cmd_665_shp_positional_report.md に実装ログ・テスト結果記録。
+      files_modified:
+        - scripts/shp.sh
+        - docs/shogun_shell_commands.md
+        - output/cmd_665_shp_positional_report.md
+        - queue/reports/ashigaru4_report.yaml
+        - queue/inbox/ashigaru4.yaml
+        - queue/snapshots/ashigaru4_snapshot.yaml
+        - queue/tasks/ashigaru4.yaml
+      output_path: output/cmd_665_shp_positional_report.md
+      acceptance_criteria:
+        A-1: 'PASS — shp 1 --yes --dry-run で全員 1(Sonnet+T) 設定、interactive prompt 経ずに summary→出陣'
+        A-2: 'PASS — shp 2 --yes --dry-run で全員 Opus+T、shp 3 --yes --dry-run で全員 Codex 設定確認'
+        A-3: 'PASS — shp 2 1 --yes --dry-run で 将軍=2(Opus), 他全員=1(Sonnet) 設定確認'
+        A-4: 'PASS — shp 1 2 1 1 --yes --dry-run で 将軍=1, 家老=2, 軍師=1, 足軽全員=1 設定確認'
+        A-5: 'PASS — shp 1 2 1 1 1 1 1 1 1 2 --yes --dry-run で 構成員10名 (将軍/家老/足軽1-7/軍師) 個別指定確認'
+        A-6: 'PASS — --yes / -y フラグで "出陣確認スキップ (自動 Yes)" メッセージ表示、y/N prompt skip 確認'
+        B-1: 'PASS — --preset current/all-sonnet/heavy-opus/sonnet-codex-mix 全 PASS、--kill --dry-run PASS、排他検証 (positional + --preset / + --kill) もエラー検出 PASS'
+        B-2: 'PASS — bash -n scripts/shp.sh 構文 OK'
+        B-3: 'PASS — shp --help に "shp <N> [...]" / "--yes / -y" / positional args 体系セクション表示確認'
+        C-1: 'PASS — docs/shogun_shell_commands.md shp 章に positional args 体系表 + 使い分けガイド 3 行追加'
+        D-1: 'PASS — output/cmd_665_shp_positional_report.md 作成 (実装詳細 + AC 検証結果 + 再現コマンド集)'
+      notes: |
+        実出陣テストは禁止指示につき dry-run のみ実施 (タスク仕様通り)。
+        番号 4 以上やアルファベットは [123] glob で "不明なオプション" エラーとして拒否。
+        positional 引数 3 個など 1/2/4/10 個以外は明確なエラーメッセージ表示。
+        cmd_666 (commit 8e7ffb1) で既に RACE-001 解消済のため、本タスクの単独編集は安全。
+    agent_tool_used: false
+    skill_candidate:
+      found: false
+      name: null
+      description: null
+      reason: null

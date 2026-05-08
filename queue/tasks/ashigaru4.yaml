@@ -1,0 +1,63 @@
+task:
+  task_id: subtask_684_repo_health_red_runbook
+  parent_cmd: cmd_684
+  bloom_level: L4
+  assigned_to: ashigaru4
+  report_to: karo
+  status: done
+  timestamp: '2026-05-08T16:46:55+09:00'
+  title: 'cmd_684: repo_health red検知時の家老運用フロー明文化'
+  priority: medium
+  editable_files:
+    - instructions/karo.md
+    - instructions/gunshi.md
+    - instructions/generated/codex-karo.md
+    - instructions/generated/codex-gunshi.md
+    - output/cmd_684_repo_health_red_runbook.md
+    - queue/reports/ashigaru4_report.yaml
+    - queue/tasks/ashigaru4.yaml
+    - queue/inbox/ashigaru4.yaml
+    - .gitignore
+  acceptance_criteria:
+    - id: A-1
+      check: "instructions/karo.md に REPO_HEALTH red 検知時の運用フローを追記する"
+    - id: A-2
+      check: "red 検知時の家老アクション (log確認/dashboard要対応/殿介入要請) を明記する"
+    - id: A-3
+      check: "通知方式の現状と将来案を文書化する"
+    - id: B-1
+      check: "instructions/gunshi.md に QC時 repo_health red 確認規律を追加する"
+    - id: D-1
+      check: "output/cmd_684_repo_health_red_runbook.md を作成する"
+  description: |
+    【目的】
+    cmd_678 repo_health_check の red 検知時に家老が取るべき運用フローを明文化し、
+    SCRIPT_LOG の見落としによる silent failure を防ぐ。
+
+    【必読】
+    - queue/shogun_to_karo.yaml cmd_684 全文
+    - scripts/repo_health_check.sh
+    - config/repo_health_targets.yaml
+    - instructions/karo.md / instructions/gunshi.md
+    - instructions/build_instructions.sh
+
+    【作業】
+    1. instructions/karo.md に REPO_HEALTH red 検知時の運用フローを追記する。
+    2. 家老 inbox 起動時 / 定期確認 / red通知受領時の確認手順を明記する。
+    3. red時の dashboard 要対応追加・殿介入要請の判断基準を明記する。
+    4. instructions/gunshi.md に QC時の repo_health red確認規律を追加する。
+    5. generated instruction が必要なら既存手順に従い再生成する。
+    6. output を作成し、commit/push する。
+
+    【制約】
+    - dashboard.md/yaml は cmd_681 が作業中のため編集禁止。
+    - 自動通知実装は本cmd範囲外。文書化のみ。
+    - 既存 instruction 構造に合わせ、冗長化しすぎない。
+
+    【完了報告】
+    bash /home/ubuntu/shogun/scripts/inbox_write.sh karo \
+      "【subtask_684_repo_health_red_runbook 完了】cmd_684 repo_health red運用フロー文書化完了。commit <hash>。report確認されたし。" \
+      task_completed ashigaru4
+  notes: |
+    context_policy: clear_between
+    完了後、家老が軍師QCを発令する。
