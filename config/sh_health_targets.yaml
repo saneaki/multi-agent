@@ -139,6 +139,8 @@ targets:
     red_after: 180000
     log: kpi_observer.log
     retired_after: '2026-06-30'    # 📊 運用指標削除後 retired
+    ignore_patterns:
+      - 'fail=\d+'        # KPI metric field (e.g. cron_fail=0), not an error
 
   - name: suggestions_digest
     category: cron
@@ -213,6 +215,9 @@ targets:
     red_after: 3600
     log: shogun_inbox_notifier.log
     process_pattern: 'shogun_inbox_notifier.sh'
+    ignore_patterns:
+      - 'Sending shogun inbox'   # 通知送信行は SUCCESS (本文に FAIL/ERROR が含まれることがある)
+      - 'shogun inbox sent'      # 送信完了行は SUCCESS
 
   - name: cmd_squash_pub_hook
     category: daemon

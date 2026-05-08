@@ -1,80 +1,66 @@
 worker_id: ashigaru5
-task_id: subtask_677_sh_warning_consolidation
-parent_cmd: cmd_677
-timestamp: "2026-05-08T15:22:00+09:00"
+task_id: subtask_683_tier2_repair_phase3_cleanup
+parent_cmd: cmd_683
+timestamp: "2026-05-08T17:03:59+09:00"
 status: done
 model: sonnet
 report_to: karo
 
 result:
   summary: |
-    cmd_677 完遂。sh 機能不全 (停止1件+警告11件+self_clear silent failure) を統合修復。
-    主要成果: (1) ntfy_listener 削除+監視除外 (2) self_clear_check.sh 系 task: wrapper
-    構造対応で全9構成員の自己/clear機構を復旧 (3) suggestions.yaml 733件正常パース回復
-    (4) session_to_obsidian git push 修正 (5) Tier2調査完了+後続cmd候補整理
+    cmd_683 完遂。Tier2 sh 残課題 4 件修正完了。Phase3 は時刻条件未達で pending_blocked。
+    A-1 cmd_kpi_observer false positive 解消 (failure 12→0)
+    A-2 sh_health_check タイムスタンプ行フィルタ追加 (inbox_watcher[shogun] failure 31→1)
+    A-3 inbox_watcher Codex pane 検証スキップ追加 (コード修正済・restart後に完全解消)
+    A-4 shogun_inbox_notifier false positive 解消 (failure 4→0)
+    Phase3: 2026-05-09 01:30 JST 以降の条件未達→削除対象リスト記録済
 
   files_modified:
-    - scripts/ntfy_listener.sh              (削除 A-1)
-    - config/sh_health_targets.yaml         (ntfy_listener エントリ削除 A-1)
-    - dashboard.md                          ([cmd_673-ntfy-listener] 行削除 A-2)
-    - scripts/self_clear_check.sh           (task: wrapper 対応 B-1)
-    - scripts/karo_self_clear_check.sh      (task: wrapper 対応 B-2)
-    - scripts/gunshi_self_clear_check.sh    (task: wrapper 対応 B-2)
-    - queue/suggestions.yaml               (line 13355-13681 インデント修正 C-1)
-    - scripts/session_to_obsidian.sh        (git checkout main + pull --rebase C-3)
-    - output/cmd_677_tier2_audit.md         (新規作成 D-2)
-    - output/cmd_677_sh_warning_consolidation.md  (新規作成 G-1)
+    - config/sh_health_targets.yaml         (cmd_kpi_observer + shogun_inbox_notifier に ignore_patterns 追加)
+    - scripts/sh_health_check.sh            (try_parse_line_ts() + grep_count/grep_last_error timestamp filter)
+    - scripts/inbox_watcher.sh              (send_wakeup() Codex pane 検証スキップ)
+    - output/cmd_683_tier2_repair_phase3_cleanup.md  (新規作成)
     - queue/reports/ashigaru5_report.yaml   (本ファイル更新)
     - queue/tasks/ashigaru5.yaml            (status: done)
 
   acceptance_criteria:
-    - id: A-1
-      check: "ntfy_listener 関連 sh / systemd unit / cron 削除 + sh_health_targets.yaml から除外"
+    A-1:
       status: PASS
-      note: "scripts/ntfy_listener.sh 削除済み。systemd unit/cron は存在なし確認。sh_health_targets.yaml から ntfy_listener エントリ削除"
-    - id: A-2
-      check: "dashboard 🚨 要対応 [cmd_673-ntfy-listener] 削除"
+      detail: "failure 12→0 (ignore_patterns: fail=\d+ 追加)"
+    A-2:
       status: PASS
-      note: "dashboard.md から該当行削除済み"
-    - id: B-1
-      check: "scripts/self_clear_check.sh の python parser を wrapper 構造対応に修正"
+      detail: "failure 31→1 (timestamp line filter。残1件は歴史的syntax error、無害)"
+    A-3:
+      status: PASS_CODE_ONLY
+      detail: "コード修正済。inbox_watcher_karo daemon restart後に完全解消"
+    A-4:
       status: PASS
-      note: "data.get('status') → task: wrapper チェック追加。ash1-7/gunshi dry-run PASS"
-    - id: B-2
-      check: "scripts/karo_self_clear_check.sh / scripts/gunshi_self_clear_check.sh の同様 bug 有無確認 + 修正"
+      detail: "failure 4→0 (ignore_patterns: Sending shogun inbox / shogun inbox sent)"
+    B-1:
+      status: PENDING_BLOCKED
+      detail: "Phase3実行可能: 2026-05-09 01:30 JST以降。削除対象14件リスト記録済(report参照)"
+    C-1:
       status: PASS
-      note: "両スクリプトとも同じ bug あり。wrapper 対応を追加"
-    - id: B-3
-      check: "全足軽 (ash1-7) + karo + gunshi で self_clear_check 動作確認"
+      detail: "sh_health_check: green=38 yellow=9 red=0。Tier2 3/4即時改善、1/4コード修正済"
+    E-1:
       status: PASS
-      note: "dry-run 全員確認: ash1(done→CLEAR), ash2(completed→CLEAR), ash3(done→CLEAR), ash4(completed→CLEAR), ash5(assigned→SKIP), ash6(assigned→SKIP), ash7(blocked→SKIP), gunshi(done→CLEAR). karo は karo_self_clear_check.sh 管轄"
-    - id: C-1
-      check: "Tier 1: suggestions_digest yaml ParserError 修正"
-      status: PASS
-      note: "line 13355-13681 の 2スペース余分インデントを sed で修正。733件正常パース確認"
-    - id: C-2
-      check: "Tier 1: dashboard_rotate syntax error in expression 修正"
-      status: PASS
-      note: "調査結果: 最終エラーは 2026-04-27 (7日以上前)。5/1-5/8 全8runs SUCCESS。自然解消済みと判定"
-    - id: C-3
-      check: "Tier 1: session_to_obsidian git push failed 修正"
-      status: PASS
-      note: "git push 前に git checkout main + git pull --rebase origin main を追加。非mainブランチでのコミット問題を解消"
-    - id: D-1
-      check: "Tier 2 調査完了"
-      status: PASS
-      note: "4件全て調査。cmd_kpi_observer/shogun_inbox_notifier は FALSE POSITIVE判定。inbox_watcher[karo]はCodex pane drift 真因特定。inbox_watcher[shogun]は古いログ蓄積"
-    - id: D-2
-      check: "Tier 2 調査結果を output/cmd_677_tier2_audit.md に記録"
-      status: PASS
-      note: "真因仮説 + 修正コスト見積 記載済み"
-    - id: E-1
-      check: "Tier 3 観察記録"
-      status: PASS
-      note: "inbox_watcher[gunshi/ash1/6/7] 軽微 failure は観察継続。レポートに記録済み"
-    - id: G-1
-      check: "output/cmd_677_sh_warning_consolidation.md 作成"
-      status: PASS
-      note: "Tier別処理結果 + self_clear silent failure解消経緯 + AC全件チェック + 残課題cmd候補 記載"
-</content>
-</invoke>
+      detail: "output/cmd_683_tier2_repair_phase3_cleanup.md 作成完了"
+
+  phase3_deletion_targets:
+    condition: "2026-05-09 01:30 JST以降かつPhase2 24h dual-stack安定確認後"
+    count: 14
+    targets:
+      - scripts/ntfy.sh
+      - scripts/ntfy_wsl_template.sh
+      - scripts/discord_to_ntfy.py
+      - scripts/__pycache__/discord_to_ntfy.cpython-312.pyc
+      - lib/ntfy_auth.sh
+      - queue/ntfy_inbox.yaml
+      - queue/ntfy_inbox.yaml.lock
+      - queue/ntfy_inbox_archive.yaml
+      - logs/ntfy_listener.log
+      - logs/ntfy_inbox_corrupt/
+      - logs/ntfy_completed_cmds.txt
+      - logs/ntfy_notified_cmds.txt
+      - tests/unit/test_ntfy_ack.bats
+      - tests/unit/test_ntfy_auth.bats

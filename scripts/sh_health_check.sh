@@ -92,14 +92,36 @@ def file_mtime(path):
         return None
 
 
+def try_parse_line_ts(line):
+    """Extract UTC epoch from common log timestamp formats. Returns float or None."""
+    # [Day Mon DD HH:MM:SS UTC YYYY] — inbox_watcher, bash date format
+    m = re.match(r'\[(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun) (\w{3} +\d{1,2} \d{2}:\d{2}:\d{2}) UTC (\d{4})\]', line)
+    if m:
+        try:
+            dt = datetime.datetime.strptime(f"{m.group(1)} {m.group(2)}", "%b %d %H:%M:%S %Y")
+            return dt.replace(tzinfo=datetime.timezone.utc).timestamp()
+        except Exception:
+            pass
+    # [YYYY-MM-DD HH:MM:SS] or [YYYY-MM-DDTHH:MM:SS...] — Python/shell logs
+    m2 = re.match(r'\[(\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2})', line)
+    if m2:
+        try:
+            s = m2.group(1).replace('T', ' ')
+            dt = datetime.datetime.strptime(s, "%Y-%m-%d %H:%M:%S")
+            return dt.replace(tzinfo=datetime.timezone.utc).timestamp()
+        except Exception:
+            pass
+    return None
+
+
 def grep_count(path, pattern, since_sec=None, ignore_pat=None):
     """7 日以内の log から pattern にマッチする行数をカウント。
-    since_sec を超える timestamp 行はスキップ (mtime ベース簡易判定)。
-    実用上は log mtime が新しいなら近い 7d とみなす。"""
+    since_sec が指定された場合、行のタイムスタンプを解析して 7d window 外の行をスキップ。
+    タイムスタンプが解析できない行はスキップしない (安全側に倒す)。"""
     if not path or not os.path.exists(path):
         return 0
     try:
-        # 7 日以内 = mtime within window
+        # fast-path: ファイル自体が 7d より古ければ全スキップ
         mtime = os.path.getmtime(path)
         if since_sec and mtime < since_sec:
             return 0
@@ -113,6 +135,11 @@ def grep_count(path, pattern, since_sec=None, ignore_pat=None):
         ignore_re = re.compile(ignore_pat, re.IGNORECASE) if ignore_pat else None
         count = 0
         for line in lines:
+            # Timestamp filter: skip lines older than since_sec (7d window)
+            if since_sec:
+                line_ts = try_parse_line_ts(line)
+                if line_ts is not None and line_ts < since_sec:
+                    continue
             if regex.search(line):
                 if ignore_re and ignore_re.search(line):
                     continue
@@ -160,7 +187,7 @@ def syslog_cron_check(pattern, days=7):
         return None, 0
 
 
-def grep_last_error(path, pattern, ignore_pat=None):
+def grep_last_error(path, pattern, ignore_pat=None, since_sec=None):
     if not path or not os.path.exists(path):
         return ""
     try:
@@ -172,6 +199,11 @@ def grep_last_error(path, pattern, ignore_pat=None):
         regex = re.compile(pattern, re.IGNORECASE)
         ignore_re = re.compile(ignore_pat, re.IGNORECASE) if ignore_pat else None
         for line in reversed(lines):
+            # Timestamp filter: skip lines older than since_sec
+            if since_sec:
+                line_ts = try_parse_line_ts(line)
+                if line_ts is not None and line_ts < since_sec:
+                    continue
             if regex.search(line):
                 if ignore_re and ignore_re.search(line):
                     continue
@@ -277,7 +309,7 @@ def evaluate_target(t, defaults):
         age = (NOW - mt) if mt else None
         success = grep_count(log_path, success_pat, since_sec, ignore_pat)
         failure = grep_count(log_path, failure_pat, since_sec, ignore_pat)
-        last_err = grep_last_error(log_path, failure_pat, ignore_pat)
+        last_err = grep_last_error(log_path, failure_pat, ignore_pat, since_sec)
 
         # silent_design: log が更新されない sh は syslog の CRON 起動記録で代替検知
         if t.get("silent_design"):
@@ -316,7 +348,7 @@ def evaluate_target(t, defaults):
         age = (NOW - mt) if mt else None
         success = grep_count(log_path, success_pat, since_sec, ignore_pat)
         failure = grep_count(log_path, failure_pat, since_sec, ignore_pat)
-        last_err = grep_last_error(log_path, failure_pat, ignore_pat)
+        last_err = grep_last_error(log_path, failure_pat, ignore_pat, since_sec)
 
         # daemon は process 生存も判定材料
         process_alive = proc_alive(proc_pat) if proc_pat else True

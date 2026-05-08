@@ -968,6 +968,12 @@ send_wakeup() {
         sleep 0.3
         timeout 5 tmux send-keys -t "$PANE_TARGET" Enter 2>/dev/null || true
         sleep 0.5
+        # Codex pane: pane verification is unreliable (nudge text appears in output buffer)
+        # Skip retry loop to avoid false "send-keys failed" warnings on CLI drift
+        if [[ "$effective_cli_for_nudge" == "codex" ]]; then
+            echo "[$(date)] Wake-up sent to $AGENT_ID (${unread_count} unread, attempt $((attempt+1)), codex-no-verify)" >&2
+            return 0
+        fi
         # 送信確認: capture-pane でプロンプトにnudgeテキストが残っていないか確認
         local pane_content
         pane_content=$(timeout 3 tmux capture-pane -t "$PANE_TARGET" -p 2>/dev/null | tail -5 || echo "")
