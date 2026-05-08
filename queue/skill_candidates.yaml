@@ -1,16 +1,30 @@
 schema_version: '1.0'
-generated_at: '2026-05-08T13:28:00+09:00'
-generated_by: ashigaru4
-parent_cmd: cmd_675
+generated_at: '2026-05-08T13:55:00+09:00'
+generated_by: ashigaru6
+parent_cmd: cmd_675b
+
+# cmd_675b (2026-05-08) skill候補12件 最終処理結果
+# - 既存実装3件: created (skill_history.md ✅実装済 化)
+# - 棄却2件: rejected
+# - 統合5件: merged
+# - 棚上げ2件: deferred (2026-06-08 まで観察)
 
 entries:
+  # ───────── 既存実装済 3件 (status: created / dashboard ✅化) ─────────
   - id: SC-565
     name: shogun-gas-clasp-rapt-reauth-fallback
     status: created
     skill_path: skills/shogun-gas-clasp-rapt-reauth-fallback/SKILL.md
     source_cmd: cmd_565
+    related_cmds:
+      - cmd_486
+      - cmd_564
+      - cmd_565
     created_at: cmd_675
-    notes: 既配置 SKILL.md を skill_history.md へ移行。clasp invalid_rapt 復旧パターン (3回実証)。
+    cmd_675b_decision: existing_skill_confirmed
+    notes: |
+      既存 SKILL.md (62行) を cmd_675 で skill_history.md に移行済。
+      cmd_675b audit gunshi 判定 c=既存実装済。dashboard 🛠️ から削除完了 (cmd_675b)。
 
   - id: SC-567
     name: shogun-gas-automated-verification
@@ -18,27 +32,159 @@ entries:
     skill_path: skills/shogun-gas-automated-verification/SKILL.md
     source_cmd: cmd_567
     created_at: cmd_675
-    notes: 既配置 SKILL.md を skill_history.md へ移行。GAS clasp run + clasp logs 自動化基盤。
+    cmd_675b_decision: existing_skill_confirmed
+    notes: |
+      既存 SKILL.md (129行) を cmd_675 で skill_history.md に移行済。
+      cmd_675b audit gunshi 判定 c=既存実装済。dashboard 🛠️ から削除完了 (cmd_675b)。
+
+  - id: SC-gemini-token-guard
+    name: shogun-gemini-thinking-token-guard
+    status: created
+    skill_path: skills/shogun-gemini-thinking-token-guard/SKILL.md
+    source_cmd: cmd_unknown_gemini
+    created_at: cmd_675b
+    cmd_675b_decision: existing_skill_confirmed
+    notes: |
+      既存 SKILL.md は skills/ に存在するが skill_history.md 未登録 (silent inconsistency)。
+      cmd_674 監査で検出、cmd_675b で skill_history.md に append + ✅実装済 化。
+
+  # ───────── 棄却 2件 (status: rejected) ─────────
+  - id: SC-rule-inventory
+    name: shogun-rule-inventory-pattern
+    status: rejected
+    source_cmd: cmd_566
+    related_cmds:
+      - cmd_566
+    rejected_at: cmd_675b
+    rejection_reason: |
+      5 行以下の自明手順 (`grep -E '^[A-Z][0-9]+' instructions/*.md` + qc_checklist.yaml 読取)。
+      スキル化価値が低い (1 sh script で十分)。
+      cmd_675b audit gunshi 判定 c=棄却。
+
+  - id: SC-qc-auto-naming
+    name: shogun-qc-auto-check-naming-mode-pattern
+    status: rejected
+    source_cmd: cmd_552
+    related_cmds:
+      - cmd_552
+    rejected_at: cmd_675b
+    rejection_reason: |
+      1 sh script (qc_auto_check.sh) の機能拡張で汎用化価値が低い。
+      他 sh script への横展開価値が薄く (各 script で独立判断)、スキル化不要。
+      existing script のリファクタリング範疇。
+      cmd_675b audit gunshi 判定 c=棄却。
+
+  # ───────── 統合 5件 (status: merged) ─────────
+  - id: SC-663
+    name: codex-skill-index
+    status: merged
+    merged_into: ~/.claude/skills/skill-stocktake/SKILL.md
+    source_cmd: cmd_663
+    related_cmds:
+      - cmd_663
+      - cmd_675
+    merged_at: cmd_675b
+    notes: |
+      Codex 向け SKILL.md 索引 (◎197/○29/×6 互換性分類)。
+      skill-stocktake (194→264行) に「Codex Skill Index」セクション統合。
+      shogun/skills/codex-skill-index/ ディレクトリは cmd_675b で削除済。
+      cmd_675b audit gunshi 判定 a=統合可能 (skill-stocktake 監査ドメインの自然な拡張)。
+
+  - id: SC-autonomous-compact
+    name: shogun-autonomous-compaction-management
+    status: merged
+    merged_into: ~/.claude/skills/strategic-compact/SKILL.md
+    source_cmd: cmd_586
+    related_cmds:
+      - cmd_586
+      - cmd_592
+    merged_at: cmd_675b
+    notes: |
+      自律 compaction 管理基盤 (cron + self-notify + 動的 context + 観測)。
+      strategic-compact (132→175行) に「Autonomous Compaction Management」セクション統合。
+      manual /compact (本スキル既存) + autonomous (本セクション) の包括化。
+      cmd_675b audit gunshi 判定 a=統合可能 (strategic-compact の自動化版として自然)。
+
+  - id: SC-deploy-verify
+    name: shogun-deploy-verify-cycle
+    status: merged
+    merged_into: ~/.claude/skills/verification-loop/SKILL.md
+    source_cmd: cmd_593
+    related_cmds:
+      - cmd_593
+      - cmd_596
+    merged_at: cmd_675b
+    notes: |
+      shelf-ware 防止 deploy & verify cycle (Stage 1-4)。
+      verification-loop (127→174行) に「Stage 1-4 Deploy & Verify Cycle」セクション統合。
+      Stage 1=Commit / 2=Deployment / 3=Registration / 4=Execution Log。
+      cmd_675b audit gunshi 判定 a=統合可能 (verification-loop 構造化拡張として自然)。
+
+  - id: SC-595
+    name: shogun-report-history-mechanism
+    status: merged
+    merged_into: ~/.claude/skills/skill-creation-workflow/SKILL.md
+    source_cmd: cmd_595
+    related_cmds:
+      - cmd_595
+    merged_at: cmd_675b
+    notes: |
+      report yaml history[] append-only Hybrid pattern。
+      skill-creation-workflow (189→238行) に「Report YAML History Append-Only Pattern」セクション統合。
+      top-level=最新 + history[]=append-only 過去の二層構造。
+      cmd_675b audit gunshi 判定 a=統合可能 (skill 候補処理での過去履歴保持にも応用可)。
+
+  - id: SC-pre-gate
+    name: pre-gate-vs-true-gate-separation-pattern
+    status: merged
+    merged_into: ~/.claude/skills/shift-left-validation-pattern/SKILL.md
+    source_cmd: cmd_596
+    related_cmds:
+      - cmd_596
+    merged_at: cmd_675b
+    notes: |
+      自動 pre-gate (early/警告多め) + manual true gate (late/最終判断) 二段構成。
+      shift-left-validation-pattern (281→317行) に「Pre-gate vs True-gate 二段構造」セクション統合。
+      shift-left の補強として、誤検知容認と最終 GO/NO-GO 判定を両立。
+      cmd_675b audit gunshi 判定 a=統合可能 (shift-left の 2 段補強として自然)。
+
+  # ───────── 棚上げ 2件 (status: deferred) ─────────
+  - id: SC-suggestions-lifecycle
+    name: shogun-suggestions-lifecycle-management
+    status: deferred
+    deferred_until: '2026-06-08'
+    source_cmd: cmd_596
+    related_cmds:
+      - cmd_596
+    deferred_at: cmd_675b
+    notes: |
+      suggestions.yaml append-only + cron triage + status migration (pending→in_progress→done)。
+      cmd_675b audit gunshi 判定 b=新規必要 (shogun内部 tooling 固有 + 独立ドメイン)。
+      battle_tested は cmd_596 の 1 instance のみ → 1ヶ月運用観察後に正式 SKILL.md 化判断。
+      2026-06-08 時点で再評価し、安定運用継続なら新規スキル化、変化なければ棄却判定。
 
   - id: SC-667
     name: codex-context-pane-border
-    status: created
+    status: deferred
+    deferred_until: '2026-06-08'
     skill_path: skills/codex-context-pane-border/SKILL.md
     source_cmd: cmd_671
     related_cmds:
       - cmd_667
       - cmd_671
-    created_at: cmd_675
+    deferred_at: cmd_675b
     notes: |
-      cmd_667 (ash3 初回実装) + cmd_671 (ash5 SQLite 修復) の完遂版を SKILL.md 化。
-      Codex 0.129.0+ での /proc/fd/ 失敗問題と SQLite 二段階照合方式を体系化。
+      SKILL.md (135行) は commit 3aafb82 で配置済 + 維持 (削除しない)。
+      cmd_675b audit gunshi 判定 c=1 事例のみで battle_tested 弱 + 0.129.0 specific。
+      1ヶ月運用観察後 (2026-06-08)、battle_tested 強化されれば正式採用、変わらなければ削除判定。
 
-  - id: SC-663
-    name: codex-skill-index
-    status: created
-    skill_path: skills/codex-skill-index/SKILL.md
-    source_cmd: cmd_663
-    created_at: cmd_675
-    notes: |
-      ash6 (Codex) による全 232 スキル互換性調査 (◎197/○29/×6) を索引 SKILL.md 化。
-      Codex 向け trigger phrase → SKILL.md パスマッピング + ロード手順を整備。
+# ─── サマリ ───
+summary:
+  total_entries: 12
+  by_status:
+    created: 3            # 既存実装済 (gas-clasp / gas-automated / gemini-thinking-token-guard)
+    rejected: 2           # 棄却 (rule-inventory / qc-auto-naming)
+    merged: 5             # 統合 (codex-skill-index → skill-stocktake 等)
+    deferred: 2           # 棚上げ 2026-06-08 (suggestions-lifecycle / codex-context-pane-border)
+  cmd_675b_decision_basis: output/cmd_675_skill_integration_audit.md (gunshi audit 2026-05-08 13:48 JST)
+  cmd_675b_implementation: output/cmd_675b_skill_integration_implementation.md

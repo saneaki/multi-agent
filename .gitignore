@@ -226,6 +226,9 @@
 !output/cmd_673_scope_a_opus.md
 !output/cmd_673_scope_a_integrated.md
 !output/cmd_673_sh_health_visualization.md
+!output/cmd_675_skill_integration_audit.md
+!output/cmd_675_skill_candidate_integration.md
+!output/cmd_675b_skill_integration_implementation.md
 
 # cmd_544: 3 安全装置 state files (kill-switch/rate-limit/pending/daily-metric)
 !logs/cmd_squash_pub_hook.disabled

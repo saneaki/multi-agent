@@ -186,3 +186,53 @@ bash scripts/sync_shogun_skills.sh
 - cmd_332: SC-041/042統合プロセスから抽出
 - cmd_334: 独立スキル作成プロセスから抽出
 - cmd_340: スキル化ワークフローを明示的にスキルとして定義
+
+## Report YAML History Append-Only Pattern (cmd_675b 統合 — cmd_595)
+
+> SC-shogun-report-history-mechanism: このセクションに包含。cmd_675b で skill-creation-workflow に統合 (audit gunshi 判定 a=統合可能 / gunshi cmd_595 由来)。
+
+multi-agent 環境で `report YAML` が上書きされて過去履歴が失われる問題を構造解消する Hybrid pattern。skill 候補処理 (本スキル本文) で複数 cmd の報告を保持する場面でも適用可能。
+
+### Hybrid 構造
+
+```yaml
+# 二層構造 (top-level=最新 / history[]=append-only 過去)
+worker_id: ashigaru4
+task_id: subtask_xxx           # ← 最新タスクの ID
+parent_cmd: cmd_xxx
+status: done
+timestamp: '2026-05-08T...'
+report_to: karo
+
+result: ...                     # 最新タスクの詳細
+
+acceptance_criteria: ...
+quality_judgement: PASS
+
+history:                        # ← append-only。過去タスクを下に積む
+  - task_id: subtask_yyy
+    parent_cmd: cmd_yyy
+    timestamp: '2026-05-07...'
+    summary: "yyy 完了概要"
+  - task_id: subtask_zzz
+    ...
+```
+
+### 3 制約の同時満足
+
+1. **後方互換**: 既存 validator/qc_auto_check は top-level のみ参照 → history[] 追加で破壊しない
+2. **遡及性**: history[] で過去 N タスクの完了履歴を保持 → audit/監査が可能
+3. **書込み単純化**: 「最新を top-level に書く + history[] に push」のみ。merge ロジック不要
+
+### スキル候補処理での適用
+
+skill-creation-workflow §5 (memory/skill_history.md 更新) の YAML 等価表現として、
+queue/skill_candidates.yaml に history[] を追加することで、
+過去の「pending → approved → created」遷移を保持できる。
+
+### Battle-Tested (Report History Mechanism)
+
+| cmd | 状況 | 結果 |
+|-----|------|------|
+| cmd_595 | gunshi 報告 yaml 上書き喪失問題の構造解消提案 | Hybrid pattern 設計 |
+| cmd_675b | skill-creation-workflow への統合 | 汎用 report YAML パターンとして昇格 |
