@@ -1,63 +1,53 @@
 task:
-  task_id: subtask_684_repo_health_red_runbook
-  parent_cmd: cmd_684
-  bloom_level: L4
+  acceptance_criteria:
+  - check: saneaki/multi-agent の最新GHA failureログを確認し、TC-FR-005 文字列不一致が真因か検証する
+    id: A1-1
+  - check: tests/agent_selfwatch.bats と ashigaru instruction の現仕様を突合し、片方を最小修正する
+    id: A1-2
+  - check: 該当テストをローカルで実行し PASS する
+    id: A1-3
+  - check: 必要なら build_instructions.sh を実行し generated instruction diff が整合する
+    id: A1-4
+  - check: commit/push し、次回 GitHub Actions run のURLまたは確認手順を report/output に記録する
+    id: A1-5
+  - check: GHA run 25548775334 の新規 failure (tests/unit/test_ntfy_ack.bats が削除済み scripts/ntfy_listener.sh
+      を参照) を修正し、次回 run が success する
+    id: A1-6
   assigned_to: ashigaru4
+  bloom_level: L4
+  completed_at: '2026-05-08T19:11:01+09:00'
+  description: "【目的】\ncmd_690 Phase 1 緊急修復 A-1 として、saneaki/multi-agent (shogun) の\
+    \ GHA failure を修復する。\n\n【既知情報】\n- last5 fail:5/succ:0\n- 真因候補: tests/agent_selfwatch.bats:136\
+    \ TC-FR-005 で\n  `grep -q \"MANDATORY Post-Task Inbox Check\" \"$ASHIGARU_INSTR\"\
+    ` が現行 ashigaru.md と不一致。\n- 引き金候補: cmd_669 Claude/Codex 指示書統一で文字列消失、tests側未更新。\n\
+    \n【方針】\n- まず最新GHA logとローカルtestで真因を確認する。\n- 現仕様が正しいなら test を現仕様へ更新。旧文言が必要なら ashigaru\
+    \ instruction 側を復元。\n- 変更は最小限に留める。\n- dashboard.md/yaml は触らない (家老管理)。\n\n【REDO\
+    \ 2026-05-08 18:47 JST】\n初回push ef6562a の GHA run 25548775334 は failure。\nTC-FR-005\
+    \ は解消したが、Unit Tests ubuntu/macos の `Run unit tests` で\n`tests/unit/test_ntfy_ack.bats`\
+    \ T-ACK-001〜008 が全て setup 失敗:\n`sed: can't read .../scripts/ntfy_listener.sh:\
+    \ No such file or directory`\ncmd_677/cmd_658 系で ntfy_listener.sh は削除済みのため、legacy\
+    \ test を現仕様へ更新・削除・置換する最小修正が必要。\nA1-6 を追加ACとして処理し、再commit/push後の GHA run URL を報告すること。\n\
+    \n【完了報告】\nbash /home/ubuntu/shogun/scripts/inbox_write.sh karo \\\n  \"【subtask_690_phase1_a1_shogun_gha_repair\
+    \ 完了】cmd_690 A-1 shogun GHA修復完了。local_test=<PASS|FAIL>、push=<DONE|SKIP>、GHA確認=<URL|pending>。report確認されたし。\"\
+    \ \\\n  task_completed ashigaru4\n"
+  editable_files:
+  - tests/agent_selfwatch.bats
+  - instructions/ashigaru.md
+  - instructions/generated/codex-ashigaru.md
+  - output/cmd_690_phase1_a1_shogun_gha_repair.md
+  - queue/reports/ashigaru4_report.yaml
+  - queue/tasks/ashigaru4.yaml
+  - queue/inbox/ashigaru4.yaml
+  notes: 'context_policy: preserve_across_stages
+
+    cmd_690 Phase 1 の先鋒。A-2/A-3/A-4 と Phase 2以降は家老が別途配備する。
+
+    '
+  parent_cmd: cmd_690
+  priority: high
+  project: shogun
   report_to: karo
   status: done
-  timestamp: '2026-05-08T16:46:55+09:00'
-  title: 'cmd_684: repo_health red検知時の家老運用フロー明文化'
-  priority: medium
-  editable_files:
-    - instructions/karo.md
-    - instructions/gunshi.md
-    - instructions/generated/codex-karo.md
-    - instructions/generated/codex-gunshi.md
-    - output/cmd_684_repo_health_red_runbook.md
-    - queue/reports/ashigaru4_report.yaml
-    - queue/tasks/ashigaru4.yaml
-    - queue/inbox/ashigaru4.yaml
-    - .gitignore
-  acceptance_criteria:
-    - id: A-1
-      check: "instructions/karo.md に REPO_HEALTH red 検知時の運用フローを追記する"
-    - id: A-2
-      check: "red 検知時の家老アクション (log確認/dashboard要対応/殿介入要請) を明記する"
-    - id: A-3
-      check: "通知方式の現状と将来案を文書化する"
-    - id: B-1
-      check: "instructions/gunshi.md に QC時 repo_health red 確認規律を追加する"
-    - id: D-1
-      check: "output/cmd_684_repo_health_red_runbook.md を作成する"
-  description: |
-    【目的】
-    cmd_678 repo_health_check の red 検知時に家老が取るべき運用フローを明文化し、
-    SCRIPT_LOG の見落としによる silent failure を防ぐ。
-
-    【必読】
-    - queue/shogun_to_karo.yaml cmd_684 全文
-    - scripts/repo_health_check.sh
-    - config/repo_health_targets.yaml
-    - instructions/karo.md / instructions/gunshi.md
-    - instructions/build_instructions.sh
-
-    【作業】
-    1. instructions/karo.md に REPO_HEALTH red 検知時の運用フローを追記する。
-    2. 家老 inbox 起動時 / 定期確認 / red通知受領時の確認手順を明記する。
-    3. red時の dashboard 要対応追加・殿介入要請の判断基準を明記する。
-    4. instructions/gunshi.md に QC時の repo_health red確認規律を追加する。
-    5. generated instruction が必要なら既存手順に従い再生成する。
-    6. output を作成し、commit/push する。
-
-    【制約】
-    - dashboard.md/yaml は cmd_681 が作業中のため編集禁止。
-    - 自動通知実装は本cmd範囲外。文書化のみ。
-    - 既存 instruction 構造に合わせ、冗長化しすぎない。
-
-    【完了報告】
-    bash /home/ubuntu/shogun/scripts/inbox_write.sh karo \
-      "【subtask_684_repo_health_red_runbook 完了】cmd_684 repo_health red運用フロー文書化完了。commit <hash>。report確認されたし。" \
-      task_completed ashigaru4
-  notes: |
-    context_policy: clear_between
-    完了後、家老が軍師QCを発令する。
+  task_id: subtask_690_phase1_a1_shogun_gha_repair
+  timestamp: '2026-05-08T18:38:47+09:00'
+  title: 'cmd_690 Phase1-A1: shogun GHA修復'

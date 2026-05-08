@@ -1,32 +1,62 @@
 worker_id: ashigaru4
-task_id: subtask_684_repo_health_red_runbook
-parent_cmd: cmd_684
-timestamp: '2026-05-08T16:57:32+09:00'
+task_id: subtask_690_phase1_a1_shogun_gha_repair
+parent_cmd: cmd_690
+timestamp: '2026-05-08T19:04:05+09:00'
 status: done
 result:
   summary: |
-    repo_health_check red 検知時の家老・軍師運用フローを文書化。
-    instructions/karo.md に「REPO_HEALTH red 検知時の運用フロー」セクション追記 (確認タイミング/対処マトリクス/通知方式将来案)。
-    instructions/gunshi.md に「REPO_HEALTH red 確認規律 (cmd_684)」サブセクション追記。
-    instructions/generated/codex-karo/gunshi.md は symlink のため自動反映。
-    output/cmd_684_repo_health_red_runbook.md を作成。AC A-1〜A-3/B-1/D-1 全 PASS。
+    REDO完了。GHA 2連続障害を順次修正:
+    (1) A1-5 commit ef6562a: TC-FR-005修復 — ashigaru.md に MANDATORY Post-Task Inbox Check 追加
+    (2) A1-6 commit 297f3f4: test_ntfy_ack.bats 削除 (ntfy_listener.sh はcmd_677で意図的削除済)
+    (3) A1-6続 commit a9c0c2a: codex-ashigaru/gunshi/shogun.md symlink→実体ファイル変換
+        (cmd_669 symlink化でprotocol.md未包含 → codex-clearテスト3件失敗を解消)
+    GHA run a9c0c2a: https://github.com/saneaki/multi-agent/actions/runs/25549601228 (queued)
   files_modified:
-    - instructions/karo.md
-    - instructions/gunshi.md
-    - output/cmd_684_repo_health_red_runbook.md
-  output_path: output/cmd_684_repo_health_red_runbook.md
+    - instructions/ashigaru.md
+    - tests/unit/test_ntfy_ack.bats (deleted)
+    - instructions/generated/codex-ashigaru.md (symlink→file)
+    - instructions/generated/codex-gunshi.md (symlink→file)
+    - instructions/generated/codex-shogun.md (symlink→file)
   acceptance_criteria:
-    A-1: 'PASS — instructions/karo.md 末尾に「REPO_HEALTH red 検知時の運用フロー (cmd_684)」セクション追記 (確認タイミング表・対処フロー・対処マトリクス)'
-    A-2: 'PASS — red 検知時の家老アクション 3 ステップ (log確認 / 内容把握 / 判断対処マトリクス) + dashboard 要対応フォーマット明記'
-    A-3: 'PASS — 通知方式「現状 (SCRIPT_LOG のみ)」と「将来案 (Discord 通知/dashboard 自動追記)」を文書化。自動化は別 cmd と明記'
-    B-1: 'PASS — instructions/gunshi.md の Implementation cmd QC Checklist 直後に「REPO_HEALTH red 確認規律 (cmd_684)」追記 (適用条件・確認手順・チェックポイント表)'
-    D-1: 'PASS — output/cmd_684_repo_health_red_runbook.md 作成 (仕組み概要/家老フロー/軍師規律/通知将来案/AC確認)'
-  notes: |
-    codex-karo.md / codex-gunshi.md は ../karo.md / ../gunshi.md への symlink (cmd_669 で確立) のため、
-    karo.md / gunshi.md 編集で自動反映。build_instructions.sh 再実行不要。
-    instructions/roles/karo_role.md は editable_files に含まれないため編集せず。
-    将来、他 CLI (Copilot/Kimi) 向け generated ファイルへの反映が必要な場合は
-    roles/karo_role.md 編集 + build_instructions.sh 実行が必要 (別 cmd で対応)。
+    - id: A1-1
+      status: PASS
+      note: "真因確認: TC-FR-005はgrep \"MANDATORY Post-Task Inbox Check\" codex-ashigaru.md(→symlink→ashigaru.md)が失敗。cmd_669でsymlink化した際に旧codex-ashigaru.md:183のセクションがashigaru.mdに存在しなかった。"
+    - id: A1-2
+      status: PASS
+      note: "ashigaru.md Autonomous Judgment Rules > Anomaly handlingの直後に10行セクション追加。テスト側変更不要(現仕様が正しいため)。"
+    - id: A1-3
+      status: PASS
+      note: "bats tests/agent_selfwatch.bats: 14/14 PASS (TC-FR-005含む全テスト通過)"
+    - id: A1-4
+      status: PASS
+      note: "pre-commit hook: build_instructions.sh --check → generated/ diff guard OK。symlink整合確認済。"
+    - id: A1-5
+      status: PASS
+      note: "commit ef6562a → GHA run 25548775334 (failure: ntfy_ack + codex-clear残存)"
+    - id: A1-6
+      status: PASS
+      note: |
+        2段階修正:
+        (1) commit 297f3f4: test_ntfy_ack.bats削除 (ntfy_listener.sh cmd_677で削除済、T-ACK-001~008 8件)
+        (2) commit a9c0c2a: codex-ashigaru/gunshi/shogun.md symlink→実ファイル変換
+            cmd_669で3ファイルをsymlink(→../ashigaru.md等)化した結果、
+            protocol.md内の"context reset command via send-keys"が未包含になっていた。
+            build_instructions.shで正規生成したcodex専用ファイルに置換 → 11/11 codex-clearテスト PASS。
+        ローカル全unit: 336テスト PASS (test_ntfy_ack.bats削除後)、codex-clear 11/11 PASS
+        push commit a9c0c2a → GHA run queued: https://github.com/saneaki/multi-agent/actions/runs/25549601228
+  root_cause: |
+    2件の独立した障害:
+    (R1) cmd_669 (a0e6f40): codex-ashigaru.md symlink化で「MANDATORY Post-Task Inbox Check」欠落
+    (R2) cmd_677 (d75896a): ntfy_listener.sh 削除時にtest_ntfy_ack.batsを同時削除しなかった
+    (R3) cmd_669 (a0e6f40): codex-ashigaru/gunshi/shogun.md を../ashigaru.md等に symlink化した際、
+         protocol.mdの「context reset command via send-keys」がsymlink先に存在せずcodex-clearテスト失敗
+  fix: |
+    (F1) instructions/ashigaru.md: MANDATORY Post-Task Inbox Check セクション追加
+    (F2) tests/unit/test_ntfy_ack.bats: 削除 (tested script不在)
+    (F3) instructions/generated/codex-{ashigaru,gunshi,shogun}.md: symlink廃止→build_instructions.sh正規生成
+  local_test: PASS (336/336 unit + 11/11 codex-clear)
+  push: DONE (3 commits: ef6562a, 297f3f4, a9c0c2a)
+  gha_url: "https://github.com/saneaki/multi-agent/actions/runs/25549601228"
 agent_tool_used: false
 skill_candidate:
   found: false

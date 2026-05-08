@@ -1,66 +1,113 @@
 worker_id: ashigaru5
-task_id: subtask_683_tier2_repair_phase3_cleanup
-parent_cmd: cmd_683
-timestamp: "2026-05-08T17:03:59+09:00"
+task_id: subtask_693_sh_followup_triage
+parent_cmd: cmd_693
+timestamp: "2026-05-09T07:03:00+09:00"
 status: done
+report_to: karo
+type: investigation
+
+result:
+  summary: |
+    cmd_693 sh残課題+fork-upstream棚卸し完了。
+    A-1 cmd_683-followup: inbox_watcher[karo] restart確認済、WARNING消滅、CLOSE。
+    A-2 cmd_677-followup Tier2: D-1〜D-4全件cmd_683で修正済を確認、CLOSE。
+      残存: cmd_squash_pub_hook red=1 (update_dashboard.sh non-fatal, SH_HEALTHマーカー欠落)。
+    A-3 fork-upstream β戦略: cmd_653で戦略確定済のため観察CLOSE。
+      HIGH cherry-pick候補 4件 (PR#116/136/141, persona recovery) を将来cmd候補として記録。
+  output_path: output/cmd_693_sh_followup_triage.md
+  close_candidates: 7
+  followup_cmd_candidates:
+    - name: upstream cherry-pick PR #116 (inbox_write self-send guard)
+      priority: HIGH
+    - name: upstream cherry-pick #136 (switch_cli fix)
+      priority: MEDIUM
+    - name: cmd_squash_pub_hook SH_HEALTH marker repair
+      priority: LOW
+    - name: upstream cherry-pick #141 (inbox_watcher /clear recovery)
+      priority: LOW
+  acceptance_criteria:
+    - id: A-1
+      status: PASS
+      evidence: logs/inbox_watcher_karo.log にて codex-no-verify 動作確認。WARNING ゼロ (cmd_683 デプロイ後)。
+    - id: A-2
+      status: PASS
+      evidence: sh_health_check で D-1(kpi_observer)/D-2(inbox_watcher shogun)/D-3(karo)/D-4(notifier) 全件改善確認。
+    - id: A-3
+      status: PASS
+      evidence: cmd_653 成果物照合。β戦略確定、upstream 直 remote 設定済、dashboard観察エントリなし。
+    - id: A-4
+      status: PASS
+      evidence: output/cmd_693_sh_followup_triage.md 作成済。
+
+agent_tool_used: false
+agent_tool_tokens: 0
+
+# ===== 履歴 (古い順 → 新しい順) =====
+history:
 model: sonnet
 report_to: karo
 
 result:
   summary: |
-    cmd_683 完遂。Tier2 sh 残課題 4 件修正完了。Phase3 は時刻条件未達で pending_blocked。
-    A-1 cmd_kpi_observer false positive 解消 (failure 12→0)
-    A-2 sh_health_check タイムスタンプ行フィルタ追加 (inbox_watcher[shogun] failure 31→1)
-    A-3 inbox_watcher Codex pane 検証スキップ追加 (コード修正済・restart後に完全解消)
-    A-4 shogun_inbox_notifier false positive 解消 (failure 4→0)
-    Phase3: 2026-05-09 01:30 JST 以降の条件未達→削除対象リスト記録済
+    cmd_690 Phase4 intentional fail E2E + runbook 完了。
+    GHA failure run 25557054324 → Gmail(notifications@github.com) → n8n exec 19311 →
+    Discord msg 1502296691909460140 → shogun inbox msg_gha_1778245842917_zcbh82 (8分latency)。
+    Gmail query バグ修正 (noreply@ → notifications@) + versionId再active化。
+    exec 19317 (13:30Z production) で notifications@ クエリ 20件取得確認済。
+    docs/gha_alert_runbook.md 整備完了。全AC PASS。
+
+  fail_run_url: "https://github.com/saneaki/multi-agent/actions/runs/25557054324"
+  inbox_latency: "8分 (手動exec。定期実行最悪15分)"
+  discord_msg_id: "1502296691909460140"
+  discord_channel_id: "1491959535768703097"
+  shogun_inbox_id: "msg_gha_1778245842917_zcbh82"
+
+  gmail_query_fix:
+    old: 'from:noreply@github.com subject:"run failed" is:unread -label:n8n-gha-processed'
+    new: 'from:notifications@github.com subject:"run failed" is:unread -label:n8n-gha-processed'
+    reason: "GitHub Actions failure通知の実送信者はnotifications@、noreply@ではなかった"
+    verified_exec: "19317 (13:30Z production, 20 Gmail items)"
 
   files_modified:
-    - config/sh_health_targets.yaml         (cmd_kpi_observer + shogun_inbox_notifier に ignore_patterns 追加)
-    - scripts/sh_health_check.sh            (try_parse_line_ts() + grep_count/grep_last_error timestamp filter)
-    - scripts/inbox_watcher.sh              (send_wakeup() Codex pane 検証スキップ)
-    - output/cmd_683_tier2_repair_phase3_cleanup.md  (新規作成)
-    - queue/reports/ashigaru5_report.yaml   (本ファイル更新)
-    - queue/tasks/ashigaru5.yaml            (status: done)
+    - output/cmd_690_phase4_intentional_fail_runbook.md  (新規作成)
+    - docs/gha_alert_runbook.md                          (新規作成)
+    - queue/reports/ashigaru5_report.yaml                (本ファイル更新)
+    - queue/tasks/ashigaru5.yaml                         (status: done)
+    - n8n workflow g1HyNqmFgtzXyHST                      (Gmail query修正 + versionId再activate)
+
+  n8n_workflow:
+    id: g1HyNqmFgtzXyHST
+    active: true
+    schedule: "15分毎"
+    gmail_query: 'from:notifications@github.com subject:"run failed" is:unread -label:n8n-gha-processed'
+    version_id: "84796a86-08cb-4e06-b402-8f824f41b0c3"
 
   acceptance_criteria:
-    A-1:
+    D-1:
+      status: PARTIAL
+      detail: "手動実行で8分(inbox: msg_gha_1778245842917_zcbh82)。定期実行では最悪15分。5分SLAは15分polling設計では保証不可(仕様上の限界)"
+    D-2:
       status: PASS
-      detail: "failure 12→0 (ignore_patterns: fail=\d+ 追加)"
-    A-2:
+      detail: "docs/gha_alert_runbook.md 作成済。殿向け確認手順/家老指示テンプレ/dedup仕様/障害切分け/安全テスト方法を記載"
+    D-3:
       status: PASS
-      detail: "failure 31→1 (timestamp line filter。残1件は歴史的syntax error、無害)"
-    A-3:
-      status: PASS_CODE_ONLY
-      detail: "コード修正済。inbox_watcher_karo daemon restart後に完全解消"
-    A-4:
+      detail: "Discord msg_id=1502296691909460140, channel=1491959535768703097, exec 19311で確認"
+    D-4:
       status: PASS
-      detail: "failure 4→0 (ignore_patterns: Sending shogun inbox / shogun inbox sent)"
-    B-1:
-      status: PENDING_BLOCKED
-      detail: "Phase3実行可能: 2026-05-09 01:30 JST以降。削除対象14件リスト記録済(report参照)"
-    C-1:
+      detail: "workflow active=true, schedule=15min, Gmail query修正済, dedup設計保持, versionId==activeVersionId=84796a86"
+    D-5:
       status: PASS
-      detail: "sh_health_check: green=38 yellow=9 red=0。Tier2 3/4即時改善、1/4コード修正済"
-    E-1:
+      detail: "Phase3 exec 19296/19298でdedup PASS確認済。dedup code無変更。exec 19317(production)でstaticData永続書込み動作確認"
+    D-6:
       status: PASS
-      detail: "output/cmd_683_tier2_repair_phase3_cleanup.md 作成完了"
+      detail: "output/cmd_690_phase4_intentional_fail_runbook.md に全証跡・残リスク記録済"
 
-  phase3_deletion_targets:
-    condition: "2026-05-09 01:30 JST以降かつPhase2 24h dual-stack安定確認後"
-    count: 14
-    targets:
-      - scripts/ntfy.sh
-      - scripts/ntfy_wsl_template.sh
-      - scripts/discord_to_ntfy.py
-      - scripts/__pycache__/discord_to_ntfy.cpython-312.pyc
-      - lib/ntfy_auth.sh
-      - queue/ntfy_inbox.yaml
-      - queue/ntfy_inbox.yaml.lock
-      - queue/ntfy_inbox_archive.yaml
-      - logs/ntfy_listener.log
-      - logs/ntfy_inbox_corrupt/
-      - logs/ntfy_completed_cmds.txt
-      - logs/ntfy_notified_cmds.txt
-      - tests/unit/test_ntfy_ack.bats
-      - tests/unit/test_ntfy_auth.bats
+  risks:
+    - "5分SLA未達: webhook実装で解消可能、scope外"
+    - "手動実行でdedup未持続: n8n仕様の制限、本番では問題なし"
+    - "Gmail ラベル未付与: dedup防止済だがGmail inboxが溜まる"
+    - "first()のみ処理: 複数repo/workflow同時失敗時に1件しかinbox記録されない"
+
+  cleanup_pending:
+    - "test/gha-failure-690 ブランチ削除 (karo指示待ち)"
+    - "feature/phase4-e2e-alert-test ブランチ削除 (karo指示待ち)"

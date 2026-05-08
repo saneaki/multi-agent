@@ -1,4 +1,10 @@
 suggestions:
+- id: sug_subtask_690_phase1_a2_gmail_gha_repair
+  title: "github-actions-dynamic-sparse-checkout"
+  summary: "巨大 repo の Actions checkout failure を mapping CSV 等の実行時データから sparse-checkout 化して修復する手順"
+  source_cmd: "cmd_690"
+  created_at: "2026-05-08T19:21:35+09:00"
+  status: pending
 - action_needed: |
     cmd_669 完遂に伴い家老が以下を実施:
       1. dashboard.md 🚨要対応 から cmd_667/668 32KiB 関連エントリ (cmd_663 3大課題の 1) を SO-19 で削除
@@ -13816,3 +13822,529 @@ suggestions:
     Phase 2 安定性確認手順の明文化: 24h dual-stack 観察基準 (Discord + ntfy 両系統送信 OK 比率 / latency / error 率) を別 cmd で記録 → Phase 3 GO 判定基準として運用。
     現状は時刻条件 (5/9 01:30 JST) のみ明示で安定性指標は未定義。
   action_needed: "Karo: Phase 3 cleanup cmd 起案時に Phase 2 dual-stack 観察基準も明記、独立評価 cmd でもよい"
+
+- id: sug_cmd_682_001
+  from: gunshi
+  cmd_ref: cmd_682
+  task_ref: subtask_682_scope_qc
+  created_at: "2026-05-08T17:18:00+09:00"
+  status: pending
+  priority: high
+  content: |
+    cmd_682 候補 cmd 起案: cmd_680 §7 の Web App endpoint 設計 + gas_run_webapp.sh 作成。
+    中期戦略実装の独立 cmd として家老起案推奨。
+    本 cmd_682 で shogun-gas-automated-verification SKILL.md に記載済の雛形 (doPost + HMAC + route whitelist + curl テンプレ) をそのまま流用可。
+  action_needed: "Karo: 次フェーズで cmd 起案、ash5/6 推奨 (cmd_682 文脈保持)"
+
+- id: sug_cmd_682_002
+  from: gunshi
+  cmd_ref: cmd_682
+  task_ref: subtask_682_scope_qc
+  created_at: "2026-05-08T17:18:00+09:00"
+  status: pending
+  priority: medium
+  content: |
+    silent inconsistency 自動検出機構の整備: cmd_675b + cmd_682 で 2 件発見 (notion-trigger-v1-flat-access / manual-execution-api、共に 1ヶ月以上遅延)。
+    skill_history.md「承認待ち」エントリと skills/ ディレクトリ実体の照合 sh を hourly cron で動かせば即時検出可能。
+    新 sh は repo_health_check 系列の延長として実装可能。
+  action_needed: "Karo: 別 cmd 起案推奨 (skill_consistency_check.sh + systemd timer)"
+
+- id: sug_cmd_682_003
+  from: gunshi
+  cmd_ref: cmd_682
+  task_ref: subtask_682_scope_qc
+  created_at: "2026-05-08T17:18:00+09:00"
+  status: pending
+  priority: medium
+  content: |
+    ashigaru6 snapshot 未 clear (SO-12 fail): queue/snapshots/ashigaru6_snapshot.yaml が cmd_682 完了後も残存。
+    Step 6.3 context_snapshot.sh clear が ash6 で実行されていない。
+    次回 ash6 起動時に旧 context が残存し誤動作リスク。
+  action_needed: "Karo: 次回 ash6 起動時に手動 clear、またはハイジーンチェック cmd 起案"
+
+- id: sug_cmd_682_004
+  from: gunshi
+  cmd_ref: cmd_682
+  task_ref: subtask_682_scope_qc
+  created_at: "2026-05-08T17:18:00+09:00"
+  status: pending
+  priority: low
+  content: |
+    shogun-gas-* skill 群統合効果の追跡: cmd_680 知見が次回 GAS cmd で実際に参照されるか観察。
+    3 ヶ月後に skill 参照ログ集計 cmd を起案推奨 (skill 価値の実証)。
+    cmd_676 で既に scope 修正実績、次回 GAS 認証 cmd で初参照効果を確認。
+  action_needed: "Karo: 観察項目登録、3ヶ月後 (2026-08-08) に skill 参照効果集計 cmd 起案"
+
+- id: sug_cmd_682_005
+  from: gunshi
+  cmd_ref: cmd_682
+  task_ref: subtask_682_scope_qc
+  created_at: "2026-05-08T17:18:00+09:00"
+  status: pending
+  priority: medium
+  content: |
+    [concern] qc_auto_check.sh SO-06 規約不一致が cmd_684 + cmd_682 連続で fail 出力 — 規約不一致が常態化、QC 信頼性低下。
+    ashigaru task YAML の report_to='karo' を fail と判定する rule の妥当性検証要。
+    全足軽の task YAML が同様に report_to='karo' のため、本ルールは false positive 量産機構となっている可能性大。
+  action_needed: "Karo: scripts/qc_auto_check.sh SO-06 rule 整備 (任意 cmd) — report_to 規約を再確認、現実的なルール定義へ修正"
+
+- id: sug_cmd_685_001
+  from: gunshi
+  cmd_ref: cmd_685
+  task_ref: subtask_685_qc_autonomous
+  created_at: "2026-05-08T18:30:00+09:00"
+  status: pending
+  priority: medium
+  content: |
+    cmd_685 tracked 3 ファイル (instructions/karo.md / scripts/generate_dashboard_md.py / tests/dashboard_pipeline_test.sh) が QC 時点で未 commit。
+    whitelist .gitignore のため dashboard.md/yaml/queue 系は本来 untracked で diff 検出されず。
+    家老 cmd_685 完遂時に該当 3 ファイルを commit すべし。
+  action_needed: "Karo: cmd_685 完遂commit時に instructions/karo.md + scripts/generate_dashboard_md.py + tests/dashboard_pipeline_test.sh を含める"
+
+- id: sug_cmd_685_002
+  from: gunshi
+  cmd_ref: cmd_685
+  task_ref: subtask_685_qc_autonomous
+  created_at: "2026-05-08T18:30:00+09:00"
+  status: pending
+  priority: medium
+  content: |
+    cmd_690 起案要否の家老判断要: ash3 output に「cmd_686〜cmd_690」と記載されているが、shogun_to_karo.yaml には cmd_686-689 のみ存在、cmd_690 は未存在。
+    output で source discrepancy として明記済。
+    家老対処: (a) cmd_690 を起案 (具体的目的要確認)、または (b) output 記述を訂正 (cmd_686-689 のみに修正)。
+  action_needed: "Karo: cmd_690 を起案するか、output 記述を訂正するか判断"
+
+- id: sug_cmd_685_003
+  from: gunshi
+  cmd_ref: cmd_685
+  task_ref: subtask_685_qc_autonomous
+  created_at: "2026-05-08T18:30:00+09:00"
+  status: pending
+  priority: low
+  content: |
+    [cmd_676-a5-blocked] の ACTION_REQUIRED 配置妥当性検討: 殿 test mail 再送付待ちのため observation 性質強い。
+    新規 test mail が来るまで家老/軍師が即時実行可能なアクションなしのため、OBSERVATION_QUEUE が適切な可能性。
+  action_needed: "Karo: 「新規 test mail 待ち」を ACTION_REQUIRED と OBSERVATION_QUEUE のどちらに置くか judgment 要"
+
+- id: sug_cmd_685_004
+  from: gunshi
+  cmd_ref: cmd_685
+  task_ref: subtask_685_qc_autonomous
+  created_at: "2026-05-08T18:30:00+09:00"
+  status: pending
+  priority: low
+  content: |
+    follow-up cmd 起案完了の trace 機構整備推奨: 今回 cmd_685 で削除 7 件 → cmd_686-689 へ移管 + cmd_690 未存在の不整合発生。
+    今後 dashboard 整理 cmd で「削除前 entry → 移管先 cmd_id」の trace を output に必須化すれば不整合検出が容易になる。
+  action_needed: "Karo: dashboard 整理 cmd の output template に trace 表 (削除元 → 移管先 cmd) を必須項目化"
+
+- id: sug_cmd_690_001
+  from: gunshi
+  cmd_ref: cmd_690
+  task_ref: subtask_690_phase1_a1_qc_autonomous
+  created_at: "2026-05-08T18:50:00+09:00"
+  status: pending
+  priority: high
+  content: |
+    cmd_690 A-1 broader success 未達: ash4 の TC-FR-005 修復は完璧だが GHA run 25548775334 は failure。
+    露呈した latent test failures 3 系統:
+    - codex-clear: codex-ashigaru/gunshi/shogun.md protocol issues (3件)
+    - T-ACK-001/002: Discord ACK tests (2件)
+    - switch_cli.sh display_name tests (3件以上)
+    Phase 2 (監視基盤) 実装前に Phase 1 完全解消が望ましい。
+  action_needed: "Karo: 3 系統に分割した follow-up cmd を起案 (各 1 足軽 dispatch、並列可)"
+
+- id: sug_cmd_690_002
+  from: gunshi
+  cmd_ref: cmd_690
+  task_ref: subtask_690_phase1_a1_qc_autonomous
+  created_at: "2026-05-08T18:50:00+09:00"
+  status: pending
+  priority: medium
+  content: |
+    cmd_690 Phase 2 実装は GHA failure 解消後に着手推奨。
+    現状の shogun repo failure が継続中に gha_failure_check.sh + dashboard REPO_HEALTH GHA列を実装すると常時 red 表示で運用 noise になる。
+  action_needed: "Karo: Phase 1 全 repo (shogun + gmail-to-markdown + gas-mail-manager + claude_everythingclaudecode) の GHA failure 解消後に Phase 2 着手"
+
+- id: sug_cmd_690_003
+  from: gunshi
+  cmd_ref: cmd_690
+  task_ref: subtask_690_phase1_a1_qc_autonomous
+  created_at: "2026-05-08T18:50:00+09:00"
+  status: pending
+  priority: high
+  content: |
+    qc_auto_check.sh SO-06 規約不一致が cmd_684/682/685/690 連続 4 件 fail — 今日中に 4 件失敗。
+    task YAML report_to='karo' を fail と判定する rule の妥当性を再評価し、現実運用に合わせて修正する独立 cmd 起案要。
+    全足軽の task YAML が同様 (報告経路は ash → karo 経由が標準) のため、本 rule は false positive 量産機構と化している。
+  action_needed: "Karo: 独立 cmd を起案 (qc_auto_check.sh SO-06 rule 整備)、優先度 HIGH へ格上げ"
+
+- id: sug_cmd_676_a5_001
+  from: gunshi
+  cmd_ref: cmd_676
+  task_ref: subtask_676_a5_e2e_qc
+  created_at: "2026-05-08T19:00:00+09:00"
+  status: pending
+  priority: high
+  content: |
+    gas-mail-manager verifyCmd676A5() helper 未 commit (110 行 src/main.gs 差分)。
+    clasp push 済で GAS production には反映されているが git history に欠落。
+    次回 clasp push 操作で消失リスク。
+    推奨案 A: 診断 helper として commit + push。診断専用で副作用なし、将来の同類検証で再利用可能。
+  action_needed: "Karo: ash7 dispatch で gas-mail-manager に commit + push、または削除して再 push"
+
+- id: sug_cmd_676_a5_002
+  from: gunshi
+  cmd_ref: cmd_676
+  task_ref: subtask_676_a5_e2e_qc
+  created_at: "2026-05-08T19:00:00+09:00"
+  status: pending
+  priority: high
+  content: |
+    ashigaru7_report.yaml の subtask_676_a5_e2e_full_pipeline エントリが status:blocked (18:20:00) のまま。
+    task YAML は status:done at 18:47:33 で SO-24 [2] FAIL。
+    audit trail 完備のため done エントリ append 必要。
+  action_needed: "Karo: ash7 に done エントリ append を dispatch、A5-1〜A5-7 PASS evidence + output §13.8 参照"
+
+- id: sug_cmd_676_a5_003
+  from: gunshi
+  cmd_ref: cmd_676
+  task_ref: subtask_676_a5_e2e_qc
+  created_at: "2026-05-08T19:00:00+09:00"
+  status: pending
+  priority: medium
+  content: |
+    ashigaru7 snapshot 未 clear (cmd_682 ash6 + cmd_676 ash7 連続発生)。
+    Step 6.3 hygiene 規律徹底要。snapshot hygiene 自動化 cmd 起案価値あり。
+  action_needed: "Karo: ash7 snapshot clear dispatch + 将来的に hygiene 自動化 cmd 起案検討"
+
+- id: sug_cmd_676_a5_004
+  from: gunshi
+  cmd_ref: cmd_676
+  task_ref: subtask_676_a5_e2e_qc
+  created_at: "2026-05-08T19:00:00+09:00"
+  status: pending
+  priority: critical
+  content: |
+    qc_auto_check.sh SO-06 規約不一致が cmd_684/682/685/690/676 連続 5 件 fail。
+    全足軽の task YAML report_to='karo' を fail と判定する rule の妥当性検証。
+    今や CRITICAL レベル — system rule バグの典型、最優先で整備 cmd 起案。
+  action_needed: "Karo: scripts/qc_auto_check.sh SO-06 rule 整備独立 cmd を最優先起案"
+
+- id: sug_cmd_690_a4_001
+  from: gunshi
+  cmd_ref: cmd_690
+  task_ref: subtask_690_phase1_a4_qc_autonomous
+  created_at: "2026-05-08T19:20:00+09:00"
+  status: pending
+  priority: high
+  content: |
+    Phase 2 監視設計の filter 要件: ash2 の調査で claude_everythingclaudecode は apparent 80% failure rate だが、全件削除済み workflow からの historical noise。
+    Phase 2 で gha_failure_check.sh を実装する際、(a) 直近 30 日 OR (b) active workflow のみ filter が必須。
+    単純な失敗率では誤検出量産。
+  action_needed: "Karo: Phase 2 cmd 起案時に historical-only filter を AC に明記"
+
+- id: sug_cmd_690_a4_002
+  from: gunshi
+  cmd_ref: cmd_690
+  task_ref: subtask_690_phase1_a4_qc_autonomous
+  created_at: "2026-05-08T19:20:00+09:00"
+  status: pending
+  priority: medium
+  content: |
+    cmd_690 Phase 1 全 4 サブタスク状況整理:
+    - A-1 ash4 (CG, latent failures 8件 follow-up 必要)
+    - A-2 gmail-to-markdown (担当者未確認、未 dispatch?)
+    - A-3 gas-mail-manager (担当者未確認、未 dispatch?)
+    - A-4 ash2 (Go, monitor_only)
+    家老が Phase 1 全完了か Phase 2 着手判断するために A-2/A-3 状況確認要。
+  action_needed: "Karo: cmd_690 Phase 1 A-2/A-3 dispatch 状況を確認、未 dispatch なら起案"
+
+- id: sug_cmd_690_a4_003
+  from: gunshi
+  cmd_ref: cmd_690
+  task_ref: subtask_690_phase1_a4_qc_autonomous
+  created_at: "2026-05-08T19:20:00+09:00"
+  status: pending
+  priority: blocker
+  content: |
+    qc_auto_check.sh SO-06 規約不一致が cmd_684/682/685/690a1/676/690a4 連続 6 件 fail。
+    もはや system rule バグの確定状態。整備 cmd 起案を BLOCKER 優先度で推奨。
+    全足軽の task YAML report_to='karo' を fail と判定する rule の妥当性検証 + 修正を独立 cmd で実施。
+  action_needed: "Karo: scripts/qc_auto_check.sh SO-06 rule 整備独立 cmd を BLOCKER 優先度で起案 (5/8 中即時)"
+
+- id: sug_cmd_690_a2_001
+  from: gunshi
+  cmd_ref: cmd_690
+  task_ref: subtask_690_phase1_a2_qc_autonomous
+  created_at: "2026-05-08T19:28:00+09:00"
+  status: pending
+  priority: medium
+  content: |
+    次回 gmail-to-markdown cron schedule (深夜定刻) で actual schedule run success 観察推奨。
+    ash1 の修復は workflow_dispatch で success 確認済だが、schedule 固有条件 (timing / token / runner queue) は未確認。
+    24-48h 内の観察対象として observation_queue に追加が望ましい。
+  action_needed: "Karo: observation_queue に追加、深夜 schedule run conclusion を観察"
+
+- id: sug_cmd_690_a2_002
+  from: gunshi
+  cmd_ref: cmd_690
+  task_ref: subtask_690_phase1_a2_qc_autonomous
+  created_at: "2026-05-08T19:28:00+09:00"
+  status: pending
+  priority: low
+  content: |
+    Node.js 20 deprecation (2026-09-16) 対応 cmd 起案検討。
+    gmail-to-markdown の actions/checkout@v4 / setup-python@v5 が Node 20 で稼働中、deprecation 警告出力中。
+    9月前に actions update または FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true 設定推奨。
+  action_needed: "Karo: 観察項目登録、2026-08月頃に Node 24 化 cmd 起案"
+
+- id: sug_cmd_690_a2_003
+  from: gunshi
+  cmd_ref: cmd_690
+  task_ref: subtask_690_phase1_a2_qc_autonomous
+  created_at: "2026-05-08T19:28:00+09:00"
+  status: pending
+  priority: low
+  content: |
+    skill_candidate github-actions-dynamic-sparse-checkout は cmd_652 + cmd_690 で 2 回適用。
+    3 回目発生または追加 repo で適用される時に正式 SKILL.md 化推奨 (battle_tested 強化)。
+    現時点では dashboard 🛠️ 候補として保留中。
+  action_needed: "Karo: 観察、3例以上で正式 skill 化判断"
+
+- id: sug_cmd_690_phase1_aggregate_001
+  from: gunshi
+  cmd_ref: cmd_690
+  task_ref: subtask_690_phase1_aggregate_qc
+  created_at: "2026-05-08T19:35:00+09:00"
+  status: pending
+  priority: high
+  content: |
+    Phase 2 cmd 起案推奨: scripts/gha_failure_check.sh + config/gha_monitor_targets.yaml + dashboard REPO_HEALTH GHA列。
+    Phase 1 完遂、9 監視対象 repo clean state。AC 必須:
+    (1) active workflow filter (gh workflow list --all 抽出)
+    (2) 直近 30 日 period filter
+    (3) schedule + push event filter
+  action_needed: "Karo: cmd_690 内 Phase 2 続行 or 別 cmd 起案、filter 3 要件を AC に明記"
+
+- id: sug_cmd_690_phase1_aggregate_002
+  from: gunshi
+  cmd_ref: cmd_690
+  task_ref: subtask_690_phase1_aggregate_qc
+  created_at: "2026-05-08T19:35:00+09:00"
+  status: pending
+  priority: blocker
+  content: |
+    qc_auto_check.sh SO-06 連続 7 件 fail (cmd_684/682/685/690a1/676/690a4/690a2)。
+    Phase 1 verdict には影響しないが、QC 信頼性を毀損する script bug の確定状態。
+    別 cmd (cmd_691 候補) で SO-06 rule 整備を最優先 (BLOCKER) 起案。
+    Phase 2 と並行実施可。
+  action_needed: "Karo: cmd_691 として SO-06 整備独立 cmd を即時起案"
+
+- id: sug_cmd_690_phase1_aggregate_003
+  from: gunshi
+  cmd_ref: cmd_690
+  task_ref: subtask_690_phase1_aggregate_qc
+  created_at: "2026-05-08T19:35:00+09:00"
+  status: pending
+  priority: medium
+  content: |
+    release PR #1 (gas-mail-manager 0.4.0) merge 判断要。
+    cmd_690 A-3 修復で release-please-action が正常動作開始、PR #1 自動生成 OPEN。
+    殿判断: 0.4.0 release を merge するか hold するか。release-please で意図した運用なら merge 推奨。
+  action_needed: "Karo: 殿の merge 判断を仰ぐ、または家老が独立判断"
+
+- id: sug_cmd_690_phase2_001
+  from: gunshi
+  cmd_ref: cmd_690
+  task_ref: subtask_690_phase2_api_polling_qc
+  created_at: "2026-05-08T19:55:00+09:00"
+  status: pending
+  priority: high
+  content: |
+    cmd_690 Phase 3 / Phase 4 起案推奨。
+    Phase 2 監視基盤完成 (gha_failure_check.sh + filter + dashboard upsert + timer 統合)。
+    Phase 3: Gmail filter + label 設定 + n8n WF (Gmail Trigger → Discord 投稿)
+    Phase 4: discord_gateway 経由で将軍 inbox 直届
+    push 通知経路完成で cmd_690 north_star 完全達成。
+  action_needed: "Karo: 次フェーズ起案、ash5/6/7 (n8n + Gmail 経験者) dispatch"
+
+- id: sug_cmd_690_phase2_002
+  from: gunshi
+  cmd_ref: cmd_690
+  task_ref: subtask_690_phase2_api_polling_qc
+  created_at: "2026-05-08T19:55:00+09:00"
+  status: pending
+  priority: medium
+  content: |
+    gmail-to-markdown 次回 cron schedule (深夜定刻) で actual schedule run conclusion 観察。
+    現在 red 判定 (latest schedule failure 25545108771)。
+    workflow_dispatch 修復 (run 25550233369) は等価検証だが schedule 固有要因 (timing/token/runner queue) は未確認。
+    次回 schedule success で自動 green 化、失敗継続なら schedule 固有調査 cmd 起案。
+  action_needed: "Karo: observation_queue に追加、24-48h 内に schedule run 結果確認"
+
+- id: sug_cmd_690_phase3_001
+  from: gunshi
+  cmd_ref: cmd_690
+  task_ref: subtask_690_phase3_gmail_n8n_discord_alert_qc
+  created_at: "2026-05-08T20:25:00+09:00"
+  status: pending
+  priority: high
+  content: |
+    cmd_690 Phase 4 cmd 起案推奨: D-1 意図的fail E2E test (test branch push → 5分以内 shogun inbox 確認) + D-2 docs/gha_alert_runbook.md 作成。
+    これで cmd_690 north_star 完全達成 (Phase 1 修復 + Phase 2 監視 + Phase 3 通知 + Phase 4 検証/runbook)。
+  action_needed: "Karo: ash3/4 等の experiment + docs 経験者を Phase 4 dispatch"
+
+- id: sug_cmd_690_phase3_002
+  from: gunshi
+  cmd_ref: cmd_690
+  task_ref: subtask_690_phase3_gmail_n8n_discord_alert_qc
+  created_at: "2026-05-08T20:25:00+09:00"
+  status: pending
+  priority: medium
+  content: |
+    n8n execution retention 設定確認: exec 19258 が API GET で 404 → 短期 retention 設定の可能性。
+    QC 時の audit trail 保持のため、EXECUTIONS_DATA_MAX_AGE >= 7日 推奨。
+    Phase 4 で retention 設定確認 + 必要なら docker-compose.yml 調整。
+  action_needed: "Karo: docker-compose.yml の n8n env で EXECUTIONS_DATA_MAX_AGE 確認"
+
+- id: sug_cmd_690_phase3_003
+  from: gunshi
+  cmd_ref: cmd_690
+  task_ref: subtask_690_phase3_gmail_n8n_discord_alert_qc
+  created_at: "2026-05-08T20:25:00+09:00"
+  status: pending
+  priority: low
+  content: |
+    skill 候補: n8n-gmail-trigger-staticdata-dedup-pattern (1h dedup + 2h cleanup + repo|workflow|hourKey dedup key)。
+    外部 alert trigger を含む通知系で再利用可能。
+    cmd_690 Phase 4 完遂 + 1ヶ月運用観察後に正式 skill 化判断。
+  action_needed: "Karo: 観察項目登録、1ヶ月後再評価で skill 化判断"
+
+- id: sug_cmd_690_phase3_dedup_regression_001
+  from: gunshi
+  cmd_ref: cmd_690
+  task_ref: subtask_690_phase3_dedup_regression_qc
+  created_at: "2026-05-08T21:38:00+09:00"
+  status: pending
+  priority: high
+  content: |
+    Phase 4 再開時 dedup regression 追加確認: D-1 意図的fail E2E test 実施時に dedup 再 regression リスク。
+    test 1件目のみ alert される動作を AC で必須化。test repo + 別 hour 切替で抑止確認。
+  action_needed: "Karo: Phase 4 D-1 task description に dedup 動作確認 AC 追加"
+
+- id: sug_cmd_690_phase3_dedup_regression_002
+  from: gunshi
+  cmd_ref: cmd_690
+  task_ref: subtask_690_phase3_dedup_regression_qc
+  created_at: "2026-05-08T21:38:00+09:00"
+  status: pending
+  priority: medium
+  content: |
+    n8n schedule 変更 checklist 整備: 今回の regression は 1分 schedule 検出遅れが根因。
+    schedule 変更後 (a) workflow JSON で minutesInterval 確認 (b) 1h 観察で実 trigger 間隔確認 (c) staticData dedup 動作確認 を checklist 化。
+  action_needed: "Karo: 別 cmd でも独立 cmd で n8n schedule 変更 checklist 整備"
+
+- id: sug_cmd_690_phase3_dedup_regression_003
+  from: gunshi
+  cmd_ref: cmd_690
+  task_ref: subtask_690_phase3_dedup_regression_qc
+  created_at: "2026-05-08T21:38:00+09:00"
+  status: pending
+  priority: low
+  content: |
+    将来 regression 検出 hook 検討: 殿 inbox に同一 alert 2件以上で家老即時自動停止 hook。
+    cmd_690 Phase 5+ で誤検出抑止機構として検討。今回は家老の手動 active=false で対応したが automation 価値あり。
+  action_needed: "Karo: 観察項目登録、Phase 5+ 設計時に検討"
+
+- id: sug_cmd_690_phase4_001
+  from: gunshi
+  cmd_ref: cmd_690
+  task_ref: subtask_690_phase4_intentional_fail_runbook_qc
+  created_at: "2026-05-08T22:40:00+09:00"
+  status: pending
+  priority: high
+  content: |
+    [殿判断要] cmd_690 完遂判定: 5分 SLA 厳守 vs 緩和許容
+    Phase 4 実機検証で 8分 latency (manual)、scheduled は最悪 17分。
+    AC D-1「5分以内」は 15分 polling 設計上未達。
+    Option A: AC 緩和許容 → cmd_690 完遂、現状運用 (殿が 8-17分 latency を許容する場合)
+    Option B: 5分厳守 → cmd_691+ で GitHub Webhook 直接 trigger 実装 (1分以内可能)
+  action_needed: "Karo: 殿に option A/B 打診し決定。決定後に対応 cmd 起案 or cmd_690 完遂宣言"
+
+- id: sug_cmd_690_phase4_002
+  from: gunshi
+  cmd_ref: cmd_690
+  task_ref: subtask_690_phase4_intentional_fail_runbook_qc
+  created_at: "2026-05-08T22:40:00+09:00"
+  status: pending
+  priority: medium
+  content: |
+    Phase 4 cleanup: test/gha-failure-690 + feature/phase4-e2e-alert-test branch 削除実施。
+    Gmail label `n8n-gha-processed` 自動付与経路の追加実装推奨 (現実装は dedup で重複通知を防ぐが Gmail inbox に未読が溜まる)。
+  action_needed: "Karo: cleanup branch 削除 dispatch + Gmail label 付与 cmd 別途起案"
+
+- id: sug_cmd_690_phase4_003
+  from: gunshi
+  cmd_ref: cmd_690
+  task_ref: subtask_690_phase4_intentional_fail_runbook_qc
+  created_at: "2026-05-08T22:40:00+09:00"
+  status: pending
+  priority: medium
+  content: |
+    Phase 3 Gmail query bug の遡及確認: noreply@github.com クエリで動作していた exec 19296/19298 が何を取得していたか不明。
+    Gmail で noreply@github.com からのメールが何か (GitHub Actions failure 以外の何か?) を実体確認推奨。
+    Phase 3 dedup PASS 判定の実体追跡。
+  action_needed: "Karo: Gmail で noreply@github.com からのメール確認、Phase 3 PASS 証跡再評価"
+
+- id: sug_cmd_690_phase4_004
+  from: gunshi
+  cmd_ref: cmd_690
+  task_ref: subtask_690_phase4_intentional_fail_runbook_qc
+  created_at: "2026-05-08T22:40:00+09:00"
+  status: pending
+  priority: low
+  content: |
+    secret leakage minor: docs/gha_alert_runbook.md の `docker exec n8n printenv | grep DISCORD_BOT_TOKEN | head -c 30` を `wc -c` (文字数のみ表示) に置換推奨。
+    debug 用途で 30文字露出はリスク低だが、本番運用 runbook では完全 sanitization が原則。
+  action_needed: "Karo: runbook 修正 dispatch、または将来 cmd で対応"
+
+- id: sug_cmd_690_phase1_a4_revalidation_001
+  from: gunshi
+  cmd_ref: cmd_690
+  task_ref: subtask_690_phase1_a4_revalidation_qc
+  created_at: "2026-05-09T03:44:00+09:00"
+  status: pending
+  priority: low
+  content: |
+    cmd_690 Phase1 A-4 task YAML に context_files 欄が不在で、ash2 が project名から推定した
+    context/claude_everythingclaudecode.md も未配置。Phase 2 監視と並走で当該 project の
+    context file 整備を推奨。本 cmd_690 完遂後の小規模 cmd 候補。
+  action_needed: "Karo: cmd_690 完遂後の小規模 cmd として context/claude_everythingclaudecode.md 整備配備を検討"
+
+- id: sug_cmd_690_phase2_001
+  from: gunshi
+  cmd_ref: cmd_690
+  task_ref: subtask_690_phase2_api_polling_monitor_qc
+  created_at: "2026-05-09T03:48:00+09:00"
+  status: pending
+  priority: low
+  content: |
+    GHA red 自動解決 path の将来追加: Phase2 で red 検知 + ACTION_REQUIRED upsert path は完成したが、
+    red 解消 (next run success) 後の archive/clear path は未実装。
+    現状 dashboard.yaml.action_required に残ったまま手動 cleanup が必要。
+    Phase 2.5 または cmd_690 完遂後の小規模 cmd 候補。
+  action_needed: "Karo: Phase 2.5 (red→green 自動 archive) の cmd 配備検討"
+
+- id: sug_cmd_690_phase2_002
+  from: gunshi
+  cmd_ref: cmd_690
+  task_ref: subtask_690_phase2_api_polling_monitor_qc
+  created_at: "2026-05-09T03:48:00+09:00"
+  status: pending
+  priority: low
+  content: |
+    GitHub API rate limit 運用観察: hourly × 9 repo = ~9 calls/hour で規定 5000/h 内だが、
+    復旧時の bulk re-check 等で spike 発生時の挙動を Phase 2 完遂後 1-2 週監視推奨。
+    error=0 を継続維持する判定 baseline として記録。
+  action_needed: "Karo: Phase 2 完遂後 1-2 週、hourly summary の error 値を観察し、rate limit threshold を確認"
