@@ -13709,3 +13709,110 @@ suggestions:
     AGENTS.md サイズ上限 / hook 不発火 / MCP 移植 / sandbox network / msg/5h 上限の
     5 大課題群は今後の copilot / kimi 等 他 CLI 移行でも再利用可能なパターン。
   action_needed: "Karo: skill 化判断 (cmd_663 完遂後、軍師統合 QC 結果を踏まえて検討)"
+
+- id: sug_cmd_684_001
+  from: gunshi
+  cmd_ref: cmd_684
+  task_ref: subtask_684_scope_qc
+  created_at: "2026-05-08T17:04:59+09:00"
+  status: pending
+  priority: medium
+  content: |
+    cmd_684 対処マトリクス補完案: instructions/karo.md L1111-1119 表に `stale_uncommitted 6h+` 行追加推奨。
+    現状 ahead/behind/divergence/conflict/branch_mismatch/path_missing の 7 項目のみで stale 抜け。
+    まさに今 shogun repo が stale=6.2h_critical RED 状態 — 家老判断委ねとなり silent failure リスク残置。
+    cmd_684-followup として軽微改修推奨 (新 cmd 起案不要)。
+  action_needed: "Karo: 次回 instruction 改訂時に stale_uncommitted 行追記、または独立 cmd で対応"
+
+- id: sug_cmd_684_002
+  from: gunshi
+  cmd_ref: cmd_684
+  task_ref: subtask_684_scope_qc
+  created_at: "2026-05-08T17:04:59+09:00"
+  status: pending
+  priority: high
+  content: |
+    cmd_684 で文書化された自動化将来案 (Discord 通知 / dashboard 🚨 自動追記) の cmd 起案推奨。
+    家老の能動的ログ確認に依存する現状では silent failure を完全解消できぬ。
+    Discord 通知 (red 即時 push) が最優先。dashboard 🚨 自動追記は RACE-001 配慮要だが効果大。
+  action_needed: "Karo: 次フェーズで Discord 通知 cmd 起案検討 (cmd_658 discord_gateway.py 流用可)"
+
+- id: sug_cmd_684_003
+  from: gunshi
+  cmd_ref: cmd_684
+  task_ref: subtask_684_scope_qc
+  created_at: "2026-05-08T17:04:59+09:00"
+  status: pending
+  priority: low
+  content: |
+    scripts/so24_verify.sh 正規表現改善: 本 QC で task_id 'subtask_684_repo_health_red_runbook' が
+    実際は karo inbox の task_completed message に明記されているにもかかわらず PARTIAL (2/3) 誤判定。
+    task_id 部分文字列マッチに緩和すべき。
+    別件 scripts/qc_auto_check.sh SO-06 (report_to='karo' を fail 判定) も rule 妥当性再確認要。
+  action_needed: "Karo: 任意 — 別 cmd で script verification rule 整備"
+
+- id: sug_cmd_684_004
+  from: gunshi
+  cmd_ref: cmd_684
+  task_ref: subtask_684_scope_qc
+  created_at: "2026-05-08T17:04:59+09:00"
+  status: pending
+  priority: high
+  content: |
+    [concern] shogun repo が現在 RED (stale=6.2h_critical, uncommitted_count=4)。
+    cmd_684 で文書化した対処フロー初適用 case。
+    家老が cmd_684 完遂後 即時に repo_health red 対処に着手するか観察必要。
+    放置されれば cmd_684 自体の存在意義が問われる。
+  action_needed: "Karo: cmd_684 完遂報告後即時 (a) uncommitted 4 件 commit/push or revert、(b) 対処フロー初適用の検証ログ取得"
+
+
+- id: sug_cmd_683_001
+  from: gunshi
+  cmd_ref: cmd_683
+  task_ref: subtask_683_scope_qc
+  created_at: "2026-05-08T17:12:00+09:00"
+  status: pending
+  priority: medium
+  content: |
+    cmd_683-followup 起案推奨: A-3 inbox_watcher_karo daemon restart 後の verification。
+    Codex pane WARNING 消失確認 + failure ratio 低下確認。
+    watcher_supervisor 次回 restart まで失敗ログが継続するため、明示的 follow-up cmd が望ましい。
+  action_needed: "Karo: cmd_683-followup または cmd_658-Phase3 と統合した restart verification cmd 起案"
+
+- id: sug_cmd_683_002
+  from: gunshi
+  cmd_ref: cmd_683
+  task_ref: subtask_683_scope_qc
+  created_at: "2026-05-08T17:12:00+09:00"
+  status: pending
+  priority: high
+  content: |
+    cmd_683 Phase3 cleanup cmd 独立起案: 2026-05-09 01:30 JST 以降に Phase 2 dual-stack 24h 安定性確認 + 13-14 件削除を別 cmd で実施。
+    本 cmd_683 で記録済の削除 list / realpath / Destructive Safety 証跡を流用可能。
+    起案漏れによる永続 pending 化を防ぐため、明示的 reminder 設定推奨。
+  action_needed: "Karo: 5/9 01:30 JST 以降に Phase 3 cleanup cmd を起案、cmd_683 output L114-133 を流用"
+
+- id: sug_cmd_683_003
+  from: gunshi
+  cmd_ref: cmd_683
+  task_ref: subtask_683_scope_qc
+  created_at: "2026-05-08T17:12:00+09:00"
+  status: pending
+  priority: low
+  content: |
+    A-2 残 1 件 (歴史的 bash syntax error 行) の継続観察。
+    timestamp なし行のため filter 対象外、現在無害だが将来再帰再発リスク。
+    cmd_kpi_observer / inbox_watcher 系の log rotate 時に該当行が消滅する見込み。
+  action_needed: "Karo: 観察項目として登録 (1ヶ月後再判定)、log rotate 後の自然消滅を期待"
+
+- id: sug_cmd_683_004
+  from: gunshi
+  cmd_ref: cmd_683
+  task_ref: subtask_683_scope_qc
+  created_at: "2026-05-08T17:12:00+09:00"
+  status: pending
+  priority: medium
+  content: |
+    Phase 2 安定性確認手順の明文化: 24h dual-stack 観察基準 (Discord + ntfy 両系統送信 OK 比率 / latency / error 率) を別 cmd で記録 → Phase 3 GO 判定基準として運用。
+    現状は時刻条件 (5/9 01:30 JST) のみ明示で安定性指標は未定義。
+  action_needed: "Karo: Phase 3 cleanup cmd 起案時に Phase 2 dual-stack 観察基準も明記、独立評価 cmd でもよい"

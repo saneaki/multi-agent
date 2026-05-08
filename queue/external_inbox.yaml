@@ -10,3 +10,67 @@ inbox:
   received_at: '2026-05-08T04:14:08+09:00'
   processed_at: '2026-05-08T09:21:46+09:00'
   action: cmd_665発令 — shp.sh positional args + --yes フラグ追加 (cmd_666完了後着手)
+- id: '1502175205055795343'
+  message: "gas-mail-manegerについて、仕様を変更したい。現状は、https://docs.google.com/spreadsheets/d/1AMojM16Xs2i9lxMKgPnH6LdPJ5DhDKKULc4-gQt4UVE/edit?gid=0#gid=0　このワークブックで完結するように\n\
+    \  なっている。　このワークブック（元帳）は元帳機能だけを残して、顧客毎に独立したワークブック内にシートを作成するようにしたい。すなわち、C列に顧客別のGoogleドライブリンクを私が入れる（チップ形式でも問題ないか）。このドライブに顧客毎のメール一覧のワークブックを作成してほしい。ワークブックの名前は、「顧客名_総合シート」として。シートのなかにはメール一覧のシートを作成して。メール一覧の内容は今までのままでいい。メールのpdf保存フォルダについては、「08　メール送受信」というフォルダがあるからそこに保存するようにしたい（どの顧客も同じ構造にする）。E列にリンクをはるようにした。ドライブの下の階層に作成が終わったら、元帳のD列にワークブックのリンクをチップ形式で作成してほしい。　大幅な仕様変更なのでひとつひとつ詰めていこう"
+  timestamp: '2026-05-08T14:07:58+09:00'
+  status: pending
+  discord_message_id: '1502175205055795343'
+  channel_id: '1491959535768703097'
+  user_id: '495636202943152139'
+  username: akisame4842
+  received_at: '2026-05-08T14:07:58+09:00'
+- id: '1502177593762517092'
+  message: 1　c列のリンク先に顧客名_総合シート　を作成、2　敬称をつける　「寺地淳子様_総合シート」　3　E列から直接読み取り　4　維持　5　完全スキップ　6　保存先からの以降不要　7　手動で削除する
+  timestamp: '2026-05-08T14:17:27+09:00'
+  status: pending
+  discord_message_id: '1502177593762517092'
+  channel_id: '1491959535768703097'
+  user_id: '495636202943152139'
+  username: akisame4842
+  received_at: '2026-05-08T14:17:27+09:00'
+- id: '1502189028605300857'
+  message: 足軽3号がself_clear_check.shに言及しているから調査して
+  timestamp: '2026-05-08T15:02:53+09:00'
+  status: pending
+  discord_message_id: '1502189028605300857'
+  channel_id: '1491959535768703097'
+  user_id: '495636202943152139'
+  username: akisame4842
+  received_at: '2026-05-08T15:02:53+09:00'
+- id: '1502213497810063392'
+  message: 時間経過待ちは別の項目に移して。即時消化が必要なものについて詳細をそれぞれ開設して
+  timestamp: '2026-05-08T16:40:07+09:00'
+  status: pending
+  discord_message_id: '1502213497810063392'
+  channel_id: '1491959535768703097'
+  user_id: '495636202943152139'
+  username: akisame4842
+  received_at: '2026-05-08T16:40:07+09:00'
+- id: '1502213701707759657'
+  message: おい
+  timestamp: '2026-05-08T16:40:56+09:00'
+  status: pending
+  discord_message_id: '1502213701707759657'
+  channel_id: '1491959535768703097'
+  user_id: '495636202943152139'
+  username: akisame4842
+  received_at: '2026-05-08T16:40:56+09:00'
+- id: '1502214363325661259'
+  message: 648は削除、661は廃案、674はskill-workflowにのっとって処理、673は修正実装、678は起案
+  timestamp: '2026-05-08T16:43:34+09:00'
+  status: pending
+  discord_message_id: '1502214363325661259'
+  channel_id: '1491959535768703097'
+  user_id: '495636202943152139'
+  username: akisame4842
+  received_at: '2026-05-08T16:43:34+09:00'
+- id: '1502214496251416596'
+  message: よろしく
+  timestamp: '2026-05-08T16:44:05+09:00'
+  status: pending
+  discord_message_id: '1502214496251416596'
+  channel_id: '1491959535768703097'
+  user_id: '495636202943152139'
+  username: akisame4842
+  received_at: '2026-05-08T16:44:05+09:00'

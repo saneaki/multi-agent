@@ -84,42 +84,44 @@ cli:
   default: claude
   agents:
     ashigaru1:
-      cli_type: claude
-      model: claude-sonnet-4-6
+      cli_type: codex
+      model: gpt-5.5
       effort: max
     ashigaru2:
-      cli_type: claude
-      model: claude-sonnet-4-6
+      cli_type: codex
+      model: gpt-5.5
       effort: max
     ashigaru3:
-      cli_type: claude
-      model: claude-sonnet-4-6
+      cli_type: codex
+      model: gpt-5.5
       effort: max
     ashigaru4:
       cli_type: claude
-      model: claude-opus-4-7
+      model: claude-sonnet-4-6
       effort: max
     ashigaru5:
       cli_type: claude
-      model: claude-opus-4-7
+      model: claude-sonnet-4-6
       effort: max
     ashigaru6:
-      cli_type: codex
-      model: gpt-5.5  # 2026-05-02: switch_cli.sh による切替
+      cli_type: claude
+      model: claude-opus-4-7
       effort: max
     ashigaru7:
-      cli_type: codex
-      model: gpt-5.5  # 2026-05-02: switch_cli.sh による切替
+      cli_type: claude
+      model: claude-opus-4-7
       effort: max
     gunshi:
       cli_type: claude
       model: claude-opus-4-7
       effort: max
     karo:
-      cli_type: claude
-      model: claude-sonnet-4-6
+      cli_type: codex
+      model: gpt-5.5
       effort: max
     shogun:
+      cli_type: claude
+      model: claude-opus-4-7
       effort: max
 
 # 陣形プリセット
