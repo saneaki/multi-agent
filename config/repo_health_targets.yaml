@@ -1,0 +1,48 @@
+# cmd_678: GitHub repo 同期状況の監視対象定義
+#
+# 役割: 監視対象 repo の uncommitted 滞留 / push 漏れ / pull 遅れ /
+#       divergence / merge conflict / 別 branch を検知する。
+# 関連: scripts/repo_health_check.sh
+# 設計根拠: queue/shogun_to_karo.yaml cmd_678 全文
+#
+# status 判定方針:
+#   green  = 健全 (uncommitted=0, ahead=0, behind=0, conflict=なし, expected_branch一致)
+#   yellow = 警告 (uncommitted long-stale / behind / 軽度の異常)
+#   red    = 異常 (push未済 ahead / divergence / conflict / 別branch / fetch失敗)
+
+version: 1
+last_updated: '2026-05-08'
+
+defaults:
+  # uncommitted 滞留の警告/異常閾値 (秒) — 一番古い変更ファイルの mtime 基準
+  uncommitted_yellow_after: 3600       # 1 時間
+  uncommitted_red_after: 21600         # 6 時間
+  # ahead 警告/異常閾値 (commit 数)
+  ahead_yellow_after: 1                # 1 commit 以上で警告
+  ahead_red_after: 5                   # 5 commit 以上で異常
+  # behind 警告/異常閾値
+  behind_yellow_after: 1
+  behind_red_after: 10
+  # fetch timeout (秒)
+  fetch_timeout: 30
+  # uncommitted 件数閾値 (yellow)
+  uncommitted_count_yellow: 5
+  uncommitted_count_red: 30
+
+targets:
+  - name: shogun
+    path: /home/ubuntu/shogun
+    expected_branch: main
+    # この repo は本ホストでのみ監視
+    host_guard: ''
+    # fetch を実行するか (push 漏れ / behind 検知のために必須)
+    fetch_remote: true
+    # remote 名
+    remote: origin
+
+  - name: gas-mail-manager
+    path: /home/ubuntu/gas-mail-manager
+    expected_branch: main
+    host_guard: ''
+    fetch_remote: true
+    remote: origin

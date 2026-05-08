@@ -77,6 +77,7 @@
 !config/counter_coefficients.yaml
 !config/qc_checklist.yaml
 !config/sh_health_targets.yaml
+!config/repo_health_targets.yaml
 
 # Templates
 !templates/
@@ -142,6 +143,7 @@
 !scripts/shogun_context_notify.sh
 !scripts/role_context_notify.sh
 !scripts/sh_health_check.sh
+!scripts/repo_health_check.sh
 !scripts/counter_increment.sh
 !scripts/statusline_with_counter.sh
 !scripts/qc_auto_check.sh
@@ -230,6 +232,7 @@
 !output/cmd_675_skill_candidate_integration.md
 !output/cmd_675b_skill_integration_implementation.md
 !output/cmd_676_gas_mail_manager_per_customer_workbook.md
+!output/cmd_678_repo_health_check.md
 
 # cmd_544: 3 安全装置 state files (kill-switch/rate-limit/pending/daily-metric)
 !logs/cmd_squash_pub_hook.disabled
