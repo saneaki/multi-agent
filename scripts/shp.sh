@@ -8,9 +8,9 @@
 #   bash scripts/shp.sh --preset <name>              # preset (skip interactive)
 #   bash scripts/shp.sh --preset <name> --dry-run
 #   bash scripts/shp.sh 1                            # positional: 全員 = 1
-#   bash scripts/shp.sh 2 1                          # positional: 将軍=2, 他全員=1
-#   bash scripts/shp.sh 1 2 1 1                      # positional: 将軍=1, 家老=2, 軍師=1, 足軽全員=1
-#   bash scripts/shp.sh 1 2 1 1 1 1 1 1 1 2 [--yes]  # positional: 10名個別指定 (将軍/家老/足軽1-7/軍師)
+#   bash scripts/shp.sh 2 1                          # positional: 家老=2, 他全員=1
+#   bash scripts/shp.sh 1 2 3                        # positional: 家老=1, 足軽1-7=2, 軍師=3
+#   bash scripts/shp.sh 1 2 1 1 1 1 1 1 1 [--yes]   # positional: 9名個別指定 (家老/足軽1-7/軍師)
 #   bash scripts/shp.sh --yes                        # confirm prompt skip (interactive 後)
 #   bash scripts/shp.sh --kill                       # interactive (retreat)
 #   bash scripts/shp.sh --retreat                    # same as --kill
@@ -26,7 +26,7 @@
 #   current          現在の settings.yaml 値をそのまま使用
 #   heavy-opus       全員 Opus+T
 #   all-sonnet       全員 Sonnet+T
-#   sonnet-codex-mix 将軍/家老/軍師=Sonnet+T, 足軽=交互(Sonnet/Codex)
+#   sonnet-codex-mix 家老/軍師=Sonnet+T, 足軽=交互(Sonnet/Codex)
 # ═══════════════════════════════════════════════════════════════
 
 # bash 機能使用 (連想配列, read -r, [[ ]])
@@ -46,10 +46,10 @@ CYAN='\033[0;36m'
 BOLD='\033[1m'
 NC='\033[0m'
 
-# ─── 構成員 (prompt順: 固定) ───
-MEMBER_IDS=(shogun karo ashigaru1 ashigaru2 ashigaru3 ashigaru4 ashigaru5 ashigaru6 ashigaru7 gunshi)
+# ─── 構成員 9名 (将軍除く: prompt順固定) ───
+MEMBER_IDS=(karo ashigaru1 ashigaru2 ashigaru3 ashigaru4 ashigaru5 ashigaru6 ashigaru7 gunshi)
 
-# ─── 撤収対象構成員 (shogun除く 9名) ───
+# ─── 撤収対象構成員 = MEMBER_IDS と同一 ───
 RETREAT_MEMBER_IDS=(karo ashigaru1 ashigaru2 ashigaru3 ashigaru4 ashigaru5 ashigaru6 ashigaru7 gunshi)
 
 member_label() {
@@ -116,21 +116,21 @@ usage() {
     echo -e "  ${CYAN}3${NC} = Codex     (gpt-5.5)"
     echo ""
     echo "positional args (出陣モード, 1/2/3 の数字のみ):"
-    echo "  shp <N1>                       全員 = N1"
-    echo "  shp <N1> <N2>                  将軍 = N1, 他全員 = N2"
-    echo "  shp <N1> <N2> <N3> <N4>        将軍=N1, 家老=N2, 軍師=N3, 足軽全員=N4"
-    echo "  shp <N1>...<N10>               構成員 10名を個別指定 (順: 将軍/家老/足軽1-7/軍師)"
-    echo "  ※ 1/2/4/10 個以外はエラー。--yes / --dry-run と併用可。"
+    echo "  shp <N1>                       全員 (9名) = N1"
+    echo "  shp <N1> <N2>                  家老 = N1, 他8構成員 = N2"
+    echo "  shp <N1> <N2> <N3>             家老=N1, 足軽1-7=N2, 軍師=N3"
+    echo "  shp <N1>...<N9>               構成員 9名を個別指定 (順: 家老/足軽1-7/軍師)"
+    echo "  ※ 1/2/3/9 個が正式仕様 (10個は互換のみ: 将軍指定を無視)。--yes / --dry-run と併用可。"
     echo ""
     echo "プリセット (出陣モード):"
     echo "  current          現在の settings.yaml の値をそのまま使用"
     echo "  heavy-opus       全員 Opus+T"
     echo "  all-sonnet       全員 Sonnet+T"
-    echo "  sonnet-codex-mix 将軍/家老/軍師=Sonnet+T, 足軽=交互(Sonnet/Codex)"
+    echo "  sonnet-codex-mix 家老/軍師=Sonnet+T, 足軽=交互(Sonnet/Codex)"
     echo ""
     echo "撤収モード:"
     echo "  --kill / --retreat で撤収モードに入る"
-    echo "  各構成員 (将軍除く 9名) の撤収フラグを y/N で選択"
+    echo "  各構成員 9名 (家老/足軽1-7/軍師) の撤収フラグを y/N で選択"
     echo "  --dry-run 併用時は /exit 送信を行わず、撤収予定を表示のみ"
     echo ""
     echo "例 (出陣 interactive/preset):"
@@ -141,9 +141,9 @@ usage() {
     echo "例 (出陣 positional):"
     echo "  shp 1                            # 全員 Sonnet+T"
     echo "  shp 2                            # 全員 Opus+T"
-    echo "  shp 2 1                          # 将軍=Opus+T, 他全員=Sonnet+T"
-    echo "  shp 1 2 1 1                      # 将軍=Sonnet+T, 家老=Opus+T, 軍師=Sonnet+T, 足軽全員=Sonnet+T"
-    echo "  shp 1 2 1 1 1 1 1 1 1 2 --yes    # 構成員10名個別指定 + 確認スキップ"
+    echo "  shp 2 1                          # 家老=Opus+T, 他全員=Sonnet+T"
+    echo "  shp 1 2 3                        # 家老=Sonnet+T, 足軽1-7=Opus+T, 軍師=Codex"
+    echo "  shp 1 2 1 1 1 1 1 1 1 --yes      # 構成員9名個別指定 + 確認スキップ"
     echo ""
     echo "例 (撤収):"
     echo "  shp --kill                       # 対象を選択して撤収"
@@ -242,8 +242,8 @@ interactive_select() {
 
 # ─── positional args 適用 ───
 # POSITIONAL_NUMS 配列の長さに応じて SELECTIONS に値を展開する
-# 1個: 全員=N1 / 2個: 将軍=N1, 他全員=N2 / 4個: 将軍=N1, 家老=N2, 軍師=N3, 足軽全員=N4
-# 10個: MEMBER_IDS 順 (将軍/家老/足軽1-7/軍師)
+# 1個: 全員=N1 / 2個: 家老=N1, 他全員=N2 / 3個: 家老=N1, 足軽1-7=N2, 軍師=N3
+# 9個: MEMBER_IDS 順 (家老/足軽1-7/軍師) / 10個(互換): 将軍指定を無視して9名適用
 apply_positional() {
     local count="${#POSITIONAL_NUMS[@]}"
     local agent_id i
@@ -255,33 +255,38 @@ apply_positional() {
             done
             ;;
         2)
-            SELECTIONS[shogun]="${POSITIONAL_NUMS[0]}"
+            SELECTIONS[karo]="${POSITIONAL_NUMS[0]}"
             for agent_id in "${MEMBER_IDS[@]}"; do
-                [[ "$agent_id" == "shogun" ]] && continue
+                [[ "$agent_id" == "karo" ]] && continue
                 SELECTIONS["$agent_id"]="${POSITIONAL_NUMS[1]}"
             done
             ;;
-        4)
-            SELECTIONS[shogun]="${POSITIONAL_NUMS[0]}"
-            SELECTIONS[karo]="${POSITIONAL_NUMS[1]}"
-            SELECTIONS[gunshi]="${POSITIONAL_NUMS[2]}"
+        3)
+            SELECTIONS[karo]="${POSITIONAL_NUMS[0]}"
             for i in 1 2 3 4 5 6 7; do
-                SELECTIONS["ashigaru${i}"]="${POSITIONAL_NUMS[3]}"
+                SELECTIONS["ashigaru${i}"]="${POSITIONAL_NUMS[1]}"
             done
+            SELECTIONS[gunshi]="${POSITIONAL_NUMS[2]}"
             ;;
-        10)
+        9)
             for i in "${!MEMBER_IDS[@]}"; do
                 SELECTIONS["${MEMBER_IDS[$i]}"]="${POSITIONAL_NUMS[$i]}"
             done
             ;;
+        10)
+            echo -e "${YELLOW}WARN:${NC} positional 10個指定は廃止予定です。将軍指定 (N1=${POSITIONAL_NUMS[0]}) を無視して残り9名に適用します。" >&2
+            for i in "${!MEMBER_IDS[@]}"; do
+                SELECTIONS["${MEMBER_IDS[$i]}"]="${POSITIONAL_NUMS[$((i + 1))]}"
+            done
+            ;;
         *)
-            echo -e "${RED}ERROR:${NC} positional 引数は 1 / 2 / 4 / 10 個のみ対応 (指定: ${count} 個)" >&2
+            echo -e "${RED}ERROR:${NC} positional 引数は 1 / 2 / 3 / 9 個のみ対応 (指定: ${count} 個)" >&2
             echo ""
             echo "使用例:"
             echo "  shp 1                       # 全員 = 1"
-            echo "  shp 2 1                     # 将軍=2, 他=1"
-            echo "  shp 1 2 1 1                 # 将軍/家老/軍師/足軽全員"
-            echo "  shp 1 2 1 1 1 1 1 1 1 2     # 構成員10名個別 (将軍/家老/足軽1-7/軍師)"
+            echo "  shp 2 1                     # 家老=2, 他=1"
+            echo "  shp 1 2 3                   # 家老=1, 足軽1-7=2, 軍師=3"
+            echo "  shp 1 2 1 1 1 1 1 1 1       # 構成員9名個別 (家老/足軽1-7/軍師)"
             exit 1
             ;;
     esac
@@ -309,8 +314,7 @@ apply_preset() {
             done
             ;;
         sonnet-codex-mix)
-            # 将軍/家老/軍師 = Sonnet+T
-            SELECTIONS[shogun]="1"
+            # 家老/軍師 = Sonnet+T
             SELECTIONS[karo]="1"
             SELECTIONS[gunshi]="1"
             # 足軽 = 交互 (奇数=Sonnet+T, 偶数=Codex)
@@ -491,15 +495,6 @@ execute_deploy() {
         num="${SELECTIONS[$agent_id]:-1}"
         nl=$(num_label "$num")
 
-        if [[ "$agent_id" == "shogun" ]]; then
-            if [[ "$dry_run" == "true" ]]; then
-                echo -e "  [DRY-RUN] ${label} → ${num}(${nl})  ${YELLOW}(手動再起動)${NC}"
-            else
-                echo -e "  ${YELLOW}SKIP${NC}   ${label} (shogun) → ${num}(${nl})  ※手動再起動が必要"
-            fi
-            continue
-        fi
-
         total=$((total + 1))
 
         if [[ "$dry_run" == "true" ]]; then
@@ -563,7 +558,7 @@ resolve_pane_retreat() {
 }
 
 # ─── 撤収インタラクティブ選択 ───
-# 各構成員 (shogun除く 9名) の撤収フラグを RETREAT_TARGETS に格納する
+# 各構成員 9名 の撤収フラグを RETREAT_TARGETS に格納する
 interactive_select_retreat() {
     local agent_id label input
 
@@ -572,7 +567,7 @@ interactive_select_retreat() {
     echo -e "${BOLD}  shp 撤収モード (--kill / --retreat)${NC}"
     echo -e "${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     echo ""
-    echo -e "  ${YELLOW}将軍 (shogun) は撤収対象外 (手動での停止が必要)${NC}"
+    echo -e "  対象: 家老 → 足軽1-7 → 軍師 (9名)  ※将軍は別管理"
     echo ""
     echo -e "${BOLD}  各構成員の撤収フラグを選択:${NC}"
     echo ""
@@ -829,9 +824,6 @@ if [[ "$CONFIRM" =~ ^[Yy]$ ]]; then
     if [[ "$DRY_RUN" != "true" ]]; then
         echo ""
         echo -e "${GREEN}出陣完了！${NC}"
-        shogun_num="${SELECTIONS[shogun]:-1}"
-        shogun_nl=$(num_label "$shogun_num")
-        echo -e "${YELLOW}将軍 (shogun) は手動で再起動してください → ${shogun_num}(${shogun_nl})${NC}"
     else
         echo ""
         echo -e "  ${YELLOW}[DRY-RUN]${NC} 上記が実際の出陣設定になります。"
