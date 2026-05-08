@@ -22,8 +22,12 @@ DASHBOARD="$SHOGUN_ROOT/dashboard.md"
 LOG_DIR="$SHOGUN_ROOT/logs"
 STATUS_OUT="$LOG_DIR/repo_health_status.yaml"
 SECTION_OUT="$LOG_DIR/repo_health_section.md"
+GHA_STATUS_OUT="$LOG_DIR/gha_failure_status.json"
 SCRIPT_LOG="$LOG_DIR/repo_health_check.log"
 LOCK_FILE="/tmp/repo_health_check.lock"
+GHA_SCRIPT="$SHOGUN_ROOT/scripts/gha_failure_check.sh"
+GHA_CONFIG="$SHOGUN_ROOT/config/gha_monitor_targets.yaml"
+DASHBOARD_YAML="$SHOGUN_ROOT/dashboard.yaml"
 
 DRY_RUN=false
 NO_DASHBOARD=false
@@ -59,7 +63,15 @@ SECTION_OUT_ENV="$SECTION_OUT" \
 STATUS_OUT_ENV="$STATUS_OUT" \
 CONFIG_ENV="$CONFIG" \
 NO_FETCH_ENV="$NO_FETCH" \
+GHA_STATUS_OUT_ENV="$GHA_STATUS_OUT" \
+GHA_SCRIPT_ENV="$GHA_SCRIPT" \
+GHA_CONFIG_ENV="$GHA_CONFIG" \
+DASHBOARD_YAML_ENV="$DASHBOARD_YAML" \
+DRY_RUN_ENV="$DRY_RUN" \
+NO_DASHBOARD_ENV="$NO_DASHBOARD" \
 python3 <<'PYEOF'
+import hashlib
+import json
 import os, sys, time, subprocess, datetime, traceback
 import yaml
 
@@ -70,6 +82,12 @@ SECTION_OUT = os.environ["SECTION_OUT_ENV"]
 STATUS_OUT = os.environ["STATUS_OUT_ENV"]
 CONFIG = os.environ["CONFIG_ENV"]
 NO_FETCH = os.environ.get("NO_FETCH_ENV", "false") == "true"
+GHA_STATUS_OUT = os.environ["GHA_STATUS_OUT_ENV"]
+GHA_SCRIPT = os.environ["GHA_SCRIPT_ENV"]
+GHA_CONFIG = os.environ["GHA_CONFIG_ENV"]
+DASHBOARD_YAML = os.environ["DASHBOARD_YAML_ENV"]
+DRY_RUN_MODE = os.environ.get("DRY_RUN_ENV", "false") == "true"
+NO_DASHBOARD_MODE = os.environ.get("NO_DASHBOARD_ENV", "false") == "true"
 
 NOW = time.time()
 
@@ -103,6 +121,143 @@ def fmt_age(seconds):
     if seconds < 86400:
         return f"{seconds / 3600:.1f}h"
     return f"{seconds / 86400:.1f}d"
+
+
+def run_gha_check():
+    """GitHub Actions API monitor を実行し、JSON doc を返す。失敗時も dashboard 描画は継続。"""
+    if not os.path.exists(GHA_SCRIPT) or not os.path.exists(GHA_CONFIG):
+        return {
+            "summary": {"green": 0, "yellow": 0, "red": 0, "error": 1},
+            "results": [],
+            "errors": [f"GHA monitor missing: {GHA_SCRIPT} / {GHA_CONFIG}"],
+        }
+    try:
+        proc = subprocess.run(
+            ["bash", GHA_SCRIPT, "--config", GHA_CONFIG, "--output", GHA_STATUS_OUT],
+            capture_output=True, text=True, timeout=180
+        )
+    except subprocess.TimeoutExpired:
+        return {
+            "summary": {"green": 0, "yellow": 0, "red": 0, "error": 1},
+            "results": [],
+            "errors": ["GHA monitor timeout"],
+        }
+    if proc.returncode != 0:
+        return {
+            "summary": {"green": 0, "yellow": 0, "red": 0, "error": 1},
+            "results": [],
+            "errors": [(proc.stderr or proc.stdout or f"rc={proc.returncode}")[:500]],
+        }
+    try:
+        return json.loads(proc.stdout)
+    except Exception as e:
+        return {
+            "summary": {"green": 0, "yellow": 0, "red": 0, "error": 1},
+            "results": [],
+            "errors": [f"GHA monitor invalid JSON: {e}"],
+        }
+
+
+def gha_result_map(gha_doc):
+    mapped = {
+        r.get("name"): r
+        for r in gha_doc.get("results", [])
+        if isinstance(r, dict) and r.get("name")
+    }
+    # local repo name is shogun, GitHub repository name is multi-agent.
+    if "multi-agent" in mapped and "shogun" not in mapped:
+        mapped["shogun"] = mapped["multi-agent"]
+    return mapped
+
+
+def gha_summary_cell(result):
+    if not result:
+        return "未監視"
+    status = result.get("status", "error")
+    emoji = {"green": "🟢", "yellow": "🟡", "red": "🔴", "error": "⚠️"}.get(status, "？")
+    pf = result.get("primary_failure_count", 0)
+    mf = result.get("manual_failure_count", 0)
+    primary = result.get("primary_event_count", 0)
+    if status == "red":
+        latest = result.get("latest_primary_failure") or {}
+        label = latest.get("name") or latest.get("id") or "primary failure"
+        return f"{emoji} red primary_fail={pf} ({label})"
+    if status == "yellow":
+        return f"{emoji} manual_fail={mf} primary_runs={primary}"
+    if status == "green":
+        return f"{emoji} green primary_runs={primary}"
+    errors = result.get("errors") or []
+    return f"{emoji} error {str(errors[0])[:40] if errors else ''}".strip()
+
+
+def stable_issue_id(repo_name):
+    return hashlib.sha1(f"cmd_690-gha-red:{repo_name}".encode()).hexdigest()[:16]
+
+
+def upsert_gha_action_required(gha_doc):
+    """GHA red を dashboard.yaml.action_required へ stable issue_id で upsert する。"""
+    red_results = [
+        r for r in gha_doc.get("results", [])
+        if isinstance(r, dict) and r.get("status") == "red"
+    ]
+    if DRY_RUN_MODE or NO_DASHBOARD_MODE:
+        return {"upserted": 0, "path": DASHBOARD_YAML, "skipped": "dry-run/no-dashboard"}
+    if not red_results or not os.path.exists(DASHBOARD_YAML):
+        return {"upserted": 0, "path": DASHBOARD_YAML}
+
+    with open(DASHBOARD_YAML, "r") as f:
+        dashboard = yaml.safe_load(f) or {}
+    action_required = dashboard.get("action_required") or []
+    if not isinstance(action_required, list):
+        action_required = []
+
+    existing = {
+        item.get("issue_id"): idx
+        for idx, item in enumerate(action_required)
+        if isinstance(item, dict) and item.get("issue_id")
+    }
+
+    upserted = 0
+    for r in red_results:
+        latest = r.get("latest_primary_failure") or {}
+        repo = r.get("repo") or r.get("name")
+        name = r.get("name") or repo
+        issue_id = stable_issue_id(name)
+        url = latest.get("url") or f"https://github.com/{repo}/actions"
+        detail = (
+            f"GitHub Actions primary event (schedule/push) failure detected for {repo}. "
+            f"active workflow only / last {gha_doc.get('lookback_days', 30)} days / "
+            f"workflow_dispatch excluded from red判定. "
+            f"latest={latest.get('name') or latest.get('id')}; url={url}"
+        )
+        entry = {
+            "created_at": TIMESTAMP_JST,
+            "detail": detail,
+            "issue_id": issue_id,
+            "needs_lord_decision": False,
+            "parent_cmd": "cmd_690",
+            "severity": "HIGH",
+            "source_report_ts": TIMESTAMP_JST,
+            "status": "open",
+            "tag": f"[cmd_690-gha-red-{name}]",
+            "title": f"GHA primary failure: {name}",
+        }
+        if issue_id in existing:
+            prev = action_required[existing[issue_id]]
+            if isinstance(prev, dict):
+                entry["created_at"] = prev.get("created_at", TIMESTAMP_JST)
+            action_required[existing[issue_id]] = entry
+        else:
+            action_required.append(entry)
+            existing[issue_id] = len(action_required) - 1
+        upserted += 1
+
+    dashboard["action_required"] = action_required
+    tmp = f"{DASHBOARD_YAML}.tmp"
+    with open(tmp, "w") as f:
+        yaml.safe_dump(dashboard, f, allow_unicode=True, sort_keys=False, width=160)
+    os.replace(tmp, DASHBOARD_YAML)
+    return {"upserted": upserted, "path": DASHBOARD_YAML}
 
 
 def evaluate_repo(t, defaults):
@@ -292,6 +447,10 @@ def main():
     defaults = cfg.get("defaults", {})
     targets = cfg.get("targets", [])
 
+    gha_doc = run_gha_check()
+    gha_by_name = gha_result_map(gha_doc)
+    gha_action_required = upsert_gha_action_required(gha_doc)
+
     results = []
     for t in targets:
         try:
@@ -315,29 +474,68 @@ def main():
     lines.append("## 📊 repo 同期状況")
     lines.append("")
     monitored = len(results) - counts["skip"]
-    lines.append(f"最終確認: {TIMESTAMP_JST} / 監視対象 = {monitored} repo / 自動修正なし (警告のみ)")
+    gha_summary = gha_doc.get("summary", {})
+    lines.append(
+        f"最終確認: {TIMESTAMP_JST} / 監視対象 = {monitored} repo / "
+        f"GHA={gha_summary.get('green', 0)}🟢/{gha_summary.get('yellow', 0)}🟡/"
+        f"{gha_summary.get('red', 0)}🔴/{gha_summary.get('error', 0)}⚠️ / 自動修正なし (警告のみ)"
+    )
     lines.append("")
     lines.append("### サマリー")
     lines.append(f"- 🟢 健全: {counts['green']}")
     lines.append(f"- 🟡 警告: {counts['yellow']}")
     lines.append(f"- 🔴 異常: {counts['red']}")
+    lines.append(f"- GHA primary failure: 🔴 {gha_summary.get('red', 0)} / ⚠️ API error {gha_summary.get('error', 0)}")
     if counts["skip"]:
         lines.append(f"- ⏭️  除外 (host_guard等): {counts['skip']}")
     lines.append("")
 
     # 全 repo 一覧 (常時表示 — 件数少ないので折りたたまず)
-    lines.append("| repo | branch | uncommitted | 最古変更 | ahead | behind | 異常項目 | status |")
-    lines.append("|------|--------|------------|---------|-------|--------|---------|--------|")
+    lines.append("| repo | branch | uncommitted | 最古変更 | ahead | behind | GHA | 異常項目 | status |")
+    lines.append("|------|--------|------------|---------|-------|--------|-----|---------|--------|")
     for r in results:
         emoji = {"green": "🟢", "yellow": "🟡", "red": "🔴", "skip": "⏭️"}.get(r["status"], "?")
         anomalies = ", ".join(r.get("anomalies", [])) or "-"
         anomalies = anomalies.replace("|", "\\|")[:60]
+        gha_cell = gha_summary_cell(gha_by_name.get(r["name"])).replace("|", "\\|")[:80]
         lines.append(
             f"| {r['name']} | {r['branch']} | {r['uncommitted_count']} | "
-            f"{fmt_age(r.get('oldest_uncommitted_age'))} | {r['ahead']} | {r['behind']} | "
+            f"{fmt_age(r.get('oldest_uncommitted_age'))} | {r['ahead']} | {r['behind']} | {gha_cell} | "
             f"{anomalies} | {emoji} {r['status']} |"
         )
     lines.append("")
+
+    gha_red_rows = [
+        r for r in gha_doc.get("results", [])
+        if isinstance(r, dict) and r.get("status") == "red"
+    ]
+    if gha_red_rows:
+        lines.append("### 🔴 GHA primary failure 詳細")
+        lines.append("")
+        for r in gha_red_rows:
+            latest = r.get("latest_primary_failure") or {}
+            url = latest.get("url") or f"https://github.com/{r.get('repo')}/actions"
+            lines.append(
+                f"- `{r.get('name')}` — {latest.get('name') or latest.get('id')} "
+                f"({latest.get('event')}/{latest.get('conclusion')}) {url}"
+            )
+        lines.append("")
+
+    gha_results = [r for r in gha_doc.get("results", []) if isinstance(r, dict)]
+    if gha_results:
+        lines.append("### GitHub Actions API監視 (active workflow / 30日 / schedule+push)")
+        lines.append("")
+        lines.append("| repo | primary runs | primary failures | manual failures | status |")
+        lines.append("|------|--------------|------------------|-----------------|--------|")
+        for r in gha_results:
+            status = r.get("status", "error")
+            emoji = {"green": "🟢", "yellow": "🟡", "red": "🔴", "error": "⚠️"}.get(status, "？")
+            lines.append(
+                f"| {r.get('name')} | {r.get('primary_event_count', 0)} | "
+                f"{r.get('primary_failure_count', 0)} | {r.get('manual_failure_count', 0)} | "
+                f"{emoji} {status} |"
+            )
+        lines.append("")
 
     # 異常詳細 (last_error)
     red_rows = [r for r in results if r["status"] == "red"]
@@ -358,8 +556,11 @@ def main():
         "timestamp": TIMESTAMP_JST,
         "hostname": HOSTNAME_NOW,
         "summary": counts,
+        "gha_summary": gha_summary,
+        "gha_action_required": gha_action_required,
         "total_targets": len(results),
         "results": results,
+        "gha_results": gha_doc.get("results", []),
     }
     with open(STATUS_OUT, "w") as f:
         yaml.safe_dump(status_doc, f, allow_unicode=True, sort_keys=False, width=160)
@@ -380,6 +581,18 @@ if [ $PY_RC -ne 0 ]; then
     exit $PY_RC
 fi
 
+# GHA red upsert が dashboard.yaml.action_required を更新した場合に備え、
+# managed sections を YAML SoT から再描画する。REPO_HEALTH はこの後で再更新する。
+if [ -f "$DASHBOARD_YAML" ] && [ -f "$SHOGUN_ROOT/scripts/generate_dashboard_md.py" ]; then
+    python3 "$SHOGUN_ROOT/scripts/generate_dashboard_md.py" \
+        --input "$DASHBOARD_YAML" \
+        --output "$DASHBOARD" \
+        --mode partial >> "$SCRIPT_LOG" 2>&1 || {
+        echo "[$TIMESTAMP_JST] dashboard action_required render failed" >> "$SCRIPT_LOG"
+        exit 1
+    }
+fi
+
 # ============================================================================
 # dashboard.md の <!-- REPO_HEALTH:START/END --> 間を原子的更新
 # ============================================================================
@@ -395,8 +608,12 @@ if [ ! -f "$DASHBOARD" ]; then
 fi
 
 if ! grep -q "<!-- REPO_HEALTH:START -->" "$DASHBOARD"; then
-    echo "[$TIMESTAMP_JST] REPO_HEALTH markers not found in dashboard, skip update" >> "$SCRIPT_LOG"
-    exit 0
+    echo "[$TIMESTAMP_JST] REPO_HEALTH markers not found in dashboard, append markers" >> "$SCRIPT_LOG"
+    {
+        printf "\n"
+        printf "<!-- REPO_HEALTH:START -->\n"
+        printf "<!-- REPO_HEALTH:END -->\n"
+    } >> "$DASHBOARD"
 fi
 
 DASHBOARD_ENV="$DASHBOARD" SECTION_OUT_ENV="$SECTION_OUT" python3 <<'PYEOF2'

@@ -1,0 +1,50 @@
+# cmd_690: GitHub Actions failure API polling targets
+#
+# 判定方針:
+#   - active workflow only: state=active の workflow だけを主判定対象にする
+#   - period: 直近30日以内の workflow run だけを見る
+#   - event: schedule + push を主判定対象にする
+#   - workflow_dispatch: 人為triggerとして集計はするが red 判定から除外する
+
+version: 1
+last_updated: '2026-05-08'
+
+defaults:
+  lookback_days: 30
+  primary_events:
+    - schedule
+    - push
+  manual_events:
+    - workflow_dispatch
+  red_conclusions:
+    - failure
+    - timed_out
+    - action_required
+
+targets:
+  - name: multi-agent
+    repo: saneaki/multi-agent
+
+  - name: gmail-to-markdown
+    repo: saneaki/gmail-to-markdown
+
+  - name: gas-mail-manager
+    repo: saneaki/gas-mail-manager
+
+  - name: claude_everythingclaudecode
+    repo: saneaki/claude_everythingclaudecode
+
+  - name: googledrive-to-markdown
+    repo: saneaki/googledrive-to-markdown
+
+  - name: obsidian
+    repo: saneaki/obsidian
+
+  - name: pdfmerged
+    repo: saneaki/pdfmerged
+
+  - name: keyball39
+    repo: saneaki/keyball39
+
+  - name: markitdown-own
+    repo: saneaki/markitdown-own

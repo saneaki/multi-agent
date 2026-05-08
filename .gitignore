@@ -78,6 +78,7 @@
 !config/qc_checklist.yaml
 !config/sh_health_targets.yaml
 !config/repo_health_targets.yaml
+!config/gha_monitor_targets.yaml
 
 # Templates
 !templates/
@@ -144,6 +145,7 @@
 !scripts/role_context_notify.sh
 !scripts/sh_health_check.sh
 !scripts/repo_health_check.sh
+!scripts/gha_failure_check.sh
 !scripts/counter_increment.sh
 !scripts/statusline_with_counter.sh
 !scripts/qc_auto_check.sh
@@ -235,6 +237,7 @@
 !output/cmd_678_repo_health_check.md
 !output/cmd_681_dashboard_observation_queue.md
 !output/cmd_684_repo_health_red_runbook.md
+!output/cmd_690_phase2_api_polling_monitor.md
 !output/cmd_682_legacy_audit.md
 !output/cmd_682_skill_legacy_integration.md
 # cmd_684: ashigaru4 report/tasks tracking
