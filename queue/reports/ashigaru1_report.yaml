@@ -1,112 +1,101 @@
 worker_id: ashigaru1
-task_id: subtask_691_gmail_schedule_failure_repair
-parent_cmd: cmd_691
-timestamp: "2026-05-09T06:56:01+09:00"
+task_id: subtask_694_sh_health_repair
+parent_cmd: cmd_694
 status: done
+timestamp: "2026-05-09T07:34:41+09:00"
 report_to: karo
 type: implementation
 
 result:
   summary: |
-    saneaki/gmail-to-markdown の schedule failure run 25545108771 / 25526627876 を確認し、
-    sync-to-gdrive job の runner disk exhaustion が真因であると特定した。
-
-    schedule は sync-gmail 後に sync-to-gdrive を実行するため、Gmail/GDrive 両 repo の
-    checkout footprint が重なって disk を枯渇させていた。workflow_dispatch success run
-    25550233369 は sync-gmail が skipped で GDrive path のみだったため再現しなかった。
-
-    .github/workflows/sync-gmail.yml を修正し、mapping CSV から Gmail 用/GDrive 用の
-    sparse checkout paths を分けて生成するよう変更。Gmail 側は sync script と
-    active mapped emails/**/*.md のみ、GDrive 側は .sync-log.md と active mapped
-    gdrive_path/**/*.md のみに絞った。
-
-    commit c38355f6475cd4306db8eb9ee8f337302a5946e7 を origin/main に push 済み。
-    workflow_dispatch job_type=both dry_run=true run 25581409399 が success。
-    GitHub Issue #3 へ調査開始・真因/修正/検証をコメントし close 済み。
-  repository: saneaki/gmail-to-markdown
-  local_repo: /home/ubuntu/gmail-to-markdown
-  issue:
-    number: 3
-    url: "https://github.com/saneaki/gmail-to-markdown/issues/3"
-    state: CLOSED
-  commit: "c38355f6475cd4306db8eb9ee8f337302a5946e7"
-  push: DONE
-  workflow_run:
-    url: "https://github.com/saneaki/gmail-to-markdown/actions/runs/25581409399"
-    conclusion: success
-    status: completed
-    event: workflow_dispatch
-    inputs: "job_type=both, dry_run=true"
-    head_sha: "c38355f6475cd4306db8eb9ee8f337302a5946e7"
-    jobs:
-      - name: sync-gmail
-        conclusion: success
-      - name: sync-to-gdrive
-        conclusion: success
-  failure_runs_checked:
-    - url: "https://github.com/saneaki/gmail-to-markdown/actions/runs/25545108771"
-      conclusion: failure
-      event: schedule
-      failed_job: sync-to-gdrive
-      key_log: "No space left on device while writing runner diagnostic log"
-    - url: "https://github.com/saneaki/gmail-to-markdown/actions/runs/25526627876"
-      conclusion: failure
-      event: schedule
-      failed_job: sync-to-gdrive
-      key_log: "No space left on device while writing runner diagnostic log"
-    - url: "https://github.com/saneaki/gmail-to-markdown/actions/runs/25550233369"
-      conclusion: success
-      event: workflow_dispatch
-      difference: "sync-gmail skipped; only sync-to-gdrive ran"
-  files_modified:
-    - /home/ubuntu/gmail-to-markdown/.github/workflows/sync-gmail.yml
-    - output/cmd_691_gmail_schedule_failure_repair.md
-    - queue/tasks/ashigaru1.yaml
+    cmd_694 Phase2 sh_health高fail修復を完了。cmd_squash_pub_hook は dashboard 呼出パス修正、
+    tee二重ログ解消、対象別 failure_pattern 厳格化、旧重複failure dedupe を実装。
+    dashboard_rotate は continuation line timestamp継承で過去 arithmetic error の誤計上を解消。
+    inbox_watcher[karo] はレビュー統合判断どおり追加ignoreなしで自然減衰を維持。
+  output_path: output/cmd_694_sh_health_repair.md
+  changed_files:
+    - scripts/cmd_squash_pub_hook.sh
+    - config/sh_health_targets.yaml
+    - scripts/sh_health_check.sh
+    - output/cmd_694_sh_health_repair.md
     - queue/reports/ashigaru1_report.yaml
+    - queue/tasks/ashigaru1.yaml
     - queue/inbox/ashigaru1.yaml
-  output_path: output/cmd_691_gmail_schedule_failure_repair.md
+  before_after:
+    before:
+      summary: "green=36 yellow=11 red=0 skip=0"
+      targets:
+        - name: dashboard_rotate
+          status: yellow
+          success_7d: 64
+          failure_7d: 56
+          last_error: "0: syntax error in expression (error token is \"0\")"
+        - name: inbox_watcher[karo]
+          status: yellow
+          success_7d: 815
+          failure_7d: 39
+          last_error: ""
+        - name: cmd_squash_pub_hook
+          status: yellow
+          success_7d: 20
+          failure_7d: 11
+          last_error: "[2026-05-09T06:51:26+09:00] update_dashboard.sh call failed (non-fatal)"
+    after:
+      summary: "green=39 yellow=8 red=0 skip=0"
+      targets:
+        - name: dashboard_rotate
+          status: green
+          success_7d: 8
+          failure_7d: 0
+          last_error: ""
+        - name: inbox_watcher[karo]
+          status: yellow
+          success_7d: 815
+          failure_7d: 39
+          last_error: ""
+        - name: cmd_squash_pub_hook
+          status: yellow
+          success_7d: 20
+          failure_7d: 5
+          last_error: "[2026-05-09T06:52:26+09:00] flock timeout"
   verification:
-    - "gh run view 25545108771 --repo saneaki/gmail-to-markdown: PASS, disk exhaustion log confirmed"
-    - "gh run view 25526627876 --repo saneaki/gmail-to-markdown: PASS, disk exhaustion log confirmed"
-    - "gh run view 25550233369 --repo saneaki/gmail-to-markdown: PASS, workflow_dispatch success difference confirmed"
-    - "python3 YAML parse .github/workflows/sync-gmail.yml: PASS"
-    - "sparse path generation sample: PASS"
-    - "git diff --check: PASS"
-    - "git push origin main: PASS"
-    - "gh run view 25581409399: PASS, conclusion=success"
-    - "gh issue view 3: PASS, state=CLOSED"
-  acceptance_criteria:
-    - id: A-0
+    - command: "bash -n scripts/cmd_squash_pub_hook.sh scripts/sh_health_check.sh"
       status: PASS
-      evidence: "Issue #3 used for progress; root cause/fix/verification comment posted; issue closed."
+      notes: "syntax OK"
+    - command: "python3 YAML parse for config/sh_health_targets.yaml, queue/tasks/ashigaru1.yaml, queue/inbox/ashigaru1.yaml"
+      status: PASS
+      notes: "all parsed by yaml.safe_load"
+    - command: "bash scripts/sh_health_check.sh --no-dashboard"
+      status: PASS
+      notes: "green=39 yellow=8 red=0 skip=0"
+  acceptance_criteria:
     - id: A-1
       status: PASS
-      evidence: "schedule failures 25545108771 / 25526627876 and workflow_dispatch success 25550233369 compared."
+      evidence: "cmd_squash_pub_hook dashboard呼出を $SCRIPT_DIR/scripts/update_dashboard.sh に修正。失敗時は cwd/script をログへ出す。"
     - id: A-2
       status: PASS
-      evidence: "cron/secrets/token/auth/env ruled out; schedule-specific two-job disk footprint and sparse checkout behavior identified as true cause."
+      evidence: "cmd_squash_pub_hook failure_pattern を対象限定化し、gha_failure_status.json filename false positive を除外。tee二重ログも解消し、旧重複は dedupe_failure_lines で1回計上。failure_7d 11 -> 5。"
     - id: A-3
       status: PASS
-      evidence: "Minimal workflow sparse checkout fix implemented; local syntax/path checks and GHA verification passed."
+      evidence: "sh_health_check の continuation line timestamp継承で dashboard_rotate failure_7d 56 -> 0。直前timestampが新しければ新規failureは引き続き計上される。"
     - id: A-4
       status: PASS
-      evidence: "commit c38355f6475cd4306db8eb9ee8f337302a5946e7 pushed; run 25581409399 success."
+      evidence: "inbox_watcher[karo] は追加ignoreなし。failure_7d=39を維持し、将来再発を隠さず自然減衰させる。"
     - id: A-5
       status: PASS
-      evidence: "output/cmd_691_gmail_schedule_failure_repair.md records failure log, root cause, fix, tests, residual risk."
+      evidence: "bash -n、YAML parse、sh_health_check --no-dashboard を実行。red=0 skip=0。対象は dashboard_rotate 100%削減、cmd_squash 54.5%削減、inbox_watcherは方針どおり維持。"
+    - id: A-6
+      status: PASS
+      evidence: "output/cmd_694_sh_health_repair.md にCodex/Opus突合、実装内容、検証、残リスクを記録。"
   residual_risk: |
-    次回 cron schedule は未到来。代替として workflow_dispatch job_type=both dry_run=true で
-    schedule と同じ二段 job path の checkout と sync-to-gdrive 完走を確認した。
-  purpose_validation: |
-    cmd_691 の目的である gmail-to-markdown schedule failure の根本修復について、失敗ログ比較、
-    schedule 固有差分調査、最小修正、push、GHA success、Issue close、成果物記録まで完了した。
-  purpose_gap: null
+    cmd_squash_pub_hook の running daemon は通常の supervisor restart cycle まで旧プロセスのままの可能性がある。
+    ただしファイル上の根本修正は完了。flock timeout は真の lock contention として残し、広い ignore は追加していない。
 
 agent_tool_used: false
 agent_tool_tokens: 0
 
 skill_candidate:
   found: true
-  name: github-actions-mapped-sparse-checkout-disk-repair
-  description: "Mapping CSV など実行時データから sparse checkout path を生成し、巨大 repo の GitHub Actions disk exhaustion を修復する手順"
-  reason: "cmd_652/cmd_690/cmd_691 と checkout/disk 系 failure が反復しており、GHA 修復パターンとして再利用価値が高い。"
+  name: sh-health-log-continuation-and-false-positive-repair
+  description: "timestampなしcontinuation lineの7d誤計上、watcher filename false positive、tee二重ログを分離して修復する手順"
+  reason: "cmd_694 で複数の sh health 高fail原因が同じログ監視パターンに起因し、今後の監視修復に再利用できるため。"

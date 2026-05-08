@@ -114,10 +114,11 @@ def try_parse_line_ts(line):
     return None
 
 
-def grep_count(path, pattern, since_sec=None, ignore_pat=None):
+def grep_count(path, pattern, since_sec=None, ignore_pat=None, dedupe_lines=False):
     """7 日以内の log から pattern にマッチする行数をカウント。
     since_sec が指定された場合、行のタイムスタンプを解析して 7d window 外の行をスキップ。
-    タイムスタンプが解析できない行はスキップしない (安全側に倒す)。"""
+    タイムスタンプなしの continuation 行は直前の有効タイムスタンプを継承する。
+    直前タイムスタンプも不明な行はスキップしない (安全側に倒す)。"""
     if not path or not os.path.exists(path):
         return 0
     try:
@@ -134,15 +135,25 @@ def grep_count(path, pattern, since_sec=None, ignore_pat=None):
         regex = re.compile(pattern, re.IGNORECASE)
         ignore_re = re.compile(ignore_pat, re.IGNORECASE) if ignore_pat else None
         count = 0
+        last_line_ts = None
+        seen = set()
         for line in lines:
             # Timestamp filter: skip lines older than since_sec (7d window)
             if since_sec:
                 line_ts = try_parse_line_ts(line)
-                if line_ts is not None and line_ts < since_sec:
+                if line_ts is not None:
+                    last_line_ts = line_ts
+                effective_ts = line_ts if line_ts is not None else last_line_ts
+                if effective_ts is not None and effective_ts < since_sec:
                     continue
             if regex.search(line):
                 if ignore_re and ignore_re.search(line):
                     continue
+                if dedupe_lines:
+                    dedupe_key = line.strip()
+                    if dedupe_key in seen:
+                        continue
+                    seen.add(dedupe_key)
                 count += 1
         return count
     except Exception:
@@ -198,11 +209,17 @@ def grep_last_error(path, pattern, ignore_pat=None, since_sec=None):
         lines = result.stdout.splitlines()
         regex = re.compile(pattern, re.IGNORECASE)
         ignore_re = re.compile(ignore_pat, re.IGNORECASE) if ignore_pat else None
-        for line in reversed(lines):
+        line_ts_cache = []
+        last_line_ts = None
+        for line in lines:
+            line_ts = try_parse_line_ts(line)
+            if line_ts is not None:
+                last_line_ts = line_ts
+            line_ts_cache.append(line_ts if line_ts is not None else last_line_ts)
+        for line, effective_ts in reversed(list(zip(lines, line_ts_cache))):
             # Timestamp filter: skip lines older than since_sec
             if since_sec:
-                line_ts = try_parse_line_ts(line)
-                if line_ts is not None and line_ts < since_sec:
+                if effective_ts is not None and effective_ts < since_sec:
                     continue
             if regex.search(line):
                 if ignore_re and ignore_re.search(line):
@@ -308,7 +325,7 @@ def evaluate_target(t, defaults):
         mt = file_mtime(log_path)
         age = (NOW - mt) if mt else None
         success = grep_count(log_path, success_pat, since_sec, ignore_pat)
-        failure = grep_count(log_path, failure_pat, since_sec, ignore_pat)
+        failure = grep_count(log_path, failure_pat, since_sec, ignore_pat, t.get("dedupe_failure_lines", False))
         last_err = grep_last_error(log_path, failure_pat, ignore_pat, since_sec)
 
         # silent_design: log が更新されない sh は syslog の CRON 起動記録で代替検知
@@ -347,7 +364,7 @@ def evaluate_target(t, defaults):
         mt = file_mtime(log_path)
         age = (NOW - mt) if mt else None
         success = grep_count(log_path, success_pat, since_sec, ignore_pat)
-        failure = grep_count(log_path, failure_pat, since_sec, ignore_pat)
+        failure = grep_count(log_path, failure_pat, since_sec, ignore_pat, t.get("dedupe_failure_lines", False))
         last_err = grep_last_error(log_path, failure_pat, ignore_pat, since_sec)
 
         # daemon は process 生存も判定材料

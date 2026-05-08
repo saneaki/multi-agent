@@ -227,6 +227,8 @@ targets:
     log: cmd_squash_pub_hook.log
     pid: cmd_squash_pub_hook.pid
     process_pattern: 'cmd_squash_pub_hook.sh'
+    failure_pattern: '\b(ERROR|FAIL|FAILED)\b|KILL-SWITCH|flock timeout|update_dashboard\.sh call failed|pub_us failed|plain push failed|soft reset failed|squash commit failed|unknown invoke_pub_us rc|lock timeout'
+    dedupe_failure_lines: true  # 旧 tee 二重書き込みの隣接重複を health 上で一度だけ数える
 
   # ═══════════════════════════════════════════════════
   # 3C. systemd --user service (2 ファミリ)

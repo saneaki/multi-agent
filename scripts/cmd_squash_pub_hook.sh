@@ -28,7 +28,7 @@ METRIC_FILE="$SCRIPT_DIR/logs/cmd_squash_pub_hook.daily.yaml"
 log() {
     local ts
     ts=$(bash "$SCRIPT_DIR/scripts/jst_now.sh" --yaml 2>/dev/null || date -u +"%Y-%m-%dT%H:%M:%S+09:00")
-    echo "[$ts] $*" | tee -a "$LOG_FILE"
+    echo "[$ts] $*" >> "$LOG_FILE"
 }
 
 # cmd_544 (1): kill-switch
@@ -243,7 +243,7 @@ Refs ${cmd_id}"
             date +%s > "$RATE_TS_FILE"
             echo "$cmd_id" >> "$STATE_FILE"
             log "squash_and_pub done: $cmd_id"
-            bash "$SCRIPT_DIR/update_dashboard.sh" >/dev/null 2>&1 || log "update_dashboard.sh call failed (non-fatal)"
+            bash "$SCRIPT_DIR/scripts/update_dashboard.sh" >/dev/null 2>&1 || log "update_dashboard.sh call failed (non-fatal; cwd=$(pwd); script=$SCRIPT_DIR/scripts/update_dashboard.sh)"
             return 0
             ;;
         1)
