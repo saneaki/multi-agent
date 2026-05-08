@@ -431,6 +431,7 @@ Act without waiting for Karo's instruction:
 - After modifying files → verify with Read
 - If project has tests → run related tests
 - If modifying instructions → check for contradictions
+- **[cmd_671 C-1] If implementing runtime display features (tmux pane-border-format, statusbar, dashboard rendering) → 実機 visual confirm 必須**: script unit test alone is insufficient. Must verify the ACTUAL rendered output in a live tmux session (e.g., capture computed border text, take a screenshot, or have shogun/lord visually confirm). Log the evidence in the report.
 
 **Anomaly handling:**
 - Context below 30% → write progress to report YAML, tell Karo "context running low"

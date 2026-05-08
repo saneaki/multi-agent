@@ -281,6 +281,12 @@ This prevents the 9-hour stall incident (cmd_244/245, 2026-02-27) where Karo wen
       4. 1件でも不足・false → QC FAIL: karo inbox "SO-23 violation: {file_id} not in resource_completion"
       - n8n cmd 判定: task YAML に `pending_resources` フィールドが存在する場合に適用
       - SO-22 (機能検証) との AND 運用: SO-22 PASS かつ SO-23 PASS の両方を満たすこと
+   h. **[cmd_671 C-2] runtime_check visual confirm (display 系 cmd に適用)**:
+      - 対象: tmux pane-border-format / statusbar / dashboard.md 表示 / terminal UI の実描画に影響する実装
+      - 確認要件: `runtime_check` は **実機 visual confirm 1 例以上を含む** こと
+      - script unit test のみ (bash script の stdout 確認のみ) では不十分 — 実際の描画環境での出力を確認すること
+      - 確認証跡: 計算済みボーダーテキスト / スクリーンショット / 殿の目視確認 のいずれかを report に記録
+      - 未確認の場合: QC NG (ends 未達) として karo inbox に "runtime visual confirm 不足" を報告
 6. Perform QC (see Quality Check Criteria below)
 6-b. **means/ends 分類 (mandatory, cmd_559 以降全 QC で必須)**:
    - `~/.claude/skills/semantic-gap-diagnosis/SKILL.md` を参照
