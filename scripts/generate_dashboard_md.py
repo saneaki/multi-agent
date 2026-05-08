@@ -3,8 +3,9 @@
 
 Modes (cmd_659 Scope C):
   - "partial" (default when markers exist in output md):
-      Replace only the content between
+      Replace only the content between managed boundaries:
       <!-- ACTION_REQUIRED:START --> ... <!-- ACTION_REQUIRED:END -->
+      <!-- OBSERVATION_QUEUE:START --> ... <!-- OBSERVATION_QUEUE:END -->
       Outside-boundary sections are copied verbatim from the existing md
       (touch-禁止 — protects achievements/frog/skill 等の直編集領域).
   - "full" (legacy, used when no markers / fresh init):
@@ -40,6 +41,8 @@ ACHIEVEMENTS_REQUIRED_FIELDS = {"time", "battlefield", "task", "result"}
 # Boundary markers (cmd_659 Scope C / R1)
 ACTION_REQUIRED_START = "<!-- ACTION_REQUIRED:START -->"
 ACTION_REQUIRED_END = "<!-- ACTION_REQUIRED:END -->"
+OBSERVATION_QUEUE_START = "<!-- OBSERVATION_QUEUE:START -->"
+OBSERVATION_QUEUE_END = "<!-- OBSERVATION_QUEUE:END -->"
 
 # Severity ordering (R5)
 SEVERITY_ORDER = {"P0": 0, "HIGH": 1, "MEDIUM": 2, "INFO": 3}
@@ -255,6 +258,35 @@ def render_action_required_section(action_required: list[dict[str, Any]]) -> str
     return "\n".join(lines)
 
 
+def render_observation_queue_section(observation_queue: list[dict[str, Any]]) -> str:
+    """Render time-waiting / continued-observation dashboard items."""
+    lines: list[str] = []
+    lines.append("## ⏳ 時間経過待ち / 観察継続")
+    lines.append("")
+
+    sorted_items = sorted(
+        [r for r in observation_queue if isinstance(r, dict)],
+        key=_action_required_sort_key,
+    )
+
+    rows: list[list[str]] = []
+    for r in sorted_items:
+        sev = r.get("severity")
+        if sev in VALID_SEVERITIES:
+            tag_cell = f"{SEVERITY_BADGE[sev]} {r.get('tag', '')}".strip()
+        else:
+            tag_cell = r.get("tag", "")
+        rows.append([
+            tag_cell,
+            r.get("title", ""),
+            r.get("detail", ""),
+        ])
+
+    lines.extend(render_table(["タグ", "項目", "詳細"], rows, TABLE_4_EMPTY_ROW))
+    lines.append("")
+    return "\n".join(lines)
+
+
 def partial_replace(
     existing_md: str,
     start_marker: str,
@@ -279,23 +311,54 @@ def partial_replace(
     return head + "\n" + new_content.rstrip("\n") + "\n" + tail
 
 
+def ensure_or_replace_observation_queue(existing_md: str, new_content: str) -> str | None:
+    """Replace observation queue if markers exist, otherwise insert after ACTION_REQUIRED."""
+    replaced = partial_replace(
+        existing_md,
+        OBSERVATION_QUEUE_START,
+        OBSERVATION_QUEUE_END,
+        new_content,
+    )
+    if replaced is not None:
+        return replaced
+
+    action_end_pos = existing_md.find(ACTION_REQUIRED_END)
+    if action_end_pos == -1:
+        return None
+
+    insert_pos = action_end_pos + len(ACTION_REQUIRED_END)
+    block = (
+        "\n\n"
+        f"{OBSERVATION_QUEUE_START}\n"
+        f"{new_content.rstrip()}\n"
+        f"{OBSERVATION_QUEUE_END}"
+    )
+    return existing_md[:insert_pos] + block + existing_md[insert_pos:]
+
+
 def validate_dashboard_yaml(data: dict[str, Any]) -> list[str]:
     """Schema validation (R3): return list of errors (empty = ok)."""
     errors: list[str] = []
     ar = data.get("action_required") or []
     if not isinstance(ar, list):
         errors.append("action_required must be a list")
-        return errors
-    for i, item in enumerate(ar):
-        if not isinstance(item, dict):
-            errors.append(f"action_required[{i}]: not a dict")
+    oq = data.get("observation_queue") or []
+    if not isinstance(oq, list):
+        errors.append("observation_queue must be a list")
+
+    for section_name, items in (("action_required", ar), ("observation_queue", oq)):
+        if not isinstance(items, list):
             continue
-        # New-format entries must have severity in valid set
-        sev = item.get("severity")
-        if sev is not None and sev not in VALID_SEVERITIES:
-            errors.append(
-                f"action_required[{i}]: invalid severity '{sev}'"
-            )
+        for i, item in enumerate(items):
+            if not isinstance(item, dict):
+                errors.append(f"{section_name}[{i}]: not a dict")
+                continue
+            # New-format entries must have severity in valid set
+            sev = item.get("severity")
+            if sev is not None and sev not in VALID_SEVERITIES:
+                errors.append(
+                    f"{section_name}[{i}]: invalid severity '{sev}'"
+                )
     return errors
 
 
@@ -375,6 +438,11 @@ def generate_markdown(data: dict[str, Any]) -> str:
     lines.append(ACTION_REQUIRED_START)
     lines.append(render_action_required_section(data.get("action_required") or []))
     lines.append(ACTION_REQUIRED_END)
+    lines.append("")
+
+    lines.append(OBSERVATION_QUEUE_START)
+    lines.append(render_observation_queue_section(data.get("observation_queue") or []))
+    lines.append(OBSERVATION_QUEUE_END)
     lines.append("")
 
     lines.extend(violation_section(last_updated))
@@ -509,7 +577,7 @@ def main() -> None:
         choices=("auto", "partial", "full"),
         default="auto",
         help="auto (default): partial if markers exist in output md; full otherwise. "
-             "partial: replace only ACTION_REQUIRED boundary content (R1+R3 safe). "
+             "partial: replace managed ACTION_REQUIRED/OBSERVATION_QUEUE boundary content (R1+R3 safe). "
              "full: legacy full regeneration (used by Scope F initial injection).",
     )
     args = parser.parse_args()
@@ -566,16 +634,16 @@ def main() -> None:
         except Exception:
             existing_md = ""
 
-    has_markers = (
+    has_action_markers = (
         ACTION_REQUIRED_START in existing_md
         and ACTION_REQUIRED_END in existing_md
     )
 
     if mode == "auto":
-        mode = "partial" if has_markers else "full"
+        mode = "partial" if has_action_markers else "full"
 
     if mode == "partial":
-        if not has_markers:
+        if not has_action_markers:
             print(
                 f"ERROR: --mode=partial requires both '{ACTION_REQUIRED_START}' and "
                 f"'{ACTION_REQUIRED_END}' markers in {output_path}. "
@@ -584,15 +652,26 @@ def main() -> None:
                 file=sys.stderr,
             )
             sys.exit(3)
-        section_md = render_action_required_section(
+        action_required_md = render_action_required_section(
             data.get("action_required") or []
         )
         new_md = partial_replace(
-            existing_md, ACTION_REQUIRED_START, ACTION_REQUIRED_END, section_md
+            existing_md, ACTION_REQUIRED_START, ACTION_REQUIRED_END, action_required_md
         )
         if new_md is None:
             print(
                 "ERROR: marker boundary replacement failed; md not modified.",
+                file=sys.stderr,
+            )
+            sys.exit(3)
+
+        observation_md = render_observation_queue_section(
+            data.get("observation_queue") or []
+        )
+        new_md = ensure_or_replace_observation_queue(new_md, observation_md)
+        if new_md is None:
+            print(
+                "ERROR: observation_queue boundary replacement failed; md not modified.",
                 file=sys.stderr,
             )
             sys.exit(3)

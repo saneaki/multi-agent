@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # tests/dashboard_pipeline_test.sh
-# cmd_659 Scope E: action_required_sync.sh + generate_dashboard_md.py +
+# cmd_659 Scope E / cmd_681: action_required_sync.sh + generate_dashboard_md.py +
 # dashboard_rotate.sh の統合テスト。
 #
 # 6 test groups (acceptance criteria E-1 〜 E-6):
@@ -87,6 +87,7 @@ mk_dashboard_yaml() {
 metadata:
   last_updated: '2026-05-08 00:00 JST'
 action_required: []
+observation_queue: []
 action_required_archive: []
 frog:
   today: null
@@ -273,6 +274,32 @@ assert_contains_file "E-1.4 golden: boundary END preserved"   "$DMD" "<!-- ACTIO
 assert_contains_file "E-1.4 golden: severity badge HIGH"      "$DMD" "⚠️ HIGH"
 assert_contains_file "E-1.4 golden: title rendered"           "$DMD" "test_high_issue"
 assert_contains_file "E-1.4 golden: outside-boundary preserved" "$DMD" "keep this section"
+
+# E-1.4b observation_queue render + old-md marker insertion
+python3 - <<PYEOF
+import yaml
+with open("$DY") as f:
+    d = yaml.safe_load(f)
+d["observation_queue"] = [
+    {
+        "issue_id": "obs1234567890abc",
+        "parent_cmd": "cmd_obs",
+        "severity": "INFO",
+        "tag": "[observe-test]",
+        "title": "observation_test_entry",
+        "detail": "wait for scheduled run",
+        "needs_lord_decision": False,
+        "status": "open",
+        "source_report_ts": "2026-05-08T00:00:00+09:00",
+    }
+]
+with open("$DY", "w") as f:
+    yaml.dump(d, f, allow_unicode=True, default_flow_style=False)
+PYEOF
+run_render "$DY" "$DMD" --mode partial >/dev/null 2>&1
+assert_contains_file "E-1.4b observation boundary START rendered" "$DMD" "<!-- OBSERVATION_QUEUE:START -->"
+assert_contains_file "E-1.4b observation title rendered"          "$DMD" "observation_test_entry"
+assert_contains_file "E-1.4b action_required title preserved"     "$DMD" "test_high_issue"
 
 # E-1.5 schema validate — invalid severity rejects (no write)
 GR_BAD="$TEST_DIR/e1_bad.yaml"
@@ -480,8 +507,13 @@ done
 SCHEMA_CHECK=$(python3 -c "
 import yaml
 with open('$REPO_DIR/queue/reports/gunshi_report.yaml') as f:
-    d = yaml.safe_load(f) or {}
-required_present = 'action_required_candidates' in (d.get('result') or {})
+    docs = [d or {} for d in yaml.safe_load_all(f)]
+required_present = any(
+    isinstance((d.get('result') or {}), dict)
+    and 'action_required_candidates' in (d.get('result') or {})
+    for d in docs
+    if isinstance(d, dict)
+)
 print('present' if required_present else 'missing')
 ")
 assert_eq "E-4.2 gunshi_report.yaml schema has action_required_candidates" "present" "$SCHEMA_CHECK"
@@ -541,6 +573,20 @@ d["action_required"] = [
         "source_report_ts": "2026-05-08T00:00:00+09:00",
     }
 ]
+d["observation_queue"] = [
+    {
+        "issue_id": "obsabcdef12345678",
+        "parent_cmd": "cmd_e6",
+        "severity": "INFO",
+        "tag": "[observe-e6]",
+        "title": "rotate_observation_entry",
+        "detail": "must survive rotate too",
+        "needs_lord_decision": False,
+        "status": "open",
+        "created_at": "2026-05-08T00:00:00+09:00",
+        "source_report_ts": "2026-05-08T00:00:00+09:00",
+    }
+]
 # Set last_updated to YESTERDAY to trigger rotation
 d["metadata"]["last_updated"] = "2026-05-07 23:59 JST"
 with open("$DY6", "w") as f:
@@ -551,6 +597,7 @@ PYEOF
 run_render "$DY6" "$DMD6" --mode full >/dev/null 2>&1
 assert_contains_file "E-6.1 baseline render: action_required entry visible" "$DMD6" "regression_test_entry"
 assert_contains_file "E-6.1 baseline render: markers injected"             "$DMD6" "<!-- ACTION_REQUIRED:START -->"
+assert_contains_file "E-6.1 baseline render: observation marker injected"  "$DMD6" "<!-- OBSERVATION_QUEUE:START -->"
 
 # Run rotate.sh against the test fixture (env-overridden paths)
 STREAKS_TEST="$TEST_DIR/e6_streaks.yaml"
@@ -565,6 +612,7 @@ DASHBOARD_ROTATE_LOCK="$TEST_DIR/e6_rotate.lock" \
 # Verify dashboard.md still contains action_required content (boundary preserved)
 assert_contains_file "E-6.2 rotate post: action_required entry preserved" "$DMD6" "regression_test_entry"
 assert_contains_file "E-6.2 rotate post: markers preserved"               "$DMD6" "<!-- ACTION_REQUIRED:START -->"
+assert_contains_file "E-6.2 rotate post: observation entry preserved"      "$DMD6" "rotate_observation_entry"
 
 # Verify yaml's action_required survived rotation
 POST_YAML_AR=$(python3 -c "
@@ -573,6 +621,13 @@ d = yaml.safe_load(open('$DY6'))
 print(len(d.get('action_required') or []))
 ")
 assert_eq "E-6.3 rotate preserved action_required in yaml" "1" "$POST_YAML_AR"
+
+POST_YAML_OBS=$(python3 -c "
+import yaml
+d = yaml.safe_load(open('$DY6'))
+print(len(d.get('observation_queue') or []))
+")
+assert_eq "E-6.3b rotate preserved observation_queue in yaml" "1" "$POST_YAML_OBS"
 
 # Verify achievements rotation actually happened (today empties, yesterday gets header)
 ACH_CHECK=$(python3 -c "

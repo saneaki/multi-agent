@@ -233,6 +233,7 @@
 !output/cmd_675b_skill_integration_implementation.md
 !output/cmd_676_gas_mail_manager_per_customer_workbook.md
 !output/cmd_678_repo_health_check.md
+!output/cmd_681_dashboard_observation_queue.md
 
 # cmd_544: 3 安全装置 state files (kill-switch/rate-limit/pending/daily-metric)
 !logs/cmd_squash_pub_hook.disabled
