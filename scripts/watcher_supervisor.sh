@@ -13,6 +13,49 @@ SUPERVISOR_LOCK="$SCRIPT_DIR/logs/watcher_supervisor.lock"
 
 mode="${1:-daemon}"
 
+log_supervisor() {
+    printf '[%s] [watcher_supervisor] %s\n' "$(bash "$SCRIPT_DIR/scripts/jst_now.sh")" "$*"
+}
+
+pid_is_alive() {
+    local pid="$1"
+    [[ "$pid" =~ ^[0-9]+$ ]] && kill -0 "$pid" 2>/dev/null
+}
+
+cleanup_stale_pid_file() {
+    local pid_file="$1"
+    local pid=""
+
+    [ -f "$pid_file" ] || return 0
+    pid="$(head -n 1 "$pid_file" | tr -d '[:space:]' || true)"
+    if ! pid_is_alive "$pid"; then
+        log_supervisor "removing stale pid file: $pid_file (pid=${pid:-empty})"
+        rm -f "$pid_file"
+    fi
+}
+
+cleanup_stale_lock_file() {
+    local lock_file="$1"
+    local pid=""
+
+    [ -f "$lock_file" ] || return 0
+    pid="$(head -n 1 "$lock_file" | tr -d '[:space:]' || true)"
+    if ! pid_is_alive "$pid"; then
+        log_supervisor "removing stale lock file: $lock_file (pid=${pid:-empty})"
+        rm -f "$lock_file"
+    fi
+}
+
+cleanup_stale_runtime_files() {
+    local pid_file
+
+    for pid_file in "$SCRIPT_DIR"/logs/*.pid; do
+        [ -e "$pid_file" ] || continue
+        cleanup_stale_pid_file "$pid_file"
+    done
+    cleanup_stale_lock_file "$SUPERVISOR_LOCK"
+}
+
 supervisor_pid_from_lock() {
     local pid=""
 
@@ -68,6 +111,7 @@ start_cmd_notifier_if_missing() {
     if pgrep -f "scripts/cmd_complete_notifier.sh" >/dev/null 2>&1; then
         return 0
     fi
+    log_supervisor "cmd_complete_notifier.sh missing; starting"
     nohup bash scripts/cmd_complete_notifier.sh >> "logs/cmd_complete_notifier.log" 2>&1 &
 }
 
@@ -75,6 +119,7 @@ start_shogun_inbox_notifier_if_missing() {
     if pgrep -f "scripts/shogun_inbox_notifier.sh" >/dev/null 2>&1; then
         return 0
     fi
+    log_supervisor "shogun_inbox_notifier.sh missing; starting"
     nohup bash scripts/shogun_inbox_notifier.sh >> "logs/shogun_inbox_notifier.log" 2>&1 &
 }
 
@@ -94,7 +139,7 @@ is_welcome_screen() {
 # 定期点呼: ウェルカム画面停止エージェントを検出し自動復旧
 roll_call_check() {
     local timestamp
-    timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+    timestamp=$(bash "$SCRIPT_DIR/scripts/jst_now.sh")
 
     declare -A AGENT_PANES
     AGENT_PANES=(
@@ -139,6 +184,8 @@ roll_call_check() {
 ROLL_CALL_LAST=0
 
 start_daemon() {
+    cleanup_stale_runtime_files
+
     # 多重起動防止: PIDファイルロック
     exec 9>"$SUPERVISOR_LOCK"
     if ! flock -n 9; then
