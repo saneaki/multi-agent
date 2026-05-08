@@ -76,6 +76,7 @@
 !config/streaks_format.yaml
 !config/counter_coefficients.yaml
 !config/qc_checklist.yaml
+!config/sh_health_targets.yaml
 
 # Templates
 !templates/
@@ -140,6 +141,7 @@
 !scripts/compact_exception_check.sh
 !scripts/shogun_context_notify.sh
 !scripts/role_context_notify.sh
+!scripts/sh_health_check.sh
 !scripts/counter_increment.sh
 !scripts/statusline_with_counter.sh
 !scripts/qc_auto_check.sh
@@ -221,6 +223,9 @@
 !output/cmd_669_instructions_unification.md
 !output/cmd_674_skill_candidate_audit.md
 !output/cmd_674_skill_candidate_strict_process.md
+!output/cmd_673_scope_a_opus.md
+!output/cmd_673_scope_a_integrated.md
+!output/cmd_673_sh_health_visualization.md
 
 # cmd_544: 3 安全装置 state files (kill-switch/rate-limit/pending/daily-metric)
 !logs/cmd_squash_pub_hook.disabled

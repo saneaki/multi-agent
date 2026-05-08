@@ -1,0 +1,302 @@
+# cmd_673 Scope B-D: sh 実行状況監視対象定義
+#
+# Tier 1 = 30 ファミリ (cron 17 + supervisor 4 + systemd 2 + claude_hook 6 + ntfy 1)
+# 設計根拠: output/cmd_673_scope_a_integrated.md
+# 関連: scripts/sh_health_check.sh
+
+version: 1
+last_updated: '2026-05-08'
+
+defaults:
+  # 共通 success/failure pattern (両調査統合・対象別 override 可)
+  success_pattern: 'OK|完了|done|succeeded|PASS|exit 0|完了しました|sync.*success'
+  failure_pattern: 'ERROR|FAIL|exit [1-9]|Traceback|denied|FAILED|push failed|notify FAILED|Bad credentials'
+  # ALERT/RESULT=false は scriptの正常出力扱い (両調査一致)
+  ignore_patterns:
+    - 'ALERT'
+    - 'RESULT=false'
+  log_dir: /home/ubuntu/shogun/logs
+  rolling_window_days: 7
+
+targets:
+  # ═══════════════════════════════════════════════════
+  # 3A. cron 起動 (17 ファミリ)
+  # ═══════════════════════════════════════════════════
+  - name: discord_gateway_healthcheck
+    category: cron
+    expected_interval: 300        # 5 min
+    yellow_after: 420             # 7 min
+    red_after: 900                # 15 min
+    log: discord_gateway_health.log
+
+  - name: shogun_context_notify
+    category: cron
+    expected_interval: 300
+    yellow_after: 900
+    red_after: 3600
+    log: context_notify.log
+    silent_design: true        # 通常通知不要時は exit 0 で出力なし → syslog fallback
+    syslog_pattern: 'shogun_context_notify\.sh'
+
+  - name: role_context_notify
+    category: cron_per_role
+    expected_interval: 300
+    yellow_after: 900
+    red_after: 3600
+    log_pattern: 'context_notify_{role}.log'
+    silent_design: true
+    syslog_pattern: 'role_context_notify\.sh {role}'
+    instances:
+      - role: karo
+      - role: gunshi
+      - role: ashigaru1
+      - role: ashigaru2
+      - role: ashigaru3
+      - role: ashigaru4
+      - role: ashigaru5
+      - role: ashigaru6
+      - role: ashigaru7
+
+  - name: karo_self_clear_check
+    category: cron
+    expected_interval: 600
+    yellow_after: 1500
+    red_after: 3600
+    log: safe_clear/karo.log
+    ignore_patterns:
+      - 'C2:.*task YAML not found'   # 通常状態 (task = unknown は正常分岐)
+      - 'condition.*not met'
+
+  - name: gunshi_self_clear_check
+    category: cron
+    expected_interval: 600
+    yellow_after: 1500
+    red_after: 3600
+    log: safe_clear/gunshi.log
+    ignore_patterns:
+      - 'condition.*not met'
+
+  - name: safe_window_judge
+    category: cron_per_role
+    expected_interval: 600
+    yellow_after: 1500
+    red_after: 3600
+    log_pattern: 'safe_window/{role}.log'
+    instances:
+      - role: karo
+      - role: gunshi
+    ignore_patterns:
+      - 'REASON=.*条件未充足 → wait'    # 安全窓判定の正常出力
+      - 'fail: [CG][0-9]'                # 条件未充足の正常レポート行
+
+  - name: detect_compact
+    category: cron
+    expected_interval: 600
+    yellow_after: 1500
+    red_after: 3600
+    log: compact_log/cron.log    # role 別出力なし — 共通log
+    silent_design: true
+    syslog_pattern: 'detect_compact\.sh'
+
+  - name: compact_observer
+    category: cron_per_role
+    expected_interval: 1800
+    yellow_after: 3600
+    red_after: 7200
+    log_pattern: 'compact_observer.log'      # 共通log (role不問)
+    instances:
+      - role: karo
+      - role: gunshi
+
+  - name: karo_auto_clear
+    category: cron
+    expected_interval: 1800
+    yellow_after: 3600
+    red_after: 5400
+    log: /tmp/karo_auto_clear.log
+    abs_log: true
+    ignore_patterns:
+      - 'safe_clear_check=FAIL -> skip'    # 安全条件未充足の正常出力
+
+  - name: shogun_in_progress_monitor
+    category: cron
+    expected_interval: 3600
+    yellow_after: 5400
+    red_after: 10800
+    log: in_progress_monitor.log
+
+  - name: shogun_reality_check
+    category: cron
+    expected_interval: 28800       # 8h (1日3回)
+    yellow_after: 30000
+    red_after: 43200               # 12h
+    log: reality_check.log
+
+  - name: cmd_kpi_observer
+    category: cron
+    expected_interval: 86400
+    yellow_after: 93600
+    red_after: 180000
+    log: kpi_observer.log
+    retired_after: '2026-06-30'    # 📊 運用指標削除後 retired
+
+  - name: suggestions_digest
+    category: cron
+    expected_interval: 86400
+    yellow_after: 93600
+    red_after: 180000
+    log: suggestions_digest.log
+
+  - name: dashboard_rotate
+    category: cron
+    expected_interval: 86400
+    yellow_after: 93600
+    red_after: 180000
+    log: dashboard_rotate.log
+
+  - name: restart_n8n
+    category: cron
+    expected_interval: 86400
+    yellow_after: 93600
+    red_after: 180000
+    log: n8n_restart.log
+
+  - name: session_to_obsidian
+    category: cron
+    expected_interval: 86400
+    yellow_after: 93600
+    red_after: 180000
+    log: session_to_obsidian.log
+
+  # ═══════════════════════════════════════════════════
+  # 3B. watcher_supervisor 配下 daemon (4 ファミリ)
+  # cmd_complete_notifier は supervisor 配下 (実機ps確認: 2026-05-08)
+  # ═══════════════════════════════════════════════════
+  - name: cmd_complete_notifier
+    category: daemon
+    expected_tick: 300
+    yellow_after: 1800
+    red_after: 3600
+    log: cmd_complete_notifier.log
+    pid: cmd_complete_notifier.pid
+    start_via: supervisor
+    secondary_artifact:
+      type: dashboard_event_count
+      log: cmd_complete_notifier.log
+      pattern: 'dashboard\.md changed|notify sent|sent .*completion'
+      window_days: 7
+      condition: "AC-A: 7d cmd 完了 ≥ 1 件 (logs/cmd_squash_pub_hook.log で要確認)"
+
+  - name: inbox_watcher
+    category: daemon_per_agent
+    expected_tick: 300
+    yellow_after: 7200             # 2h
+    red_after: 14400               # 4h
+    log_pattern: 'inbox_watcher_{agent}.log'
+    instances:
+      - agent: shogun
+      - agent: karo
+      - agent: gunshi
+      - agent: ashigaru1
+      - agent: ashigaru2
+      - agent: ashigaru3
+      - agent: ashigaru4
+      - agent: ashigaru5
+      - agent: ashigaru6
+      - agent: ashigaru7
+    process_pattern: 'inbox_watcher.sh {agent}'
+
+  - name: shogun_inbox_notifier
+    category: daemon
+    expected_tick: 300
+    yellow_after: 1800
+    red_after: 3600
+    log: shogun_inbox_notifier.log
+    process_pattern: 'shogun_inbox_notifier.sh'
+
+  - name: cmd_squash_pub_hook
+    category: daemon
+    expected_tick: 300
+    yellow_after: 1800
+    red_after: 3600
+    log: cmd_squash_pub_hook.log
+    pid: cmd_squash_pub_hook.pid
+    process_pattern: 'cmd_squash_pub_hook.sh'
+
+  # ═══════════════════════════════════════════════════
+  # 3C. systemd --user service (2 ファミリ)
+  # ═══════════════════════════════════════════════════
+  - name: shogun-discord
+    category: systemd_unit
+    unit: shogun-discord.service
+
+  - name: shogun-watcher-supervisor
+    category: systemd_unit
+    unit: shogun-watcher-supervisor.service
+
+  # ═══════════════════════════════════════════════════
+  # 3D. Claude hooks (6 ファミリ)
+  # ═══════════════════════════════════════════════════
+  - name: stop_hook_inbox
+    category: claude_hook
+    hook_type: Stop
+    script: scripts/stop_hook_inbox.sh
+    side_effect_pattern: 'logs/daily/*.md'
+    yellow_window_days: 14
+    red_condition: 'script_missing_or_unregistered'
+
+  - name: notion_session_log
+    category: claude_hook
+    hook_type: Stop
+    script: scripts/notion_session_log.sh
+    side_effect_pattern: 'logs/daily/*.md'   # Notion log は外部、daily log で代替確認
+    yellow_window_days: 14
+
+  - name: stop_hook_daily_log
+    category: claude_hook
+    hook_type: Stop
+    script: scripts/stop_hook_daily_log.sh
+    side_effect_pattern: 'logs/daily/*.md'
+    yellow_window_days: 14
+
+  - name: pre_compact_snapshot
+    category: claude_hook
+    hook_type: PreCompact
+    script: scripts/hooks/pre_compact_snapshot.sh
+    side_effect_pattern: 'queue/snapshots/*.yaml'
+    yellow_window_days: 14
+
+  - name: update_dashboard_timestamp
+    category: claude_hook
+    hook_type: PostToolUse
+    script: scripts/update_dashboard_timestamp.sh
+    side_effect_pattern: 'dashboard.md'
+    yellow_window_days: 14
+
+  - name: ir1_editable_files_check
+    category: claude_hook
+    hook_type: PostToolUse
+    script: scripts/hooks/ir1_editable_files_check.sh
+    side_effect_pattern: 'logs/daily/*.md'   # 違反なき場合は出力なし → daily log で代替
+    yellow_window_days: 30                   # 違反は稀なので長め
+    note: "発火は違反検出時のみ。settings.json 登録存続が主判定"
+
+  # ═══════════════════════════════════════════════════
+  # 3E. ntfy_listener.sh (host_guard 付・Tier 1 例外)
+  # designated host のみ Tier 1。本ホストでは host mismatch exit が正常 → 監視除外
+  # ═══════════════════════════════════════════════════
+  - name: ntfy_listener
+    category: daemon
+    host_guard: srv1121380
+    expected_tick: 60
+    yellow_after: 600
+    red_after: 1800
+    log: ntfy_listener.log
+    process_pattern: 'ntfy_listener.sh'
+
+# ═══════════════════════════════════════════════════
+# 残課題 (家老判断確定後に追記):
+# - Q6: cmd_complete_notifier 起動経路 = supervisor (本config記載済)
+# - Q1: shogun-discord.service Tier1 = 含める (本config記載済)
+# - Q8: 🔴 alert push通知は本cmdスコープ外 (後続cmd候補)
+# - Q10: retired_after は cmd_kpi_observer に記載済 (2026-06-30)
