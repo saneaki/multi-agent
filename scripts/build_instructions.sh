@@ -14,9 +14,6 @@ OUTPUT_DIR="$ROOT_DIR/instructions/generated"
 
 mkdir -p "$OUTPUT_DIR"
 
-echo "=== Instruction File Build System ==="
-echo "Building instruction files..."
-
 # ============================================================
 # Helper function: Build a complete instruction file
 # ============================================================
@@ -28,6 +25,12 @@ build_instruction_file() {
     local original_file="$ROOT_DIR/instructions/${role}.md"
 
     echo "Building: $output_filename (CLI: $cli_type, Role: $role)"
+
+    # Skip if output path is a symlink (cmd_669: unified instructions/*.md — do not overwrite via link)
+    if [ -L "$output_path" ]; then
+        echo "  ⏭️  Skipped: $output_filename is a symlink (unified source — no rebuild needed)"
+        return 0
+    fi
 
     # Extract YAML front matter from original file
     if [ -f "$original_file" ]; then
@@ -76,6 +79,10 @@ EOFYAML
     echo "  ✅ Created: $output_filename"
 }
 
+build_all() {
+echo "=== Instruction File Build System ==="
+echo "Building instruction files..."
+
 # Build Claude Code instruction files
 build_instruction_file "claude" "shogun" "shogun.md"
 build_instruction_file "claude" "karo" "karo.md"
@@ -99,6 +106,7 @@ build_instruction_file "kimi" "shogun" "kimi-shogun.md"
 build_instruction_file "kimi" "karo" "kimi-karo.md"
 build_instruction_file "kimi" "ashigaru" "kimi-ashigaru.md"
 build_instruction_file "kimi" "gunshi" "kimi-gunshi.md"
+} # end build_all
 
 # ============================================================
 # AGENTS.md generation (Codex auto-load file)
@@ -117,13 +125,10 @@ generate_agents_md() {
     fi
 
     # Normalize line endings to LF to keep tracked auto-load files stable across platforms.
+    # NOTE (cmd_669): instructions/*.md paths are now unified — no longer replaced with generated/codex-*.md
     sed \
         -e 's|CLAUDE\.md|AGENTS.md|g' \
         -e 's|CLAUDE\.local\.md|AGENTS.override.md|g' \
-        -e 's|instructions/shogun\.md|instructions/generated/codex-shogun.md|g' \
-        -e 's|instructions/karo\.md|instructions/generated/codex-karo.md|g' \
-        -e 's|instructions/ashigaru\.md|instructions/generated/codex-ashigaru.md|g' \
-        -e 's|instructions/gunshi\.md|instructions/generated/codex-gunshi.md|g' \
         -e 's|~/.claude/|~/.codex/|g' \
         -e 's|\.claude\.json|.codex/config.toml|g' \
         -e 's|\.mcp\.json|config.toml (mcp_servers section)|g' \
@@ -234,10 +239,79 @@ EOFYAML
     echo "  ✅ Created: agents/default/agent.yaml"
 }
 
+# ============================================================
+# Two-CLI Consistency Check (cmd_669)
+# ============================================================
+# Verifies that AGENTS.md and CLAUDE.md differ only in expected CLI-name strings.
+# Run with --check flag to validate without rebuilding.
+check_consistency() {
+    local claude_md="$ROOT_DIR/CLAUDE.md"
+    local agents_md="$ROOT_DIR/AGENTS.md"
+
+    echo "=== Two-CLI Consistency Check ==="
+
+    if [ ! -f "$claude_md" ] || [ ! -f "$agents_md" ]; then
+        echo "  ⚠️  CLAUDE.md or AGENTS.md not found."
+        return 1
+    fi
+
+    # Normalize both files for comparison: strip expected CLI differences
+    local tmp_claude; tmp_claude=$(mktemp)
+    local tmp_agents; tmp_agents=$(mktemp)
+
+    # Normalize expected CLI differences (CLI name, auto-load file, reset command, home dir, config)
+    local NORM_CLAUDE_CMD='s|Claude Code|__CLI__|g'
+    local NORM_AGENTS_CMD='s|Codex CLI|__CLI__|g'
+
+    sed \
+        -e "$NORM_CLAUDE_CMD" \
+        -e 's|CLAUDE\.md|__AUTOLOAD__|g' \
+        -e 's|CLAUDE\.local\.md|__AUTOLOAD_LOCAL__|g' \
+        -e 's|~/.claude/|__CLI_HOME__|g' \
+        -e 's|\.claude\.json|__CLI_CONFIG__|g' \
+        -e 's|/clear|__RESET__|g' \
+        "$claude_md" > "$tmp_claude"
+
+    sed \
+        -e "$NORM_AGENTS_CMD" \
+        -e 's|AGENTS\.md|__AUTOLOAD__|g' \
+        -e 's|AGENTS\.override\.md|__AUTOLOAD_LOCAL__|g' \
+        -e 's|~/.codex/|__CLI_HOME__|g' \
+        -e 's|\.codex/config\.toml|__CLI_CONFIG__|g' \
+        -e 's|/new|__RESET__|g' \
+        -e 's|/clear|__RESET__|g' \
+        "$agents_md" > "$tmp_agents"
+
+    local diff_count
+    diff_count=$(diff "$tmp_claude" "$tmp_agents" | grep -c '^[<>]' || true)
+
+    rm -f "$tmp_claude" "$tmp_agents"
+
+    if [ "$diff_count" -eq 0 ]; then
+        echo "  ✅ AGENTS.md == CLAUDE.md (CLI names only differ)"
+        return 0
+    else
+        echo "  ⚠️  Unexpected diff lines: $diff_count"
+        echo "  Run: diff <(sed normalization CLAUDE.md) <(sed normalization AGENTS.md)"
+        return 1
+    fi
+}
+
+# Parse args
+if [ "${1:-}" = "--check" ]; then
+    check_consistency
+    exit $?
+fi
+
+build_all
+
 # Generate CLI auto-load files
 generate_agents_md
 generate_copilot_instructions
 generate_kimi_instructions
+
+# Run consistency check after generation
+check_consistency
 
 echo ""
 echo "=== Build Complete ==="

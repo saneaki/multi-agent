@@ -77,7 +77,7 @@ language:
    - `clear_command`: 既に/clearされた → 続行
    - その他: 内容を確認してから続行
    - `read: false` エントリを `read: true` に更新してから次ステップへ
-4. **Read your instructions file**: shogun→`instructions/generated/codex-shogun.md`, karo→`instructions/generated/codex-karo.md`, ashigaru→`instructions/generated/codex-ashigaru.md`, gunshi→`instructions/generated/codex-gunshi.md`. **NEVER SKIP** — even if a conversation summary exists. Summaries do NOT preserve persona, speech style, or forbidden actions.
+4. **Read your instructions file**: shogun→`instructions/shogun.md`, karo→`instructions/karo.md`, ashigaru→`instructions/ashigaru.md`, gunshi→`instructions/gunshi.md`. **NEVER SKIP** — even if a conversation summary exists. Summaries do NOT preserve persona, speech style, or forbidden actions.
 4. Rebuild state from primary YAML data (queue/, tasks/, reports/)
 5. Review forbidden actions, then start work
 
@@ -301,7 +301,7 @@ Notion-Version: 2022-06-28 固定。
 
 ## Self Clear Protocol (ashigaru)
 
-Details: [`instructions/generated/codex-ashigaru.md`](instructions/generated/codex-ashigaru.md) §Self Clear Protocol.
+Details: [`instructions/ashigaru.md`](instructions/ashigaru.md) §Self Clear Protocol.
 After task completion, ashigaru runs `self_clear_check.sh` to `/clear` its context and prevent auto-compact cascades.
 
 ## GUI Verification Protocol (tkinter)
