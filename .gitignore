@@ -320,6 +320,14 @@
 !skills/s-check/SKILL.md
 !skills/shogun-dashboard-sync-silent-failure-pattern/
 !skills/shogun-dashboard-sync-silent-failure-pattern/SKILL.md
+!skills/codex-context-pane-border/
+!skills/codex-context-pane-border/SKILL.md
+!skills/codex-skill-index/
+!skills/codex-skill-index/SKILL.md
+
+# cmd_675 skill integration output + skill_candidates
+!output/cmd_675_skill_candidate_integration.md
+!queue/skill_candidates.yaml
 
 # Python venv (explicit deny — whitelist patterns like LICENSE leak through !*/)
 .venv/

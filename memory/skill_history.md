@@ -7,6 +7,8 @@ dashboard.md 🛠️スキル欄から溢れた全エントリ。最新順（上
 
 | スキル名 | 出典 |
 |----------|------|
+| **shogun-gas-clasp-rapt-reauth-fallback** ✅実装済み | cmd_565 (2026-04-24): ash1 `skills/shogun-gas-clasp-rapt-reauth-fallback/SKILL.md`(62行)。clasp push 時 invalid_rapt/invalid_grant エラーの復旧パターン。OAuth OOB 廃止による VPS headless 環境での再認証不可問題。案A: ローカル clasp login → clasprc.json 転送 / 案B: GAS editor 直接編集。cmd_486/564/565 で 3 回実証済み。(cmd_675 にて skill_history 移行) |
+| **shogun-gas-automated-verification** ✅実装済み | cmd_567 (2026-04-24): ash1 `skills/shogun-gas-automated-verification/SKILL.md`(129行)。GAS の clasp run + clasp logs 自動化基盤。Ubuntu VPS から自動テスト実現のための GCP Standard Cloud Project 設定・OAuth デスクトップ認証・Logger.log 互換性知見を体系化。よくある落とし穴5パターン収録。(cmd_675 にて skill_history 移行) |
 | **shogun-gas-backfill-pattern** ✅実装済み | cmd_585/590 (2026-05-01 dashboard 候補→skill 化): 将軍 `skills/shogun-gas-backfill-pattern/SKILL.md`(218行)。GAS UrlFetchApp.fetchAll 並列 backfill (chunk=5)、force=false/true モード、resume on failure、trigger 完遂検出 (auto-delete) を体系化。実証: 寺地 Gmail thread 11年分 93件を 3m47s で完遂 (5x serial 比)。 |
 | **shogun-bash-daemon-restart-subcommand-pattern** ✅実装済み | cmd_546 (2026-05-01 dashboard 候補→skill 化): 将軍 `skills/shogun-bash-daemon-restart-subcommand-pattern/SKILL.md`(197行)。systemd 非依存の bash daemon に `restart` サブコマンド追加。mode 引数 parse / lockfile + pgrep 二段 / kill -TERM 5秒 deadline / nohup spawn + PID 再検証 / stale lockfile 回復を体系化。 |
 | **shogun-tmux-busy-aware-send-keys** ✅実装済み | cmd_582 (2026-05-01 dashboard 候補→skill 化): 将軍 `skills/shogun-tmux-busy-aware-send-keys/SKILL.md`(174行)。tmux send-keys で Enter 前に Claude idle を待つ wait_until_idle() (poll 0.5s/timeout 30s) + pane 整合チェック + stale pane 自動再検出を体系化。A-3 race condition 解消。 |

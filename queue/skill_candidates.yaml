@@ -1,0 +1,44 @@
+schema_version: '1.0'
+generated_at: '2026-05-08T13:28:00+09:00'
+generated_by: ashigaru4
+parent_cmd: cmd_675
+
+entries:
+  - id: SC-565
+    name: shogun-gas-clasp-rapt-reauth-fallback
+    status: created
+    skill_path: skills/shogun-gas-clasp-rapt-reauth-fallback/SKILL.md
+    source_cmd: cmd_565
+    created_at: cmd_675
+    notes: 既配置 SKILL.md を skill_history.md へ移行。clasp invalid_rapt 復旧パターン (3回実証)。
+
+  - id: SC-567
+    name: shogun-gas-automated-verification
+    status: created
+    skill_path: skills/shogun-gas-automated-verification/SKILL.md
+    source_cmd: cmd_567
+    created_at: cmd_675
+    notes: 既配置 SKILL.md を skill_history.md へ移行。GAS clasp run + clasp logs 自動化基盤。
+
+  - id: SC-667
+    name: codex-context-pane-border
+    status: created
+    skill_path: skills/codex-context-pane-border/SKILL.md
+    source_cmd: cmd_671
+    related_cmds:
+      - cmd_667
+      - cmd_671
+    created_at: cmd_675
+    notes: |
+      cmd_667 (ash3 初回実装) + cmd_671 (ash5 SQLite 修復) の完遂版を SKILL.md 化。
+      Codex 0.129.0+ での /proc/fd/ 失敗問題と SQLite 二段階照合方式を体系化。
+
+  - id: SC-663
+    name: codex-skill-index
+    status: created
+    skill_path: skills/codex-skill-index/SKILL.md
+    source_cmd: cmd_663
+    created_at: cmd_675
+    notes: |
+      ash6 (Codex) による全 232 スキル互換性調査 (◎197/○29/×6) を索引 SKILL.md 化。
+      Codex 向け trigger phrase → SKILL.md パスマッピング + ロード手順を整備。
