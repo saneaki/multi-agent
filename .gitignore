@@ -212,6 +212,7 @@
 !output/cmd_664_discord_proactive_reaction.md
 !output/cmd_668_codex_0129_upgrade.md
 !output/cmd_666_shp_retreat_report.md
+!output/cmd_667_codex_context_display.md
 
 # cmd_544: 3 安全装置 state files (kill-switch/rate-limit/pending/daily-metric)
 !logs/cmd_squash_pub_hook.disabled

@@ -699,8 +699,11 @@ done
 # tmux select-pane -t "multiagent:agents.$((PANE_BASE+8))" -P 'bg=#454510'      # 軍師: 金
 
 # pane-border-format でモデル名を常時表示
+# Codex pane では context 残量を末尾に動的表示 (cmd_667)
+#   例: "ashigaru5 (Codex 47%)" — codex_context.sh が active session の使用率を返す
+#   idle / claude pane では空文字を返すので従来表示 ("ashigaru5 (Codex)" / "(Sonnet+T)") を維持
 tmux set-option -t multiagent -w pane-border-status top
-tmux set-option -t multiagent -w pane-border-format '#{?pane_active,#[reverse],}#[bold]#{@agent_id}#[default] (#{@model_name}) #{@current_task}'
+tmux set-option -t multiagent -w pane-border-format '#{?pane_active,#[reverse],}#[bold]#{@agent_id}#[default] (#{@model_name}#(/home/ubuntu/shogun/scripts/codex_context.sh #{@agent_id})) #{@current_task}'
 
 log_success "  └─ 家老・足軽・軍師の陣、構築完了"
 
