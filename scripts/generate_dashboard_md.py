@@ -440,49 +440,6 @@ def generate_markdown(data: dict[str, Any]) -> str:
     lines.append(ACTION_REQUIRED_END)
     lines.append("")
 
-    lines.append(OBSERVATION_QUEUE_START)
-    lines.append(render_observation_queue_section(data.get("observation_queue") or []))
-    lines.append(OBSERVATION_QUEUE_END)
-    lines.append("")
-
-    lines.extend(violation_section(last_updated))
-
-    lines.append("## 📊 運用指標")
-    lines.append("")
-    metrics_rows = [
-        [
-            r.get("date", ""),
-            r.get("success", ""),
-            r.get("failure", ""),
-            r.get("karo_compact", ""),
-            r.get("gunshi_compact", ""),
-            r.get("safe_window", ""),
-            r.get("karo_self_clear", ""),
-            r.get("gunshi_self_clear", ""),
-            r.get("karo_self_compact", ""),
-            r.get("gunshi_self_compact", ""),
-        ]
-        for r in data.get("metrics", [])
-    ]
-    lines.extend(
-        render_table(
-            [
-                "日付(JST)",
-                "成功",
-                "失敗(cron)",
-                "karo auto-compact",
-                "gunshi auto-compact",
-                "safe_window発動",
-                "karo self_clear",
-                "gunshi self_clear",
-                "karo self_compact",
-                "gunshi self_compact",
-            ],
-            metrics_rows,
-        )
-    )
-    lines.append("")
-
     lines.append("## 🔄 進行中 - 只今、戦闘中でござる")
     lines.append("")
     in_progress_rows = [
@@ -563,6 +520,49 @@ def generate_markdown(data: dict[str, Any]) -> str:
         for r in data.get("skill_candidates", [])
     ]
     lines.extend(render_table(["スキル名", "発見元", "概要"], skill_rows, "| （まだなし） | | |"))
+    lines.append("")
+
+    lines.append(OBSERVATION_QUEUE_START)
+    lines.append(render_observation_queue_section(data.get("observation_queue") or []))
+    lines.append(OBSERVATION_QUEUE_END)
+    lines.append("")
+
+    lines.extend(violation_section(last_updated))
+
+    lines.append("## 📊 運用指標")
+    lines.append("")
+    metrics_rows = [
+        [
+            r.get("date", ""),
+            r.get("success", ""),
+            r.get("failure", ""),
+            r.get("karo_compact", ""),
+            r.get("gunshi_compact", ""),
+            r.get("safe_window", ""),
+            r.get("karo_self_clear", ""),
+            r.get("gunshi_self_clear", ""),
+            r.get("karo_self_compact", ""),
+            r.get("gunshi_self_compact", ""),
+        ]
+        for r in data.get("metrics", [])
+    ]
+    lines.extend(
+        render_table(
+            [
+                "日付(JST)",
+                "成功",
+                "失敗(cron)",
+                "karo auto-compact",
+                "gunshi auto-compact",
+                "safe_window発動",
+                "karo self_clear",
+                "gunshi self_clear",
+                "karo self_compact",
+                "gunshi self_compact",
+            ],
+            metrics_rows,
+        )
+    )
     lines.append("")
 
     return "\n".join(lines)

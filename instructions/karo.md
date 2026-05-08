@@ -756,7 +756,12 @@ Frog = the hardest task of the day. One per day total.
 | VFタスク残り | {pending_count}件（うち今日期限: {today_due}件） |
 ```
 
-Update on every dashboard.md update. Frog section at **top** (after title, before 進行中).
+Update on every dashboard.md update. Frog section appears near the top after the self-documentation rules and before 要対応.
+
+### Dashboard Section Order
+
+Canonical daily-view order:
+🐸 → 🚨要対応 → 🔄進行中 → 🏯待機中 → ✅戦果 → 🛠️スキル候補 → ⏳時間経過待ち → ⚠️違反検出 → 📊sh実行状況 → 📊repo同期状況
 
 ## ntfy Notification to Lord
 

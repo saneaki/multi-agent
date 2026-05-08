@@ -614,6 +614,36 @@ assert_contains_file "E-6.2 rotate post: action_required entry preserved" "$DMD6
 assert_contains_file "E-6.2 rotate post: markers preserved"               "$DMD6" "<!-- ACTION_REQUIRED:START -->"
 assert_contains_file "E-6.2 rotate post: observation entry preserved"      "$DMD6" "rotate_observation_entry"
 
+# Verify new full-render section order:
+# 🐸 → 🚨 → 🔄 → 🏯 → ✅ → 🛠️ → ⏳ → ⚠️ → 📊運用指標.
+ORDER_FULL="$TEST_DIR/e6_order_full.md"
+run_render "$DY6" "$ORDER_FULL" --mode full >/dev/null 2>&1
+ORDER_CHECK=$(python3 - <<PYEOF
+from pathlib import Path
+md = Path("$ORDER_FULL").read_text(encoding="utf-8")
+heads = [
+    "## 🐸 Frog / ストリーク",
+    "## 🚨 要対応 - 殿のご判断をお待ちしております",
+    "## 🔄 進行中 - 只今、戦闘中でござる",
+    "## 🏯 待機中の構成員",
+    "## ✅ 本日の戦果",
+    "## 🛠️ スキル候補（承認待ち）",
+    "## ⏳ 時間経過待ち / 観察継続",
+    "## ⚠️ 違反検出 (last 24h)",
+    "## 📊 運用指標",
+]
+positions = []
+for head in heads:
+    pos = md.find(head)
+    if pos == -1:
+        print("missing:" + head)
+        raise SystemExit
+    positions.append(pos)
+print("ok" if positions == sorted(positions) else "wrong")
+PYEOF
+)
+assert_eq "E-6.2b full render section order" "ok" "$ORDER_CHECK"
+
 # Verify yaml's action_required survived rotation
 POST_YAML_AR=$(python3 -c "
 import yaml
