@@ -191,6 +191,12 @@ targets:
 
   - name: inbox_watcher
     category: daemon_per_agent
+    health_policy: process_alive_primary_with_supervisor_roll_call
+    heartbeat_note: 'idle時は個別logを更新しないため、process_alive + supervisor roll-call ALIVE/REVIVED を正とする'
+    supervisor_roll_call: true
+    supervisor_roll_call_log: roll_call.log
+    supervisor_roll_call_green_after: 900
+    alive_log_stale_status: green_with_roll_call
     expected_tick: 300
     yellow_after: 7200             # 2h
     red_after: 14400               # 4h

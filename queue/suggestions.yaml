@@ -14348,3 +14348,88 @@ suggestions:
     復旧時の bulk re-check 等で spike 発生時の挙動を Phase 2 完遂後 1-2 週監視推奨。
     error=0 を継続維持する判定 baseline として記録。
   action_needed: "Karo: Phase 2 完遂後 1-2 週、hourly summary の error 値を観察し、rate limit threshold を確認"
+
+- id: sug_cmd_692_ntfy_phase3_001
+  from: gunshi
+  cmd_ref: cmd_692
+  task_ref: subtask_692_ntfy_phase3_cleanup_execute_qc
+  created_at: "2026-05-09T07:50:00+09:00"
+  status: pending
+  priority: medium
+  content: |
+    discord_to_ntfy.py の最終処遇: cmd_692 で Phase B 削除対象外として残置。
+    完全 ntfy 退役のためには本ファイルも削除候補。
+    次 cmd_693 (仮) で対処推奨。
+  action_needed: "Karo: discord_to_ntfy.py 削除 cmd を別途配備 (次回 cleanup cycle 候補)"
+
+- id: sug_cmd_692_ntfy_phase3_002
+  from: gunshi
+  cmd_ref: cmd_692
+  task_ref: subtask_692_ntfy_phase3_cleanup_execute_qc
+  created_at: "2026-05-09T07:50:00+09:00"
+  status: pending
+  priority: low
+  content: |
+    config/settings.yaml の ntfy_topic 残置: 既存 notification gate 互換のため残置と ash report に記載。
+    実際の参照箇所を grep 確認のうえ未参照なら削除候補。完全削除 cmd を別途配備推奨。
+  action_needed: "Karo: ntfy_topic 参照 grep → 未参照なら削除 cmd 配備、参照ありなら互換維持理由を文書化"
+
+- id: sug_cmd_692_ntfy_phase3_003
+  from: gunshi
+  cmd_ref: cmd_692
+  task_ref: subtask_692_ntfy_phase3_cleanup_execute_qc
+  created_at: "2026-05-09T07:50:00+09:00"
+  status: pending
+  priority: low
+  content: |
+    scripts/ + lib/ 配下に 53 件の残存 ntfy 参照あり (rejection error message / comment / doc 含む)。
+    退役完遂には次 cmd で grep cleanup 推奨。ただし error message 系は意図的残置 (test 3
+    'rejects retired ntfy backend' の通り) のため、削除前に分類が必要。
+  action_needed: "Karo: 53 件の ntfy 参照を意図的残置 / 削除可能 / 互換用 に分類する小規模 cmd 配備"
+
+- id: sug_cmd_695_daemon_health_001
+  from: gunshi
+  cmd_ref: cmd_695
+  task_ref: subtask_695_daemon_health_monitor_qc
+  created_at: "2026-05-09T15:18:00+09:00"
+  status: pending
+  priority: low
+  content: |
+    残存 yellow 6件 (suggestions_digest / session_to_obsidian / cmd_squash_pub_hook 等) は
+    本 scope 外の既存 failure log。次 cmd で個別解析推奨。
+  action_needed: "Karo: yellow 6件の個別解析 cmd を別途配備"
+
+- id: sug_cmd_695_daemon_health_002
+  from: gunshi
+  cmd_ref: cmd_695
+  task_ref: subtask_695_daemon_health_monitor_qc
+  created_at: "2026-05-09T15:18:00+09:00"
+  status: pending
+  priority: low
+  content: |
+    inbox_watcher[karo/ashigaru3/ashigaru6] の過去 failure count yellow 解消:
+    process_alive + roll-call は ALIVE のため、failure log のローテーション/古い failure record の
+    expire 処理を別 cmd で配備推奨。
+  action_needed: "Karo: failure log rotation cmd を配備 (古い failure record の自然消滅 path)"
+
+- id: sug_cmd_695_qc_self_review_001
+  from: gunshi
+  cmd_ref: cmd_695
+  task_ref: subtask_695_daemon_health_monitor_qc
+  created_at: "2026-05-09T15:21:00+09:00"
+  status: pending
+  priority: high
+  content: |
+    軍師 QC checklist に「ash claim と code 実体の grep 一致確認 mandatory」を追加する規律改善提案。
+
+    今回の cmd_695 QC で、ash3 report に「ashigaru1 pane.9→.1 修正確認」と書かれていたが、
+    実コード (watcher_supervisor.sh) は AGENT_PANES 配列 (line 148) のみ修正、
+    start_watcher_if_missing 呼び出し (line 201) は pane.9 残置のまま。
+    本軍師は ash report の言葉のみ信じ、コード grep 独立 verify を怠り「drift 補正済」と誤判定。
+    家老の実検分で発覚 (msg_20260509_061853 notice REDO)。
+
+    再発防止: 軍師 QC で「pane mapping 修正」「config 値変更」等のコード実体修正系 claim は、
+    ash claim 受領後に必ず該当ファイル全体を grep し、想定外残置 (旧値) がないことを独立確認する。
+    instructions/gunshi.md の Implementation cmd QC Checklist (cmd_593) に
+    「(d) ash claim grep cross-check (mandatory for code modification cmd)」を追加すべし。
+  action_needed: "Karo: instructions/gunshi.md QC checklist に grep cross-check 規律を追加 cmd を配備"

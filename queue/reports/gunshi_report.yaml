@@ -1,127 +1,204 @@
 worker_id: gunshi
-task_id: subtask_690_phase2_api_polling_monitor_qc
-parent_cmd: cmd_690
-timestamp: "2026-05-09T03:48:00+09:00"
+task_id: subtask_695_daemon_health_monitor_qc_redo
+parent_cmd: cmd_695
+timestamp: "2026-05-09T15:23:00+09:00"
 status: done
-trigger: autonomous_qc_report_received
+trigger: karo_assigned_qc_redo
 note: |
-  cmd_690 Phase2 (GHA failure API polling監視基盤) 正式 QC。
-  ash3 が gha_failure_check.sh + repo_health_check.sh integration + dashboard reflection を実装。commit a0955ea。
-  AC B-1〜B-6 全 PASS / dashboard_pipeline_test 43/0 PASS / timer active+enabled / false positive filter 動作確認。
+  cmd_695 daemon health 監視強化 REDO 後の再 QC。
+  前回 QC で start_watcher_if_missing line 201 の pane.9 残置を見落とし → 家老差戻し。
+  ash3 が REDO commit e75ad55 で line 201 を pane.1 に修正。
+  本再 QC では grep cross-check 厳密実施 (agents.9 全 grep 0件 + 全 10 agent pane mapping AGENT_PANES と start_watcher_if_missing 完全一致 verify)。
   判定 = QC PASS (Go)。
 
 result:
-  type: quality_check
-  task_type: implementation_qc
+  type: quality_check_redo
+  task_type: implementation_qc_redo
   qa_decision: pass
-  ashigaru_task_id: subtask_690_phase2_api_polling_monitor
+  ashigaru_task_id: subtask_695_daemon_health_monitor
   ashigaru_worker_id: ashigaru3
+  cmd_completion: OK
+  prior_qc_revoked: true
+  prior_qc_failure_reason: "start_watcher_if_missing line 201 の pane.9 残置を見落とし。ash claim のみ信じ、code 実体 grep verify を怠った"
+
+  redo_verification:
+    commit: e75ad55d177311d46139baa191c6033281c4ac8b
+    timestamp: "2026-05-09T15:20:52+09:00"
+    files_changed: 2
+    insertions: 31
+    deletions: 1
+    diff_essence: 'line 201: start_watcher_if_missing "ashigaru1" "multiagent:agents.9" → "multiagent:agents.1"'
+
+  grep_cross_check_independent:
+    agents_9_residue:
+      total_count: 0
+      file_scanned: scripts/watcher_supervisor.sh
+      result: clean
+    pane_mapping_verification_table:
+      - agent: shogun
+        agent_panes_line: 146
+        agent_panes_value: "shogun:main.0"
+        start_watcher_line: 199
+        start_watcher_value: "shogun:main.0"
+        match: true
+      - agent: karo
+        agent_panes_line: 147
+        agent_panes_value: "multiagent:agents.0"
+        start_watcher_line: 200
+        start_watcher_value: "multiagent:agents.0"
+        match: true
+      - agent: ashigaru1
+        agent_panes_line: 148
+        agent_panes_value: "multiagent:agents.1"
+        start_watcher_line: 201
+        start_watcher_value: "multiagent:agents.1"
+        match: true
+        note: "REDO で修正された箇所"
+      - agent: ashigaru2
+        agent_panes_line: 149
+        agent_panes_value: "multiagent:agents.2"
+        start_watcher_line: 202
+        start_watcher_value: "multiagent:agents.2"
+        match: true
+      - agent: ashigaru3
+        agent_panes_line: 150
+        agent_panes_value: "multiagent:agents.3"
+        start_watcher_line: 203
+        start_watcher_value: "multiagent:agents.3"
+        match: true
+      - agent: ashigaru4
+        agent_panes_line: 151
+        agent_panes_value: "multiagent:agents.4"
+        start_watcher_line: 204
+        start_watcher_value: "multiagent:agents.4"
+        match: true
+      - agent: ashigaru5
+        agent_panes_line: 152
+        agent_panes_value: "multiagent:agents.5"
+        start_watcher_line: 205
+        start_watcher_value: "multiagent:agents.5"
+        match: true
+      - agent: ashigaru6
+        agent_panes_line: 153
+        agent_panes_value: "multiagent:agents.6"
+        start_watcher_line: 206
+        start_watcher_value: "multiagent:agents.6"
+        match: true
+      - agent: ashigaru7
+        agent_panes_line: 154
+        agent_panes_value: "multiagent:agents.7"
+        start_watcher_line: 207
+        start_watcher_value: "multiagent:agents.7"
+        match: true
+      - agent: gunshi
+        agent_panes_line: 155
+        agent_panes_value: "multiagent:agents.8"
+        start_watcher_line: 208
+        start_watcher_value: "multiagent:agents.8"
+        match: true
+    summary: "全 10 agent (shogun + karo + ashigaru1-7 + gunshi) の AGENT_PANES と start_watcher_if_missing が完全一致 + agents.9 residue 0件"
 
   acceptance_criteria_review:
-    - id: B-1
+    - id: A-1
       ash_status: PASS
       gunshi_verify: PASS
-      note: "gha_failure_check.sh 7335 bytes 存在。JSON 出力確認 (summary green6/yellow1/red2/error0)"
-    - id: B-2
+      note: "daemon 停止判定モデル分離 OK (grep 独立確認済)"
+    - id: A-2
       ash_status: PASS
       gunshi_verify: PASS
-      note: "config/gha_monitor_targets.yaml 1158 bytes / 9 repo 登録"
-    - id: B-3
+      note: "supervisor roll-call ALIVE 10/10 @ 15:19 JST (shogun + karo + ash1-7 + gunshi)"
+    - id: A-3
       ash_status: PASS
       gunshi_verify: PASS
-      note: "dashboard.yaml.action_required upsert (cmd_690-gha-red-multi-agent / -gmail-to-markdown 2件)。stable issue_id 採用"
-    - id: B-4
+      note: "supervisor active 継続。REDO restart 後に log 再開確認 (ash report verification[1] PASS)"
+    - id: A-4
       ash_status: PASS
       gunshi_verify: PASS
-      note: "repo-health-check.timer active+enabled。既存 timer 統合済 (cmd_678 timer 流用)"
-    - id: B-5
+      note: "bash -n PASS (本軍師再実行) / sh_health green=41 yellow=6 red=0 skip=0 (本軍師再実行)"
+    - id: A-5
       ash_status: PASS
       gunshi_verify: PASS
-      note: "active workflow + 30日 + schedule/push primary filter 実装。historical-only failure は red 化せず (claude AgentShield green 維持で証明)"
-    - id: B-6
-      ash_status: PASS
-      gunshi_verify: PASS
-      note: "output/cmd_690_phase2_api_polling_monitor.md 3358 bytes / 56行 / 実装/filter設計/検証/残リスク全記載"
+      note: "output/cmd_695_daemon_health_monitor.md REDO 反映 +30行追加確認"
 
-  commit_verification:
-    commit: a0955ea334f84c8239fd768907350b11d7e26b45
-    timestamp: "2026-05-09T03:45:33+09:00"
-    files_changed: 5
-    insertions: 561
-    integration_with_cmd_678: confirmed
+  verification_commands_independent:
+    - command: "grep -n 'agents\\.9' scripts/watcher_supervisor.sh"
+      result: "(no match)"
+      verdict: PASS
+    - command: "grep -nE 'multiagent:agents\\.|shogun:main\\.' scripts/watcher_supervisor.sh"
+      result: "20 lines (10 in AGENT_PANES + 10 in start_watcher_if_missing)"
+      verdict: PASS
+    - command: "bash -n scripts/watcher_supervisor.sh"
+      result: PASS
+      verdict: PASS
+    - command: "bash scripts/sh_health_check.sh --no-dashboard"
+      result: "green=41 yellow=6 red=0 skip=0"
+      verdict: PASS
+    - command: "systemctl --user is-active shogun-watcher-supervisor.service"
+      result: active
+      verdict: PASS
+    - command: "tail logs/roll_call.log"
+      result: "10/10 ALIVE @ 15:19 JST"
+      verdict: PASS
 
   means_ends_classification:
     schema_version: "1.0"
     ac_classification:
-      - id: B-1
+      - id: A-1
+        type: ends
+        rationale: "判定モデル分離 = 健全性 SoT 確立"
+        corresponding_ends_ac: null
+      - id: A-2
+        type: ends
+        rationale: "roll-call が secondary heartbeat 表示 = 監視可視化完遂"
+        corresponding_ends_ac: null
+      - id: A-3
+        type: ends
+        rationale: "service active + 全 10 daemon ALIVE = 運用復帰"
+        corresponding_ends_ac: null
+      - id: A-4
         type: means
-        rationale: "JSON 出力 = 監視機構の手段"
-        corresponding_ends_ac: B-3
-      - id: B-2
-        type: means
-        rationale: "config 登録は手段"
-        corresponding_ends_ac: B-3
-      - id: B-3
-        type: ends
-        rationale: "ACTION_REQUIRED upsert = red 検知 → 殿可視化 (目的到達)"
-        corresponding_ends_ac: null
-      - id: B-4
-        type: ends
-        rationale: "timer active+enabled = 自動実行経路の確立 (目的到達)"
-        corresponding_ends_ac: null
-      - id: B-5
-        type: ends
-        rationale: "false positive filter = 監視精度の担保 (目的到達)"
-        corresponding_ends_ac: null
-      - id: B-6
+        rationale: "syntax/sh_health 検証は手段"
+        corresponding_ends_ac: A-1
+      - id: A-5
         type: means
         rationale: "output 記録は手段"
-        corresponding_ends_ac: B-3
-    ends_coverage_note: "ends 系 B-3/B-4/B-5 が監視基盤の運用到達を担保"
+        corresponding_ends_ac: A-1
+    ends_coverage_note: "ends 系 A-1/A-2/A-3 が daemon 健全性監視の恒久化を担保"
     both_systems_verified: true
-    verdict: "means 系 3/3 PASS。ends 系 3/3 PASS。両系独立判定 PASS"
+    verdict: "means 系 2/2 PASS。ends 系 3/3 PASS。両系独立判定 PASS"
 
-  implementation_qc_checklist_cmd_593:
-    stage1_2_means: PASS  # commit a0955ea / files 配置 (gha_failure_check.sh 等)
-    stage3_registration: PASS  # systemd timer (cmd_678 既存) 統合確認
-    stage4_runtime_log: PASS  # local test PASS 実行ログ + dashboard 反映確認
-    dashboard_reflection: PASS  # REPO_HEALTH section + ACTION_REQUIRED upsert
-
-  output: output/cmd_690_phase2_api_polling_monitor.md
+  output: output/cmd_695_daemon_health_monitor.md
 
   skill_candidate_inherited:
-    found: false
-    reason: "ash report 通り。既存 repo_health_check への局所統合であり、独立 skill 化価値低"
+    found: true
+    name: daemon-health-monitor-process-vs-log-stale
     scan_completed: true
-    cross_reference_check: "ash skill_candidate.found=false。skills/ + skill_history.md + dashboard 🛠️ 全走査済 → 該当なし"
+    reflection_completed:
+      dashboard_md: PASS  # 前回 QC 時に追記済 (撤回不要)
+      dashboard_yaml: PASS  # 前回 QC 時に追記済 (撤回不要)
 
   suggestions:
-    - "GHA red 自動解決 path の将来追加: 現状 red 検知のみ実装で、解決 (next run success) 後の archive/clear path は未実装。Phase 2.5 または cmd_690 完遂後の小規模 cmd 候補"
-    - "rate limit handling の運用観察: gh api コール頻度は hourly × 9 repo = ~9 calls/hour で規定 5000/h 以内だが、復旧時の bulk re-check 等で spike 発生時の挙動を Phase 2 完遂後 1-2 週監視推奨"
+    - "前回 QC 失敗の自省は suggestions.yaml sug_cmd_695_qc_self_review_001 に記録済 (priority=high, 軍師 QC checklist に grep cross-check mandatory 追加提案)"
+    - "本再 QC で grep 独立確認を実演した — 今後の軍師 QC では code 修正系 cmd で必ず grep cross-check を実施する"
 
   concerns_flagged: []
 
   action_required_candidates: []
 
-  multiple_revalidation_handling:
-    note: "ash2 が cmd_690 Phase1 A-4 を 03:42/03:44/03:46 の 3 回 report_received 送信。3 回とも内容同一 (revalidation timestamp のみ更新)。本 QC とは別 cmd だが同一 inbox 処理として記録。前回 QC PASS で対応済"
-
   north_star_alignment:
     status: aligned
-    reason: "GHA 異常自動検知基盤の確立 = cmd_690 north_star (GHA 健全性可視化) に直接合致。Phase1 (調査) + Phase2 (監視) → Phase3/4 (alert+runbook) の連鎖完結"
-    risks_to_north_star:
-      - "filter 過誤判定リスク: schedule+push primary 限定により workflow_dispatch 異常を見逃す可能性。ただし設計仕様 (manual は別集計) として許容範囲"
+    reason: "daemon 健全性監視の SoT 確立完遂。pane drift 完全解消で false positive 排除"
+    risks_to_north_star: []
 
 so24_verification:
-  inbox_check: pending  # 本 QC 後 karo inbox に task_completed 送信予定
+  inbox_check: pending  # 本再 QC 後 karo inbox に task_completed 送信予定
   artifact_check: pass
   content_check: pass
 
 files_modified:
   - queue/inbox/gunshi.yaml
   - queue/reports/gunshi_report.yaml
-  - queue/suggestions.yaml
 
 skill_candidate:
   found: false
-  reason: "Phase2 実装 QC は cmd_690 固有の監視基盤 QC であり、新規 skill 化価値なし"
+  reason: "再 QC 自体は cmd_695 固有"

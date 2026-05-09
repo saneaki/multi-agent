@@ -288,6 +288,46 @@ def fmt_jst(epoch):
         return "-"
 
 
+def parse_jst_epoch(value):
+    try:
+        dt = datetime.datetime.strptime(value, "%Y-%m-%d %H:%M JST")
+        return dt.replace(tzinfo=datetime.timezone(datetime.timedelta(hours=9))).timestamp()
+    except Exception:
+        return None
+
+
+def supervisor_roll_call_latest(agent, roll_call_log="roll_call.log"):
+    """Return latest supervisor roll-call evidence for an agent."""
+    path = os.path.join(LOG_DIR, roll_call_log)
+    if not os.path.exists(path):
+        return None, ""
+    try:
+        result = subprocess.run(
+            ["tail", "-n", "2000", path],
+            capture_output=True, text=True, timeout=10
+        )
+        regex = re.compile(
+            r"\[ROLL-CALL\] \[(\d{4}-\d{2}-\d{2} \d{2}:\d{2} JST)\] "
+            + re.escape(agent)
+            + r": (ALIVE|REVIVED|DEAD(?: \(unreachable after retry\))?)"
+        )
+        latest_epoch = None
+        latest_state = ""
+        for line in result.stdout.splitlines():
+            m = regex.search(line)
+            if not m:
+                continue
+            epoch = parse_jst_epoch(m.group(1))
+            if epoch is None:
+                continue
+            if latest_epoch is None or epoch > latest_epoch:
+                latest_epoch = epoch
+                latest_state = m.group(2)
+        return latest_epoch, latest_state
+    except Exception:
+        return None, ""
+
+
 def evaluate_target(t, defaults):
     """1 target を評価し (status, last_run_age, success_7d, failure_7d, last_error) を返す"""
     name = t["name"]
@@ -354,9 +394,17 @@ def evaluate_target(t, defaults):
         }
 
     if cat in ("daemon", "daemon_per_agent"):
+        roll_call_age = None
+        roll_call_state = ""
         if cat == "daemon_per_agent" and "instance_val" in t:
             log_path = os.path.join(LOG_DIR, t["log_pattern"].format(agent=t["instance_val"]))
             proc_pat = t.get("process_pattern", "").format(agent=t["instance_val"])
+            if t.get("supervisor_roll_call"):
+                roll_call_latest, roll_call_state = supervisor_roll_call_latest(
+                    t["instance_val"],
+                    t.get("supervisor_roll_call_log", "roll_call.log")
+                )
+                roll_call_age = (NOW - roll_call_latest) if roll_call_latest else None
         else:
             log_path = os.path.join(LOG_DIR, t.get("log", ""))
             proc_pat = t.get("process_pattern", t.get("name", ""))
@@ -393,17 +441,38 @@ def evaluate_target(t, defaults):
             if not last_err:
                 last_err = "process not running"
         elif age is None or age > red_after:
-            status = "red"
-            if not last_err:
-                last_err = f"log stale > {red_after}s"
+            stale_status = t.get("alive_log_stale_status", "yellow")
+            roll_call_green_after = t.get("supervisor_roll_call_green_after", red_after)
+            if (
+                t.get("supervisor_roll_call")
+                and roll_call_state in ("ALIVE", "REVIVED")
+                and roll_call_age is not None
+                and roll_call_age <= roll_call_green_after
+            ):
+                status = "green" if stale_status == "green_with_roll_call" else stale_status
+                if not last_err:
+                    last_err = f"log idle; process alive; supervisor roll-call {roll_call_state} age={fmt_age(roll_call_age)}"
+            else:
+                # A daemon can be healthy while idle and therefore not append to its
+                # own log. Process death is RED; stale log with a live process is a
+                # warning unless a target-specific heartbeat source proves health.
+                status = "yellow"
+                if not last_err:
+                    last_err = f"log stale > {red_after}s; process alive"
         elif age > yellow_after or failure >= 1:
             status = "yellow"
+            if not last_err and roll_call_state in ("ALIVE", "REVIVED"):
+                last_err = f"process alive; supervisor roll-call {roll_call_state} age={fmt_age(roll_call_age)}"
+
+        health_evidence = f"process_alive={process_alive}; pid_alive={pid_alive}; log_age={fmt_age(age)}"
+        if t.get("supervisor_roll_call"):
+            health_evidence += f"; supervisor_roll_call={roll_call_state or 'missing'} age={fmt_age(roll_call_age)}"
 
         return {
             "name": display, "status": status,
             "last_run_age": age, "last_run_str": fmt_age(age),
             "success_7d": success, "failure_7d": failure,
-            "last_error": last_err,
+            "last_error": last_err, "health_evidence": health_evidence,
         }
 
     if cat == "systemd_unit":
@@ -549,11 +618,12 @@ def main():
     if yellow_rows:
         lines.append("### 🟡 警告詳細")
         lines.append("")
-        lines.append("| sh ファミリ | 最終実行 | 7d success | 7d failure | last_error |")
-        lines.append("|------------|---------|-----------|-----------|-----------|")
+        lines.append("| sh ファミリ | 最終実行 | 7d success | 7d failure | last_error | health_evidence |")
+        lines.append("|------------|---------|-----------|-----------|-----------|-----------------|")
         for r in yellow_rows:
             err = (r["last_error"] or "-").replace("|", "\\|")[:80]
-            lines.append(f"| {r['name']} | {r['last_run_str']} | {r['success_7d']} | {r['failure_7d']} | {err} |")
+            evidence = (r.get("health_evidence") or "-").replace("|", "\\|")[:100]
+            lines.append(f"| {r['name']} | {r['last_run_str']} | {r['success_7d']} | {r['failure_7d']} | {err} | {evidence} |")
         lines.append("")
 
     # Red 詳細
@@ -561,11 +631,12 @@ def main():
     if red_rows:
         lines.append("### 🔴 停止詳細")
         lines.append("")
-        lines.append("| sh ファミリ | 最終実行 | 7d success | 7d failure | last_error |")
-        lines.append("|------------|---------|-----------|-----------|-----------|")
+        lines.append("| sh ファミリ | 最終実行 | 7d success | 7d failure | last_error | health_evidence |")
+        lines.append("|------------|---------|-----------|-----------|-----------|-----------------|")
         for r in red_rows:
             err = (r["last_error"] or "-").replace("|", "\\|")[:80]
-            lines.append(f"| {r['name']} | {r['last_run_str']} | {r['success_7d']} | {r['failure_7d']} | {err} |")
+            evidence = (r.get("health_evidence") or "-").replace("|", "\\|")[:100]
+            lines.append(f"| {r['name']} | {r['last_run_str']} | {r['success_7d']} | {r['failure_7d']} | {err} | {evidence} |")
         lines.append("")
 
     # Green 折りたたみ
@@ -574,10 +645,11 @@ def main():
         lines.append("<details>")
         lines.append(f"<summary>🟢 健全 sh 一覧 ({len(green_rows)})</summary>")
         lines.append("")
-        lines.append("| sh ファミリ | 最終実行 | 7d success | 7d failure |")
-        lines.append("|------------|---------|-----------|-----------|")
+        lines.append("| sh ファミリ | 最終実行 | 7d success | 7d failure | health_evidence |")
+        lines.append("|------------|---------|-----------|-----------|-----------------|")
         for r in green_rows:
-            lines.append(f"| {r['name']} | {r['last_run_str']} | {r['success_7d']} | {r['failure_7d']} |")
+            evidence = (r.get("health_evidence") or "-").replace("|", "\\|")[:100]
+            lines.append(f"| {r['name']} | {r['last_run_str']} | {r['success_7d']} | {r['failure_7d']} | {evidence} |")
         lines.append("")
         lines.append("</details>")
         lines.append("")
