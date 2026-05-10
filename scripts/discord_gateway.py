@@ -57,6 +57,7 @@ LOG_FILE = PROJECT_DIR / "logs" / "discord_gateway.log"
 
 JST = timezone(timedelta(hours=9))
 MESSAGE_TRUNCATE = 4000  # external_inbox 保存時の本文上限
+SHOGUN_INBOX_SUMMARY_TRUNCATE = 1900  # Discord 2000文字制限と inbox_write 4096 byte 制限の手前
 
 
 def setup_logger() -> logging.Logger:
@@ -274,7 +275,7 @@ def run_bot(token: str, allowed_ids: set[str], logger: logging.Logger, *, dry_ru
             logger.error("yaml append failed; skipping ack for msg=%s", entry["id"])
             return
 
-        summary = f"{username} | {body[:120]}"
+        summary = f"{username} | {body[:SHOGUN_INBOX_SUMMARY_TRUNCATE]}"
         if not notify_shogun(summary, logger):
             logger.warning("inbox_write to shogun failed; ack still attempted")
 
