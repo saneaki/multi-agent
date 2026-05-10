@@ -159,7 +159,7 @@ is_pane_busy() {
 | AC-A1 | switch_cli.sh で busy / shell prompt 不在を検出 | **PASS** | `is_pane_busy()` 追加 + Step 2.5 に組み込み |
 | AC-A2 | busy 検出時 → exit code 非0 + 明示エラー | **PASS** | `is_pane_busy()` が 0 返却 → log ERROR + `exit 1` |
 | AC-A3 | wait_for_shell_prompt timeout → failure 扱い | **PASS** | `return 1` に変更 + main flow で `if !` チェック |
-| AC-A4 | || true 見直し: 許容できない失敗は伝播 | **PASS** | Step 5 の tmux send-keys から `2>/dev/null \|\| true` を除去 |
+| AC-A4 | || true 見直し: 許容できない失敗は伝播 | **PASS** | send_exit 内の全 tmux send-keys から `|| true` を除去。pane_exists() 確認済みのためEscape/C-c/exit/Enter全て伝播 |
 | AC-B1 | shc deploy 後に実態検証を追加 | **PASS** | `verify_formation_deploy()` + `find_pane_by_agent()` 追加 |
 | AC-B2 | 乖離検出 → warn/error + 列挙 + 非0終了 | **PASS** | MISMATCH 表示 + `mismatch_agents[]` 列挙 + `exit 1` |
 | AC-T1 | busy 状態で silent failure が起きないことを実証 | **PASS** | §4.1 参照 |
@@ -223,11 +223,18 @@ wait_for_shell_prompt(idle pane) → return 0      → 処理続行
 
 2. **shc.sh verify の timing**: `verify_formation_deploy` はスイッチ直後に metadata を確認する。CLI 起動に時間がかかる場合、metadata が更新されている一方で実プロセスはまだ起動中のケースがある。metadata ≠ 実態の乖離が一時的に残る可能性があるが、switch_cli.sh 自体が exit 0 を返した場合は metadata が正しく更新されているため、機能的には問題ない。
 
-3. **`send_exit` の `|| true`**: `send_exit` 内の各 `tmux send-keys` は依然 `|| true` を使用している。これは「/exit 送信自体は best-effort」であり、実際の成功確認は `wait_for_shell_prompt` で行う設計のため許容範囲内。
+~~3. send_exit の || true~~: REDO で全除去済み（Req-B）。
 
 ---
 
-## 6. 変更ファイル
+## 6. REDO 修正 (corrective commit)
+
+| 項目 | 内容 |
+|---|---|
+| Req-A | `output/cmd_705_shx_hybrid_root_cause.md` を corrective commit で除去 (f915d67 の scope 混入を修正) |
+| Req-B | `send_exit` 内 Escape/C-c を含む全 `|| true` を除去。pane_exists() 確認済みのため全操作は伝播 |
+
+## 7. 変更ファイル
 
 | ファイル | 変更内容 |
 |---|---|

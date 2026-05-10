@@ -246,6 +246,7 @@ get_current_pane_cli() {
 }
 
 # ─── /exit送信 ───
+# All send-keys operations propagate failure — pane_exists() already verified before call.
 send_exit() {
     local pane="$1"
     local current_cli="$2"
@@ -254,31 +255,30 @@ send_exit() {
 
     case "$current_cli" in
         codex)
-            # Codex: suggestion UI dismissal → Ctrl-C → /exit
-            tmux send-keys -t "$pane" Escape 2>/dev/null || true
+            tmux send-keys -t "$pane" Escape 2>/dev/null || { log "ERROR: Failed to send Escape to ${pane}"; return 1; }
             sleep 0.3
-            tmux send-keys -t "$pane" C-c 2>/dev/null || true
+            tmux send-keys -t "$pane" C-c 2>/dev/null || { log "ERROR: Failed to send C-c to ${pane}"; return 1; }
             sleep 0.5
-            tmux send-keys -t "$pane" "/exit" 2>/dev/null || true
+            tmux send-keys -t "$pane" "/exit" 2>/dev/null || { log "ERROR: Failed to send /exit to ${pane}"; return 1; }
             sleep 0.3
-            tmux send-keys -t "$pane" Enter 2>/dev/null || true
+            tmux send-keys -t "$pane" Enter 2>/dev/null || { log "ERROR: Failed to send Enter to ${pane}"; return 1; }
             ;;
         claude)
-            tmux send-keys -t "$pane" "/exit" 2>/dev/null || true
+            tmux send-keys -t "$pane" "/exit" 2>/dev/null || { log "ERROR: Failed to send /exit to ${pane}"; return 1; }
             sleep 0.3
-            tmux send-keys -t "$pane" Enter 2>/dev/null || true
+            tmux send-keys -t "$pane" Enter 2>/dev/null || { log "ERROR: Failed to send Enter to ${pane}"; return 1; }
             ;;
         copilot|kimi)
-            tmux send-keys -t "$pane" C-c 2>/dev/null || true
+            tmux send-keys -t "$pane" C-c 2>/dev/null || { log "ERROR: Failed to send C-c to ${pane}"; return 1; }
             sleep 0.5
-            tmux send-keys -t "$pane" "/exit" 2>/dev/null || true
+            tmux send-keys -t "$pane" "/exit" 2>/dev/null || { log "ERROR: Failed to send /exit to ${pane}"; return 1; }
             sleep 0.3
-            tmux send-keys -t "$pane" Enter 2>/dev/null || true
+            tmux send-keys -t "$pane" Enter 2>/dev/null || { log "ERROR: Failed to send Enter to ${pane}"; return 1; }
             ;;
         *)
-            tmux send-keys -t "$pane" "/exit" 2>/dev/null || true
+            tmux send-keys -t "$pane" "/exit" 2>/dev/null || { log "ERROR: Failed to send /exit to ${pane}"; return 1; }
             sleep 0.3
-            tmux send-keys -t "$pane" Enter 2>/dev/null || true
+            tmux send-keys -t "$pane" Enter 2>/dev/null || { log "ERROR: Failed to send Enter to ${pane}"; return 1; }
             ;;
     esac
 }
