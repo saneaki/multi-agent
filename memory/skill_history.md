@@ -7,6 +7,7 @@ dashboard.md 🛠️スキル欄から溢れた全エントリ。最新順（上
 
 | スキル名 | 出典 |
 |----------|------|
+| **daemon-health-monitor-process-vs-log-stale** | ash3 cmd_695: daemon監視で process_alive と log_stale を分離し、idle daemon には watcher_supervisor の roll-call を secondary heartbeat (health_evidence) として扱う pattern。process生存 + supervisor roll-call ALIVE で GREEN 判定し、log mtime stale だけで RED にしない。 inbox_watcher / cmd_complete_notifier 等の idle daemon に再利用可能。 | 承認待ち |
 | **shogun-gas-clasp-rapt-reauth-fallback** 更新 ✅ | cmd_682 (2026-05-08): `skills/shogun-gas-clasp-rapt-reauth-fallback/SKILL.md` (62→110行)。cmd_676/680 知見「scope 不足 vs RAPT 切り分け」セクション追記。切り分けマトリクス + `--use-project-scopes --include-clasp-scopes` 推奨フラグ + tokeninfo 確認手順 + Non-goals (clasp --adc / SA / OOB)。cmd_676 fix → cmd_680 公式 docs/run.md 一致確認 battle-tested。 |
 | **shogun-gas-automated-verification** 更新 ✅ | cmd_682 (2026-05-08): `skills/shogun-gas-automated-verification/SKILL.md` (129→191行)。cmd_680 中期戦略「clasp run 依存からの脱却」セクション追記。役割分担表 (日常 run = Web App / deploy = clasp push / 緊急 = clasp run) + Web App endpoint 設計 + Service Account 制約マトリクス + scope 不足 runbook 分離。 |
 | **shogun-n8n-notion-trigger-v1-flat-access** ✅実装済み | cmd_475 → cmd_682 (2026-05-08): `~/.claude/skills/shogun-n8n-notion-trigger-v1-flat-access/SKILL.md` (105行)。n8n Notion Trigger v1 が properties をトップレベルにフラット展開する仕様の対処。silent inconsistency (cmd_675b 監査で既配置 SKILL.md が skill_history 未登録判明) → cmd_682 で正式 ✅実装済 化。 |
@@ -104,3 +105,15 @@ dashboard.md 🛠️スキル欄から溢れた全エントリ。最新順（上
 二重記録問題解消のため廃止。新システム (session_to_obsidian.sh + generate_notion_summary.sh
 + daily-notion-sync.yml on saneaki/obsidian) に置換。詳細は output/cmd_631_requirements.md
 + output/cmd_631_specification.md 参照。アーカイブ: scripts/archived/notion_session_log.sh
+
+## 2026-05-10 cmd_698: skill_candidate already-reflected confirmation
+
+ash3 が cmd_698 で skill_candidate.found=true を報告:
+- 'n8n Code node から外部APIを呼ぶ際、fetchではなく this.helpers.httpRequest を使う必要がある'
+- 'Gmail nodeのSubject/From大文字キーとsnippet fallback を考慮する実装パターン'
+
+軍師 cross-reference 結果: 既存 skill で完全カバー済 (battle-tested 強化のみ):
+- `~/.claude/skills/n8n-code-javascript/SKILL.md` が `$helpers.httpRequest()` を明示
+- `~/.claude/skills/n8n-gmail-subject-case-sensitivity/SKILL.md` (cmd_427→440 で実装済) が Subject/From PascalCase を網羅
+
+dashboard 🛠️ への追記は不要 (重複防止)。本 cmd_698 は両 skill の battle-tested 強化事例として記録。

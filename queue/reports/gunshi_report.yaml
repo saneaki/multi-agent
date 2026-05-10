@@ -1,185 +1,121 @@
 worker_id: gunshi
-task_id: subtask_695_daemon_health_monitor_qc_redo
-parent_cmd: cmd_695
-timestamp: "2026-05-09T15:23:00+09:00"
+task_id: subtask_702_discord_truncation_qc
+parent_cmd: cmd_702
+timestamp: "2026-05-10T17:48:00+09:00"
 status: done
-trigger: karo_assigned_qc_redo
+trigger: karo_assigned
 note: |
-  cmd_695 daemon health 監視強化 REDO 後の再 QC。
-  前回 QC で start_watcher_if_missing line 201 の pane.9 残置を見落とし → 家老差戻し。
-  ash3 が REDO commit e75ad55 で line 201 を pane.1 に修正。
-  本再 QC では grep cross-check 厳密実施 (agents.9 全 grep 0件 + 全 10 agent pane mapping AGENT_PANES と start_watcher_if_missing 完全一致 verify)。
-  判定 = QC PASS (Go)。
+  cmd_702 discord_gateway truncation 緩和 (ashigaru3 / commit ae17415) の正式 QC。
+  最小 diff (+2/-1 行)・AC 全 PASS・regression なし・secret 漏洩なし。
+  verdict=go / cmd_completion=OK。
 
 result:
-  type: quality_check_redo
-  task_type: implementation_qc_redo
+  type: quality_check
+  task_type: implementation_qc
   qa_decision: pass
-  ashigaru_task_id: subtask_695_daemon_health_monitor
+  ashigaru_task_id: subtask_702_discord_truncation_relaxation
   ashigaru_worker_id: ashigaru3
   cmd_completion: OK
-  prior_qc_revoked: true
-  prior_qc_failure_reason: "start_watcher_if_missing line 201 の pane.9 残置を見落とし。ash claim のみ信じ、code 実体 grep verify を怠った"
-
-  redo_verification:
-    commit: e75ad55d177311d46139baa191c6033281c4ac8b
-    timestamp: "2026-05-09T15:20:52+09:00"
-    files_changed: 2
-    insertions: 31
-    deletions: 1
-    diff_essence: 'line 201: start_watcher_if_missing "ashigaru1" "multiagent:agents.9" → "multiagent:agents.1"'
-
-  grep_cross_check_independent:
-    agents_9_residue:
-      total_count: 0
-      file_scanned: scripts/watcher_supervisor.sh
-      result: clean
-    pane_mapping_verification_table:
-      - agent: shogun
-        agent_panes_line: 146
-        agent_panes_value: "shogun:main.0"
-        start_watcher_line: 199
-        start_watcher_value: "shogun:main.0"
-        match: true
-      - agent: karo
-        agent_panes_line: 147
-        agent_panes_value: "multiagent:agents.0"
-        start_watcher_line: 200
-        start_watcher_value: "multiagent:agents.0"
-        match: true
-      - agent: ashigaru1
-        agent_panes_line: 148
-        agent_panes_value: "multiagent:agents.1"
-        start_watcher_line: 201
-        start_watcher_value: "multiagent:agents.1"
-        match: true
-        note: "REDO で修正された箇所"
-      - agent: ashigaru2
-        agent_panes_line: 149
-        agent_panes_value: "multiagent:agents.2"
-        start_watcher_line: 202
-        start_watcher_value: "multiagent:agents.2"
-        match: true
-      - agent: ashigaru3
-        agent_panes_line: 150
-        agent_panes_value: "multiagent:agents.3"
-        start_watcher_line: 203
-        start_watcher_value: "multiagent:agents.3"
-        match: true
-      - agent: ashigaru4
-        agent_panes_line: 151
-        agent_panes_value: "multiagent:agents.4"
-        start_watcher_line: 204
-        start_watcher_value: "multiagent:agents.4"
-        match: true
-      - agent: ashigaru5
-        agent_panes_line: 152
-        agent_panes_value: "multiagent:agents.5"
-        start_watcher_line: 205
-        start_watcher_value: "multiagent:agents.5"
-        match: true
-      - agent: ashigaru6
-        agent_panes_line: 153
-        agent_panes_value: "multiagent:agents.6"
-        start_watcher_line: 206
-        start_watcher_value: "multiagent:agents.6"
-        match: true
-      - agent: ashigaru7
-        agent_panes_line: 154
-        agent_panes_value: "multiagent:agents.7"
-        start_watcher_line: 207
-        start_watcher_value: "multiagent:agents.7"
-        match: true
-      - agent: gunshi
-        agent_panes_line: 155
-        agent_panes_value: "multiagent:agents.8"
-        start_watcher_line: 208
-        start_watcher_value: "multiagent:agents.8"
-        match: true
-    summary: "全 10 agent (shogun + karo + ashigaru1-7 + gunshi) の AGENT_PANES と start_watcher_if_missing が完全一致 + agents.9 residue 0件"
+  verdict: go
+  output: output/cmd_702_discord_truncation_qc.md
 
   acceptance_criteria_review:
-    - id: A-1
-      ash_status: PASS
+    - id: Q-1
       gunshi_verify: PASS
-      note: "daemon 停止判定モデル分離 OK (grep 独立確認済)"
-    - id: A-2
-      ash_status: PASS
+      method: "ash3 report/output/diff を独立確認。T-1〜T-5 を各 commit ae17415 + 該当 source 行で再現確認"
+      result: |
+        T-1 PASS: scripts/discord_gateway.py:60 SHOGUN_INBOX_SUMMARY_TRUNCATE=1900 / :278 使用箇所
+        T-2 PASS: scripts/inbox_write.sh:136-137 4096 byte 切詰は cmd_complete/cmd_milestone のみ → discord_received 対象外
+        T-3 PASS: py_compile + bash -n 独立再実行で全 PASS
+        T-4 PASS: output/cmd_702_discord_truncation_relaxation.md 42 行存在
+        T-5 PASS: ash3 report YAML 全フィールド存在
+    - id: Q-2
       gunshi_verify: PASS
-      note: "supervisor roll-call ALIVE 10/10 @ 15:19 JST (shogun + karo + ash1-7 + gunshi)"
-    - id: A-3
-      ash_status: PASS
+      method: "ASCII 1900 chars + 全角 1900 chars の UTF-8 byte 計算を独立実施"
+      result: |
+        ASCII 1900 chars = 1900 bytes (4096 内)
+        全角 1900 chars = 5700 bytes (理論上 4096 超過するが discord_received 経路は分岐対象外で実害なし)
+        ash3 の residual_risk 記載と一致
+    - id: Q-3
       gunshi_verify: PASS
-      note: "supervisor active 継続。REDO restart 後に log 再開確認 (ash report verification[1] PASS)"
-    - id: A-4
-      ash_status: PASS
+      method: "rg secret 検索 + git diff name-only + 関連スクリプト bash -n"
+      result: |
+        secret literal: 0 件
+        scope: scripts/discord_gateway.py 1 ファイルのみ (editable_files と一致)
+        regression: py_compile + bash -n + healthcheck syntax 全 PASS
+        破壊操作: なし (置換のみ)
+    - id: Q-4
       gunshi_verify: PASS
-      note: "bash -n PASS (本軍師再実行) / sh_health green=41 yellow=6 red=0 skip=0 (本軍師再実行)"
-    - id: A-5
-      ash_status: PASS
-      gunshi_verify: PASS
-      note: "output/cmd_695_daemon_health_monitor.md REDO 反映 +30行追加確認"
+      method: "verdict + cmd_completion を report + output 双方に記録"
+      result: "output L11/L13/L156/L157 + report yaml verdict=go / cmd_completion=OK 反映済"
 
-  verification_commands_independent:
-    - command: "grep -n 'agents\\.9' scripts/watcher_supervisor.sh"
-      result: "(no match)"
-      verdict: PASS
-    - command: "grep -nE 'multiagent:agents\\.|shogun:main\\.' scripts/watcher_supervisor.sh"
-      result: "20 lines (10 in AGENT_PANES + 10 in start_watcher_if_missing)"
-      verdict: PASS
-    - command: "bash -n scripts/watcher_supervisor.sh"
-      result: PASS
-      verdict: PASS
-    - command: "bash scripts/sh_health_check.sh --no-dashboard"
-      result: "green=41 yellow=6 red=0 skip=0"
-      verdict: PASS
-    - command: "systemctl --user is-active shogun-watcher-supervisor.service"
-      result: active
-      verdict: PASS
-    - command: "tail logs/roll_call.log"
-      result: "10/10 ALIVE @ 15:19 JST"
-      verdict: PASS
+  external_verification_independent:
+    git_diff:
+      commit: ae17415
+      message: "fix: relax Discord inbox summary truncation (Refs cmd_702)"
+      files_changed: 1
+      insertions: 2
+      deletions: 1
+      file: scripts/discord_gateway.py
+      verdict: "minimal scope / clean diff / regression-free"
+    syntax_recheck:
+      python_py_compile: PASS
+      bash_inbox_write: PASS
+      bash_healthcheck: PASS
+    multibyte_calc_independent:
+      ascii_1900_chars: 1900_bytes
+      fullwidth_1900_chars: 5700_bytes
+      verdict: "discord_received 経路は 4096 byte 切詰分岐外。YAML 保存に byte 制限なし。実害なし"
+    secret_scan:
+      pattern: "eyJ|sk-|ghp_|N8N_API_KEY=|DISCORD_BOT_TOKEN="
+      hits: 0
+      verdict: clean
 
   means_ends_classification:
     schema_version: "1.0"
     ac_classification:
-      - id: A-1
-        type: ends
-        rationale: "判定モデル分離 = 健全性 SoT 確立"
-        corresponding_ends_ac: null
-      - id: A-2
-        type: ends
-        rationale: "roll-call が secondary heartbeat 表示 = 監視可視化完遂"
-        corresponding_ends_ac: null
-      - id: A-3
-        type: ends
-        rationale: "service active + 全 10 daemon ALIVE = 運用復帰"
-        corresponding_ends_ac: null
-      - id: A-4
+      - id: T-1
         type: means
-        rationale: "syntax/sh_health 検証は手段"
-        corresponding_ends_ac: A-1
-      - id: A-5
+        rationale: "定数定義 + 使用箇所変更は手段"
+        corresponding_ends_ac: T-2
+      - id: T-2
+        type: ends
+        rationale: "1900 char round-trip 成功 = shogun inbox 長文 summary 保存業務完遂"
+        corresponding_ends_ac: null
+      - id: T-3
+        type: means_security
+        rationale: "syntax 健全性確認"
+        corresponding_ends_ac: T-2
+      - id: T-4
         type: means
         rationale: "output 記録は手段"
-        corresponding_ends_ac: A-1
-    ends_coverage_note: "ends 系 A-1/A-2/A-3 が daemon 健全性監視の恒久化を担保"
+        corresponding_ends_ac: null
+      - id: T-5
+        type: means
+        rationale: "report 記録は手段"
+        corresponding_ends_ac: null
+    ends_coverage_note: "本 cmd は文字数緩和の小規模改修で means≡ends に近い。T-2 (round-trip) が ends 完遂証跡"
     both_systems_verified: true
-    verdict: "means 系 2/2 PASS。ends 系 3/3 PASS。両系独立判定 PASS"
-
-  output: output/cmd_695_daemon_health_monitor.md
+    verdict: "means 系 4/4 PASS。ends 系 1/1 PASS。両系独立判定 PASS"
 
   skill_candidate_inherited:
-    found: true
-    name: daemon-health-monitor-process-vs-log-stale
+    found: false
     scan_completed: true
-    reflection_completed:
-      dashboard_md: PASS  # 前回 QC 時に追記済 (撤回不要)
-      dashboard_yaml: PASS  # 前回 QC 時に追記済 (撤回不要)
+    note: "ash3 report skill_candidate.found=false 走査済。単一箇所通知本文切詰緩和は新規 skill 化する反復パターンなし"
 
   suggestions:
-    - "前回 QC 失敗の自省は suggestions.yaml sug_cmd_695_qc_self_review_001 に記録済 (priority=high, 軍師 QC checklist に grep cross-check mandatory 追加提案)"
-    - "本再 QC で grep 独立確認を実演した — 今後の軍師 QC では code 修正系 cmd で必ず grep cross-check を実施する"
+    - id: sug-1
+      priority: low
+      content: |
+        SHOGUN_INBOX_SUMMARY_TRUNCATE=1900 の comment 「Discord 2000文字制限と inbox_write 4096 byte 制限の手前」
+        は技術的に正確だが、当該経路 (discord_received) は両制限対象外。
+        誤解防止のため「shogun inbox 可読性のための summary 上限」と書き換え推奨。実害なし。
+    - id: sug-2
+      priority: medium
+      content: |
+        ash3 residual_risk 3 (inbox_write.sh の Python triple-quoted literal embedding) は別 cmd で堅牢化候補。
+        引用符を含む任意本文を扱うと escape 脆弱性の懸念。
+        現行 attack surface (信頼された agent のみが書込) を踏まえ MEDIUM。
 
   concerns_flagged: []
 
@@ -187,18 +123,22 @@ result:
 
   north_star_alignment:
     status: aligned
-    reason: "daemon 健全性監視の SoT 確立完遂。pane drift 完全解消で false positive 排除"
-    risks_to_north_star: []
+    reason: "cmd_702 north_star (Discord DM の shogun inbox 通知 summary を実用的な長さで保存) を達成。切詰閾値 120→1900 化で運用上の summary 切れ問題を解消"
+    risks_to_north_star:
+      - "なし"
 
 so24_verification:
-  inbox_check: pending  # 本再 QC 後 karo inbox に task_completed 送信予定
+  inbox_check: pass
   artifact_check: pass
   content_check: pass
 
 files_modified:
   - queue/inbox/gunshi.yaml
   - queue/reports/gunshi_report.yaml
+  - queue/tasks/gunshi.yaml
+  - queue/suggestions.yaml
+  - output/cmd_702_discord_truncation_qc.md
 
 skill_candidate:
   found: false
-  reason: "再 QC 自体は cmd_695 固有"
+  reason: "QC は cmd_702 固有。再利用可能 skill 化対象なし"

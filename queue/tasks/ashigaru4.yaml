@@ -1,53 +1,79 @@
 task:
-  acceptance_criteria:
-  - check: saneaki/multi-agent の最新GHA failureログを確認し、TC-FR-005 文字列不一致が真因か検証する
-    id: A1-1
-  - check: tests/agent_selfwatch.bats と ashigaru instruction の現仕様を突合し、片方を最小修正する
-    id: A1-2
-  - check: 該当テストをローカルで実行し PASS する
-    id: A1-3
-  - check: 必要なら build_instructions.sh を実行し generated instruction diff が整合する
-    id: A1-4
-  - check: commit/push し、次回 GitHub Actions run のURLまたは確認手順を report/output に記録する
-    id: A1-5
-  - check: GHA run 25548775334 の新規 failure (tests/unit/test_ntfy_ack.bats が削除済み scripts/ntfy_listener.sh
-      を参照) を修正し、次回 run が success する
-    id: A1-6
+  task_id: subtask_700a_opus_review
+  parent_cmd: cmd_700
+  bloom_level: L5
   assigned_to: ashigaru4
-  bloom_level: L4
-  completed_at: '2026-05-08T19:11:01+09:00'
-  description: "【目的】\ncmd_690 Phase 1 緊急修復 A-1 として、saneaki/multi-agent (shogun) の\
-    \ GHA failure を修復する。\n\n【既知情報】\n- last5 fail:5/succ:0\n- 真因候補: tests/agent_selfwatch.bats:136\
-    \ TC-FR-005 で\n  `grep -q \"MANDATORY Post-Task Inbox Check\" \"$ASHIGARU_INSTR\"\
-    ` が現行 ashigaru.md と不一致。\n- 引き金候補: cmd_669 Claude/Codex 指示書統一で文字列消失、tests側未更新。\n\
-    \n【方針】\n- まず最新GHA logとローカルtestで真因を確認する。\n- 現仕様が正しいなら test を現仕様へ更新。旧文言が必要なら ashigaru\
-    \ instruction 側を復元。\n- 変更は最小限に留める。\n- dashboard.md/yaml は触らない (家老管理)。\n\n【REDO\
-    \ 2026-05-08 18:47 JST】\n初回push ef6562a の GHA run 25548775334 は failure。\nTC-FR-005\
-    \ は解消したが、Unit Tests ubuntu/macos の `Run unit tests` で\n`tests/unit/test_ntfy_ack.bats`\
-    \ T-ACK-001〜008 が全て setup 失敗:\n`sed: can't read .../scripts/ntfy_listener.sh:\
-    \ No such file or directory`\ncmd_677/cmd_658 系で ntfy_listener.sh は削除済みのため、legacy\
-    \ test を現仕様へ更新・削除・置換する最小修正が必要。\nA1-6 を追加ACとして処理し、再commit/push後の GHA run URL を報告すること。\n\
-    \n【完了報告】\nbash /home/ubuntu/shogun/scripts/inbox_write.sh karo \\\n  \"【subtask_690_phase1_a1_shogun_gha_repair\
-    \ 完了】cmd_690 A-1 shogun GHA修復完了。local_test=<PASS|FAIL>、push=<DONE|SKIP>、GHA確認=<URL|pending>。report確認されたし。\"\
-    \ \\\n  task_completed ashigaru4\n"
-  editable_files:
-  - tests/agent_selfwatch.bats
-  - instructions/ashigaru.md
-  - instructions/generated/codex-ashigaru.md
-  - output/cmd_690_phase1_a1_shogun_gha_repair.md
-  - queue/reports/ashigaru4_report.yaml
-  - queue/tasks/ashigaru4.yaml
-  - queue/inbox/ashigaru4.yaml
-  notes: 'context_policy: preserve_across_stages
-
-    cmd_690 Phase 1 の先鋒。A-2/A-3/A-4 と Phase 2以降は家老が別途配備する。
-
-    '
-  parent_cmd: cmd_690
-  priority: high
-  project: shogun
   report_to: karo
   status: done
-  task_id: subtask_690_phase1_a1_shogun_gha_repair
-  timestamp: '2026-05-08T18:38:47+09:00'
-  title: 'cmd_690 Phase1-A1: shogun GHA修復'
+  timestamp: '2026-05-10T17:16:00+09:00'
+  title: 'cmd_700a: Opus dedup全範囲レビュー'
+  priority: highest
+  project: shogun
+  context_files:
+    - output/cmd_700_parse_dedup_node_snapshot.json
+    - output/cmd_690_phase3_gmail_n8n_discord_alert.md
+    - output/cmd_690_phase4_intentional_fail_runbook.md
+    - output/cmd_698_n8n_gha_active_filter.md
+    - output/cmd_699_cmd698_cleanup.md
+    - docs/gha_alert_runbook.md
+  editable_files:
+    - output/cmd_700a_opus_dedup_review.md
+    - queue/reports/ashigaru4_report.yaml
+    - queue/tasks/ashigaru4.yaml
+    - queue/inbox/ashigaru4.yaml
+  issue: https://github.com/saneaki/multi-agent/issues/48
+  acceptance_criteria:
+    - id: R-1
+      check: 同一資料・同一promptに基づき、n8n GHA alert dedup不全の全範囲を独立審理する
+    - id: R-2
+      check: 仮説A(hourWindow key)、仮説B(Gmail再配送/未読再取得)、仮説C(staticData永続化regression)をすべて検証し、追加仮説があれば提示する
+    - id: R-3
+      check: root cause / 仮説検証 / 修正案 / 影響範囲 / Issue #48 close条件を同一フォーマットで記録する
+    - id: R-4
+      check: CRITICAL / HIGH / MEDIUM / LOW で findings を分類し、Phase 1で直すべきCRITICAL最小修正を明示する
+    - id: R-5
+      check: output/cmd_700a_opus_dedup_review.md と report YAML に verdict(BLOCK/WARN/OK) を冒頭明記する
+  description: |
+    【重要訂正】
+    dual-review の役割分担は禁止。Opus/Codex は同じ課題・同じ資料・同じpromptで全範囲を独立審理すること。
+    「設計担当」「実装担当」のように分けない。1人LLMの誤判定を cross-check するのが目的。
+
+    【目的】
+    n8n GHA failure alert の同一 run_id hourly 再発火について、全範囲を独立審理し、root cause と最小修正案を出す。
+
+    【現象】
+    cmd_698/699後も同一run https://github.com/saneaki/multi-agent/actions/runs/25620552772 が 07:01 UTC / 08:01 UTC などで hourly alert 再発火。
+    active filter は機能しているが、dedupが同一runの再通知を止めていない。
+
+    【仮説】
+    - A: dedup key が run_id ではなく `{repo}|{workflow}|{hourWindow}` のため1h経過後に再alert
+    - B: Gmailから同じ通知メールが再配送/未読再取得されている
+    - C: cmd_698 Parse & Dedup変更時に staticData 永続化regression が混入
+
+    【対象資料】
+    - output/cmd_700_parse_dedup_node_snapshot.json
+    - output/cmd_690_phase3_gmail_n8n_discord_alert.md
+    - output/cmd_690_phase4_intentional_fail_runbook.md
+    - output/cmd_698_n8n_gha_active_filter.md
+    - output/cmd_699_cmd698_cleanup.md
+    - docs/gha_alert_runbook.md
+    - Issue #48: https://github.com/saneaki/multi-agent/issues/48
+
+    【出力フォーマット】
+    1. verdict: BLOCK / WARN / OK
+    2. root cause: 第一原因と根拠
+    3. 仮説検証: A/B/C それぞれ採用/却下/保留 + 根拠
+    4. findings: CRITICAL/HIGH/MEDIUM/LOW、各findingに根拠と修正案
+    5. Phase 1最小修正案: 同一 run_id 永続1回通知を満たす最小変更
+    6. 影響範囲/リスク
+    7. Issue #48 close条件
+
+    【禁止】
+    - n8n/GitHub/コード編集は禁止。レビューのみ。
+    - 他方レビューを参照しない。独立審理する。
+    - secret/token/API key を output/report に書かない。
+
+    【完了報告】
+    bash /home/ubuntu/shogun/scripts/inbox_write.sh karo \
+      "【subtask_700a_opus_review 完了】cmd_700 Opus dedup全範囲レビュー完了。verdict=<BLOCK|WARN|OK> critical=<N> high=<N>。report確認されたし。" \
+      task_completed ashigaru4

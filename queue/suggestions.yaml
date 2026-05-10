@@ -14433,3 +14433,117 @@ suggestions:
     instructions/gunshi.md の Implementation cmd QC Checklist (cmd_593) に
     「(d) ash claim grep cross-check (mandatory for code modification cmd)」を追加すべし。
   action_needed: "Karo: instructions/gunshi.md QC checklist に grep cross-check 規律を追加 cmd を配備"
+
+- id: sug_cmd_696_japanese_spec_001
+  from: gunshi
+  cmd_ref: cmd_696
+  task_ref: subtask_696_gas_mail_manager_japanese_spec_qc
+  created_at: "2026-05-09T15:27:00+09:00"
+  status: pending
+  priority: medium
+  content: |
+    別 cmd 配備推奨: 英語 docs/API_REFERENCE.md / docs/RUNBOOK.md の cmd_676 同期。
+    撤去関数 6 件 (backfillCustomer / updateExistingRowSummary / backfillTerachi /
+    backfillSheetFromDrive / appendEmailRow / isMessageAlreadyRecorded /
+    createEmailListSheet / generateSheetName) + signature 変更 1 件 (processSingleEmail) =
+    計 10 箇所更新が必要。Documentation Update Discipline §5.1 を英語側にも反映。
+  action_needed: "Karo: 英語 API_REFERENCE/RUNBOOK 同期 cmd を別 PR で配備"
+
+- id: sug_cmd_696_japanese_spec_002
+  from: gunshi
+  cmd_ref: cmd_696
+  task_ref: subtask_696_gas_mail_manager_japanese_spec_qc
+  created_at: "2026-05-09T15:27:00+09:00"
+  status: pending
+  priority: low
+  content: |
+    Documentation Update Discipline の CI hook 化推奨: 将来的に PR 作成時に
+    'src/*.gs 変更時に SPECIFICATION_ja.md / API_REFERENCE_ja.md / API_REFERENCE.md の
+    更新差分があるか' を自動検証する hook 配備。
+    Documentation Update Discipline §5.2 PR チェックリストの自動化。
+  action_needed: "Karo: 将来 cmd で gas-mail-manager の docs check CI hook を配備"
+
+- id: sug_cmd_698_n8n_gha_active_filter_001
+  from: gunshi
+  cmd_ref: cmd_698
+  task_ref: subtask_698_n8n_gha_active_filter_qc
+  created_at: "2026-05-10T14:30:00+09:00"
+  status: pending
+  priority: low
+  content: |
+    n8n internal manual execution API は Cookie 認証必須で public API key 不可。
+    本 cmd_698 では production schedule exec を主証跡にする ash report 残リスク記載は妥当。
+    将来 cmd で internal API テスト pattern を skill 化検討推奨。
+  action_needed: "Karo: n8n internal API testing pattern の skill 化を別 cmd で検討"
+
+- id: sug_cmd_698_n8n_gha_active_filter_002
+  from: gunshi
+  cmd_ref: cmd_698
+  task_ref: subtask_698_n8n_gha_active_filter_qc
+  created_at: "2026-05-10T14:30:00+09:00"
+  status: pending
+  priority: medium
+  content: |
+    GitHub API public unauthenticated 利用は将来 private repo 監視時に rate limit 衝突リスク
+    (60 req/h)。n8n Code node の HTTP Request node + credential 化 path を別 cmd で配備推奨。
+    現在は public repo 監視のみで余裕あり。
+  action_needed: "Karo: 監視 repo 増加 or private repo 追加時に credential 化 cmd を配備"
+
+- id: sug_cmd_699_cleanup_001
+  from: gunshi
+  cmd_ref: cmd_699
+  task_ref: subtask_699_cmd698_cleanup_qc
+  created_at: "2026-05-10T15:55:00+09:00"
+  status: pending
+  priority: low
+  content: |
+    cmd_698 + cmd_699 連鎖完遂で GHA active filter 運用基盤確立。
+    Phase 2 として GitHub API rate limit (60 req/h) 監視 + credential 化を別 cmd で配備推奨。
+    cmd_698 sug_002 (GitHub API credential 化) と統合配備可。
+  action_needed: "Karo: GHA monitor の rate limit + credential 強化 cmd を配備"
+- id: sug_cmd_700_001
+  from: gunshi
+  cmd_ref: cmd_700
+  task_ref: subtask_700c_gunshi_consolidation
+  created_at: "2026-05-10T17:38:13+09:00"
+  status: pending
+  priority: medium
+  content: |
+    Phase 1 deploy 後の運用観察 dashboard 追加。
+    dashboard.yaml に run 25620552772 再発火 counter (24h cumulative) を表示し、AC-5 観察を可視化する。
+  action_needed: "家老が Phase 1 完遂判定後、dashboard.yaml 拡張 cmd を別配備"
+- id: sug_cmd_700_002
+  from: gunshi
+  cmd_ref: cmd_700
+  task_ref: subtask_700c_gunshi_consolidation
+  created_at: "2026-05-10T17:38:13+09:00"
+  status: pending
+  priority: high
+  content: |
+    Phase 2-A (Gmail processed label 付与) は Phase 1 完遂後 7 日以内に発令推奨。
+    同一 run の Gmail メールが unread のまま蓄積するため、長期的には label 化が運用負担を最小化。
+    HIGH 指摘 H-1 を Phase 2-A として独立 cmd 配備。
+  action_needed: "家老が Phase 1 完了後 7 日以内に Phase2-A (Gmail processed label) を ash5 へ配備"
+- id: sug_cmd_702_001
+  from: gunshi
+  cmd_ref: cmd_702
+  task_ref: subtask_702_discord_truncation_qc
+  created_at: "2026-05-10T17:48:00+09:00"
+  status: pending
+  priority: low
+  content: |
+    SHOGUN_INBOX_SUMMARY_TRUNCATE=1900 の comment 「Discord 2000文字制限と inbox_write 4096 byte 制限の手前」
+    は技術的に正確だが、当該経路 (discord_received) は両制限対象外。
+    誤解防止のため「shogun inbox 可読性のための summary 上限」と書き換え推奨。実害なし。
+  action_needed: "次回 discord_gateway.py 触る機会に comment 書き換え"
+- id: sug_cmd_702_002
+  from: gunshi
+  cmd_ref: cmd_702
+  task_ref: subtask_702_discord_truncation_qc
+  created_at: "2026-05-10T17:48:00+09:00"
+  status: pending
+  priority: medium
+  content: |
+    inbox_write.sh の Python triple-quoted literal embedding は引用符を含む任意本文で escape 脆弱性懸念。
+    現行 attack surface (信頼 agent のみ書込) では実害なしだが、外部入力経路追加時に堅牢化必須。
+  action_needed: "外部 inbox 経路拡張時に inbox_write.sh の CONTENT escape 強化を別 cmd 配備"

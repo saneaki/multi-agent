@@ -1,101 +1,73 @@
+verdict: BLOCK
 worker_id: ashigaru1
-task_id: subtask_694_sh_health_repair
-parent_cmd: cmd_694
+task_id: subtask_700b_codex_review
+parent_cmd: cmd_700
 status: done
-timestamp: "2026-05-09T07:34:41+09:00"
+timestamp: "2026-05-10T17:15:46+09:00"
 report_to: karo
-type: implementation
+type: review
 
 result:
   summary: |
-    cmd_694 Phase2 sh_health高fail修復を完了。cmd_squash_pub_hook は dashboard 呼出パス修正、
-    tee二重ログ解消、対象別 failure_pattern 厳格化、旧重複failure dedupe を実装。
-    dashboard_rotate は continuation line timestamp継承で過去 arithmetic error の誤計上を解消。
-    inbox_watcher[karo] はレビュー統合判断どおり追加ignoreなしで自然減衰を維持。
-  output_path: output/cmd_694_sh_health_repair.md
+    cmd_700 Codex dedup全範囲レビューを完了。現行 Parse & Dedup は staticData を使っているが、
+    primary dedup key が `{repo}|{workflow}|{hourWindow}` のため、同一 run_id でも毎時再通知される。
+    Gmail processed label/既読化も未実装のため、同じ未読メールが再取得され続ける。
+    staticData永続化regressionは第一原因ではなく、production exec間保持の既存証跡あり。
+  output_path: output/cmd_700b_codex_dedup_review.md
   changed_files:
-    - scripts/cmd_squash_pub_hook.sh
-    - config/sh_health_targets.yaml
-    - scripts/sh_health_check.sh
-    - output/cmd_694_sh_health_repair.md
+    - output/cmd_700b_codex_dedup_review.md
     - queue/reports/ashigaru1_report.yaml
     - queue/tasks/ashigaru1.yaml
     - queue/inbox/ashigaru1.yaml
-  before_after:
-    before:
-      summary: "green=36 yellow=11 red=0 skip=0"
-      targets:
-        - name: dashboard_rotate
-          status: yellow
-          success_7d: 64
-          failure_7d: 56
-          last_error: "0: syntax error in expression (error token is \"0\")"
-        - name: inbox_watcher[karo]
-          status: yellow
-          success_7d: 815
-          failure_7d: 39
-          last_error: ""
-        - name: cmd_squash_pub_hook
-          status: yellow
-          success_7d: 20
-          failure_7d: 11
-          last_error: "[2026-05-09T06:51:26+09:00] update_dashboard.sh call failed (non-fatal)"
-    after:
-      summary: "green=39 yellow=8 red=0 skip=0"
-      targets:
-        - name: dashboard_rotate
-          status: green
-          success_7d: 8
-          failure_7d: 0
-          last_error: ""
-        - name: inbox_watcher[karo]
-          status: yellow
-          success_7d: 815
-          failure_7d: 39
-          last_error: ""
-        - name: cmd_squash_pub_hook
-          status: yellow
-          success_7d: 20
-          failure_7d: 5
-          last_error: "[2026-05-09T06:52:26+09:00] flock timeout"
-  verification:
-    - command: "bash -n scripts/cmd_squash_pub_hook.sh scripts/sh_health_check.sh"
-      status: PASS
-      notes: "syntax OK"
-    - command: "python3 YAML parse for config/sh_health_targets.yaml, queue/tasks/ashigaru1.yaml, queue/inbox/ashigaru1.yaml"
-      status: PASS
-      notes: "all parsed by yaml.safe_load"
-    - command: "bash scripts/sh_health_check.sh --no-dashboard"
-      status: PASS
-      notes: "green=39 yellow=8 red=0 skip=0"
+  findings:
+    critical: 1
+    high: 1
+    medium: 1
+    low: 1
+  root_cause:
+    primary: "dedup key excludes run_id and includes hourWindow"
+    secondary: "Gmail message processed label is not applied, so the same unread email remains in the search result"
+    not_primary: "staticData persistence regression"
+  hypothesis_review:
+    A_hourWindow_key: 採用
+    B_gmail_redelivery_or_unread_refetch: 採用
+    C_staticData_persistence_regression: 却下寄り
+    additional: "active workflow filter does not exclude old deleted-branch runs when workflow_id remains active"
+  phase1_minimum_fix: "Use run_id-based persistent dedup key, e.g. run:${repo}:${runInfo.runId}; extend TTL to 7-14 days."
   acceptance_criteria:
-    - id: A-1
+    - id: R-1
       status: PASS
-      evidence: "cmd_squash_pub_hook dashboard呼出を $SCRIPT_DIR/scripts/update_dashboard.sh に修正。失敗時は cwd/script をログへ出す。"
-    - id: A-2
+      evidence: "Same資料/same promptで全範囲を独立審理し、outputへ記録。"
+    - id: R-2
       status: PASS
-      evidence: "cmd_squash_pub_hook failure_pattern を対象限定化し、gha_failure_status.json filename false positive を除外。tee二重ログも解消し、旧重複は dedupe_failure_lines で1回計上。failure_7d 11 -> 5。"
-    - id: A-3
+      evidence: "Hypothesis A/B/C and additional deleted-branch active workflow hypothesisを検証。"
+    - id: R-3
       status: PASS
-      evidence: "sh_health_check の continuation line timestamp継承で dashboard_rotate failure_7d 56 -> 0。直前timestampが新しければ新規failureは引き続き計上される。"
-    - id: A-4
+      evidence: "root cause / 仮説検証 / 修正案 / 影響範囲 / Issue #48 close条件を同一artifactに記録。"
+    - id: R-4
       status: PASS
-      evidence: "inbox_watcher[karo] は追加ignoreなし。failure_7d=39を維持し、将来再発を隠さず自然減衰させる。"
-    - id: A-5
+      evidence: "CRITICAL/HIGH/MEDIUM/LOW findingsを分類し、Phase 1 CRITICAL最小修正を明示。"
+    - id: R-5
       status: PASS
-      evidence: "bash -n、YAML parse、sh_health_check --no-dashboard を実行。red=0 skip=0。対象は dashboard_rotate 100%削減、cmd_squash 54.5%削減、inbox_watcherは方針どおり維持。"
-    - id: A-6
+      evidence: "output artifact and this report start with verdict=BLOCK."
+  verification:
+    - command: "tmux display-message -t \"$TMUX_PANE\" -p '#{@agent_id}'"
       status: PASS
-      evidence: "output/cmd_694_sh_health_repair.md にCodex/Opus突合、実装内容、検証、残リスクを記録。"
+      notes: "ashigaru1"
+    - command: "context files read"
+      status: PASS
+      notes: "All six listed context_files read; extra Phase3 dedup regression repair file used as supporting local evidence."
+    - command: "rg/nl review of queue/inbox/shogun.yaml"
+      status: PASS
+      notes: "Confirmed same run 25620552772 at 06:00:59Z, 07:01:00Z, 08:01:00Z."
+    - command: "official docs review"
+      status: PASS
+      notes: "Checked n8n staticData/execution docs, GitHub workflow state docs, Gmail modify label docs."
   residual_risk: |
-    cmd_squash_pub_hook の running daemon は通常の supervisor restart cycle まで旧プロセスのままの可能性がある。
-    ただしファイル上の根本修正は完了。flock timeout は真の lock contention として残し、広い ignore は追加していない。
+    Review only per instruction. No n8n workflow, GitHub repository, Gmail state, or application code was modified.
 
 agent_tool_used: false
 agent_tool_tokens: 0
 
 skill_candidate:
-  found: true
-  name: sh-health-log-continuation-and-false-positive-repair
-  description: "timestampなしcontinuation lineの7d誤計上、watcher filename false positive、tee二重ログを分離して修復する手順"
-  reason: "cmd_694 で複数の sh health 高fail原因が同じログ監視パターンに起因し、今後の監視修復に再利用できるため。"
+  found: false
