@@ -208,6 +208,37 @@ print("OK")
 PYEOF
 }
 
+# ─── pane 存在確認 ───
+pane_exists() {
+    local pane="$1"
+    tmux display-message -t "$pane" -p '#{pane_id}' &>/dev/null 2>&1
+}
+
+# ─── pane busy 検出 ───
+# Returns 0 (busy) if no recognizable prompt is visible at end of pane content.
+# Returns 1 (not busy) if shell or CLI idle prompt is detected.
+is_pane_busy() {
+    local pane="$1"
+    local content
+    content=$(tmux capture-pane -t "$pane" -p 2>/dev/null)
+
+    # Empty pane → fresh or just cleared → treat as safe
+    if [[ -z "$(echo "$content" | tr -d '[:space:]')" ]]; then
+        log "Pane ${pane} is empty - treating as not busy"
+        return 1
+    fi
+
+    local last_line
+    last_line=$(echo "$content" | grep -v '^$' | tail -1)
+
+    # Prompt patterns: $, %, #, ❯, ► (shell or CLI idle)
+    if echo "$last_line" | grep -qE '[\$%#❯►] *$'; then
+        return 1  # Not busy - at a recognizable prompt
+    fi
+
+    return 0  # Busy - no prompt detected at end of content
+}
+
 # ─── 現在のCLI種別を取得（tmux metadata） ───
 get_current_pane_cli() {
     local pane="$1"
@@ -282,8 +313,8 @@ wait_for_shell_prompt() {
         fi
     done
 
-    log "WARN: Shell prompt not detected after ${max_wait}s. Proceeding anyway."
-    return 0  # タイムアウトしても続行（最悪でもコマンドが送られるだけ）
+    log "ERROR: Shell prompt not detected after ${max_wait}s. Aborting to prevent silent failure."
+    return 1
 }
 
 # ─── モデル表示名の正規化（cli_adapter.sh の get_model_display_name を使用） ───
@@ -355,6 +386,12 @@ if [ -z "$PANE_TARGET" ]; then
 fi
 log "=== Starting CLI switch for ${AGENT_ID} (pane: ${PANE_TARGET}) ==="
 
+# Step 0.1: pane 存在確認
+if ! pane_exists "$PANE_TARGET"; then
+    log "ERROR: Pane ${PANE_TARGET} for agent ${AGENT_ID} does not exist"
+    exit 1
+fi
+
 # Step 0.5: --model指定時に--type未指定なら、モデル名からCLI種別を自動推定
 if [[ -n "$NEW_MODEL" && -z "$NEW_TYPE" ]]; then
     case "$NEW_MODEL" in
@@ -381,21 +418,38 @@ TARGET_CMD=$(build_cli_command "$AGENT_ID")
 
 log "Target: cli=${TARGET_CLI_TYPE}, model=${TARGET_MODEL}, cmd=${TARGET_CMD}"
 
+# Step 2.5: busy 検出 (send_exit 前)
+if is_pane_busy "$PANE_TARGET"; then
+    log "ERROR: Pane ${PANE_TARGET} (${AGENT_ID}) appears busy — no shell/CLI prompt detected."
+    log "ERROR: Refusing to switch CLI to prevent silent failure. Verify agent state first."
+    exit 1
+fi
+
 # Step 3: 現在のCLIを /exit で終了
 CURRENT_CLI=$(get_current_pane_cli "$PANE_TARGET")
 log "Current CLI: ${CURRENT_CLI}"
 send_exit "$PANE_TARGET" "$CURRENT_CLI"
 
-# Step 4: シェルプロンプトを待つ
-wait_for_shell_prompt "$PANE_TARGET"
+# Step 4: シェルプロンプトを待つ（タイムアウト時は exit 1）
+if ! wait_for_shell_prompt "$PANE_TARGET"; then
+    log "ERROR: CLI switch failed for ${AGENT_ID}: shell prompt not detected after exit attempt."
+    log "ERROR: Pane ${PANE_TARGET} may be busy or stuck. Aborting to prevent silent failure."
+    exit 1
+fi
 
-# Step 5: 新しいCLIコマンドを送信
+# Step 5: 新しいCLIコマンドを送信（失敗は伝播させる）
 log "Launching new CLI: ${TARGET_CMD}"
-tmux send-keys -t "$PANE_TARGET" "$TARGET_CMD" 2>/dev/null || true
+if ! tmux send-keys -t "$PANE_TARGET" "$TARGET_CMD"; then
+    log "ERROR: Failed to send CLI command to pane ${PANE_TARGET}"
+    exit 1
+fi
 sleep 0.3
-tmux send-keys -t "$PANE_TARGET" Enter 2>/dev/null || true
+if ! tmux send-keys -t "$PANE_TARGET" Enter; then
+    log "ERROR: Failed to send Enter to pane ${PANE_TARGET}"
+    exit 1
+fi
 
-# Step 6: tmux pane metadata 更新
+# Step 6: tmux pane metadata 更新（CLI 起動成功後のみ）
 DISPLAY_NAME=$(get_model_display_name "$AGENT_ID")
 update_pane_metadata "$PANE_TARGET" "$TARGET_CLI_TYPE" "$DISPLAY_NAME"
 

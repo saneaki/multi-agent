@@ -1,79 +1,80 @@
 task:
-  task_id: subtask_700a_opus_review
-  parent_cmd: cmd_700
-  bloom_level: L5
+  task_id: subtask_706_shx_silent_failure_fix
+  parent_cmd: cmd_706
+  bloom_level: L4
   assigned_to: ashigaru4
   report_to: karo
   status: done
-  timestamp: '2026-05-10T17:16:00+09:00'
-  title: 'cmd_700a: Opus dedup全範囲レビュー'
+  timestamp: '2026-05-10T21:37:51+09:00'
+  title: 'cmd_706: shx/shc CLI切替 silent failure 修正実装'
   priority: highest
   project: shogun
+  issue: https://github.com/saneaki/multi-agent/issues/52
+  redispatch:
+    count: 1
+    reason: "ashigaru4 pane was /clear idle with no output after initial dispatch; shogun requested immediate progress recovery"
+    redispatched_at: '2026-05-10T21:37:51+09:00'
   context_files:
-    - output/cmd_700_parse_dedup_node_snapshot.json
-    - output/cmd_690_phase3_gmail_n8n_discord_alert.md
-    - output/cmd_690_phase4_intentional_fail_runbook.md
-    - output/cmd_698_n8n_gha_active_filter.md
-    - output/cmd_699_cmd698_cleanup.md
-    - docs/gha_alert_runbook.md
+    - config/settings.yaml
+    - scripts/shc.sh
+    - scripts/switch_cli.sh
+    - scripts/shutsujin_departure.sh
+    - output/cmd_705_shx_hybrid_root_cause.md
+    - queue/reports/ashigaru4_report.yaml
   editable_files:
-    - output/cmd_700a_opus_dedup_review.md
+    - scripts/switch_cli.sh
+    - scripts/shc.sh
+    - output/cmd_706_shx_silent_failure_fix.md
     - queue/reports/ashigaru4_report.yaml
     - queue/tasks/ashigaru4.yaml
     - queue/inbox/ashigaru4.yaml
-  issue: https://github.com/saneaki/multi-agent/issues/48
   acceptance_criteria:
-    - id: R-1
-      check: 同一資料・同一promptに基づき、n8n GHA alert dedup不全の全範囲を独立審理する
-    - id: R-2
-      check: 仮説A(hourWindow key)、仮説B(Gmail再配送/未読再取得)、仮説C(staticData永続化regression)をすべて検証し、追加仮説があれば提示する
-    - id: R-3
-      check: root cause / 仮説検証 / 修正案 / 影響範囲 / Issue #48 close条件を同一フォーマットで記録する
-    - id: R-4
-      check: CRITICAL / HIGH / MEDIUM / LOW で findings を分類し、Phase 1で直すべきCRITICAL最小修正を明示する
-    - id: R-5
-      check: output/cmd_700a_opus_dedup_review.md と report YAML に verdict(BLOCK/WARN/OK) を冒頭明記する
+    - id: AC-A1
+      check: "switch_cli.sh で対象 pane が busy または shell prompt 不在の場合を検出する"
+    - id: AC-A2
+      check: "busy 検出時は silent failure せず、exit code 非0 + 明示エラーメッセージで返す"
+    - id: AC-A3
+      check: "wait_for_shell_prompt timeout が failure 扱いになり、後続の新CLI起動へ進まない"
+    - id: AC-A4
+      check: "tmux 操作の || true を見直し、許容できない失敗は伝播する"
+    - id: AC-B1
+      check: "shc.sh deploy 後に各 pane の実態 (cli process + @agent_cli metadata) と settings.yaml cli.agents の一致検証を追加する"
+    - id: AC-B2
+      check: "検証で乖離検出時は warn/error 表示 + 失敗 agent_id を列挙し、必要に応じて非0終了する"
+    - id: AC-T1
+      check: "実 tmux pane または隔離 tmux session で busy 状態を作り、silent failure が起きないことを実証し output に記録する"
+    - id: AC-T2
+      check: "既存正常系 (idle pane で切替) regression なしを確認する"
+    - id: AC-99
+      check: "cmd_704 git preflight規律を遵守し、報告前に git status clean + push済みを確認する"
   description: |
-    【重要訂正】
-    dual-review の役割分担は禁止。Opus/Codex は同じ課題・同じ資料・同じpromptで全範囲を独立審理すること。
-    「設計担当」「実装担当」のように分けない。1人LLMの誤判定を cross-check するのが目的。
-
     【目的】
-    n8n GHA failure alert の同一 run_id hourly 再発火について、全範囲を独立審理し、root cause と最小修正案を出す。
+    cmd_705 RCA を踏まえ、shx/shc 系列の CLI 切替 silent failure を実装修正する。
+    shx 起動後に「成功と表示されたが busy pane は旧CLIのまま」という状態をなくす。
 
-    【現象】
-    cmd_698/699後も同一run https://github.com/saneaki/multi-agent/actions/runs/25620552772 が 07:01 UTC / 08:01 UTC などで hourly alert 再発火。
-    active filter は機能しているが、dedupが同一runの再通知を止めていない。
+    【実装方針】
+    1. switch_cli.sh:
+       - pane 解決後に tmux pane 存在確認を行う
+       - /exit 送信の tmux 失敗を握り潰さない
+       - wait_for_shell_prompt timeout は return 1
+       - shell prompt へ戻れない pane には新 CLI コマンドを送らない
+       - metadata 更新は新CLI起動成功後に限る
+    2. shc.sh:
+       - deploy 後、settings.yaml cli.agents と tmux metadata / 実プロセスを照合する
+       - mismatch agent_id を列挙し、silent success にしない
+    3. output/cmd_706_shx_silent_failure_fix.md:
+       - 実装差分
+       - busy pane 実証手順と結果
+       - idle pane 正常系検証
+       - 残リスク
 
-    【仮説】
-    - A: dedup key が run_id ではなく `{repo}|{workflow}|{hourWindow}` のため1h経過後に再alert
-    - B: Gmailから同じ通知メールが再配送/未読再取得されている
-    - C: cmd_698 Parse & Dedup変更時に staticData 永続化regression が混入
-
-    【対象資料】
-    - output/cmd_700_parse_dedup_node_snapshot.json
-    - output/cmd_690_phase3_gmail_n8n_discord_alert.md
-    - output/cmd_690_phase4_intentional_fail_runbook.md
-    - output/cmd_698_n8n_gha_active_filter.md
-    - output/cmd_699_cmd698_cleanup.md
-    - docs/gha_alert_runbook.md
-    - Issue #48: https://github.com/saneaki/multi-agent/issues/48
-
-    【出力フォーマット】
-    1. verdict: BLOCK / WARN / OK
-    2. root cause: 第一原因と根拠
-    3. 仮説検証: A/B/C それぞれ採用/却下/保留 + 根拠
-    4. findings: CRITICAL/HIGH/MEDIUM/LOW、各findingに根拠と修正案
-    5. Phase 1最小修正案: 同一 run_id 永続1回通知を満たす最小変更
-    6. 影響範囲/リスク
-    7. Issue #48 close条件
-
-    【禁止】
-    - n8n/GitHub/コード編集は禁止。レビューのみ。
-    - 他方レビューを参照しない。独立審理する。
-    - secret/token/API key を output/report に書かない。
+    【安全制約】
+    - active multiagent の実作業 pane を破壊しない。テストは隔離 tmux session/pane を優先する。
+    - 実 multiagent pane への deploy テストが必要なら、影響範囲・rollback案・必要理由を karo inbox へ報告して停止する。
+    - dashboard は触らない。
+    - GitHub Issue #52 を更新し、完了時は close 条件を満たすこと。
 
     【完了報告】
     bash /home/ubuntu/shogun/scripts/inbox_write.sh karo \
-      "【subtask_700a_opus_review 完了】cmd_700 Opus dedup全範囲レビュー完了。verdict=<BLOCK|WARN|OK> critical=<N> high=<N>。report確認されたし。" \
+      "【subtask_706_shx_silent_failure_fix 完了】cmd_706 shx/shc silent failure修正完了。tests=<PASS|FAIL> commit=<sha> push=<PASS|FAIL>。report確認されたし。" \
       task_completed ashigaru4

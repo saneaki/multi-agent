@@ -14547,3 +14547,107 @@ suggestions:
     inbox_write.sh の Python triple-quoted literal embedding は引用符を含む任意本文で escape 脆弱性懸念。
     現行 attack surface (信頼 agent のみ書込) では実害なしだが、外部入力経路追加時に堅牢化必須。
   action_needed: "外部 inbox 経路拡張時に inbox_write.sh の CONTENT escape 強化を別 cmd 配備"
+- id: sug_cmd_701_001
+  from: gunshi
+  cmd_ref: cmd_701
+  task_ref: subtask_701c_gunshi_consolidation
+  created_at: "2026-05-10T18:02:00+09:00"
+  status: pending
+  priority: medium
+  content: |
+    Phase 1 PR で英語版 docs (API_REFERENCE.md / RUNBOOK.md / CONFIGURATION.md / DEVELOPER_GUIDE.md / README.md) を必ず同期すること。
+    cmd_696 規律違反の予防として GitHub Actions / pre-commit hook で日英 docs 差分を CI で検出する仕組みの追加を検討推奨。
+  action_needed: "Phase 1 完遂後、別 cmd で docs sync CI 検証 hook を配備"
+- id: sug_cmd_701_002
+  from: gunshi
+  cmd_ref: cmd_701
+  task_ref: subtask_701c_gunshi_consolidation
+  created_at: "2026-05-10T18:02:00+09:00"
+  status: pending
+  priority: high
+  content: |
+    Codex CRITICAL-1 (Gmail label 除外 query 不在 = 仕様書 §238 vs 実装 src/gmail.gs:14-28 不整合) は Opus 単独 review では見落とされていた。
+    dual-review (Opus + Codex) の cross-check 効用が実証されたため、高 sev cmd では Opus + Codex 並走 review を標準化することを推奨。
+  action_needed: "高 sev cmd の dual-review 並走を cmd_704 以降の標準フローに組み込み検討"
+- id: sug_cmd_701_003
+  from: gunshi
+  cmd_ref: cmd_701
+  task_ref: subtask_701c_gunshi_consolidation
+  created_at: "2026-05-10T18:02:00+09:00"
+  status: pending
+  priority: medium
+  content: |
+    Phase 1 backfill 関数 processCustomerBackfill は F 列を更新しない設計 (D-6 採用)。
+    backfill の実行ログを別シート (例: 元帳『backfill ログ』シート) に記録し、
+    次回 incremental が backfill 範囲と重複しないことを監査可能にする運用を推奨。
+  action_needed: "Phase 2 で backfill ログシート設計 (元帳新シート or PropertiesService)"
+- id: sug_cmd_700d_001
+  from: gunshi
+  cmd_ref: cmd_700
+  task_ref: subtask_700d_phase1_qc_autonomous
+  created_at: "2026-05-10T18:22:00+09:00"
+  status: pending
+  priority: low
+  content: |
+    既存 skill shogun-n8n-api-field-constraints の knowledge 拡張: PUT body から staticData と pinData も除外する必要があることを追記 (ash1 cmd_700d 実証)。
+  action_needed: "skill ファイルに staticData/pinData の追記 (1 行)"
+- id: sug_cmd_700d_002
+  from: gunshi
+  cmd_ref: cmd_700
+  task_ref: subtask_700d_phase1_qc_autonomous
+  created_at: "2026-05-10T18:22:00+09:00"
+  status: pending
+  priority: medium
+  content: |
+    6h 観察を自動化: scripts/cmd_700_observation_check.sh 等で 6h 経過後に grep '25620552772' queue/inbox/shogun.yaml の差分を自動チェックし、alert 0 件確認後に Issue #48 を auto-close する仕組みを Phase 1 完遂後に検討推奨。
+  action_needed: "Phase 1 完遂後、別 cmd で 6h 観察自動化 hook を配備"
+- id: sug_cmd_708b_001
+  from: gunshi
+  cmd_ref: cmd_708
+  task_ref: subtask_708b_qc_autonomous
+  created_at: "2026-05-10T22:50:00+09:00"
+  status: pending
+  priority: medium
+  content: |
+    Phase 1 deploy 時に RESUME_INDEX → CONTINUATION_STATE migration 手順を runbook に明文化必須。
+    既存 customerIndex 値が残っている場合の互換性を Phase 1 AC に組み込むこと。
+  action_needed: "cmd_708c 軍師統合で migration 手順を Phase 1 AC に追加"
+- id: sug_cmd_708b_002
+  from: gunshi
+  cmd_ref: cmd_708
+  task_ref: subtask_708b_qc_autonomous
+  created_at: "2026-05-10T22:50:00+09:00"
+  status: pending
+  priority: low
+  content: |
+    consecutiveRuns 上限を初回 6 (=36 分) で開始し、運用観察 1-2 週間後に必要なら 12 へ拡張する保守的設定を推奨。
+    Phase 1 docs に記載。
+  action_needed: "cmd_708c 軍師統合で consecutiveRuns 初期 6 + 拡張条件を AC 化"
+- id: sug_cmd_708b_003
+  from: gunshi
+  cmd_ref: cmd_708
+  task_ref: subtask_708b_qc_autonomous
+  created_at: "2026-05-10T22:50:00+09:00"
+  status: pending
+  priority: medium
+  content: |
+    LockService tryLock 失敗時の動作 (次回 trigger 待ち) を docs/RUNBOOK_ja.md に明文化。
+    15 分 cron 周期との関係 (継続中実行が timeout 一歩前で stop した場合の次回 trigger 待ち時間) も記述推奨。
+  action_needed: "Phase 1 実装で runbook 更新項目に追加"
+- id: sug_cmd_708b_004
+  from: gunshi
+  cmd_ref: cmd_708
+  task_ref: subtask_708b_qc_autonomous
+  created_at: "2026-05-10T22:50:00+09:00"
+  status: pending
+  priority: info
+  content: |
+    cmd_708 は primary review (cmd_708a) を待ってから軍師統合 (cmd_708c) を実施。secondary review 単独で実装着手しないこと。
+    家老配備順推奨: cmd_708a (ash6 Opus primary) → cmd_708c (軍師統合) → cmd_708d (Phase 1 実装)
+  action_needed: "家老が cmd_708 全体配備順を確認"
+- id: sug_subtask_706_shx_silent_failure_fix
+  title: "shogun-shc-switch-silent-failure-fix"
+  summary: "switch_cli.sh/shc.sh のbusy pane silent failure修正パターン: is_pane_busy+wait timeout return 1+|| true除去+post-deploy verify"
+  source_cmd: "cmd_706"
+  created_at: "2026-05-10T22:54:24+09:00"
+  status: pending

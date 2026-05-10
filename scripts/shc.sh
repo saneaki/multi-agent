@@ -120,6 +120,86 @@ for name, cfg in formations.items():
     done <<< "$output"
 }
 
+# ─── agent_id からペインを検索 ───
+find_pane_by_agent() {
+    local agent_id="$1"
+    local pane_count
+    pane_count=$(tmux list-panes -t "multiagent:agents" 2>/dev/null | wc -l)
+    if [[ "$pane_count" -eq 0 ]]; then
+        echo ""
+        return 1
+    fi
+    for i in $(seq 0 $((pane_count - 1))); do
+        local pane_target="multiagent:agents.$i"
+        local aid
+        aid=$(tmux display-message -t "$pane_target" -p '#{@agent_id}' 2>/dev/null || echo "")
+        if [[ "$aid" == "$agent_id" ]]; then
+            echo "$pane_target"
+            return 0
+        fi
+    done
+    echo ""
+    return 1
+}
+
+# ─── デプロイ後の実態検証 ───
+# AC-B1: 各 pane の @agent_cli と settings.yaml cli.agents を照合
+# AC-B2: 乖離時は warn/error 表示 + 失敗 agent_id 列挙 + 非0終了
+verify_formation_deploy() {
+    local agents_data="$1"  # pipe-delimited: agent_id|cli_type|model
+
+    echo ""
+    echo -e "${BOLD}Post-deploy verification:${NC}"
+    echo ""
+
+    local mismatch_agents=()
+    local not_found_agents=()
+
+    while IFS='|' read -r agent_id cli_type model; do
+        [[ "$agent_id" == "karo" || "$agent_id" == "gunshi" ]] && continue
+
+        local pane_target
+        pane_target=$(find_pane_by_agent "$agent_id")
+
+        if [[ -z "$pane_target" ]]; then
+            printf "  ${YELLOW}NOT_FOUND${NC} %-12s: pane not found in multiagent:agents\n" "$agent_id"
+            not_found_agents+=("$agent_id")
+            continue
+        fi
+
+        local actual_cli
+        actual_cli=$(tmux display-message -t "$pane_target" -p '#{@agent_cli}' 2>/dev/null | tr -d '[:space:]' || echo "unknown")
+        [[ -z "$actual_cli" ]] && actual_cli="unknown"
+
+        if [[ "$actual_cli" == "$cli_type" ]]; then
+            printf "  ${GREEN}OK${NC}        %-12s: %s\n" "$agent_id" "$cli_type"
+        else
+            printf "  ${RED}MISMATCH${NC}  %-12s: expected=%s actual=%s\n" "$agent_id" "$cli_type" "$actual_cli"
+            mismatch_agents+=("$agent_id")
+        fi
+    done <<< "$agents_data"
+
+    echo ""
+
+    local has_error=false
+
+    if [[ ${#mismatch_agents[@]} -gt 0 ]]; then
+        echo -e "${RED}ERROR: CLI metadata mismatch detected for:${NC} ${mismatch_agents[*]}"
+        echo -e "  These agents may still be on the old CLI (silent failure in switch)."
+        has_error=true
+    fi
+
+    if [[ ${#not_found_agents[@]} -gt 0 ]]; then
+        echo -e "${YELLOW}WARN: Pane not found for:${NC} ${not_found_agents[*]}"
+    fi
+
+    if ! $has_error; then
+        echo -e "${GREEN}All verified agents match expected CLI configuration.${NC}"
+    fi
+
+    $has_error && return 1 || return 0
+}
+
 # ─── Status ───
 cmd_status() {
     check_prerequisites
@@ -302,6 +382,17 @@ for agent_id, cfg in agents.items():
 
     echo ""
     echo -e "${BOLD}Result:${NC} ${GREEN}${success} success${NC}, ${RED}${failed} failed${NC} (${total} total)"
+
+    # Post-deploy verification (AC-B1/B2)
+    if [[ "$total" -gt 0 ]]; then
+        if ! verify_formation_deploy "$agents_data"; then
+            echo ""
+            echo -e "${RED}WARN: Deploy completed with verification failures.${NC}"
+            echo "Some agents may still be running the old CLI (metadata mismatch)."
+            echo "Run 'shc status' to see current state, or re-run 'shc deploy ${formation_name}'."
+            exit 1
+        fi
+    fi
 }
 
 # ─── Restore ───
