@@ -641,6 +641,19 @@ Rule:
 - Run the same checks as GitHub Actions *before* committing.
 - Only commit when checks are OK.
 - Ask the Lord before any `git push`.
+- Before marking a cmd `done`, verify the git scope for every touched repository:
+  - `git status` must be clean for the intended scope.
+  - local HEAD must not be ahead of its upstream/ref (`ahead=0`), otherwise the work has not been pushed.
+  - behind/diverged states must be resolved or explicitly documented before completion.
+  - commit/push not required cases must be written down: read-only work, API-only changes, external system changes with no repo file edits, or ignored artifacts that are verified separately.
+  - external repos are checked in their own worktree; the shogun repo check covers only shogun files.
+  - ignored artifacts are outside `git status`; confirm their existence/output registration separately.
+
+Helper:
+```bash
+bash scripts/cmd_complete_git_preflight.sh --repo /home/ubuntu/shogun
+bash scripts/cmd_complete_git_preflight.sh --repo /path/to/external/repo --ref origin/main
+```
 
 Minimum local checks:
 ```bash
