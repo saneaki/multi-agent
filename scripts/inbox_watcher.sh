@@ -896,6 +896,19 @@ session_has_client() {
     [ -n "$session_name" ] && [ "$(tmux list-clients -t "$session_name" 2>/dev/null | wc -l)" -gt 0 ]
 }
 
+# ─── Exit copy/scroll mode before nudge ───
+# tmux copy-mode (Ctrl+b [) 中は send-keys がシェル入力に届かず nudge が失われる。
+# #{pane_in_mode}=1 のとき -X cancel で copy-mode を解除してから nudge 送信する。
+exit_copy_mode_if_active() {
+    local pane_in_mode
+    pane_in_mode=$(timeout 3 tmux display-message -t "$PANE_TARGET" -p '#{pane_in_mode}' 2>/dev/null || echo "0")
+    if [ "${pane_in_mode:-0}" = "1" ]; then
+        echo "[$(date)] [COPY-MODE] Pane $PANE_TARGET in copy/scroll mode — sending cancel to exit" >&2
+        timeout 3 tmux send-keys -t "$PANE_TARGET" -X cancel 2>/dev/null || true
+        sleep 0.2
+    fi
+}
+
 # ─── Send wake-up nudge ───
 # Layered approach:
 #   1. If agent has active inotifywait self-watch → skip (agent wakes itself)
@@ -933,6 +946,9 @@ send_wakeup() {
     if should_throttle_nudge "$unread_count"; then
         return 0
     fi
+
+    # copy/scroll mode 解除（Ctrl+b [ で過去ログを閲覧中の場合、nudge が届かない）
+    exit_copy_mode_if_active
 
     # Shogun: deliver nudge via send-keys like other agents.
     # ntfy messages must reach Claude Code directly.

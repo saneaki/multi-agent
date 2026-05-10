@@ -90,6 +90,7 @@ MOCK
     export MOCK_SENDKEYS_RC=0
     export MOCK_PANE_CLI=""
     export MOCK_PANE_ACTIVE=""
+    export MOCK_PANE_IN_MODE="0"    # #{pane_in_mode}: 0=normal, 1=copy/scroll mode
     export MOCK_LIST_CLIENTS=""
     export MOCK_GIT_STATUS=""       # git status --porcelain output ("" = clean)
     export MOCK_PANE_PID="99999"    # tmux list-panes #{pane_pid} output
@@ -150,6 +151,8 @@ tmux() {
     if echo "\$*" | grep -q "display-message"; then
         if echo "\$*" | grep -q "pane_active"; then
             echo "\${MOCK_PANE_ACTIVE:-0}"
+        elif echo "\$*" | grep -q "pane_in_mode"; then
+            echo "\${MOCK_PANE_IN_MODE:-0}"
         else
             echo "mock_session"
         fi
@@ -1141,3 +1144,48 @@ YAML
     grep -q "send-keys.*/clear" "$MOCK_LOG"
 }
 
+# --- T-COPY-001: exit_copy_mode_if_active sends cancel when in copy-mode ---
+
+@test "T-COPY-001: exit_copy_mode_if_active sends cancel when pane is in copy-mode" {
+    run bash -c '
+        source "'"$TEST_HARNESS"'"
+        MOCK_PANE_IN_MODE=1
+        exit_copy_mode_if_active
+    '
+    [ "$status" -eq 0 ]
+    grep -q "\-X cancel" "$MOCK_LOG"
+    echo "$output" | grep -qi "COPY-MODE"
+}
+
+# --- T-COPY-002: exit_copy_mode_if_active does nothing when not in copy-mode ---
+
+@test "T-COPY-002: exit_copy_mode_if_active does nothing when pane is not in copy-mode" {
+    run bash -c '
+        source "'"$TEST_HARNESS"'"
+        MOCK_PANE_IN_MODE=0
+        exit_copy_mode_if_active
+    '
+    [ "$status" -eq 0 ]
+    ! grep -q "\-X cancel" "$MOCK_LOG"
+}
+
+# --- T-COPY-003: send_wakeup exits copy-mode before sending nudge ---
+
+@test "T-COPY-003: send_wakeup exits copy-mode then delivers nudge" {
+    run bash -c '
+        source "'"$TEST_HARNESS"'"
+        MOCK_PANE_IN_MODE=1
+        CLI_TYPE="claude"
+        LAST_NUDGE_TS=0
+        LAST_NUDGE_COUNT=""
+        send_wakeup 1
+    '
+    [ "$status" -eq 0 ]
+    # copy-mode cancel must appear before the nudge in the log
+    grep -q "\-X cancel" "$MOCK_LOG"
+    grep -q "send-keys.*inbox1" "$MOCK_LOG"
+    # cancel line must precede nudge line in chronological order
+    cancel_line=$(grep -n "\-X cancel" "$MOCK_LOG" | head -1 | cut -d: -f1)
+    nudge_line=$(grep -n "send-keys.*inbox1" "$MOCK_LOG" | head -1 | cut -d: -f1)
+    [ -n "$cancel_line" ] && [ -n "$nudge_line" ] && [ "$cancel_line" -lt "$nudge_line" ]
+}
