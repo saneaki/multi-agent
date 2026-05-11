@@ -1072,6 +1072,7 @@ All deliverables go into `output/` as **flat files** (no per-cmd subdirectories)
 | Non-cmd files | Allowed as-is (e.g., `output/drive_upload_webhook_wf.json`) |
 
 When creating task YAML for ashigaru, always specify the flat file path in the output field.
+`output/` deliverables remain artifact registration targets, but must not be added to `.gitignore` whitelist or tracked in git (Lord directive 2026-05-11).
 
 ## Worktree → see [instructions/common/worktree.md](./common/worktree.md)
 

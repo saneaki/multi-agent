@@ -430,6 +430,7 @@ Karo unblocks next tasks / updates 🔄進行中
 **Quality Check Criteria:**
 - Task completion YAML has all required fields (worker_id, task_id, status, result, files_modified, timestamp, skill_candidate)
 - Deliverables physically exist (files, git commits, build artifacts)
+- `output/` deliverables are artifact registration targets, but must remain git-untracked and must not be added to `.gitignore` whitelist (Lord directive 2026-05-11)
 - If task has tests → tests must pass (SKIP = incomplete)
 - If task has build → build must complete successfully
 - Scope matches original task YAML description
