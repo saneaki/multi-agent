@@ -238,6 +238,16 @@ cmd_status() {
 # ─── Deploy ───
 cmd_deploy() {
     local formation_name="${1:-hybrid}"
+    local settings_only=false
+
+    # Parse optional flags (--settings-only: update settings.yaml only, skip switch_cli)
+    shift || true
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --settings-only) settings_only=true ;;
+        esac
+        shift
+    done
 
     check_prerequisites
 
@@ -338,6 +348,12 @@ else:
         echo -e "  ${YELLOW}WARN:${NC} Failed to update cli.agents (non-fatal)"
     fi
 
+    # --settings-only: skip CLI switching (used pre-start when agents aren't running yet)
+    if $settings_only; then
+        echo -e "${GREEN}settings.yaml updated.${NC} (--settings-only: switch_cli skipped)"
+        return 0
+    fi
+
     # Step 2: Parse formation agents and call switch_cli.sh WITHOUT --type/--model
     # switch_cli.sh will read from the just-updated cli.agents section
     local total=0
@@ -414,7 +430,7 @@ shift
 
 case "$SUBCOMMAND" in
     deploy)
-        cmd_deploy "${1:-hybrid}"
+        cmd_deploy "$@"
         ;;
     status)
         cmd_status

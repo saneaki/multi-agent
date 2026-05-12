@@ -755,19 +755,20 @@ if [ "$SETUP_ONLY" = false ]; then
     # ═══════════════════════════════════════════════════════════════════
     # 陣形事前適用（エージェント起動前に settings.yaml を更新）
     # ═══════════════════════════════════════════════════════════════════
-    log_info "⚔️  陣形を事前適用中..."
+    # pre-start: settings.yaml更新のみ(--settings-only)。エージェント未起動のためswitch_cli不要。
+    log_info "⚔️  陣形を事前適用中（settings.yaml更新のみ）..."
     if [ "$HYBRID_MODE" = true ]; then
         log_info "陣形適用: hybrid"
-        bash scripts/shc.sh deploy hybrid 2>/dev/null \
-            || log_info "警告: 陣形適用(hybrid)に失敗しました。続行します"
+        bash scripts/shc.sh deploy hybrid --settings-only \
+            || { log_war "ERROR: 陣形適用(hybrid)に失敗しました。halt."; exit 1; }
     elif [ "$KESSEN_MODE" = true ]; then
         log_info "陣形適用: all-opus"
-        bash scripts/shc.sh deploy all-opus 2>/dev/null \
-            || log_info "警告: 陣形適用(all-opus)に失敗しました。続行します"
+        bash scripts/shc.sh deploy all-opus --settings-only \
+            || { log_war "ERROR: 陣形適用(all-opus)に失敗しました。halt."; exit 1; }
     else
         log_info "陣形適用: all-sonnet（平時の陣）"
-        bash scripts/shc.sh deploy all-sonnet 2>/dev/null \
-            || log_info "警告: 陣形適用(all-sonnet)に失敗しました。続行します"
+        bash scripts/shc.sh deploy all-sonnet --settings-only \
+            || { log_war "ERROR: 陣形適用(all-sonnet)に失敗しました。halt."; exit 1; }
     fi
 
     log_war "👑 全軍に Claude Code を召喚中..."

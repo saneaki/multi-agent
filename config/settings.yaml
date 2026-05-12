@@ -127,15 +127,15 @@ cli:
 # 陣形プリセット
 formations:
   hybrid:
-    description: "Sonnet×3+Opus×2+Codex×2の併用陣形"
+    description: "ash1-3=Codex/gpt-5.5, ash4-5=Sonnet+T, ash6-7=Opus+T（実運用構成 cmd_717同期）"
     agents:
-      ashigaru1: { cli_type: claude, model: claude-sonnet-4-6, effort: max }
-      ashigaru2: { cli_type: claude, model: claude-sonnet-4-6, effort: max }
-      ashigaru3: { cli_type: claude, model: claude-sonnet-4-6, effort: max }
-      ashigaru4: { cli_type: claude, model: claude-opus-4-7, effort: max }
-      ashigaru5: { cli_type: claude, model: claude-opus-4-7, effort: max }
-      ashigaru6: { cli_type: codex, model: gpt-5.5 }
-      ashigaru7: { cli_type: codex, model: gpt-5.5 }
+      ashigaru1: { cli_type: codex, model: gpt-5.5, effort: max }
+      ashigaru2: { cli_type: codex, model: gpt-5.5, effort: max }
+      ashigaru3: { cli_type: codex, model: gpt-5.5, effort: max }
+      ashigaru4: { cli_type: claude, model: claude-sonnet-4-6, effort: max }
+      ashigaru5: { cli_type: claude, model: claude-sonnet-4-6, effort: max }
+      ashigaru6: { cli_type: claude, model: claude-opus-4-7, effort: max }
+      ashigaru7: { cli_type: claude, model: claude-opus-4-7, effort: max }
   all-sonnet:
     description: "全員Claude Sonnet（従来構成・復帰用）"
     agents:
