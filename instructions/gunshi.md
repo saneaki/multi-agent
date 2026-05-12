@@ -186,6 +186,22 @@ north_star_alignment:
 - Root cause: no north_star in the task, so Gunshi treated it as a local problem
 - With north_star ("maximize affiliate revenue"), Gunshi would self-flag: "Option A = site-wide revenue risk"
 
+### North Star Outcome Evidence (SO-17 extension)
+
+Intent alignment alone is not sufficient for implementation, hook, cron, trigger, script, systemd, notification, or dashboard behavior changes. For those cmds, Gunshi QC must also require a real dry-run or equivalent E2E artifact proving the delivered behavior exercised the actual runtime path. Unit AC PASS by itself must not be treated as enough to approve `cmd_complete`.
+
+Add `north_star_outcome_evidence:` to QC reports when this applies:
+
+```yaml
+north_star_outcome_evidence:
+  status: pass | fail | manual_required | not_applicable
+  evidence_type: dry_run | e2e | manual_gate | none
+  command_or_artifact: "command, execution id, screenshot, log path, or manual gate"
+  reason: "why this proves or fails to prove the north_star outcome"
+```
+
+If real execution is impossible, mark `manual_required` and ensure the dashboard Action Required item exists before Karo considers the parent cmd complete. Full rule: [`instructions/common/north_star_outcome_check.md`](common/north_star_outcome_check.md).
+
 ### 🚨要対応セクションへの提案記載権限
 
 - QCレポートのsuggestionのうち殿の判断を仰ぐべきものは、
