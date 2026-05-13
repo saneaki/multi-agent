@@ -1,55 +1,44 @@
 worker_id: ashigaru4
-task_id: subtask_706_shx_silent_failure_fix
-parent_cmd: cmd_706
-timestamp: '2026-05-10T22:53:13+09:00'
+task_id: subtask_718a_hybrid_preset_revert_e2e
+parent_cmd: cmd_718
+timestamp: '2026-05-13T09:54:50+09:00'
 status: done
 result:
   summary: |
-    cmd_706 shx/shc CLI切替 silent failure 修正完了。
-    switch_cli.sh: pane_exists()+is_pane_busy() 追加、wait_for_shell_prompt return 1 修正、
-    critical || true 除去、busy/timeout 時に exit 1 + 明示エラーメッセージ。
-    shc.sh: find_pane_by_agent()+verify_formation_deploy() 追加、cmd_deploy に検証コール追加。
-    テスト: is_pane_busy/wait_for_shell_prompt 両ケース PASS、正常系 regression なし。
-    Issue #52 コメント追加 + closed。
+    cmd_718a formations.hybrid revert + 隔離E2E完了。
+    formations.hybrid を b8ac913^ の不変リファレンス値(Sonnet×3+Opus×2+Codex×2)へ revert。
+    test_718_isolation 隔離セッションで shc.sh deploy hybrid --settings-only を実行し、
+    cli.agents が Sonnet×3(ash1-3)+Opus×2(ash4-5)+Codex×2(ash6-7) に更新されたことを確認。
+    cmd_717成果物(halt化/--settings-only/audit_silent_failure.sh)は保持確認済み。
   files_modified:
-    - scripts/switch_cli.sh
-    - scripts/shc.sh
-    - output/cmd_706_shx_silent_failure_fix.md
-  output_path: output/cmd_706_shx_silent_failure_fix.md
+    - config/settings.yaml
+    - output/cmd_718a_hybrid_preset_revert_e2e.md
+  output_path: output/cmd_718a_hybrid_preset_revert_e2e.md
   acceptance_criteria:
-    - id: AC-A1
+    - id: A-1
       status: PASS
-      note: "is_pane_busy() 追加 + Step 2.5 でsend_exit前にbusy検出"
-    - id: AC-A2
+      note: "formations.hybrid を b8ac913^ 値(Sonnet×3+Opus×2+Codex×2)へ revert"
+    - id: A-2
       status: PASS
-      note: "is_pane_busy()→0 の場合 log ERROR + exit 1。silent failure なし"
-    - id: AC-A3
+      note: "all-sonnet / all-opus には触らず"
+    - id: A-3
       status: PASS
-      note: "wait_for_shell_prompt() return 0→return 1 修正 + main flow で if ! チェック + exit 1"
-    - id: AC-A4
+      note: "cmd_717 halt化/--settings-only/audit_silent_failure.sh/output files 保持確認"
+    - id: A-4
       status: PASS
-      note: "Step 5 tmux send-keys の '2>/dev/null || true' を除去。失敗を呼び出し元に伝播"
-    - id: AC-B1
+      note: "test_718_isolation で E2E実行。cli.agents がSonnet×3+Opus×2+Codex×2に更新"
+    - id: A-5
       status: PASS
-      note: "verify_formation_deploy() 追加。デプロイ後に @agent_cli vs expected cli_type を照合"
-    - id: AC-B2
+      note: "active shx/shp は実行せず。test_718_isolation隔離のみ"
+    - id: A-6
       status: PASS
-      note: "MISMATCH 時 agent_id 列挙 + exit 1。not_found は WARN のみ"
-    - id: AC-T1
+      note: "commit + push 完了 (sha は後続参照)"
+    - id: A-7
       status: PASS
-      note: "隔離session test_706_isolation で is_pane_busy(busy)=BUSY、wait_for_shell_prompt(busy)=timeout→return 1 実証"
-    - id: AC-T2
-      status: PASS
-      note: "is_pane_busy(idle)=NOT BUSY、wait_for_shell_prompt(idle)=1s検出→return 0。正常系影響なし"
-    - id: AC-99
-      status: PASS
-      note: "difference.md Generated=2026-05-10=today → pre-push hook OK"
+      note: "Issue #53 コメント追加 (β/軍師重複なし)"
 agent_tool_used: false
 skill_candidate:
-  found: true
-  name: shogun-shc-switch-silent-failure-fix
-  description: "switch_cli.sh/shc.sh のbusy pane silent failure修正パターン: is_pane_busy+wait timeout return 1+|| true除去+post-deploy verify"
-  reason: "同種の silent failure パターンは他 tmux 操作スクリプトでも再発リスクがあり、修正手法を体系化する価値が高い"
+  found: false
 
 # ===== 履歴 (古い順 → 新しい順 / append-only) =====
 history:
