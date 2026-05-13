@@ -2,6 +2,12 @@
 # ═══════════════════════════════════════════════════════════════
 # shp.sh — 番号指定一括出陣・撤収コマンド (Shogun Preset Launcher)
 #
+# 【preset immutability — 設計原則 (cmd_718)】
+#   shp は `config/settings.yaml` の `formations.*` プリセットを書き換えない (read-only)。
+#   ランタイム `cli.agents` セクションへの書込みのみを行う。
+#   formations.* は cmd_705 当時の不変リファレンスとして保持される。
+#   詳細: docs/formation_immutability.md / instructions/common/preset_immutability.md
+#
 # Usage:
 #   bash scripts/shp.sh                              # interactive (deploy)
 #   bash scripts/shp.sh --dry-run                    # confirm only
@@ -17,13 +23,16 @@
 #   bash scripts/shp.sh --kill --dry-run             # retreat dry-run
 #   bash scripts/shp.sh --help
 #
-# 番号体系:
+# 番号体系 (cli.agents への書込み値。formations.* は変更しない):
 #   1 = Sonnet+T  (claude-sonnet-4-6, thinking ON)
 #   2 = Opus+T    (claude-opus-4-7, thinking ON)
 #   3 = Codex     (gpt-5.5)
 #
-# プリセット:
-#   current          現在の settings.yaml 値をそのまま使用
+# プリセット (本スクリプト内蔵プリセット。formations.* とは別系統):
+#   ※ 以下は shp.sh が用意した shp 専用プリセットであり、settings.yaml の
+#     `formations.*` を読み込まない。formations.* プリセットを適用したい場合は
+#     `bash scripts/shc.sh deploy <formation_name>` を使用すること。
+#   current          現在の settings.yaml の cli.agents 値をそのまま使用
 #   heavy-opus       全員 Opus+T
 #   all-sonnet       全員 Sonnet+T
 #   sonnet-codex-mix 家老/軍師=Sonnet+T, 足軽=交互(Sonnet/Codex)
@@ -98,6 +107,11 @@ num_model() {
 usage() {
     echo -e "${BOLD}shp${NC} — 番号指定一括出陣・撤収コマンド"
     echo ""
+    echo -e "${BOLD}【preset immutability】${NC}"
+    echo "  shp は config/settings.yaml の formations.* プリセットを書き換えない (read-only)。"
+    echo "  cli.agents (ランタイム live state) への書込みのみを行う。"
+    echo "  詳細: docs/formation_immutability.md"
+    echo ""
     echo "Usage:"
     echo "  shp                          interactive (番号を順番に選択して出陣)"
     echo "  shp --dry-run                確認のみ (settings.yaml/pane変更なし)"
@@ -122,11 +136,14 @@ usage() {
     echo "  shp <N1>...<N9>               構成員 9名を個別指定 (順: 家老/足軽1-7/軍師)"
     echo "  ※ 1/2/3/9 個が正式仕様 (10個は互換のみ: 将軍指定を無視)。--yes / --dry-run と併用可。"
     echo ""
-    echo "プリセット (出陣モード):"
-    echo "  current          現在の settings.yaml の値をそのまま使用"
+    echo "プリセット (出陣モード, shp 専用 — formations.* とは別系統):"
+    echo "  current          現在の settings.yaml の cli.agents 値をそのまま使用"
     echo "  heavy-opus       全員 Opus+T"
     echo "  all-sonnet       全員 Sonnet+T"
     echo "  sonnet-codex-mix 家老/軍師=Sonnet+T, 足軽=交互(Sonnet/Codex)"
+    echo ""
+    echo "  ※ shp は settings.yaml の formations.* プリセットを読み書きしない (read-only)。"
+    echo "    formations.* を適用するには shc.sh deploy <name> を使うこと。"
     echo ""
     echo "撤収モード:"
     echo "  --kill / --retreat で撤収モードに入る"

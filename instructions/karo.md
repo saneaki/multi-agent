@@ -348,6 +348,20 @@ acceptance_criteria:
 
 → See [templates/karo_task_template.yaml](../templates/karo_task_template.yaml) for full field definitions and examples.
 
+## Preset Immutability Discipline (cmd_718)
+
+**`config/settings.yaml` の `formations.*` プリセットは不変リファレンスである。書換は殿の明示裁可を要する。**
+
+家老は cmd dispatch 前に以下を確認すること:
+
+1. task YAML の `editable_files` に `config/settings.yaml` が含まれる場合は、cmd の `purpose` / `command` / `acceptance_criteria` に **formations.* 書換が明示されているか** をチェック
+2. 明示なし → ashigaru の description に「formations.* は preset_immutability に基づき変更禁止」を明記
+3. 明示あり → 殿の `purpose` / `command` 内の明示文と Issue 裁可を確認のうえ dispatch
+
+**違反例 (再発防止参照)**: cmd_717 AC-4 で `formations.hybrid` を実運用構成に「同期」した。これは preset immutability 違反であり、cmd_718 で revert された。
+
+詳細規律: [`instructions/common/preset_immutability.md`](./common/preset_immutability.md) / 三層構造: [`docs/formation_immutability.md`](../docs/formation_immutability.md)
+
 ## "Wake = Full Scan" Pattern
 
 1. Dispatch ashigaru → say "stopping here" → end processing

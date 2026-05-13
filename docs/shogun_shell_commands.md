@@ -1,5 +1,13 @@
 # Shogun シェルコマンド一覧
 
+> **【preset immutability — 設計原則 (cmd_718)】**  
+> `config/settings.yaml` の `formations.*` プリセットは不変リファレンスである。
+> 本ドキュメントに記載する全シェルコマンド (shu / shk / shc / shp / shutsujin_departure.sh /
+> switch_cli.sh) は **`formations.*` を書き換えない**。
+> 書込み対象は `cli.agents` (ランタイム live state) に限られる。  
+> 詳細は [`docs/formation_immutability.md`](./formation_immutability.md) および
+> [`instructions/common/preset_immutability.md`](../instructions/common/preset_immutability.md) を参照。
+
 ## 番号体系 (shp 共通)
 
 | 番号 | CLI種別 | モデル | 表示名 |
