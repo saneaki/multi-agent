@@ -123,6 +123,11 @@
 !scripts/watch_gmail_trigger.sh
 !scripts/context_snapshot.sh
 !scripts/codex_context.sh
+!scripts/ocr_pdf.py
+!scripts/setup_pattern_b.ps1
+!scripts/ocr_watch.py
+!scripts/ocr_watch_start.ps1
+!scripts/ocr_watch_stop.ps1
 !scripts/shogun-discord.service.template
 !scripts/install-shogun-discord-service.sh
 !scripts/hooks/
@@ -239,6 +244,7 @@
 !docs/dashboard_schema.json
 !docs/shogun_shell_commands.md
 !docs/formation_immutability.md
+!docs/ocr_pattern_b_runbook.md
 
 # Screenshots (masked — no secrets)
 !images/
