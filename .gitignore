@@ -166,6 +166,7 @@
 !scripts/README_SA_SETUP.md
 !scripts/shogun_reality_check.sh
 !scripts/shogun_in_progress_monitor.sh
+!scripts/shogun_to_karo_parser.py
 !scripts/dashboard_lint.py
 !scripts/compact_observer.sh
 !scripts/detect_compact.sh
@@ -185,6 +186,7 @@
 !scripts/lib/
 !scripts/lib/status_check_rules.py
 !scripts/lib/gate_suppression.py
+!scripts/lib/daily_digest.py
 !scripts/suggestion_vectorize.py
 !scripts/suggestion_db.py
 !queue/external_inbox.yaml

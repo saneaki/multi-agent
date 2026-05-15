@@ -194,3 +194,51 @@ history:
       - skills/daemon-health-monitor-process-vs-log-stale/SKILL.md  # 151L
     merged_confirmation:
       - shogun-l017-dual-model-smoke-qc → shogun-error-fix-dual-review (Variant 1, cmd_608)
+
+  - task_id: subtask_716h_phase_e_followup_pr
+    parent_cmd: cmd_716
+    timestamp: "2026-05-15T16:10:00+09:00"
+    status: done
+    type: phase_implementation
+    model: opus+t
+    summary: |
+      cmd_716 Phase E 完了。Phase D 後続として E1-E7 全件 PASS。
+      - scripts/lib/daily_digest.py 新設 (build_digest / send_digest / 4 liveness helpers + CLI)
+      - scripts/shogun_to_karo_parser.py 新設 (parse_cmd_blocks / extract_gate_candidates /
+        apply_candidates_to_registry + CLI)。explicit gates field + 6 implicit keyword patterns。
+        --apply 未指定で manual-confirm 境界保持 (state=candidate のみ)
+      - scripts/shogun_in_progress_monitor.sh に check_pattern_digest_liveness() 追加、
+        dedup logic に P_DIGEST_SENDER_DOWN を 24h dedup として追加
+      - tests/unit/test_daily_digest.py 新設 (31 件, SKIP=0)
+      - 既存 tests/unit/test_gate_suppression.py 85 件は無改変、全件 PASS
+      - 合計 116/116 PASS (実行時間 2.05s)
+      - 実機 dry-run で P_DIGEST_SENDER_DOWN 発火確認 (初回未送信状態)
+    output_path: output/cmd_716h_phase_e_followup_pr.md
+    ac_results:
+      E-1: PASS  # gate auto-register + dry-run + manual confirm 境界
+      E-2: PASS  # 0件時も「行動中 0件」相当本文生成
+      E-3: PASS  # format 仕様充足 (行動中 N 件 (cmd_xxx) | 最古滞留 N 日 | 詳細 dashboard 参照)
+      E-4: PASS  # liveness check + P_DIGEST_SENDER_DOWN never suppress
+      E-5: PASS  # 31 件追加, SKIP=0
+      E-6: PASS  # Phase A-D 既存 85 件 全件 PASS, system_alert 境界維持
+      E-7: PASS  # git preflight, editable_files のみ commit 計画
+    risks:
+      - "cron/systemd schedule 設定は Phase E 範囲外 (Phase F 候補)"
+      - "gate_registry candidate → action_required 昇格手順は別系統で標準化要"
+      - "現行 dashboard.yaml.in_progress に promoted_at が無く最古滞留=0 になる (karo 側改修要)"
+    new_files:
+      - scripts/lib/daily_digest.py
+      - scripts/shogun_to_karo_parser.py
+      - tests/unit/test_daily_digest.py
+      - output/cmd_716h_phase_e_followup_pr.md
+    modified_files:
+      - scripts/shogun_in_progress_monitor.sh
+      - queue/reports/ashigaru5_report.yaml
+      - queue/tasks/ashigaru5.yaml
+      - queue/inbox/ashigaru5.yaml
+    test_summary:
+      total: 116
+      passed: 116
+      skipped: 0
+      failed: 0
+      duration_sec: 2.05

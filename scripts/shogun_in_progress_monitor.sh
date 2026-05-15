@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# shogun_in_progress_monitor.sh — 進行中乖離 1h 監視 (9パターン検出)
+# shogun_in_progress_monitor.sh — 進行中乖離 1h 監視 (10パターン検出)
 # cmd_638 Scope A + cmd_640 Scope B (P7) + cmd_641 Scope A (P8) + cmd_642 Scope A (P9)
+# + cmd_716 Phase D (P_GATE_ZOMBIE_*) + Phase E (P_DIGEST_SENDER_DOWN)
 #
 # 検出対象:
 #   P1: shogun_to_karo.yaml に status=pending かつ inbox/karo.yaml に shogun→karo
@@ -16,6 +17,8 @@
 #   P8: tmux pane 末尾に interactive prompt → agent 凍結リスク
 #   P9: dashboard.yaml action_required の高優先/提案タグが 24h+ 滞留
 #       → daily 8:00 JST ntfy
+#   P_DIGEST_SENDER_DOWN (Phase E): daily_digest sender liveness 26h+ 沈黙
+#       → system_failure として never suppress
 #
 # 重複 alert 抑制: 原則 1h 内同種は再送付しない (alert_key で識別)
 #                  P9 は 24h 内同種を抑制
@@ -62,7 +65,12 @@ try:
     msgs = data.get('messages') or []
     now = datetime.now(timezone.utc)
     # cmd_644 Scope B: P9b also uses 24h dedup (P9c uses auto_cmd_log instead)
-    dedup_hours = 24 if (alert_key.startswith('P9') or alert_key.startswith('P_GATE_ZOMBIE_')) else 1
+    # Phase E (cmd_716): P_DIGEST_SENDER_DOWN also uses 24h dedup (system_failure category)
+    dedup_hours = 24 if (
+        alert_key.startswith('P9')
+        or alert_key.startswith('P_GATE_ZOMBIE_')
+        or alert_key.startswith('P_DIGEST_SENDER_DOWN')
+    ) else 1
     cutoff = now - timedelta(hours=dedup_hours)
     for m in msgs:
         if m.get('type') != 'in_progress_monitor_alert':
@@ -852,6 +860,41 @@ def check_pattern_zombie():
         out(alert_key,
             f'judgement gate zombie検出 (7日超): {gate_id}')
 
+# ---------- Phase E: daily_digest sender liveness ----------
+def check_pattern_digest_liveness():
+    """Detect a stuck daily_digest sender. Alert key P_DIGEST_SENDER_DOWN is
+    NEVER suppressed (system_failure category)."""
+    try:
+        import sys as _sys
+        _sys.path.insert(0, os.path.join(ROOT, 'scripts/lib'))
+        from daily_digest import check_digest_liveness, is_digest_sender_down_alert
+    except Exception:
+        return
+
+    try:
+        status = check_digest_liveness(ROOT)
+    except Exception:
+        return
+
+    if not status.get('is_down'):
+        return
+
+    hours = status.get('hours_since_last')
+    last_ok = status.get('last_success_at') or 'never'
+    consec = status.get('consecutive_failures') or 0
+    if hours is None or hours == float('inf'):
+        elapsed_label = 'no successful send recorded'
+    else:
+        elapsed_label = f'{hours:.1f}h since last success ({last_ok})'
+
+    alert_key = 'P_DIGEST_SENDER_DOWN'
+    # Guard: ensure the helper agrees this key is system_failure category
+    if not is_digest_sender_down_alert(alert_key):
+        return
+    out(alert_key,
+        f'daily_digest sender 沈黙 (system_failure — never suppress): '
+        f'{elapsed_label} consecutive_failures={consec}')
+
 check_pattern_1()
 check_pattern_2()
 check_pattern_3()
@@ -862,6 +905,7 @@ check_pattern_7()
 check_pattern_8()
 check_pattern_9()
 check_pattern_zombie()
+check_pattern_digest_liveness()
 
 for r in RESULTS:
     print(r)
