@@ -62,7 +62,7 @@ try:
     msgs = data.get('messages') or []
     now = datetime.now(timezone.utc)
     # cmd_644 Scope B: P9b also uses 24h dedup (P9c uses auto_cmd_log instead)
-    dedup_hours = 24 if alert_key.startswith('P9') else 1
+    dedup_hours = 24 if (alert_key.startswith('P9') or alert_key.startswith('P_GATE_ZOMBIE_')) else 1
     cutoff = now - timedelta(hours=dedup_hours)
     for m in msgs:
         if m.get('type') != 'in_progress_monitor_alert':
@@ -810,6 +810,48 @@ def check_pattern_9():
                 brief=f"7d SLA action_required: {tag}",
             )
 
+# ---------- Phase D: zombie gate detection ----------
+def check_pattern_zombie():
+    """Detect judgement gates open > 7 days. Alert key P_GATE_ZOMBIE_* is NEVER suppressed.
+
+    On first zombie detection, appends a 'zombie' entry to judgement_log.yaml.
+    If write fails, fires JUDGEMENT_LOG_WRITE_FAILURE (system_failure, never suppressed).
+    """
+    import hashlib as _hashlib
+    try:
+        import sys as _sys
+        _sys.path.insert(0, os.path.join(ROOT, 'scripts/lib'))
+        from gate_suppression import (
+            get_gate_status,
+            detect_zombie_gates,
+            append_judgement_log_entry,
+            is_zombie_gate_alert,
+        )
+    except Exception:
+        return
+
+    gate_status = get_gate_status(ROOT)
+    if not gate_status.has_open_gate:
+        return
+
+    zombies = detect_zombie_gates(ROOT, gate_status)
+    for gate_id in zombies:
+        gate_hash = _hashlib.sha256(gate_id.encode('utf-8')).hexdigest()[:16]
+        alert_key = f'P_GATE_ZOMBIE_{gate_hash}'
+
+        # Append zombie transition to judgement_log (idempotent: skips if already zombie)
+        write_ok = append_judgement_log_entry(
+            ROOT, gate_id, 'zombie', 'system',
+            evidence=f'gate open > 7 days: {gate_id}',
+            note='zombie auto-detected by in_progress_monitor',
+        )
+        if not write_ok:
+            out('JUDGEMENT_LOG_WRITE_FAILURE',
+                f'judgement_log.yaml 書き込み失敗 (system_failure — never suppress): gate={gate_id}')
+
+        out(alert_key,
+            f'judgement gate zombie検出 (7日超): {gate_id}')
+
 check_pattern_1()
 check_pattern_2()
 check_pattern_3()
@@ -819,6 +861,7 @@ check_pattern_6()
 check_pattern_7()
 check_pattern_8()
 check_pattern_9()
+check_pattern_zombie()
 
 for r in RESULTS:
     print(r)

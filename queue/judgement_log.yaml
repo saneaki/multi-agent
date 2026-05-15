@@ -1,0 +1,22 @@
+# judgement_log.yaml — cmd_716 Phase D
+# append-only: entries are never deleted from this file directly.
+# Monthly rotation: on the 1st of each month, active entries are archived to
+#   queue/judgement_log_YYYY_MM.yaml and this file is reset.
+# Retention: 1 year (archived monthly files are pruned after 12 months).
+# Rotation implementation: deferred to Phase E (D-6 boundary).
+#
+# Entry schema:
+#   gate_id:    str  — stable identifier (action_required tag or gate_id field)
+#   transition: str  — open | resolved | zombie
+#   actor:      str  — agent/role that triggered the transition
+#   ts:         str  — ISO 8601 JST timestamp
+#   evidence:   str  — human-readable justification
+#   note:       str  — optional free-form note
+#
+# Zombie definition: gate continuously open for > 7 days.
+# zombie_gate_alert (P_GATE_ZOMBIE_*) is NEVER suppressed.
+schema_version: 1
+rotation:
+  policy: monthly
+  retention_years: 1
+entries: []

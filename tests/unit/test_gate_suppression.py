@@ -17,17 +17,23 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../scripts/lib"))
 from gate_suppression import (
     GateStatus,
     all_uncommitted_are_gate_runtime,
+    append_judgement_log_entry,
     classify_event_kind,
+    detect_zombie_gates,
     event_ledger_detection_rate,
     get_gate_status,
     has_pending_dashboard_events,
     has_unresolved_dashboard_events,
     is_gate_runtime_file,
+    is_zombie_gate_alert,
     load_event_ledger,
+    load_judgement_log,
     save_event_ledger,
+    save_judgement_log,
     should_suppress_p5,
     should_suppress_stall,
     should_suppress_uncommitted,
+    sync_gate_resolutions,
     unresolved_events,
     update_event_ledger,
 )
@@ -641,3 +647,230 @@ class TestEventLedgerSystemSafety:
         assert gs.has_open_gate is True
         assert is_gate_runtime_file("queue/reports/ashigaru5_report.yaml") is True
         assert is_gate_runtime_file("scripts/discord_notify.py") is False
+
+
+# ────────────────────────────────────────────────────────────
+# D-2/D-3: judgement_log load/save/append
+# ────────────────────────────────────────────────────────────
+
+class TestJudgementLog:
+    def test_load_creates_defaults_when_missing(self, tmproot):
+        data = load_judgement_log(str(tmproot))
+        assert data["schema_version"] == 1
+        assert data["rotation"] == {"policy": "monthly", "retention_years": 1}
+        assert data["entries"] == []
+
+    def test_save_and_load_round_trip(self, tmproot):
+        data = load_judgement_log(str(tmproot))
+        data["entries"].append({
+            "gate_id": "[action-1] test",
+            "transition": "open",
+            "actor": "karo",
+            "ts": "2026-05-15T15:00:00+09:00",
+            "evidence": "test evidence",
+            "note": "",
+        })
+        assert save_judgement_log(str(tmproot), data) is True
+        reloaded = load_judgement_log(str(tmproot))
+        assert len(reloaded["entries"]) == 1
+        assert reloaded["entries"][0]["gate_id"] == "[action-1] test"
+        assert reloaded["entries"][0]["transition"] == "open"
+
+    def test_append_entry_adds_to_existing(self, tmproot):
+        ok = append_judgement_log_entry(
+            str(tmproot), "[action-2] gate_test", "open", "karo",
+            evidence="created", note="",
+        )
+        assert ok is True
+        data = load_judgement_log(str(tmproot))
+        assert len(data["entries"]) == 1
+        e = data["entries"][0]
+        assert e["gate_id"] == "[action-2] gate_test"
+        assert e["transition"] == "open"
+        assert e["actor"] == "karo"
+        assert e["ts"]  # set
+
+    def test_append_multiple_transitions(self, tmproot):
+        append_judgement_log_entry(str(tmproot), "gate_x", "open", "karo")
+        append_judgement_log_entry(str(tmproot), "gate_x", "resolved", "system")
+        data = load_judgement_log(str(tmproot))
+        assert len(data["entries"]) == 2
+        assert data["entries"][0]["transition"] == "open"
+        assert data["entries"][1]["transition"] == "resolved"
+
+    def test_zombie_append_is_idempotent(self, tmproot):
+        """Second zombie append for same gate_id must not duplicate."""
+        append_judgement_log_entry(str(tmproot), "gate_zombie", "zombie", "system")
+        append_judgement_log_entry(str(tmproot), "gate_zombie", "zombie", "system")
+        data = load_judgement_log(str(tmproot))
+        zombie_entries = [e for e in data["entries"] if e["transition"] == "zombie"]
+        assert len(zombie_entries) == 1  # idempotent
+
+    def test_schema_preserved_across_saves(self, tmproot):
+        data = load_judgement_log(str(tmproot))
+        assert data["rotation"]["policy"] == "monthly"
+        assert data["rotation"]["retention_years"] == 1
+        save_judgement_log(str(tmproot), data)
+        reloaded = load_judgement_log(str(tmproot))
+        assert reloaded["schema_version"] == 1
+        assert reloaded["rotation"]["retention_years"] == 1
+
+    def test_load_recovers_from_corrupt_file(self, tmproot):
+        (tmproot / "queue").mkdir(exist_ok=True)
+        (tmproot / "queue" / "judgement_log.yaml").write_text(
+            "{ not valid yaml: [", encoding="utf-8"
+        )
+        data = load_judgement_log(str(tmproot))
+        assert data["entries"] == []
+
+
+# ────────────────────────────────────────────────────────────
+# D-4: zombie gate detection
+# ────────────────────────────────────────────────────────────
+
+class TestZombieGateDetection:
+    def _make_gate_item(self, tag, created_at, severity="HIGH", gate_id=None):
+        item = {
+            "tag": tag,
+            "title": f"gate {tag}",
+            "severity": severity,
+            "created_at": created_at,
+            "detail": "test",
+        }
+        if gate_id:
+            item["gate_id"] = gate_id
+        return item
+
+    def test_no_zombie_when_no_gates(self, tmproot):
+        write_yaml(tmproot / "dashboard.yaml", {"action_required": []})
+        gs = GateStatus(has_open_gate=False, gate_ids=[], cmd_ids=[])
+        assert detect_zombie_gates(str(tmproot), gs) == []
+
+    def test_no_zombie_when_gate_young(self, tmproot):
+        from datetime import datetime, timezone, timedelta
+        recent = (datetime.now(timezone(timedelta(hours=9))) - timedelta(days=3)).isoformat(timespec="seconds")
+        item = self._make_gate_item("[action-1] [cmd_712-test]", recent)
+        write_yaml(tmproot / "dashboard.yaml", {"action_required": [item]})
+        gs = GateStatus(has_open_gate=True, gate_ids=["[action-1] [cmd_712-test]"], cmd_ids=["cmd_712"])
+        zombies = detect_zombie_gates(str(tmproot), gs)
+        assert zombies == []
+
+    def test_zombie_when_gate_old(self, tmproot):
+        from datetime import datetime, timezone, timedelta
+        old = (datetime.now(timezone(timedelta(hours=9))) - timedelta(days=8)).isoformat(timespec="seconds")
+        item = self._make_gate_item("[action-1] [cmd_712-old-gate]", old)
+        write_yaml(tmproot / "dashboard.yaml", {"action_required": [item]})
+        gs = GateStatus(
+            has_open_gate=True,
+            gate_ids=["[action-1] [cmd_712-old-gate]"],
+            cmd_ids=["cmd_712"],
+        )
+        zombies = detect_zombie_gates(str(tmproot), gs)
+        assert len(zombies) == 1
+        assert "[action-1] [cmd_712-old-gate]" in zombies[0]
+
+    def test_info_item_never_zombie(self, tmproot):
+        from datetime import datetime, timezone, timedelta
+        old = (datetime.now(timezone(timedelta(hours=9))) - timedelta(days=10)).isoformat(timespec="seconds")
+        item = self._make_gate_item("[情報] [yomitoku]", old, severity="INFO")
+        write_yaml(tmproot / "dashboard.yaml", {"action_required": [item]})
+        gs = GateStatus(has_open_gate=False, gate_ids=[], cmd_ids=[])
+        assert detect_zombie_gates(str(tmproot), gs) == []
+
+    def test_is_zombie_gate_alert_prefix(self):
+        assert is_zombie_gate_alert("P_GATE_ZOMBIE_abc123") is True
+        assert is_zombie_gate_alert("P9_abc123") is False
+        assert is_zombie_gate_alert("P5-殿手作業滞留") is False
+        assert is_zombie_gate_alert("P_GATE_ZOMBIE_") is True
+
+    def test_mixed_gates_only_old_is_zombie(self, tmproot):
+        from datetime import datetime, timezone, timedelta
+        jst = timezone(timedelta(hours=9))
+        old = (datetime.now(jst) - timedelta(days=10)).isoformat(timespec="seconds")
+        young = (datetime.now(jst) - timedelta(days=2)).isoformat(timespec="seconds")
+        items = [
+            self._make_gate_item("[action-1] [cmd_old]", old),
+            self._make_gate_item("[action-2] [cmd_new]", young),
+        ]
+        write_yaml(tmproot / "dashboard.yaml", {"action_required": items})
+        gs = GateStatus(
+            has_open_gate=True,
+            gate_ids=["[action-1] [cmd_old]", "[action-2] [cmd_new]"],
+            cmd_ids=["cmd_old", "cmd_new"],
+        )
+        zombies = detect_zombie_gates(str(tmproot), gs)
+        assert len(zombies) == 1
+        assert "cmd_old" in zombies[0]
+
+
+# ────────────────────────────────────────────────────────────
+# D-5: gate resolution sync
+# ────────────────────────────────────────────────────────────
+
+class TestGateResolutionSync:
+    def test_no_resolution_when_gates_still_open(self, tmproot):
+        gate_id = "[action-1] [cmd_712-test]"
+        append_judgement_log_entry(str(tmproot), gate_id, "open", "karo")
+        gs = GateStatus(has_open_gate=True, gate_ids=[gate_id], cmd_ids=["cmd_712"])
+        resolved = sync_gate_resolutions(str(tmproot), gs)
+        assert resolved == []
+
+    def test_resolution_logged_when_gate_disappears(self, tmproot):
+        gate_id = "[action-1] [cmd_712-gone]"
+        append_judgement_log_entry(str(tmproot), gate_id, "open", "karo")
+        # Gate no longer in dashboard
+        gs = GateStatus(has_open_gate=False, gate_ids=[], cmd_ids=[])
+        resolved = sync_gate_resolutions(str(tmproot), gs)
+        assert gate_id in resolved
+        data = load_judgement_log(str(tmproot))
+        resolved_entries = [e for e in data["entries"] if e["transition"] == "resolved"]
+        assert len(resolved_entries) == 1
+        assert resolved_entries[0]["actor"] == "system"
+
+    def test_zombie_gate_also_resolves(self, tmproot):
+        gate_id = "[action-3] [cmd_zombie]"
+        append_judgement_log_entry(str(tmproot), gate_id, "zombie", "system")
+        gs = GateStatus(has_open_gate=False, gate_ids=[], cmd_ids=[])
+        resolved = sync_gate_resolutions(str(tmproot), gs)
+        assert gate_id in resolved
+
+    def test_already_resolved_gate_not_re_resolved(self, tmproot):
+        gate_id = "[action-5] [cmd_done]"
+        append_judgement_log_entry(str(tmproot), gate_id, "open", "karo")
+        append_judgement_log_entry(str(tmproot), gate_id, "resolved", "system")
+        gs = GateStatus(has_open_gate=False, gate_ids=[], cmd_ids=[])
+        resolved = sync_gate_resolutions(str(tmproot), gs)
+        assert resolved == []  # already resolved, skip
+
+    def test_no_log_entries_no_op(self, tmproot):
+        gs = GateStatus(has_open_gate=True, gate_ids=["[action-1] test"], cmd_ids=[])
+        resolved = sync_gate_resolutions(str(tmproot), gs)
+        assert resolved == []
+
+
+# ────────────────────────────────────────────────────────────
+# D-7: Phase B/C regression
+# ────────────────────────────────────────────────────────────
+
+class TestPhaseDRegression:
+    def test_phase_bc_tests_unaffected(self, tmproot):
+        """Core B/C functions still work alongside Phase D additions."""
+        make_dashboard_with_gates(tmproot, ["[action-1] [cmd_712-phase-a-manual-verify]"])
+        gs = get_gate_status(str(tmproot))
+        assert gs.has_open_gate is True
+        assert is_gate_runtime_file("queue/tasks/ashigaru2.yaml") is True
+        assert is_zombie_gate_alert("P7-GHA-upsert-0件") is False
+
+    def test_judgement_log_is_gate_runtime_file(self):
+        """judgement_log.yaml is NOT a gate runtime file (is not agent-generated side-effect)."""
+        assert is_gate_runtime_file("queue/judgement_log.yaml") is False
+
+    def test_alert_state_untouched_by_judgement_log(self, tmproot):
+        """Phase D judgement_log.yaml writes don't corrupt alert_state.yaml."""
+        (tmproot / "queue").mkdir(exist_ok=True)
+        state_content = "gates:\n  g1:\n    state: open\nnotifications: {}\ndashboard_events: []\n"
+        (tmproot / "queue" / "alert_state.yaml").write_text(state_content, encoding="utf-8")
+        append_judgement_log_entry(str(tmproot), "gate_x", "open", "karo")
+        state = load_event_ledger(str(tmproot))
+        assert "g1" in state["gates"]
+        assert state["gates"]["g1"]["state"] == "open"

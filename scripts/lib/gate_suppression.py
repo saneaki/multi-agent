@@ -523,3 +523,207 @@ def should_suppress_uncommitted(root: str, gate_status: GateStatus) -> bool:
     if not gate_status.has_open_gate:
         return False
     return all_uncommitted_are_gate_runtime(root)
+
+
+# ────────────────────────────────────────────────────────────
+# Phase D: judgement_log + zombie gate detection + resolution sync
+# ────────────────────────────────────────────────────────────
+
+_JUDGEMENT_LOG_REL = "queue/judgement_log.yaml"
+_ZOMBIE_DAYS_THRESHOLD = 7  # gates open > N days → zombie
+
+
+def _judgement_log_path(root: str) -> str:
+    return os.path.join(root, _JUDGEMENT_LOG_REL)
+
+
+def load_judgement_log(root: str) -> dict:
+    """Load queue/judgement_log.yaml; return dict with schema_version/rotation/entries."""
+    path = _judgement_log_path(root)
+    data: dict = {}
+    if os.path.exists(path):
+        try:
+            with open(path, encoding="utf-8") as f:
+                loaded = yaml.safe_load(f)
+            if isinstance(loaded, dict):
+                data = loaded
+        except (yaml.YAMLError, OSError):
+            data = {}
+    if not isinstance(data.get("schema_version"), int):
+        data["schema_version"] = 1
+    if not isinstance(data.get("rotation"), dict):
+        data["rotation"] = {"policy": "monthly", "retention_years": 1}
+    if not isinstance(data.get("entries"), list):
+        data["entries"] = []
+    return data
+
+
+def save_judgement_log(root: str, data: dict) -> bool:
+    """Persist judgement_log.yaml atomically.
+
+    Returns True on success, False on failure.
+    Callers must treat False as a system_failure and never suppress the error.
+    """
+    path = _judgement_log_path(root)
+    try:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        fd, tmp_path = tempfile.mkstemp(
+            prefix=".judgement_log.", suffix=".yaml.tmp",
+            dir=os.path.dirname(path),
+        )
+        try:
+            with os.fdopen(fd, "w", encoding="utf-8") as f:
+                yaml.safe_dump(data, f, allow_unicode=True, sort_keys=False)
+            os.replace(tmp_path, path)
+        except Exception:
+            try:
+                os.unlink(tmp_path)
+            except OSError:
+                pass
+            raise
+        return True
+    except (OSError, yaml.YAMLError):
+        return False
+
+
+def append_judgement_log_entry(
+    root: str,
+    gate_id: str,
+    transition: str,
+    actor: str,
+    evidence: str = "",
+    note: str = "",
+) -> bool:
+    """Append a single transition entry to judgement_log.yaml.
+
+    Returns True on success. Returns False if write fails; caller should treat
+    this as a system_failure and must NOT suppress the resulting alert.
+    Only appends zombie transition if gate not already in zombie state.
+    """
+    data = load_judgement_log(root)
+    entries = data.get("entries") or []
+
+    # For zombie: skip if latest transition for this gate_id is already 'zombie'
+    if transition == "zombie":
+        latest: dict = {}
+        for e in entries:
+            if not isinstance(e, dict):
+                continue
+            gid = str(e.get("gate_id") or "")
+            t = str(e.get("transition") or "")
+            latest[gid] = t
+        if latest.get(str(gate_id)) == "zombie":
+            return True  # already logged; nothing to write
+
+    entry = {
+        "gate_id": str(gate_id),
+        "transition": str(transition),
+        "actor": str(actor),
+        "ts": _iso_jst_now(),
+        "evidence": str(evidence),
+        "note": str(note),
+    }
+    data["entries"] = entries + [entry]
+    return save_judgement_log(root, data)
+
+
+def detect_zombie_gates(root: str, gate_status: GateStatus) -> list:
+    """Return gate_ids of judgement gates open for > _ZOMBIE_DAYS_THRESHOLD days.
+
+    Zombie gate alerts (P_GATE_ZOMBIE_*) are NEVER suppressed — not by Phase B
+    gate suppression nor by any other rule.
+    """
+    if not gate_status.has_open_gate:
+        return []
+
+    dash_path = os.path.join(root, "dashboard.yaml")
+    if not os.path.exists(dash_path):
+        return []
+
+    try:
+        with open(dash_path, encoding="utf-8") as f:
+            data = yaml.safe_load(f) or {}
+    except Exception:
+        return []
+
+    action_required = data.get("action_required") or []
+    if not isinstance(action_required, list):
+        return []
+
+    zombies: list = []
+    now = datetime.now(JST)
+    threshold = timedelta(days=_ZOMBIE_DAYS_THRESHOLD)
+
+    for item in action_required:
+        if not isinstance(item, dict):
+            continue
+        tag = str(item.get("tag") or "")
+        severity = str(item.get("severity") or "").upper()
+        if severity == "INFO":
+            continue
+        if not re.search(r"\[action-\d+\]", tag):
+            continue
+
+        created_at = _parse_iso(item.get("created_at") or "")
+        if created_at is None:
+            continue
+
+        age = now - created_at.astimezone(JST)
+        if age > threshold:
+            gate_id = str(item.get("gate_id") or tag)
+            zombies.append(gate_id)
+
+    return zombies
+
+
+def is_zombie_gate_alert(alert_key: str) -> bool:
+    """Return True if alert_key represents a zombie gate alert (NEVER suppress)."""
+    return str(alert_key).startswith("P_GATE_ZOMBIE_")
+
+
+def sync_gate_resolutions(root: str, gate_status: GateStatus) -> list:
+    """Detect gates resolved since last check and update judgement_log.
+
+    Compares open entries in judgement_log with current dashboard.yaml
+    action_required. Gates that were logged as 'open' but no longer appear
+    in action_required are recorded as 'resolved'.
+
+    Returns list of newly-resolved gate_ids.
+    """
+    data = load_judgement_log(root)
+    entries = data.get("entries") or []
+
+    # Build latest transition per gate_id from the log
+    latest_transition: dict = {}
+    for entry in entries:
+        if not isinstance(entry, dict):
+            continue
+        gid = str(entry.get("gate_id") or "")
+        t = str(entry.get("transition") or "")
+        if gid:
+            latest_transition[gid] = t
+
+    # Current open gate set from dashboard
+    current_gate_ids = set(gate_status.gate_ids)
+
+    newly_resolved: list = []
+    new_entries: list = list(entries)
+    now_iso = _iso_jst_now()
+
+    for gate_id, last_t in latest_transition.items():
+        if last_t in ("open", "zombie") and gate_id not in current_gate_ids:
+            new_entries.append({
+                "gate_id": gate_id,
+                "transition": "resolved",
+                "actor": "system",
+                "ts": now_iso,
+                "evidence": "gate no longer in dashboard.yaml action_required",
+                "note": "",
+            })
+            newly_resolved.append(gate_id)
+
+    if newly_resolved:
+        data["entries"] = new_entries
+        save_judgement_log(root, data)
+
+    return newly_resolved

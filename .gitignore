@@ -380,5 +380,7 @@ output/
 queue/auto_cmd_log.yaml
 # cmd_716 Phase B gate dedup state
 !queue/alert_state.yaml
+# cmd_716 Phase D judgement log (append-only, monthly rotation schema)
+!queue/judgement_log.yaml
 # Windows plugin path accidentally created in repo root
 C:\Users\
