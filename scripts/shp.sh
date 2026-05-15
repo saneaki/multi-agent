@@ -9,7 +9,7 @@
 #   詳細: docs/formation_immutability.md / instructions/common/preset_immutability.md
 #
 # Usage:
-#   bash scripts/shp.sh                              # interactive (deploy)
+#   bash scripts/shp.sh                              # interactive (deploy, transient)
 #   bash scripts/shp.sh --dry-run                    # confirm only
 #   bash scripts/shp.sh --preset <name>              # preset (skip interactive)
 #   bash scripts/shp.sh --preset <name> --dry-run
@@ -18,6 +18,8 @@
 #   bash scripts/shp.sh 1 2 3                        # positional: 将軍=1, 家老+足軽1-7=2, 軍師=3
 #   bash scripts/shp.sh 1 2 1 1 1 1 1 1 1 3 [--yes] # positional: 10名個別指定 (将軍/家老/足軽1-7/軍師)
 #   bash scripts/shp.sh --yes                        # confirm prompt skip (interactive 後)
+#   bash scripts/shp.sh --persist                    # transient→persistent: settings.yaml を書き換える
+#   bash scripts/shp.sh 1 --persist --yes            # 全員Sonnet で永続書換 (確認スキップ)
 #   bash scripts/shp.sh --kill                       # interactive (retreat)
 #   bash scripts/shp.sh --retreat                    # same as --kill
 #   bash scripts/shp.sh --kill --dry-run             # retreat dry-run
@@ -104,6 +106,16 @@ num_model() {
     esac
 }
 
+# transient モード用: 番号 → CLI 起動コマンド
+num_cli_cmd() {
+    case "$1" in
+        1) echo "claude --model claude-sonnet-4-6 --dangerously-skip-permissions" ;;
+        2) echo "claude --model claude-opus-4-7 --dangerously-skip-permissions" ;;
+        3) echo "codex --model gpt-5.5 --reasoning-effort xhigh --search --dangerously-bypass-approvals-and-sandbox --no-alt-screen" ;;
+        *) echo "claude --model claude-sonnet-4-6 --dangerously-skip-permissions" ;;
+    esac
+}
+
 # ─── Usage ───
 usage() {
     echo -e "${BOLD}shp${NC} — 番号指定一括出陣・撤収コマンド"
@@ -120,6 +132,7 @@ usage() {
     echo "  shp --preset <name> --dry-run  プリセット確認のみ"
     echo "  shp <N> [...]                positional args 一括指定 (詳細下記)"
     echo "  shp --yes / -y               y/N 確認 prompt をスキップ (自動 Yes)"
+    echo "  shp --persist                settings.yaml を永続書換 (デフォルト: transient)"
     echo "  shp --kill                   撤収モード interactive (対象を選択して /exit 送信)"
     echo "  shp --retreat                --kill の同義語"
     echo "  shp --kill --dry-run         撤収確認のみ (pane/process 変更なし)"
@@ -185,6 +198,184 @@ check_prerequisites() {
     fi
     if ! tmux info &>/dev/null 2>&1; then
         echo -e "${YELLOW}WARN:${NC} tmux が起動していません。--dry-run モードのみ利用可能です。" >&2
+    fi
+}
+
+# ─── transient: pane 解決 (全10構成員対応) ───
+resolve_pane_shp() {
+    local agent_id="$1"
+    local pane_count i aid pane_base
+
+    # shogun セッション
+    pane_count=$(tmux list-panes -t "shogun:0" 2>/dev/null | wc -l || echo "0")
+    if [[ "$pane_count" -gt 0 ]]; then
+        for i in $(seq 0 $((pane_count - 1))); do
+            aid=$(tmux display-message -t "shogun:0.$i" -p '#{@agent_id}' 2>/dev/null || true)
+            if [[ "$aid" == "$agent_id" ]]; then
+                echo "shogun:0.$i"
+                return 0
+            fi
+        done
+    fi
+
+    # multiagent セッション
+    pane_count=$(tmux list-panes -t "multiagent:agents" 2>/dev/null | wc -l || echo "0")
+    if [[ "$pane_count" -gt 0 ]]; then
+        for i in $(seq 0 $((pane_count - 1))); do
+            aid=$(tmux display-message -t "multiagent:agents.$i" -p '#{@agent_id}' 2>/dev/null || true)
+            if [[ "$aid" == "$agent_id" ]]; then
+                echo "multiagent:agents.$i"
+                return 0
+            fi
+        done
+    fi
+
+    # フォールバック
+    pane_base=$(tmux show-options -t multiagent -v @pane_base 2>/dev/null || echo "0")
+    case "$agent_id" in
+        shogun)     echo "shogun:0.0" ;;
+        karo)       echo "multiagent:agents.$((pane_base + 0))" ;;
+        ashigaru1)  echo "multiagent:agents.$((pane_base + 1))" ;;
+        ashigaru2)  echo "multiagent:agents.$((pane_base + 2))" ;;
+        ashigaru3)  echo "multiagent:agents.$((pane_base + 3))" ;;
+        ashigaru4)  echo "multiagent:agents.$((pane_base + 4))" ;;
+        ashigaru5)  echo "multiagent:agents.$((pane_base + 5))" ;;
+        ashigaru6)  echo "multiagent:agents.$((pane_base + 6))" ;;
+        ashigaru7)  echo "multiagent:agents.$((pane_base + 7))" ;;
+        gunshi)     echo "multiagent:agents.$((pane_base + 8))" ;;
+        *)          return 1 ;;
+    esac
+}
+
+# ─── transient: シェルプロンプト待機 (最大15秒) ───
+wait_prompt_shp() {
+    local pane="$1"
+    local max_wait=15
+    local waited=0
+
+    while [[ "$waited" -lt "$max_wait" ]]; do
+        sleep 1
+        waited=$((waited + 1))
+        local last_lines
+        last_lines=$(tmux capture-pane -t "$pane" -p 2>/dev/null | grep -v '^$' | tail -3)
+        if echo "$last_lines" | grep -qE '[\$%#❯►] *$'; then
+            return 0
+        fi
+        if echo "$last_lines" | grep -qiE '(bye|goodbye|exiting|exit)'; then
+            sleep 1
+            return 0
+        fi
+    done
+    return 1
+}
+
+# ─── --persist: 差分表示 ───
+show_persist_diff() {
+    local agent_id label num nl cur_num cur_nl
+    echo ""
+    echo -e "${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${BOLD}  [--persist] settings.yaml 変更差分${NC}"
+    echo -e "${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo ""
+    echo -e "${YELLOW}  警告: config/settings.yaml の cli.agents を永続書き換えします。${NC}"
+    echo -e "${YELLOW}  transient (settings.yaml 不変) にするには --persist を外してください。${NC}"
+    echo ""
+    for agent_id in "${MEMBER_IDS[@]}"; do
+        label=$(member_label "$agent_id")
+        num="${SELECTIONS[$agent_id]:-1}"
+        nl=$(num_label "$num")
+        cur_num=$(get_current_number "$agent_id")
+        cur_nl=$(num_label "$cur_num")
+        if [[ "$num" != "$cur_num" ]]; then
+            printf "  %-6s : %s(%s) ${YELLOW}→${NC} ${GREEN}%s(%s)${NC}  ${YELLOW}[書換]${NC}\n" \
+                "$label" "$cur_num" "$cur_nl" "$num" "$nl"
+        else
+            printf "  %-6s : %s(%s)  (変更なし)\n" "$label" "$cur_num" "$cur_nl"
+        fi
+    done
+    echo ""
+}
+
+# ─── transient 出陣実行 (settings.yaml を変更しない) ───
+execute_deploy_transient() {
+    local dry_run="${1:-false}"
+    local total=0 success=0 failed=0
+    local agent_id label num nl cmd pane current_cli cli_type display_name
+
+    echo ""
+    if [[ "$dry_run" == "true" ]]; then
+        echo -e "  ${YELLOW}[DRY-RUN]${NC} 実行シミュレーション (transient: settings.yaml 変更なし)"
+    else
+        echo -e "  ${CYAN}[TRANSIENT]${NC} settings.yaml を変更せずに pane を切替します"
+    fi
+    echo ""
+
+    for agent_id in "${MEMBER_IDS[@]}"; do
+        label=$(member_label "$agent_id")
+        num="${SELECTIONS[$agent_id]:-1}"
+        nl=$(num_label "$num")
+        total=$((total + 1))
+
+        if [[ "$dry_run" == "true" ]]; then
+            echo -e "  [DRY-RUN] ${label} (${agent_id}) → ${num}(${nl}) [transient]"
+            continue
+        fi
+
+        echo -ne "  切替: ${label} (${agent_id}) → ${num}(${nl}) [transient] ... "
+
+        pane=$(resolve_pane_shp "$agent_id" 2>/dev/null) || {
+            echo -e "${RED}FAILED (pane not found)${NC}"
+            failed=$((failed + 1))
+            continue
+        }
+
+        # 現在のCLI種別取得
+        current_cli=$(tmux show-options -p -t "$pane" -v @agent_cli 2>/dev/null | tr -d '[:space:]' || echo "claude")
+
+        # /exit 送信 (cross-CLI: codex は Escape + C-c 前置)
+        case "$current_cli" in
+            codex)
+                tmux send-keys -t "$pane" Escape 2>/dev/null || true
+                sleep 0.3
+                tmux send-keys -t "$pane" C-c 2>/dev/null || true
+                sleep 0.5
+                tmux send-keys -t "$pane" "/exit" Enter 2>/dev/null || true
+                ;;
+            *)
+                tmux send-keys -t "$pane" "/exit" Enter 2>/dev/null || true
+                ;;
+        esac
+
+        # シェルプロンプト待機
+        if ! wait_prompt_shp "$pane"; then
+            echo -e "${RED}FAILED (prompt timeout)${NC}"
+            failed=$((failed + 1))
+            continue
+        fi
+
+        # 新CLI起動
+        cmd=$(num_cli_cmd "$num")
+        if ! tmux send-keys -t "$pane" "$cmd" Enter 2>/dev/null; then
+            echo -e "${RED}FAILED (launch)${NC}"
+            failed=$((failed + 1))
+            continue
+        fi
+
+        # pane meta 同期
+        cli_type=$(num_cli_type "$num")
+        display_name=$(num_label "$num")
+        tmux set-option -p -t "$pane" @agent_cli "$cli_type" 2>/dev/null || true
+        tmux set-option -p -t "$pane" @model_name "$display_name" 2>/dev/null || true
+        tmux select-pane -t "$pane" -T "$display_name" 2>/dev/null || true
+
+        echo -e "${GREEN}OK${NC}"
+        success=$((success + 1))
+    done
+
+    echo ""
+    echo -e "${BOLD}結果:${NC} ${GREEN}${success} success${NC}, ${RED}${failed} failed${NC} (${total} total)"
+    if [[ $failed -gt 0 ]]; then
+        echo -e "${YELLOW}WARN:${NC} 失敗した構成員は手動で switch_cli.sh を実行してください"
     fi
 }
 
@@ -701,6 +892,7 @@ DRY_RUN=false
 PRESET=""
 RETREAT_MODE=false
 YES_FLAG=false
+PERSIST_FLAG=false
 POSITIONAL_NUMS=()
 
 while [[ $# -gt 0 ]]; do
@@ -724,6 +916,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         --yes|-y)
             YES_FLAG=true
+            shift
+            ;;
+        --persist)
+            PERSIST_FLAG=true
             shift
             ;;
         --help|-h|help)
@@ -826,24 +1022,49 @@ fi
 show_summary
 
 if [[ "$DRY_RUN" == "true" ]]; then
-    echo -e "  ${YELLOW}[DRY-RUN モード]${NC} settings.yaml/pane 変更は行われません。"
+    if [[ "$PERSIST_FLAG" == "true" ]]; then
+        echo -e "  ${YELLOW}[DRY-RUN + --persist]${NC} settings.yaml/pane 変更は行われません。"
+    else
+        echo -e "  ${YELLOW}[DRY-RUN]${NC} pane 変更は行われません (transient: settings.yaml も不変)。"
+    fi
+fi
+
+# --persist 時のみ差分表示 + 追加警告
+if [[ "$PERSIST_FLAG" == "true" && "$DRY_RUN" != "true" ]]; then
+    show_persist_diff
 fi
 
 if [[ "$YES_FLAG" == "true" ]]; then
     CONFIRM="y"
-    echo "  --yes フラグにより出陣確認スキップ (自動 Yes)"
+    if [[ "$PERSIST_FLAG" == "true" ]]; then
+        echo "  --yes フラグにより出陣確認スキップ (自動 Yes) [--persist: settings.yaml を書換]"
+    else
+        echo "  --yes フラグにより出陣確認スキップ (自動 Yes) [transient: settings.yaml 不変]"
+    fi
     echo ""
 else
-    printf "  出陣しますか? (y/N): "
+    if [[ "$PERSIST_FLAG" == "true" ]]; then
+        printf "  出陣しますか? (settings.yaml を永続書換) (y/N): "
+    else
+        printf "  出陣しますか? (transient: settings.yaml 不変) (y/N): "
+    fi
     read -r CONFIRM || CONFIRM=""
     echo ""
 fi
 
 if [[ "$CONFIRM" =~ ^[Yy]$ ]]; then
-    execute_deploy "$DRY_RUN"
+    if [[ "$PERSIST_FLAG" == "true" ]]; then
+        execute_deploy "$DRY_RUN"
+    else
+        execute_deploy_transient "$DRY_RUN"
+    fi
     if [[ "$DRY_RUN" != "true" ]]; then
         echo ""
-        echo -e "${GREEN}出陣完了！${NC}"
+        if [[ "$PERSIST_FLAG" == "true" ]]; then
+            echo -e "${GREEN}出陣完了！${NC} (settings.yaml 書換済)"
+        else
+            echo -e "${GREEN}出陣完了！${NC} (transient: settings.yaml 不変)"
+        fi
     else
         echo ""
         echo -e "  ${YELLOW}[DRY-RUN]${NC} 上記が実際の出陣設定になります。"
