@@ -2,6 +2,11 @@
 
 setup_file() {
     export PROJECT_ROOT="$(cd "$(dirname "$BATS_TEST_FILENAME")/../.." && pwd)"
+    if [ -x "$PROJECT_ROOT/.venv/bin/python3" ]; then
+        export PYTHON_BIN="$PROJECT_ROOT/.venv/bin/python3"
+    else
+        export PYTHON_BIN="${PYTHON_BIN:-python3}"
+    fi
 }
 
 setup() {
@@ -56,7 +61,7 @@ YAML
 <!-- OBSERVATION_QUEUE:END -->
 MD
 
-    run python3 - "$dashboard_yaml" "$removed_tag" <<'PY'
+    run "$PYTHON_BIN" - "$dashboard_yaml" "$removed_tag" <<'PY'
 import sys
 import yaml
 
@@ -79,7 +84,7 @@ assert removed_tag in observation_archive_tags
 PY
     [ "$status" -eq 0 ]
 
-    run python3 - "$dashboard_md" "$removed_tag" <<'PY'
+    run "$PYTHON_BIN" - "$dashboard_md" "$removed_tag" <<'PY'
 import re
 import sys
 

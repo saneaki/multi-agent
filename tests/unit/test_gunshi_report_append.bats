@@ -4,6 +4,11 @@ setup_file() {
     export PROJECT_ROOT="$(cd "$(dirname "$BATS_TEST_FILENAME")/../.." && pwd)"
     export APPEND_SCRIPT="$PROJECT_ROOT/scripts/gunshi_report_append.sh"
     export SYNC_SCRIPT="$PROJECT_ROOT/scripts/action_required_sync.sh"
+    if [ -x "$PROJECT_ROOT/.venv/bin/python3" ]; then
+        export PYTHON_BIN="$PROJECT_ROOT/.venv/bin/python3"
+    else
+        export PYTHON_BIN="${PYTHON_BIN:-python3}"
+    fi
 }
 
 setup() {
@@ -15,7 +20,7 @@ teardown() {
 }
 
 @test "gunshi_report schema has latest and history after migration" {
-    run python3 - "$PROJECT_ROOT/queue/reports/gunshi_report.yaml" <<'PY'
+    run "$PYTHON_BIN" - "$PROJECT_ROOT/queue/reports/gunshi_report.yaml" <<'PY'
 import sys
 import yaml
 
@@ -53,7 +58,7 @@ PY
     run bash "$APPEND_SCRIPT" --report "$report" --task-id smoke_test_002 --parent-cmd cmd_smoke --status done --verdict go --note "second smoke entry"
     [ "$status" -eq 0 ]
 
-    python3 - "$report" <<'PY'
+    "$PYTHON_BIN" - "$report" <<'PY'
 import sys
 import yaml
 
@@ -118,7 +123,7 @@ latest:
 history: []
 YAML
 
-    run env ACTION_REQUIRED_DASHBOARD_YAML="$dashboard_yaml" ACTION_REQUIRED_DASHBOARD_MD="$dashboard_md" ACTION_REQUIRED_LOCK="$TEST_TMPDIR/dashboard.lock" ACTION_REQUIRED_NOTIFY_SCRIPT=/bin/true bash "$SYNC_SCRIPT" "$latest_report"
+    run env PYTHON_BIN="$PYTHON_BIN" ACTION_REQUIRED_DASHBOARD_YAML="$dashboard_yaml" ACTION_REQUIRED_DASHBOARD_MD="$dashboard_md" ACTION_REQUIRED_LOCK="$TEST_TMPDIR/dashboard.lock" ACTION_REQUIRED_NOTIFY_SCRIPT=/bin/true bash "$SYNC_SCRIPT" "$latest_report"
     [ "$status" -eq 0 ]
     grep -q "test_latest_candidate" "$dashboard_yaml"
 
@@ -139,7 +144,7 @@ result:
       status: open
 YAML
 
-    run env ACTION_REQUIRED_DASHBOARD_YAML="$dashboard_yaml" ACTION_REQUIRED_DASHBOARD_MD="$dashboard_md" ACTION_REQUIRED_LOCK="$TEST_TMPDIR/dashboard.lock" ACTION_REQUIRED_NOTIFY_SCRIPT=/bin/true bash "$SYNC_SCRIPT" "$legacy_report"
+    run env PYTHON_BIN="$PYTHON_BIN" ACTION_REQUIRED_DASHBOARD_YAML="$dashboard_yaml" ACTION_REQUIRED_DASHBOARD_MD="$dashboard_md" ACTION_REQUIRED_LOCK="$TEST_TMPDIR/dashboard.lock" ACTION_REQUIRED_NOTIFY_SCRIPT=/bin/true bash "$SYNC_SCRIPT" "$legacy_report"
     [ "$status" -eq 0 ]
     grep -q "test_legacy_candidate" "$dashboard_yaml"
 }

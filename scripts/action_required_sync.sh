@@ -35,6 +35,10 @@ DASHBOARD_YAML="${ACTION_REQUIRED_DASHBOARD_YAML:-$SCRIPT_DIR/dashboard.yaml}"
 DASHBOARD_MD="${ACTION_REQUIRED_DASHBOARD_MD:-$SCRIPT_DIR/dashboard.md}"
 RENDERER="$SCRIPT_DIR/scripts/generate_dashboard_md.py"
 NOTIFY_SCRIPT="${ACTION_REQUIRED_NOTIFY_SCRIPT:-$SCRIPT_DIR/scripts/notify.sh}"
+if [ -z "${PYTHON_BIN:-}" ] && [ -x "$SCRIPT_DIR/.venv/bin/python3" ]; then
+    PYTHON_BIN="$SCRIPT_DIR/.venv/bin/python3"
+fi
+PYTHON_BIN="${PYTHON_BIN:-python3}"
 
 # Lock file: VPS local -> /var/lock (NFS でないため安全)
 # Fallback: project-local lock if /var/lock not writable (test 環境用)
@@ -97,7 +101,7 @@ fi
 log "Lock acquired: $LOCK_FILE"
 
 # Sync via Python: schema validate + upsert + archive + notify-list
-SYNC_OUT=$(python3 - "$GUNSHI_REPORT" "$DASHBOARD_YAML" <<'PYEOF'
+SYNC_OUT=$("$PYTHON_BIN" - "$GUNSHI_REPORT" "$DASHBOARD_YAML" <<'PYEOF'
 """action_required_sync core logic.
 
 Returns notification list as JSON to stdout (one line):
@@ -355,13 +359,13 @@ fi
 # (separate from cmd_644 Scope B P9b/P9c keys to avoid collision)
 NOTIFY_JSON=$(printf '%s' "$SYNC_OUT" | tail -n 1)
 NOTIFY_COUNT=$(printf '%s' "$NOTIFY_JSON" \
-    | python3 -c 'import sys,json; print(len((json.loads(sys.stdin.read() or "{}").get("notify") or [])))' 2>/dev/null \
+    | "$PYTHON_BIN" -c 'import sys,json; print(len((json.loads(sys.stdin.read() or "{}").get("notify") or [])))' 2>/dev/null \
     || echo 0)
 
 if [ "${NOTIFY_COUNT:-0}" -gt 0 ]; then
     log "Dispatching $NOTIFY_COUNT P0/HIGH notification(s)"
     export NOTIFY_SCRIPT
-    printf '%s' "$NOTIFY_JSON" | python3 -c '
+    printf '%s' "$NOTIFY_JSON" | "$PYTHON_BIN" -c '
 import sys, json, subprocess, os
 
 NOTIFY = os.environ.get("NOTIFY_SCRIPT")
@@ -387,7 +391,7 @@ fi
 
 # Render dashboard.md (Scope C delegate)
 log "Rendering dashboard.md..."
-if ! python3 "$RENDERER" --input "$DASHBOARD_YAML" --output "$DASHBOARD_MD" 2>&1 | sed "s|^|$LOG_PREFIX renderer: |"; then
+if ! "$PYTHON_BIN" "$RENDERER" --input "$DASHBOARD_YAML" --output "$DASHBOARD_MD" 2>&1 | sed "s|^|$LOG_PREFIX renderer: |"; then
     err "renderer failed (dashboard.md may be stale)"
     exit 5
 fi

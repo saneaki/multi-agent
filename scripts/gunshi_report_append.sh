@@ -5,6 +5,10 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 REPORT="$SCRIPT_DIR/queue/reports/gunshi_report.yaml"
+if [ -z "${PYTHON_BIN:-}" ] && [ -x "$SCRIPT_DIR/.venv/bin/python3" ]; then
+    PYTHON_BIN="$SCRIPT_DIR/.venv/bin/python3"
+fi
+PYTHON_BIN="${PYTHON_BIN:-python3}"
 ENTRY_FILE=""
 TASK_ID=""
 PARENT_CMD=""
@@ -92,7 +96,7 @@ EOF
     ENTRY_FILE="$ENTRY_TMP"
 fi
 
-python3 - "$REPORT" "$ENTRY_FILE" <<'PY'
+"$PYTHON_BIN" - "$REPORT" "$ENTRY_FILE" <<'PY'
 import os
 import sys
 import tempfile
