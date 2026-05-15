@@ -1,345 +1,616 @@
 worker_id: gunshi
-task_id: subtask_727b_gunshi_inbox_watcher_silent_failure_qc
-parent_cmd: cmd_727
-timestamp: "2026-05-15T15:05:00+09:00"
-status: done
-trigger: karo_assigned
-priority: medium
-note: |
-  cmd_727 β. inbox_watcher.sh の tmux send-keys silent failure 31件への remediation QC。
-  bats unit 58/58 + e2e 5/5 PASS、SKIP=0、residual tmux suppression 0、commits 7e0a03c+c3d719d push済。
-  cmd_717b audit fixture (#9-#41) との整合確認: 31件全件 tmux_send_keys_logged() 経由の明示ログ化に変換、#38/#40 (allowed_with_comment) はスコープ外として除外。
-  cmd_711 scroll/copy-mode regression: 維持確認。cmd_726 silent-failure-audit-pattern と用語整合確認。
+latest:
+  worker_id: gunshi
+  task_id: subtask_726f_gunshi_skill_quality_gate
+  parent_cmd: cmd_726
+  timestamp: '2026-05-15T15:14:44+09:00'
+  status: done
+  trigger: karo_assigned
+  priority: medium
+  note: 'cmd_726 ζ. 12 件 skill 候補処理 (created=10 / merged=2) の最終 QC。skill-creation-workflow
+    §6 quality gate 適用。commit 231e970 push 完了、12 件全て skills/ 配下に配置、frontmatter description
+    に "Use when" 含有 (trigger 判定 PASS)、skill_history.md ✅実装済 化、dashboard.md 候補欄から削除完了。markdownlint
+    style violations (MD013/MD060/MD040) は content 欠陥ではなく後続 cleanup 候補。verdict=go。
 
-result:
-  type: quality_check
-  verdict: go
-
-  acceptance_criteria_review:
+    '
+  result:
+    type: quality_check
+    verdict: go
+    acceptance_criteria_review:
     - id: Q-1
       gunshi_verify: PASS
-      result: |
-        scripts/inbox_watcher.sh の suppression 31件 (#9-#41 の tmux send-keys 系) を全件 list 化確認。
-        各箇所に tmux_send_keys_logged() ヘルパー経由の明示 ERROR/WARN ログを適用済み。
-        #38 (touch idle-flag) / #40 (touch idle-flag) は send-keys 対象外のため除外 (audit 本体に記録済)。
-    - id: Q-2
-      gunshi_verify: PASS
-      result: |
-        halt 必須 vs 明示ログ化可の分類確認:
-        - daemon である inbox_watcher は単発 nudge 失敗で停止すると監視全体を失うため、全件 halt ではなく ERROR/WARN ログ方針を採択 (正当)。
-        - 失敗ログ: context/destination/timestamp/rc/stderr を含む構造化形式で logs/inbox_watcher.log に出力確認。
-    - id: Q-3
-      gunshi_verify: PASS
-      result: |
-        smoke test 確認: bats tests/unit/test_send_wakeup.bats 58/58 PASS (SKIP=0)、bats tests/e2e/e2e_inbox_delivery.bats 5/5 PASS (SKIP=0)。
-        rg -n "tmux send-keys.*2>/dev/null || true|timeout [0-9]+ tmux send-keys" scripts/inbox_watcher.sh → no matches。
-        residual tmux suppression = 0 を確認。
-    - id: Q-4
-      gunshi_verify: PASS
-      result: |
-        cmd_717 audit fixture (output/cmd_717b_silent_failure_audit_so17_hardening.md) と整合確認:
-        - remediation_required 42件中 31件を cmd_727 で解消、remaining 11件は #43/#55/#56/#69-#72/#89-#92 (inbox_watcher.sh 以外)。
-        - cmd_726 silent-failure-audit-pattern スキルとの用語整合: tmux_send_keys_logged() 命名・ログ構造が audit-pattern 準拠。
-    - id: Q-5
-      gunshi_verify: PASS
-      result: |
-        commit 確認:
-        - 7e0a03c "fix: log inbox watcher send-keys failures (cmd_727)" — inbox_watcher.sh 本体修正 + test
-        - c3d719d "docs: record cmd_727 push evidence" — output + reports 更新
-        - git log origin/main..HEAD 空 = push 完了。
+      result: 'queue/skill_candidates.yaml に cmd_726 範囲 12 件全件記録確認:
 
-  north_star_outcome_evidence:
-    status: pass
-    evidence_type: e2e
-    command_or_artifact: |
-      bats tests/unit/test_send_wakeup.bats → 58/58 PASS (SKIP=0)
-      bats tests/e2e/e2e_inbox_delivery.bats → 5/5 PASS (SKIP=0)
-      rg "tmux send-keys.*2>/dev/null || true" scripts/inbox_watcher.sh → 0 matches
-    reason: |
-      north_star は「cascading silent failure の検出可能性確保」。inbox_watcher.sh の全 tmux send-keys 呼び出しが
-      tmux_send_keys_logged() 経由となり、失敗時に logs/inbox_watcher.log へ構造化 ERROR/WARN が出力される状態が e2e 証跡。
+        - created=10: github-actions-dynamic-sparse-checkout / github-actions-release-please-workflow-permissions
+        / sh-health-log-noise-root-cause-review / shogun-shc-switch-silent-failure
+        / shogun-nondestructive-tmux-smoke / shogun-silent-failure-audit-pattern /
+        shogun-preset-immutability-discipline / shogun-tmux-busy-aware-send-keys (battle-tested
+        格上げ) / windows-watchdog-folder-daemon / daemon-health-monitor-process-vs-log-stale
 
-  loss_cause_analysis:
-    title: "subtask_727b エントリ消失原因分析 (C-4)"
-    analyzed_at: "2026-05-15T15:18:00+09:00"
-    cause_candidates:
-      - id: L-1
-        category: append_race
-        verdict: likely
-        detail: |
-          cmd_727b (gunshi) と cmd_728e (gunshi) が gunshi_report.yaml に対して append 競合した可能性。
-          gunshi_report.yaml は単一ファイルで複数 cmd の QC エントリが蓄積される構造。
-          cmd_728e エントリが後から write された際に、727b エントリを含む旧 YAML を読まずに
-          新規 write (worktree 内での fresh write) を行うと上書きになる。
-          gunshi_report.yaml L128 で軍師自身が「cmd_728e で上書きを指摘」とある (shogun_to_karo.yaml L28277 参照)。
-      - id: L-2
-        category: parse_error
-        verdict: unlikely
-        detail: |
-          YAML parse error による truncate は、現在の gunshi_report.yaml が正常に読めるため否定的。
-          cmd_726f エントリが intact であることから、ファイル自体の破損ではなく書込タイミング問題と判断。
-      - id: L-3
-        category: spec_change
-        verdict: unlikely
-        detail: |
-          仕様変更 (single entry policy への変更) は、CLAUDE.md や instructions に記録がなく否定的。
-      - id: L-4
-        category: single_report_overwrite
-        verdict: likely
-        detail: |
-          gunshi がタスク完了時に gunshi_report.yaml を「全体 rewrite」方式で更新した場合、
-          直前に別 cmd が書いたエントリを読み込まずに overwrite すると消失する。
-          cmd_728e 完了時に cmd_727b エントリ込みの旧状態を参照せず write した可能性。
-    prevention:
-      - "gunshi_report.yaml 書込前に必ず最新ファイルを Read し、既存エントリに append する規律を徹底"
-      - "gunshi_report.yaml の先頭に worker_id/task_id を直書きする現行構造は 1 エントリのみを前提としており、\n  複数エントリを共存させるには yaml list 形式への移行が望ましい (cmd_729 で監査中)"
-      - "RACE-001 と同様の排他制御が gunshi_report.yaml への書込にも必要。\n  複数 gunshi QC が並走する場合は karo が順序を管理すること"
+        - merged=2: shogun-gas-clasp-run-creds-fallback → shogun-gas-clasp-rapt-reauth-fallback
+        / shogun-l017-dual-model-smoke-qc → shogun-error-fix-dual-review
 
-  commit_push_status:
-    commit_done: true
-    commit_hash_implementation: "7e0a03c"
-    commit_hash_evidence: "c3d719d"
-    push_done: true
-    push_evidence: "git log origin/main..HEAD 空 = push 完了"
-
-  files_modified:
-    - scripts/inbox_watcher.sh
-    - tests/unit/test_send_wakeup.bats
-    - output/cmd_727a_inbox_watcher_silent_failure_remediation.md
-    - queue/reports/ashigaru6_report.yaml
-    - queue/reports/gunshi_report.yaml
-
-skill_candidate:
-  found: false
-  reason: |
-    本 QC は inbox_watcher.sh silent failure 修正の品質確認であり、skill 化対象の新パターンではない。
-    ただし loss_cause_analysis (L-1/L-4) の防止策は shogun-observation-queue-archive-rule や
-    cmd_729 gunshi_report 書込経路監査と関連する実装知見として記録。
-
-north_star_alignment:
-  status: aligned
-  reason: |
-    north_star「cascading silent failure 検出可能性確保」を inbox_watcher.sh 全 tmux send-keys 箇所の
-    明示ログ化で達成。unit 58/58 + e2e 5/5 PASS、residual suppression 0、commit push済の evidence 揃い。
-
----
-worker_id: gunshi
-task_id: subtask_726f_gunshi_skill_quality_gate
-parent_cmd: cmd_726
-timestamp: "2026-05-15T15:14:44+09:00"
-status: done
-trigger: karo_assigned
-priority: medium
-note: |
-  cmd_726 ζ. 12 件 skill 候補処理 (created=10 / merged=2) の最終 QC。skill-creation-workflow §6 quality gate 適用。commit 231e970 push 完了、12 件全て skills/ 配下に配置、frontmatter description に "Use when" 含有 (trigger 判定 PASS)、skill_history.md ✅実装済 化、dashboard.md 候補欄から削除完了。markdownlint style violations (MD013/MD060/MD040) は content 欠陥ではなく後続 cleanup 候補。verdict=go。
-
-result:
-  type: quality_check
-  verdict: go
-
-  acceptance_criteria_review:
-    - id: Q-1
-      gunshi_verify: PASS
-      result: |
-        queue/skill_candidates.yaml に cmd_726 範囲 12 件全件記録確認:
-        - created=10: github-actions-dynamic-sparse-checkout / github-actions-release-please-workflow-permissions / sh-health-log-noise-root-cause-review / shogun-shc-switch-silent-failure / shogun-nondestructive-tmux-smoke / shogun-silent-failure-audit-pattern / shogun-preset-immutability-discipline / shogun-tmux-busy-aware-send-keys (battle-tested 格上げ) / windows-watchdog-folder-daemon / daemon-health-monitor-process-vs-log-stale
-        - merged=2: shogun-gas-clasp-run-creds-fallback → shogun-gas-clasp-rapt-reauth-fallback / shogun-l017-dual-model-smoke-qc → shogun-error-fix-dual-review
         - rejected=0 / deferred=0 (cmd_726 範囲)
-        summary.by_status は全期累計 (created=15, rejected=2, merged=15, deferred=2, total_entries=34) と整合。
+
+        summary.by_status は全期累計 (created=15, rejected=2, merged=15, deferred=2, total_entries=34)
+        と整合。
+
+        '
     - id: Q-2
       gunshi_verify: PASS_WITH_NOTE
-      result: |
-        10 created skill 全件で frontmatter `name` / `description` / `tags` 整備済、description に "Use when" 文言含有を確認。
-        system-reminder 利用可能 skill リストに 12 件全て自動載録されており、Claude trigger 判定 (description match) が機能していることを実証。
-        line 数: github-actions-dynamic-sparse-checkout=113 / -release-please-workflow-permissions=104 / sh-health-log-noise-root-cause-review=130 / shogun-shc-switch-silent-failure=121 / shogun-nondestructive-tmux-smoke=123 / shogun-silent-failure-audit-pattern=198 / shogun-preset-immutability-discipline=205 / shogun-tmux-busy-aware-send-keys=158 / windows-watchdog-folder-daemon=118 / daemon-health-monitor-process-vs-log-stale=151。全件 <500 行制限内。
-        PASS_WITH_NOTE 理由: section heading として `## Use when` + `## Do NOT use for` を持つのは 2/10 (shogun-silent-failure-audit-pattern, shogun-preset-immutability-discipline)。残り 8 件は description 内に Use when を持つのみ。section 化は trigger 判定上必須ではない (description で trigger PASS) が、後続改善で `## Use when` / `## Do NOT use for` を補強する余地あり (skill-creation-workflow §6 推奨レベル)。
+      result: '10 created skill 全件で frontmatter `name` / `description` / `tags` 整備済、description
+        に "Use when" 文言含有を確認。
+
+        system-reminder 利用可能 skill リストに 12 件全て自動載録されており、Claude trigger 判定 (description
+        match) が機能していることを実証。
+
+        line 数: github-actions-dynamic-sparse-checkout=113 / -release-please-workflow-permissions=104
+        / sh-health-log-noise-root-cause-review=130 / shogun-shc-switch-silent-failure=121
+        / shogun-nondestructive-tmux-smoke=123 / shogun-silent-failure-audit-pattern=198
+        / shogun-preset-immutability-discipline=205 / shogun-tmux-busy-aware-send-keys=158
+        / windows-watchdog-folder-daemon=118 / daemon-health-monitor-process-vs-log-stale=151。全件
+        <500 行制限内。
+
+        PASS_WITH_NOTE 理由: section heading として `## Use when` + `## Do NOT use for`
+        を持つのは 2/10 (shogun-silent-failure-audit-pattern, shogun-preset-immutability-discipline)。残り
+        8 件は description 内に Use when を持つのみ。section 化は trigger 判定上必須ではない (description
+        で trigger PASS) が、後続改善で `## Use when` / `## Do NOT use for` を補強する余地あり (skill-creation-workflow
+        §6 推奨レベル)。
+
+        '
     - id: Q-3
       gunshi_verify: PASS
-      result: |
-        merged 2 件の統合先妥当性確認:
-        (1) shogun-gas-clasp-run-creds-fallback → skills/shogun-gas-clasp-rapt-reauth-fallback/SKILL.md (110→157 行、47 行追記)
-            統合理由: clasp run の認証 fallback は既存 RAPT reauth skill の自然な拡張領域 (OAuth scope 不足 / RAPT 切り分けマトリクスの延長)。grep で "clasp run", "creds", "fallback" 関連 24 箇所確認、統合内容は GAS Editor 直接実行 / time-based trigger / clasp login --creds / API executable 配備の代替手順を整理。<500 行制限内。
-        (2) shogun-l017-dual-model-smoke-qc → skills/shogun-error-fix-dual-review/SKILL.md (262 行、追加更新なし)
-            統合理由: cmd_608 で既統合済 (Variant 1 として確定)、cmd_726d で battle-tested 再確認のみ、追加更新不要。grep で L017 / dual_model / smoke / Variant 1 関連 7 箇所確認、既存記述で十分。skill_history.md にも「✅統合済み 追加更新不要」と明記済。
-        いずれも skill-creation-workflow §2 (既存統合判断) の規律に沿った merged。新規 skill 化との重複を回避し、既存 skill の延長として整合。
+      result: "merged 2 件の統合先妥当性確認:\n(1) shogun-gas-clasp-run-creds-fallback → skills/shogun-gas-clasp-rapt-reauth-fallback/SKILL.md\
+        \ (110→157 行、47 行追記)\n    統合理由: clasp run の認証 fallback は既存 RAPT reauth skill\
+        \ の自然な拡張領域 (OAuth scope 不足 / RAPT 切り分けマトリクスの延長)。grep で \"clasp run\", \"creds\"\
+        , \"fallback\" 関連 24 箇所確認、統合内容は GAS Editor 直接実行 / time-based trigger / clasp\
+        \ login --creds / API executable 配備の代替手順を整理。<500 行制限内。\n(2) shogun-l017-dual-model-smoke-qc\
+        \ → skills/shogun-error-fix-dual-review/SKILL.md (262 行、追加更新なし)\n    統合理由:\
+        \ cmd_608 で既統合済 (Variant 1 として確定)、cmd_726d で battle-tested 再確認のみ、追加更新不要。grep\
+        \ で L017 / dual_model / smoke / Variant 1 関連 7 箇所確認、既存記述で十分。skill_history.md\
+        \ にも「✅統合済み 追加更新不要」と明記済。\nいずれも skill-creation-workflow §2 (既存統合判断) の規律に沿った\
+        \ merged。新規 skill 化との重複を回避し、既存 skill の延長として整合。\n"
     - id: Q-4
       gunshi_verify: PASS
-      result: |
-        memory/skill_history.md vs dashboard.md 整合性確認:
-        - memory/skill_history.md (lines 10-21) に cmd_726 範囲 12 件全件 ✅実装済 として記録済 (cmd_726a/b/c/d/e 経由)
+      result: 'memory/skill_history.md vs dashboard.md 整合性確認:
+
+        - memory/skill_history.md (lines 10-21) に cmd_726 範囲 12 件全件 ✅実装済 として記録済 (cmd_726a/b/c/d/e
+        経由)
+
         - dashboard.md grep で cmd_726 範囲 12 件いずれも 🛠️ スキル候補欄に残存なし (commit 231e970 で削除完了)
-        - 残存 deferred 2 件 (shogun-suggestions-lifecycle-management / codex-context-pane-border) は ⏳ 時間経過待ち欄に retained 確認 (dashboard.md line 100 付近、2026-06-08 期限)
+
+        - 残存 deferred 2 件 (shogun-suggestions-lifecycle-management / codex-context-pane-border)
+        は ⏳ 時間経過待ち欄に retained 確認 (dashboard.md line 100 付近、2026-06-08 期限)
+
         矛盾なし。skill_history.md と dashboard.md は cmd_726e shared sync で整合性確立。
+
+        '
     - id: Q-5
       gunshi_verify: PASS_WITH_NOTE
-      result: |
-        commit 231e970 / push 確認:
-        - git log --oneline -5 で 231e970 "feat: sync cmd_726 skill candidates (cmd_726)" 確認
+      result: 'commit 231e970 / push 確認:
+
+        - git log --oneline -5 で 231e970 "feat: sync cmd_726 skill candidates (cmd_726)"
+        確認
+
         - git log origin/main..HEAD は空 → push 完了
-        - commit scope: 16 files / 1814 insertions / 112 deletions (.gitignore + queue/skill_candidates.yaml + memory/skill_history.md + queue/reports/ashigaru6_report.yaml + queue/tasks/ashigaru6.yaml + skills/ 11 ファイル)
-        - .gitignore whitelist: !skills/<10 created skill 名>/ 形式で追加確認 (skill 各 directory + SKILL.md)
-        markdownlint 0.48.0: FAIL (MD013 line-length / MD060 table spacing / MD040 fenced-code language / shogun-gas-clasp-rapt-reauth-fallback の古い spacing)
-        PASS_WITH_NOTE 理由: lint は SKIP なし実行済、style violations は content 欠陥ではなく cosmetic level。skill trigger 判定 / content quality / structure は問題なし。後続 cleanup cmd を別途起案する余地あり (cmd 範囲内修正可能、本 cmd の blocker ではない)。
+
+        - commit scope: 16 files / 1814 insertions / 112 deletions (.gitignore + queue/skill_candidates.yaml
+        + memory/skill_history.md + queue/reports/ashigaru6_report.yaml + queue/tasks/ashigaru6.yaml
+        + skills/ 11 ファイル)
+
+        - .gitignore whitelist: !skills/<10 created skill 名>/ 形式で追加確認 (skill 各 directory
+        + SKILL.md)
+
+        markdownlint 0.48.0: FAIL (MD013 line-length / MD060 table spacing / MD040
+        fenced-code language / shogun-gas-clasp-rapt-reauth-fallback の古い spacing)
+
+        PASS_WITH_NOTE 理由: lint は SKIP なし実行済、style violations は content 欠陥ではなく cosmetic
+        level。skill trigger 判定 / content quality / structure は問題なし。後続 cleanup cmd
+        を別途起案する余地あり (cmd 範囲内修正可能、本 cmd の blocker ではない)。
+
+        '
     - id: Q-6
       gunshi_verify: PASS
-      result: |
-        verdict=go を確定。残件 followup:
-        (a) 8/10 created skill に section heading `## Use when` / `## Do NOT use for` を補強 (skill-creation-workflow §6 推奨レベル)
-        (b) markdownlint MD013/MD060/MD040 cleanup (cosmetic level、別 cmd or 同 cmd 範囲内で fix 可能)
-        (c) deferred 2 件 (shogun-suggestions-lifecycle-management / codex-context-pane-border) は 2026-06-08 まで観察継続、期限到達時に再評価
+      result: 'verdict=go を確定。残件 followup:
+
+        (a) 8/10 created skill に section heading `## Use when` / `## Do NOT use for`
+        を補強 (skill-creation-workflow §6 推奨レベル)
+
+        (b) markdownlint MD013/MD060/MD040 cleanup (cosmetic level、別 cmd or 同 cmd
+        範囲内で fix 可能)
+
+        (c) deferred 2 件 (shogun-suggestions-lifecycle-management / codex-context-pane-border)
+        は 2026-06-08 まで観察継続、期限到達時に再評価
+
         いずれも本 cmd の completion を妨げない。
 
-  means_ends_classification:
-    schema_version: "1.0"
-    ac_classification:
+        '
+    means_ends_classification:
+      schema_version: '1.0'
+      ac_classification:
       - id: Q-1
         type: means
-        rationale: "skill_candidates.yaml への分類記録は記録 means。"
+        rationale: skill_candidates.yaml への分類記録は記録 means。
         corresponding_ends_ac: Q-4
       - id: Q-2
         type: means
-        rationale: "frontmatter + trigger 判定可能性は機構制約 (means)。"
+        rationale: frontmatter + trigger 判定可能性は機構制約 (means)。
         corresponding_ends_ac: null
       - id: Q-3
         type: means
-        rationale: "merged 統合先の妥当性確認は構造制約 (means)。"
+        rationale: merged 統合先の妥当性確認は構造制約 (means)。
         corresponding_ends_ac: null
       - id: Q-4
         type: ends
-        rationale: "skill_history.md ✅実装済 + dashboard 削除 + skills/ 配置 + trigger 判定 system-reminder 載録は skill 化の ends 実証。"
+        rationale: skill_history.md ✅実装済 + dashboard 削除 + skills/ 配置 + trigger 判定
+          system-reminder 載録は skill 化の ends 実証。
         corresponding_ends_ac: null
       - id: Q-5
         type: means
-        rationale: "commit/push/lint/gitignore は配送 means。"
+        rationale: commit/push/lint/gitignore は配送 means。
         corresponding_ends_ac: null
       - id: Q-6
         type: means
-        rationale: "verdict 記録は記録 means。"
+        rationale: verdict 記録は記録 means。
         corresponding_ends_ac: null
-    ends_coverage_note: |
-      Q-4 が ends AC。system-reminder 利用可能 skill リストに 12 件全件自動載録され、Claude が skill 化済として認識していることを実 runtime 上で確認。これが「skill 化が完了して trigger 判定機能まで到達」した ends 証跡。
-    both_systems_verified: true
-    verdict: "means 系 5/5 PASS。ends 系 1/1 PASS (system-reminder 載録 + trigger 判定機能による実 runtime ends 確認)。"
+      ends_coverage_note: 'Q-4 が ends AC。system-reminder 利用可能 skill リストに 12 件全件自動載録され、Claude
+        が skill 化済として認識していることを実 runtime 上で確認。これが「skill 化が完了して trigger 判定機能まで到達」した
+        ends 証跡。
 
-  north_star_outcome_evidence:
-    status: pass
-    evidence_type: e2e
-    command_or_artifact: |
-      system-reminder 利用可能 skill リスト (gunshi 起動時に自動載録) に cmd_726 範囲 12 件全件含有を確認:
-        - github-actions-dynamic-sparse-checkout / -release-please-workflow-permissions
-        - sh-health-log-noise-root-cause-review / shogun-shc-switch-silent-failure
-        - shogun-nondestructive-tmux-smoke / shogun-silent-failure-audit-pattern
-        - shogun-preset-immutability-discipline / shogun-tmux-busy-aware-send-keys
-        - windows-watchdog-folder-daemon / daemon-health-monitor-process-vs-log-stale
-      これは Claude が description match による trigger 判定で skill を呼び出し可能になった状態の e2e 証跡。
-      git log origin/main 231e970 + skills/ 11 SKILL.md + skill_history.md ✅実装済 12 件 + dashboard 候補欄削除 + .gitignore whitelist が全て揃っている統合状態を満たす。
-    reason: |
-      cmd_726 north_star は「skill 候補 12 件の処理完了」。skills/ 配置 + skill_history.md ✅実装済 + dashboard 削除 + push origin/main + system-reminder 自動載録 (trigger 判定機能) の 5 段完遂で ends 達成。実 runtime で Claude が skill を呼び出せる状態が e2e 証跡。
+        '
+      both_systems_verified: true
+      verdict: means 系 5/5 PASS。ends 系 1/1 PASS (system-reminder 載録 + trigger 判定機能による実
+        runtime ends 確認)。
+    north_star_outcome_evidence:
+      status: pass
+      evidence_type: e2e
+      command_or_artifact: "system-reminder 利用可能 skill リスト (gunshi 起動時に自動載録) に cmd_726\
+        \ 範囲 12 件全件含有を確認:\n  - github-actions-dynamic-sparse-checkout / -release-please-workflow-permissions\n\
+        \  - sh-health-log-noise-root-cause-review / shogun-shc-switch-silent-failure\n\
+        \  - shogun-nondestructive-tmux-smoke / shogun-silent-failure-audit-pattern\n\
+        \  - shogun-preset-immutability-discipline / shogun-tmux-busy-aware-send-keys\n\
+        \  - windows-watchdog-folder-daemon / daemon-health-monitor-process-vs-log-stale\n\
+        これは Claude が description match による trigger 判定で skill を呼び出し可能になった状態の e2e 証跡。\n\
+        git log origin/main 231e970 + skills/ 11 SKILL.md + skill_history.md ✅実装済\
+        \ 12 件 + dashboard 候補欄削除 + .gitignore whitelist が全て揃っている統合状態を満たす。\n"
+      reason: 'cmd_726 north_star は「skill 候補 12 件の処理完了」。skills/ 配置 + skill_history.md
+        ✅実装済 + dashboard 削除 + push origin/main + system-reminder 自動載録 (trigger 判定機能)
+        の 5 段完遂で ends 達成。実 runtime で Claude が skill を呼び出せる状態が e2e 証跡。
 
-  qc_auto_check_results:
-    note: |
-      qc_auto_check.sh ashigaru6 subtask_726e_skill_shared_sync_push 相当の手動確認。SO-01 PASS (worker/task/status/result/files_modified/timestamp/skill_candidate)、SO-03 PASS JST、SO-06 report_to=karo (cmd_726 ζ 構造で gunshi 統合 QC、意図的設定)、SO-12 snapshot N/A、SO-19 dashboard cmd_726 残件なし (戦果未記載は家老完遂時の記録予定)、SO-21 既存 4件 violation (本 cmd 無関係)。
+        '
+    qc_auto_check_results:
+      note: 'qc_auto_check.sh ashigaru6 subtask_726e_skill_shared_sync_push 相当の手動確認。SO-01
+        PASS (worker/task/status/result/files_modified/timestamp/skill_candidate)、SO-03
+        PASS JST、SO-06 report_to=karo (cmd_726 ζ 構造で gunshi 統合 QC、意図的設定)、SO-12 snapshot
+        N/A、SO-19 dashboard cmd_726 残件なし (戦果未記載は家老完遂時の記録予定)、SO-21 既存 4件 violation
+        (本 cmd 無関係)。
 
-  implementation_qc_checklist:
-    - check: "AC に Stage 3 (登録確認) 含むか"
+        '
+    implementation_qc_checklist:
+    - check: AC に Stage 3 (登録確認) 含むか
       result: pass
-      detail: "cmd_726e で .gitignore whitelist + skills/ 配置 + skill_history.md append + dashboard 削除 = Stage 3 (登録) を満たす。Q-5 で確認済。"
-    - check: "Stage 4 実行ログ"
+      detail: cmd_726e で .gitignore whitelist + skills/ 配置 + skill_history.md append
+        + dashboard 削除 = Stage 3 (登録) を満たす。Q-5 で確認済。
+    - check: Stage 4 実行ログ
       result: pass
-      detail: "system-reminder 利用可能 skill リスト載録が Stage 4 実行ログ相当。trigger 判定機能が実 runtime で動作することを示す。"
-    - check: "dashboard 反映"
+      detail: system-reminder 利用可能 skill リスト載録が Stage 4 実行ログ相当。trigger 判定機能が実 runtime
+        で動作することを示す。
+    - check: dashboard 反映
       result: pass
-      detail: "dashboard.md 🛠️ 欄から 12 件削除完了、🔄 進行中欄 cmd_726c (足軽4号) は本 QC 完了後に家老が cmd_726 完遂時へ移行予定。"
-
-  commit_push_status:
-    commit_done: true
-    commit_hash: "231e970"
-    commit_message: "feat: sync cmd_726 skill candidates (cmd_726)"
-    push_done: true
-    push_evidence: "git log origin/main..HEAD 空 = 整合。HEAD は 231e970 が最新、origin/main も同位置確認。"
-
-  merged_review:
+      detail: dashboard.md 🛠️ 欄から 12 件削除完了、🔄 進行中欄 cmd_726c (足軽4号) は本 QC 完了後に家老が cmd_726
+        完遂時へ移行予定。
+    commit_push_status:
+      commit_done: true
+      commit_hash: 231e970
+      commit_message: 'feat: sync cmd_726 skill candidates (cmd_726)'
+      push_done: true
+      push_evidence: git log origin/main..HEAD 空 = 整合。HEAD は 231e970 が最新、origin/main
+        も同位置確認。
+    merged_review:
     - source: shogun-gas-clasp-run-creds-fallback
       target: skills/shogun-gas-clasp-rapt-reauth-fallback/SKILL.md
       target_lines_before: 110
       target_lines_after: 157
       added_lines: 47
       verdict: appropriate
-      reason: "clasp run の認証 fallback (GAS Editor 直接実行 / time-based trigger / clasp login --creds / API executable) は既存 RAPT reauth skill の自然な拡張。skill-creation-workflow §2 既存統合判断と整合。<500 行制限内。"
+      reason: clasp run の認証 fallback (GAS Editor 直接実行 / time-based trigger / clasp
+        login --creds / API executable) は既存 RAPT reauth skill の自然な拡張。skill-creation-workflow
+        §2 既存統合判断と整合。<500 行制限内。
     - source: shogun-l017-dual-model-smoke-qc
       target: skills/shogun-error-fix-dual-review/SKILL.md
       target_lines_before: 262
       target_lines_after: 262
       added_lines: 0
       verdict: appropriate
-      reason: "cmd_608 で既統合済 (Variant 1 として確定)、cmd_726d で battle-tested 再確認のみ。追加更新不要は skill-creation-workflow §2 の重複統合回避規律と整合。"
-
-  skill_quality_summary:
-    total_processed: 12
-    created: 10
-    merged: 2
-    rejected: 0
-    deferred: 0
-    line_count_compliance: 11/11 (all <500 lines)
-    frontmatter_compliance: 10/10 (name/description/tags + Use when in description)
-    section_heading_compliance: 2/10 (## Use when + ## Do NOT use for as section)
-    system_reminder_trigger_load: 12/12 (verified at gunshi startup)
-    skill_history_append: 12/12 (✅実装済)
-    dashboard_removal: 12/12 (no residue in 🛠️ section)
-    gitignore_whitelist: 10/10 (created skill directories)
-    markdownlint: FAIL (style violations, not content defects)
-
-  concerns_flagged:
+      reason: cmd_608 で既統合済 (Variant 1 として確定)、cmd_726d で battle-tested 再確認のみ。追加更新不要は
+        skill-creation-workflow §2 の重複統合回避規律と整合。
+    skill_quality_summary:
+      total_processed: 12
+      created: 10
+      merged: 2
+      rejected: 0
+      deferred: 0
+      line_count_compliance: 11/11 (all <500 lines)
+      frontmatter_compliance: 10/10 (name/description/tags + Use when in description)
+      section_heading_compliance: 2/10 (## Use when +
+      system_reminder_trigger_load: 12/12 (verified at gunshi startup)
+      skill_history_append: 12/12 (✅実装済)
+      dashboard_removal: 12/12 (no residue in 🛠️ section)
+      gitignore_whitelist: 10/10 (created skill directories)
+      markdownlint: FAIL (style violations, not content defects)
+    concerns_flagged:
     - id: c1
       severity: low
-      title: "10 created skill のうち 8 件に section heading `## Use when` / `## Do NOT use for` が未追加"
-      detail: |
-        description 内に "Use when" 文言があり trigger 判定は機能 (system-reminder 載録確認済)。
+      title: 10 created skill のうち 8 件に section heading `## Use when` / `## Do NOT
+        use for` が未追加
+      detail: 'description 内に "Use when" 文言があり trigger 判定は機能 (system-reminder 載録確認済)。
+
         skill-creation-workflow §6 quality gate の section 補強は推奨レベルで blocker ではない。
+
         後続 cleanup cmd で 8 件に section 追加して quality gate 完全準拠を達成する余地。
-      action_for_karo: "後続 cmd 候補: 8 件への section 追加 (推奨レベル)。本 cmd の completion 後の追加 cleanup として起案検討。"
+
+        '
+      action_for_karo: '後続 cmd 候補: 8 件への section 追加 (推奨レベル)。本 cmd の completion 後の追加
+        cleanup として起案検討。'
     - id: c2
       severity: low
-      title: "markdownlint style violations (MD013/MD060/MD040 + shogun-gas-clasp-rapt-reauth-fallback の古い spacing)"
-      detail: |
-        skill content / trigger 判定 / structure は問題なし、cosmetic level の style 課題。
+      title: markdownlint style violations (MD013/MD060/MD040 + shogun-gas-clasp-rapt-reauth-fallback
+        の古い spacing)
+      detail: 'skill content / trigger 判定 / structure は問題なし、cosmetic level の style
+        課題。
+
         SKIP なし実行で全 violations 検出済。cmd_726e で記録済。
-      action_for_karo: "別 cmd or 同 cmd 範囲内で markdownlint --fix 適用または手動 cleanup を検討。本 cmd の go verdict を妨げない。"
 
-  follow_up_observations:
-    - "deferred 2 件 (shogun-suggestions-lifecycle-management / codex-context-pane-border) は 2026-06-08 まで観察継続。期限到達時に新規 skill 化 / 棄却を再評価する規律化候補。"
-    - "12 件 skill 化により system-reminder skill リストが拡充。今後の cmd で description trigger 判定により自動 skill 呼び出しが期待される。利用実績の skill_history.md battle-tested 強化記録を運用観察として継続。"
-    - "merged 2 件のうち shogun-l017-dual-model-smoke-qc は cmd_608 で既統合済の再確認のみ。今後の skill 候補処理で『既統合済 vs 追加更新必要』の判定基準を明文化する skill-creation-workflow §2 補強候補。"
-
-  action_required_candidates:
+        '
+      action_for_karo: 別 cmd or 同 cmd 範囲内で markdownlint --fix 適用または手動 cleanup を検討。本
+        cmd の go verdict を妨げない。
+    follow_up_observations:
+    - deferred 2 件 (shogun-suggestions-lifecycle-management / codex-context-pane-border)
+      は 2026-06-08 まで観察継続。期限到達時に新規 skill 化 / 棄却を再評価する規律化候補。
+    - 12 件 skill 化により system-reminder skill リストが拡充。今後の cmd で description trigger 判定により自動
+      skill 呼び出しが期待される。利用実績の skill_history.md battle-tested 強化記録を運用観察として継続。
+    - merged 2 件のうち shogun-l017-dual-model-smoke-qc は cmd_608 で既統合済の再確認のみ。今後の skill
+      候補処理で『既統合済 vs 追加更新必要』の判定基準を明文化する skill-creation-workflow §2 補強候補。
+    action_required_candidates:
     - severity: INFO
-      title: "8 created skill に section heading 追加 cleanup (後続 cmd 候補)"
-      summary: "## Use when / ## Do NOT use for を section heading 化することで skill-creation-workflow §6 推奨レベル完全準拠。description trigger は既に機能、本件は推奨レベル。"
+      title: 8 created skill に section heading 追加 cleanup (後続 cmd 候補)
+      summary: '## Use when / ## Do NOT use for を section heading 化することで skill-creation-workflow
+        §6 推奨レベル完全準拠。description trigger は既に機能、本件は推奨レベル。'
       cmd_ref: cmd_726f
-      issue_id: "auto-by-action_required_sync"
+      issue_id: auto-by-action_required_sync
       manual_gate_required: false
-
-  suggestions:
-    - "後続 cmd 候補: 8 created skill に section heading `## Use when` / `## Do NOT use for` を追加して skill-creation-workflow §6 推奨レベル完全準拠 (低優先、本 cmd 完了後)。"
-    - "markdownlint MD013/MD060/MD040 cleanup を別 cmd または同 cmd 範囲内 fix で対応 (cosmetic level)。"
-    - "deferred 2 件 (2026-06-08 期限) の再評価規律を skill-creation-workflow に明文化する補強案。"
-
-  files_modified:
+    suggestions:
+    - '後続 cmd 候補: 8 created skill に section heading `## Use when` / `## Do NOT use
+      for` を追加して skill-creation-workflow §6 推奨レベル完全準拠 (低優先、本 cmd 完了後)。'
+    - markdownlint MD013/MD060/MD040 cleanup を別 cmd または同 cmd 範囲内 fix で対応 (cosmetic
+      level)。
+    - deferred 2 件 (2026-06-08 期限) の再評価規律を skill-creation-workflow に明文化する補強案。
+    files_modified:
     - queue/reports/gunshi_report.yaml
     - queue/inbox/gunshi.yaml
     - queue/tasks/gunshi.yaml (status: assigned → done)
+  skill_candidate:
+    found: false
+    reason: '本 cmd は skill 候補 12 件の最終 QC であり、QC 自体が新規 skill 化対象とはならない。
 
-skill_candidate:
-  found: false
-  reason: |
-    本 cmd は skill 候補 12 件の最終 QC であり、QC 自体が新規 skill 化対象とはならない。
-    ただし concerns c1/c2 と follow_up_observations は将来の skill-creation-workflow §6 quality gate 強化候補として記録 (本 QC では observation 段階)。
+      ただし concerns c1/c2 と follow_up_observations は将来の skill-creation-workflow §6
+      quality gate 強化候補として記録 (本 QC では observation 段階)。
 
-north_star_alignment:
-  status: aligned
-  reason: |
-    本 cmd の north_star は「12 件 skill 候補処理の最終品質確認」。created=10 / merged=2 / rejected=0 / deferred=0 の分類整合、skills/ 配置 + skill_history.md ✅実装済 + dashboard 削除 + push origin/main + system-reminder 自動載録 (trigger 判定機能) の 5 段完遂を確認、verdict=go。
-  risks_to_north_star:
-    - "8/10 skill に section heading 不在 (description trigger は機能、推奨レベル課題のみ)。後続 cmd cleanup で対応推奨。"
-    - "markdownlint style violations は content 欠陥ではない cosmetic level。skill 利用に影響なし。"
-    - "deferred 2 件は 2026-06-08 まで観察継続中。期限到達時に判定漏れがあると skill 候補池が陳腐化リスク。"
+      '
+  north_star_alignment:
+    status: aligned
+    reason: '本 cmd の north_star は「12 件 skill 候補処理の最終品質確認」。created=10 / merged=2 /
+      rejected=0 / deferred=0 の分類整合、skills/ 配置 + skill_history.md ✅実装済 + dashboard
+      削除 + push origin/main + system-reminder 自動載録 (trigger 判定機能) の 5 段完遂を確認、verdict=go。
+
+      '
+    risks_to_north_star:
+    - 8/10 skill に section heading 不在 (description trigger は機能、推奨レベル課題のみ)。後続 cmd cleanup
+      で対応推奨。
+    - markdownlint style violations は content 欠陥ではない cosmetic level。skill 利用に影響なし。
+    - deferred 2 件は 2026-06-08 まで観察継続中。期限到達時に判定漏れがあると skill 候補池が陳腐化リスク。
+history:
+- worker_id: gunshi
+  task_id: subtask_723_gunshi_ac11_completion_qc_reconstructed
+  parent_cmd: cmd_723
+  timestamp: '2026-05-13T05:22:36+09:00'
+  status: done
+  trigger: post_hoc_reconstruction
+  priority: medium
+  note: cmd_723 AC-11 completion QC entry reconstructed after gunshi_report overwrite
+    incident. This is not the original live QC text.
+  result:
+    type: quality_check
+    verdict: go
+    action_required_candidates: []
+    acceptance_criteria_review:
+    - id: AC-11-1
+      gunshi_verify: PASS
+      result: saneaki/legal-pdf-ocr private main repository exists and Pattern B runtime
+        files were migrated out of shogun.
+    - id: AC-11-2
+      gunshi_verify: PASS
+      result: Repository evidence records clone size around 412K, supporting the intended
+        lightweight external runtime repository.
+    - id: AC-11-3
+      gunshi_verify: PASS
+      result: shogun runtime files for Pattern B were removed from shogun while preserving
+        operational references and migration notes.
+    - id: AC-11-4
+      gunshi_verify: PASS
+      result: 'GitHub Issue #54-57 comments and VPS clone evidence were referenced
+        by karo as completion evidence.'
+    north_star_outcome_evidence:
+      status: pass
+      evidence_type: artifact_and_repository
+      command_or_artifact: queue/inbox/gunshi.yaml msg_20260513_052236 completion-QC
+        request evidence; queue/shogun_to_karo.yaml cmd_723 result lines around 27560-27831
+      reason: Pattern B runtime was moved to the private legal-pdf-ocr repository
+        and shogun-side runtime deletion/migration evidence was present.
+  skill_candidate:
+    found: false
+    reason: Reconstructed QC entry; no new skill candidate is asserted post hoc.
+  reconstructed_from:
+  - queue/inbox/gunshi.yaml msg_20260513_052236
+  - queue/shogun_to_karo.yaml cmd_723 result/context
+  - cmd_729a audit A-4 restoration table
+  source_evidence:
+  - path: queue/shogun_to_karo.yaml
+    detail: cmd_723 result records Pattern B runtime files migrated to saneaki/legal-pdf-ocr
+      private repository.
+  - path: output/cmd_729a_gunshi_report_write_path_audit.md
+    detail: A-4 identifies cmd_723 AC-11 QC补完 as reconstructable from karo evidence.
+  reconstructed_at: '2026-05-15T15:44:32+09:00'
+- worker_id: gunshi
+  task_id: subtask_725b_gunshi_shp_model_switch_qc_reconstructed
+  parent_cmd: cmd_725
+  timestamp: '2026-05-15T14:10:00+09:00'
+  status: done
+  trigger: post_hoc_reconstruction
+  priority: medium
+  note: cmd_725 γ / shp model switch QC entry reconstructed after gunshi_report overwrite
+    incident. This is not the original live QC text.
+  result:
+    type: quality_check
+    verdict: go
+    action_required_candidates: []
+    acceptance_criteria_review:
+    - id: B-1
+      gunshi_verify: PASS
+      result: Old docs/scripts excluded shogun from shp target; conflict with Lord
+        expectation was identified and resolved.
+    - id: B-2
+      gunshi_verify: PASS
+      result: scripts/shp.sh restored shogun as a managed model-switch target without
+        editing formations.*.
+    - id: B-3
+      gunshi_verify: PASS
+      result: scripts/switch_cli.sh gained shogun pane resolution and ashigaru7 model
+        positional handling remained verified.
+    - id: B-4
+      gunshi_verify: PASS
+      result: scripts/smoke_shp_model_switch.sh performs isolated smoke verification
+        without mutating live panes/settings.
+    - id: B-5
+      gunshi_verify: PASS
+      result: git diff -- config/settings.yaml was empty after dry-run; formations.*
+        remained unchanged.
+    - id: B-6
+      gunshi_verify: PASS
+      result: bash -n and smoke commands passed with SKIP=0.
+    - id: B-7
+      gunshi_verify: PASS
+      result: Commit 495091f recorded implementation scope with Refs cmd_725; push
+        deferred by ashigaru rule.
+    north_star_outcome_evidence:
+      status: pass
+      evidence_type: smoke
+      command_or_artifact: output/cmd_725b_shp_model_switch_fix.md; commit 495091f
+      reason: shp can select shogun and ashigaru7 model changes in isolated dry-run/smoke
+        without mutating formations.*.
+  skill_candidate:
+    found: false
+    reason: Reconstructed QC entry; cmd_725a related nondestructive tmux smoke skill
+      was already processed under cmd_726.
+  reconstructed_from:
+  - output/cmd_725b_shp_model_switch_fix.md
+  - queue/inbox/gunshi.yaml msg_20260515_050055
+  - output/cmd_729a_gunshi_report_write_path_audit.md A-4
+  source_evidence:
+  - path: output/cmd_725b_shp_model_switch_fix.md
+    detail: Records implementation, verification commands, SKIP=0, and commit 495091f.
+  - path: output/cmd_729a_gunshi_report_write_path_audit.md
+    detail: A-4 lists cmd_725 γ QC as a lost entry and identifies ash7 output as primary
+      restoration evidence.
+  reconstructed_at: '2026-05-15T15:44:32+09:00'
+- worker_id: gunshi
+  task_id: subtask_727b_gunshi_inbox_watcher_silent_failure_qc
+  parent_cmd: cmd_727
+  timestamp: '2026-05-15T15:05:00+09:00'
+  status: done
+  trigger: karo_assigned
+  priority: medium
+  note: 'cmd_727 β. inbox_watcher.sh の tmux send-keys silent failure 31件への remediation
+    QC。
+
+    bats unit 58/58 + e2e 5/5 PASS、SKIP=0、residual tmux suppression 0、commits 7e0a03c+c3d719d
+    push済。
+
+    cmd_717b audit fixture (#9-#41) との整合確認: 31件全件 tmux_send_keys_logged() 経由の明示ログ化に変換、#38/#40
+    (allowed_with_comment) はスコープ外として除外。
+
+    cmd_711 scroll/copy-mode regression: 維持確認。cmd_726 silent-failure-audit-pattern
+    と用語整合確認。
+
+    '
+  result:
+    type: quality_check
+    verdict: go
+    acceptance_criteria_review:
+    - id: Q-1
+      gunshi_verify: PASS
+      result: 'scripts/inbox_watcher.sh の suppression 31件 (#9-#41 の tmux send-keys
+        系) を全件 list 化確認。
+
+        各箇所に tmux_send_keys_logged() ヘルパー経由の明示 ERROR/WARN ログを適用済み。
+
+        #38 (touch idle-flag) / #40 (touch idle-flag) は send-keys 対象外のため除外 (audit
+        本体に記録済)。
+
+        '
+    - id: Q-2
+      gunshi_verify: PASS
+      result: 'halt 必須 vs 明示ログ化可の分類確認:
+
+        - daemon である inbox_watcher は単発 nudge 失敗で停止すると監視全体を失うため、全件 halt ではなく ERROR/WARN
+        ログ方針を採択 (正当)。
+
+        - 失敗ログ: context/destination/timestamp/rc/stderr を含む構造化形式で logs/inbox_watcher.log
+        に出力確認。
+
+        '
+    - id: Q-3
+      gunshi_verify: PASS
+      result: 'smoke test 確認: bats tests/unit/test_send_wakeup.bats 58/58 PASS (SKIP=0)、bats
+        tests/e2e/e2e_inbox_delivery.bats 5/5 PASS (SKIP=0)。
+
+        rg -n "tmux send-keys.*2>/dev/null || true|timeout [0-9]+ tmux send-keys"
+        scripts/inbox_watcher.sh → no matches。
+
+        residual tmux suppression = 0 を確認。
+
+        '
+    - id: Q-4
+      gunshi_verify: PASS
+      result: 'cmd_717 audit fixture (output/cmd_717b_silent_failure_audit_so17_hardening.md)
+        と整合確認:
+
+        - remediation_required 42件中 31件を cmd_727 で解消、remaining 11件は #43/#55/#56/#69-#72/#89-#92
+        (inbox_watcher.sh 以外)。
+
+        - cmd_726 silent-failure-audit-pattern スキルとの用語整合: tmux_send_keys_logged()
+        命名・ログ構造が audit-pattern 準拠。
+
+        '
+    - id: Q-5
+      gunshi_verify: PASS
+      result: 'commit 確認:
+
+        - 7e0a03c "fix: log inbox watcher send-keys failures (cmd_727)" — inbox_watcher.sh
+        本体修正 + test
+
+        - c3d719d "docs: record cmd_727 push evidence" — output + reports 更新
+
+        - git log origin/main..HEAD 空 = push 完了。
+
+        '
+    north_star_outcome_evidence:
+      status: pass
+      evidence_type: e2e
+      command_or_artifact: 'bats tests/unit/test_send_wakeup.bats → 58/58 PASS (SKIP=0)
+
+        bats tests/e2e/e2e_inbox_delivery.bats → 5/5 PASS (SKIP=0)
+
+        rg "tmux send-keys.*2>/dev/null || true" scripts/inbox_watcher.sh → 0 matches
+
+        '
+      reason: 'north_star は「cascading silent failure の検出可能性確保」。inbox_watcher.sh の全
+        tmux send-keys 呼び出しが
+
+        tmux_send_keys_logged() 経由となり、失敗時に logs/inbox_watcher.log へ構造化 ERROR/WARN
+        が出力される状態が e2e 証跡。
+
+        '
+    loss_cause_analysis:
+      title: subtask_727b エントリ消失原因分析 (C-4)
+      analyzed_at: '2026-05-15T15:18:00+09:00'
+      cause_candidates:
+      - id: L-1
+        category: append_race
+        verdict: likely
+        detail: 'cmd_727b (gunshi) と cmd_728e (gunshi) が gunshi_report.yaml に対して append
+          競合した可能性。
+
+          gunshi_report.yaml は単一ファイルで複数 cmd の QC エントリが蓄積される構造。
+
+          cmd_728e エントリが後から write された際に、727b エントリを含む旧 YAML を読まずに
+
+          新規 write (worktree 内での fresh write) を行うと上書きになる。
+
+          gunshi_report.yaml L128 で軍師自身が「cmd_728e で上書きを指摘」とある (shogun_to_karo.yaml
+          L28277 参照)。
+
+          '
+      - id: L-2
+        category: parse_error
+        verdict: unlikely
+        detail: 'YAML parse error による truncate は、現在の gunshi_report.yaml が正常に読めるため否定的。
+
+          cmd_726f エントリが intact であることから、ファイル自体の破損ではなく書込タイミング問題と判断。
+
+          '
+      - id: L-3
+        category: spec_change
+        verdict: unlikely
+        detail: '仕様変更 (single entry policy への変更) は、CLAUDE.md や instructions に記録がなく否定的。
+
+          '
+      - id: L-4
+        category: single_report_overwrite
+        verdict: likely
+        detail: 'gunshi がタスク完了時に gunshi_report.yaml を「全体 rewrite」方式で更新した場合、
+
+          直前に別 cmd が書いたエントリを読み込まずに overwrite すると消失する。
+
+          cmd_728e 完了時に cmd_727b エントリ込みの旧状態を参照せず write した可能性。
+
+          '
+      prevention:
+      - gunshi_report.yaml 書込前に必ず最新ファイルを Read し、既存エントリに append する規律を徹底
+      - "gunshi_report.yaml の先頭に worker_id/task_id を直書きする現行構造は 1 エントリのみを前提としており、\n\
+        \  複数エントリを共存させるには yaml list 形式への移行が望ましい (cmd_729 で監査中)"
+      - "RACE-001 と同様の排他制御が gunshi_report.yaml への書込にも必要。\n  複数 gunshi QC が並走する場合は\
+        \ karo が順序を管理すること"
+    commit_push_status:
+      commit_done: true
+      commit_hash_implementation: 7e0a03c
+      commit_hash_evidence: c3d719d
+      push_done: true
+      push_evidence: git log origin/main..HEAD 空 = push 完了
+    files_modified:
+    - scripts/inbox_watcher.sh
+    - tests/unit/test_send_wakeup.bats
+    - output/cmd_727a_inbox_watcher_silent_failure_remediation.md
+    - queue/reports/ashigaru6_report.yaml
+    - queue/reports/gunshi_report.yaml
+  skill_candidate:
+    found: false
+    reason: '本 QC は inbox_watcher.sh silent failure 修正の品質確認であり、skill 化対象の新パターンではない。
+
+      ただし loss_cause_analysis (L-1/L-4) の防止策は shogun-observation-queue-archive-rule
+      や
+
+      cmd_729 gunshi_report 書込経路監査と関連する実装知見として記録。
+
+      '
+  north_star_alignment:
+    status: aligned
+    reason: 'north_star「cascading silent failure 検出可能性確保」を inbox_watcher.sh 全 tmux
+      send-keys 箇所の
+
+      明示ログ化で達成。unit 58/58 + e2e 5/5 PASS、residual suppression 0、commit push済の evidence
+      揃い。
+
+      '
+  reconstructed_from:
+  - existing pre-migration YAML document in queue/reports/gunshi_report.yaml
+  - output/cmd_727c_status_fixture_gunshi_report_repair.md
+  - output/cmd_727a_inbox_watcher_silent_failure_remediation.md
+  source_evidence:
+  - path: queue/reports/gunshi_report.yaml
+    detail: Pre-migration first YAML document contained subtask_727b QC text.
+  - path: output/cmd_727c_status_fixture_gunshi_report_repair.md
+    detail: C-3/C-4 records subtask_727b restoration and loss-cause analysis.
+  - path: output/cmd_727a_inbox_watcher_silent_failure_remediation.md
+    detail: Records unit 58/58, e2e 5/5, residual suppression 0, commits 7e0a03c/c3d719d.
+  reconstructed_at: '2026-05-15T15:44:32+09:00'

@@ -467,10 +467,12 @@ EOF
     # 軍師レポートファイルリセット
     cat > ./queue/reports/gunshi_report.yaml << EOF
 worker_id: gunshi
-task_id: null
-timestamp: ""
-status: idle
-result: null
+latest:
+  task_id: null
+  timestamp: ""
+  status: idle
+  result: null
+history: []
 EOF
 
     # ntfy inbox リセット

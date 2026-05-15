@@ -361,8 +361,18 @@ This prevents the 9-hour stall incident (cmd_244/245, 2026-02-27) where Karo wen
      `bash scripts/notify_decision.sh "<title>" "<details>" "<related_cmd>" [priority]`
      Behavior: ntfy push (tag `decision`) + append pending to `queue/decision_requests.yaml` + auto-skip duplicates within 5 min for same related_cmd (cooldown). Failures don't block work (exit 0)
 8. Write result to `gunshi_report.yaml` (timestamp via `jst_now.sh --yaml`)
+   - Use `bash scripts/gunshi_report_append.sh --entry <entry.yaml>` whenever possible.
+   - The canonical schema is:
+     ```yaml
+     worker_id: gunshi
+     latest: { ...most recent QC entry... }
+     history:
+       - { ...older QC entry... }
+     ```
+   - The helper takes a lock and writes atomically. It appends the new entry to `history` and also updates `latest`.
+   - Do not overwrite the whole file with a single QC document. If manual repair is unavoidable, preserve existing `history[]` and update only `latest`.
 8.5. **Suggestions persistence (mandatory)**: If suggestions exist, append to `queue/suggestions.yaml` (append-only, no overwrite)
-   - Reason: gunshi_report.yaml is overwritten by next QC → suggestions lost without persistence
+   - Reason: suggestions.yaml is the durable cross-QC suggestion queue; gunshi_report.yaml now preserves QC history, but dashboard/action workflow still consumes suggestions separately.
    - Format:
      ```yaml
      - id: sug_{cmd_ref}_{3-digit seq}
@@ -403,12 +413,12 @@ This prevents the 9-hour stall incident (cmd_244/245, 2026-02-27) where Karo wen
                    (2) artifact — report YAML exists with status: done
                    (3) content — task_completed message references task_id in content
 8.8. **action_required_candidates 必須出力 (mandatory, cmd_659 Scope A)**:
-   - QC完了時、`gunshi_report.yaml` の `result` 配下に `action_required_candidates` を必ず出力すること
+   - QC完了時、`gunshi_report.yaml` の `latest.result` 配下に `action_required_candidates` を必ず出力すること
    - 候補なし時も `action_required_candidates: []` と明記 (フィールド省略禁止)
    - severity 基準: P0=infra停止相当 / HIGH=殿判断必要 / MEDIUM=家老対処可 / INFO=観察のみ
    - issue_id 生成: `sha256(f"{parent_cmd}:{severity}:{normalize(summary)}".encode()).hexdigest()[:16]`
    - normalize(s): 全角/半角統一 → trim → lowercase → 連続空白1個に置換
-   - action_required_sync.sh が本フィールドを読んで dashboard.yaml に upsert する (cmd_659 Scope B)
+   - action_required_sync.sh が `latest.result.action_required_candidates` を読んで dashboard.yaml に upsert する。旧 schema 互換として top-level `result.action_required_candidates` も fallback で読む (cmd_729)
 9. `inbox_write` to Karo: "QC PASS" or "QC FAIL: reason" — **include suggestion summary**
    - **cmd_complete tag reminder (mandatory)**: On QC PASS, append to message tail:
      "ntfy send requires cmd_complete tag: `bash scripts/ntfy.sh "✅ cmd_XXX完了 — {summary}" "" "cmd_complete"`"
@@ -541,7 +551,7 @@ Output: `gunshi` → You are the Gunshi.
 **Your files ONLY:**
 ```
 queue/tasks/gunshi.yaml           ← Read only this
-queue/reports/gunshi_report.yaml  ← Write only this
+queue/reports/gunshi_report.yaml  ← Append via scripts/gunshi_report_append.sh; manual repair only when assigned
 queue/inbox/gunshi.yaml           ← Your inbox
 ```
 

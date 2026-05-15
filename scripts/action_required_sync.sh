@@ -161,7 +161,12 @@ except Exception as e:
     print(f"failed to parse gunshi_report.yaml: {e}", file=sys.stderr)
     sys.exit(3)
 
-result = report.get("result", {}) if isinstance(report.get("result"), dict) else {}
+latest = report.get("latest") if isinstance(report.get("latest"), dict) else {}
+if latest:
+    result = latest.get("result", {}) if isinstance(latest.get("result"), dict) else {}
+else:
+    # Backward compatibility for the pre-cmd_729 schema.
+    result = report.get("result", {}) if isinstance(report.get("result"), dict) else {}
 candidates = result.get("action_required_candidates", [])
 if candidates is None:
     candidates = []
