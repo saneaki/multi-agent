@@ -58,7 +58,7 @@ result:
       evidence: "wc -l と frontmatter name/description/tags は全11対象 PASS。markdownlint 0.48.0 は実行済みだが MD013/MD060/MD040 等の style violations で FAIL。SKIP なし、詳細は output へ記録。"
     - id: E-7
       status: PASS
-      evidence: "commit 13363aa を作成。push は amend 後の最終 sha で実施。commit message は cmd_726 を含む。"
+      evidence: "commit 231e970 を作成し origin/main へ push 済み。commit message は cmd_726 を含む。"
   verification:
     - command: "python3 YAML parse for queue/skill_candidates.yaml dashboard.yaml task/inbox YAML"
       result: PASS
@@ -106,13 +106,13 @@ result:
       - "?? skills/windows-watchdog-folder-daemon/"
     commit:
       status: done
-      sha: 13363aa
+      sha: 231e970
       message: "feat: sync cmd_726 skill candidates (cmd_726)"
     push:
-      status: PENDING_FINAL_TOOL
+      status: done
       branch: main
       remote: origin
-      result: null
+      result: "c3d719d..231e970 main -> main"
   skill_candidate:
     found: false
     notes: "本タスク自体は skill 候補処理であり、新規の追加候補はなし。"
