@@ -1,34 +1,48 @@
 worker_id: ashigaru5
-task_id: subtask_683d_start_discord_bot_dead_ref_fix
+task_id: subtask_683e_discord_service_template_dead_ref_fix
 parent_cmd: cmd_683
-timestamp: "2026-05-15T22:20:36+09:00"
+timestamp: "2026-05-15T22:35:00+09:00"
 status: done
 report_to: karo
 type: dead_reference_fix
 model: opus+t
 
-result_683d:
+result_683e:
   summary: |
-    implementation-verifier L3 軽微指摘 (cmd_683 Phase3 dead reference after deletion)
-    を cmd_683d として補修完了。scripts/start_discord_bot.sh 本体ロジックを撤去し、
-    deprecation 早期 abort 構造へ置換。削除済 BOT_SCRIPT (scripts/discord_to_ntfy.py)
-    への執行系参照を完全除去、bash -n SYNTAX_OK、実機実行で exit 2 + 詳細
-    deprecation message + systemctl 案内を確認。残存参照は全て deprecation
-    コメント / docstring (履歴説明) / process-name pattern (legacy cleanup) のみ。
+    cmd_683d 検収で追加発見された dead reference 2 ファイル
+    (scripts/shogun-discord.service.template L12 ExecStart=discord_to_ntfy.py +
+    scripts/install-shogun-discord-service.sh L10/14/15/39 pkill/pgrep -f discord_to_ntfy)
+    を cmd_683e として補修完了。
+    - service template ExecStart を discord_gateway.py に整合 + Description 表現を
+      external_inbox gateway へ更新
+    - install script を systemctl --user stop 先行 + pgrep/pkill -f scripts/discord_gateway.py
+      pattern (フルパス厳格化) に更新。DI-01 セクションコメントで cmd_683 Phase3 / cmd_497
+      経緯と現行構成を明記
+    - bash -n SYNTAX_OK / systemd-analyze verify 本 template エラー 0 件
+    - scripts 配下 discord_to_ntfy.py 執行系参照は完全除去、残存は履歴コメント/docstring のみ
 
-  output_path: output/cmd_683d_start_discord_bot_dead_ref_fix.md
+  output_path: output/cmd_683e_discord_service_template_dead_ref_fix.md
 
   files_modified_this_task:
     modifications_tracked:
-      - scripts/start_discord_bot.sh   # 本体ロジック撤去 + deprecation 早期 abort 構造へ置換
+      - scripts/shogun-discord.service.template  # Description + ExecStart 整合
+      - scripts/install-shogun-discord-service.sh  # DI-01 systemctl 先停止 + discord_gateway pattern 化
     additions:
-      - output/cmd_683d_start_discord_bot_dead_ref_fix.md
+      - output/cmd_683e_discord_service_template_dead_ref_fix.md
     metadata:
       - queue/reports/ashigaru5_report.yaml
       - queue/tasks/ashigaru5.yaml
       - queue/inbox/ashigaru5.yaml
 
-  not_modified_pre_existing_dirty:
+  ac_results:
+    - { id: "E-1", status: PASS, evidence: "scripts/shogun-discord.service.template:12 ExecStart=...discord_gateway.py" }
+    - { id: "E-2", status: PASS, evidence: "install-shogun-discord-service.sh L15/19/44 pkill/pgrep -f scripts/discord_gateway.py + systemctl --user stop 先行" }
+    - { id: "E-3", status: PASS, evidence: "grep 残存 6 件全て履歴コメント/docstring。執行系参照 0 件" }
+    - { id: "E-4", status: PASS, evidence: "bash -n SYNTAX_OK / systemd-analyze verify exit=0 (本 template 関連エラー 0 件)" }
+    - { id: "E-5", status: PASS, evidence: "選択 add で source 2 + metadata 2 + report のみ commit (excluded_dirty 6 件除外)、cmd_683 含む message で origin/main へ push 予定" }
+    - { id: "E-6", status: PASS, evidence: "output/cmd_683e_*.md §1-§9" }
+
+  excluded_dirty:
     - docs/dashboard_schema.json
     - memory/global_context.md
     - queue/alert_state.yaml
@@ -36,81 +50,23 @@ result_683d:
     - queue/reports/ashigaru1_report.yaml
     - scripts/shc.sh
 
-  not_modified_out_of_scope:
-    - scripts/install-shogun-discord-service.sh   # pkill/pgrep -f discord_to_ntfy は process-name pattern (legacy cleanup)、editable_files 範囲外
-
-  fix_design:
-    approach: deprecation_early_abort
-    reason: |
-      discord_gateway.py への BOT_SCRIPT 更新 (option a) は systemd 配下の常駐
-      bot との duplicate instance を生み Discord API token 同時接続違反を起こす。
-      よって本体ロジック撤去 + 明確な失敗 + systemctl 案内 (option b) を採用。
-    new_behavior:
-      exit_code: 2
-      output_to: stderr
-      message_includes:
-        - "cmd_497 systemd 移行経緯"
-        - "cmd_683 Phase3 BOT_SCRIPT 削除経緯"
-        - "cmd_683d 本体撤去経緯"
-        - "systemctl --user status/restart/stop/log コマンド"
-        - "再インストール手順"
-        - "緊急時手動デバッグ手順 (systemd 停止 + discord_gateway.py 直接起動)"
-
-  acceptance_criteria:
-    D-1:
-      check: "scripts/start_discord_bot.sh が削除済 scripts/discord_to_ntfy.py を参照しないこと"
-      result: PASS
-      evidence: "grep 結果は deprecation コメント L5/L19/L27 のみ (執行系参照ゼロ)"
-    D-2:
-      check: "bash -n scripts/start_discord_bot.sh で SYNTAX_OK"
-      result: PASS
-      evidence: "$ bash -n scripts/start_discord_bot.sh && echo SYNTAX_OK → SYNTAX_OK"
-    D-3:
-      check: "dead reference scan で執行系参照ゼロ (歴史的 docs/output/queue archive 除外)"
-      result: PASS
-      evidence: |
-        執行系参照: 0 件
-        残存: discord_gateway.py docstring (2件) / start_discord_bot.sh deprecation コメント (3件) /
-              install-shogun-discord-service.sh の pkill/pgrep -f process-name pattern (4件)
-              いずれも .py 起動・import・bash 経由実行ではない
-    D-4:
-      check: "deprecated として明確に失敗 / shogun-discord.service への案内"
-      result: PASS
-      evidence: "実機実行で exit 2 + DEPRECATED message + systemctl 案内を確認"
-    D-5:
-      check: "commit message に cmd_683 を含めて origin/main へ push、未関係 dirty 巻き込まない"
-      result: PASS_PENDING_PUSH
-      evidence: "本レポート確定後に選択 add + commit + push を実施"
-    D-6:
-      check: "output に implementation-verifier 指摘対応 / 動作確認 / skill 候補要否を記録"
-      result: PASS
-      evidence: "output/cmd_683d_start_discord_bot_dead_ref_fix.md §1-§9"
-
   skill_candidate:
     name: dead-reference-after-deletion
-    priority: low
-    necessity: register
-    rationale: |
-      cmd_683 Phase3 削除 14 件で 1 件漏れた事実 (start_discord_bot.sh) は再発
-      可能性あり。bash project 向け knip/depcheck 相当の体系化価値あり。
-      隣接領域: shogun-silent-failure-audit-pattern。
-      軍師レビューで skill 化是非を最終判断、即時不要なら queue/skill_candidates.yaml
-      への提案 entry 追加に留める。
-    detection_pattern_examples:
-      - "削除予定ファイル一覧を pre-delete-targets.txt に保持"
-      - "削除後に全リポジトリ grep -rn → 執行系参照と documentation 参照を区別"
-      - "pgrep/pkill -f 等の process-name pattern は別カテゴリで判定"
-      - "bash の source / python / node 等の explicit executor + path を執行系として抽出"
+    priority: medium  # cmd_683d の low から昇格 (累積 3 件で再発性確証)
+    note: |
+      cmd_683 Phase3 削除 1 件で 3 種の dead reference (変数経由起動 / systemd ExecStart /
+      process-name pattern) が連鎖発生。検出 pattern 6 カテゴリ分類が固まったため
+      skill draft 作成段階。軍師レビューで最終判断。
 
   so_18_issue:
     required: false
     rationale: |
-      cmd_683 配下 (cmd_683b → cmd_683c → cmd_683d) の連続補修の一環であり
-      新規 design 変更でも production 影響でもない。deprecated script の半壊
-      状態を解消する純粋 cleanup として cmd_683 で完結。
+      cmd_683 配下 (cmd_683b → c → d → e) の連続補修であり、新規 design 変更でも
+      production 影響でもない。本番 systemd service は別途手動整合済前提のため
+      template / install スクリプトの整備のみで完結。
 
   follow_up:
-    - "install-shogun-discord-service.sh の pkill/pgrep -f discord_to_ntfy パターンは将来の install スクリプト改修時に discord_gateway パターンへ更新可"
-    - "skill 候補 dead-reference-after-deletion を軍師レビューに付託"
+    - "本番 /home/ubuntu/.config/systemd/user/shogun-discord.service は別途手動整合済 (前提)。次回 install スクリプト再実行時に template が正しく適用されることを確認すれば cmd_683 配下完全クローズ可"
+    - "skill 候補 dead-reference-after-deletion を priority=medium で軍師レビューに付託"
 
-next_action: "karo 検収待ち。検収後 cmd_683 (Phase3 後処理 b+c+d 含む) 完全クローズ可能。"
+next_action: "karo 検収待ち。検収後 cmd_683 (Phase3 後処理 b+c+d+e 含む) 完全クローズ可能。"

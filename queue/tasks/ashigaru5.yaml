@@ -1,49 +1,52 @@
 task:
-  task_id: subtask_683d_start_discord_bot_dead_ref_fix
+  task_id: subtask_683e_discord_service_template_dead_ref_fix
   parent_cmd: cmd_683
-  title: cmd_683d start_discord_bot dead ref補修
+  title: cmd_683e Discord service template dead ref補修
   bloom_level: L3
   assigned_to: ashigaru5
   report_to: karo
   status: done
-  timestamp: '2026-05-15T22:15:20+09:00'
-  completed_at: '2026-05-15T22:20:36+09:00'
+  timestamp: '2026-05-15T22:35:00+09:00'
   priority: low
   project: shogun
   target_path: /home/ubuntu/shogun
   context_policy: clear_between
   blocked_by: []
   context_files:
-  - scripts/start_discord_bot.sh
-  - output/cmd_683c_inbox_write_notify_gate_fix.md
-  - queue/shogun_to_karo.yaml
-  - dashboard.md
-  editable_files:
-  - scripts/start_discord_bot.sh
+  - scripts/shogun-discord.service.template
+  - scripts/install-shogun-discord-service.sh
+  - scripts/discord_gateway.py
   - output/cmd_683d_start_discord_bot_dead_ref_fix.md
+  - queue/shogun_to_karo.yaml
+  editable_files:
+  - scripts/shogun-discord.service.template
+  - scripts/install-shogun-discord-service.sh
+  - output/cmd_683e_discord_service_template_dead_ref_fix.md
   - queue/reports/ashigaru5_report.yaml
   - queue/tasks/ashigaru5.yaml
   - queue/inbox/ashigaru5.yaml
   acceptance_criteria:
-  - id: D-1
-    check: scripts/start_discord_bot.sh が削除済 scripts/discord_to_ntfy.py を参照しないこと
-  - id: D-2
-    check: bash -n scripts/start_discord_bot.sh を実行し SYNTAX_OK を確認する
-  - id: D-3
-    check: dead reference scanで scripts/discord_to_ntfy.py への実行系参照が残らないこと。歴史的docs/output/queue archiveは対象外でよい
-  - id: D-4
-    check: 必要に応じて deprecated script として明確に失敗する、または現行 shogun-discord.service への案内に寄せる。削除済script起動は不可
-  - id: D-5
+  - id: E-1
+    check: scripts/shogun-discord.service.template ExecStart が削除済 scripts/discord_to_ntfy.py ではなく現行 scripts/discord_gateway.py を指すこと
+  - id: E-2
+    check: scripts/install-shogun-discord-service.sh の pkill/pgrep/process check が discord_to_ntfy ではなく現行 discord_gateway.py / shogun-discord.service
+      に整合すること
+  - id: E-3
+    check: grep/scanで scripts 配下の discord_to_ntfy.py 実行系参照が0件であること。履歴コメント/docstringは可、service ExecStartやpython実行やprocess checkは不可
+  - id: E-4
+    check: systemd-analyze verify --user または代替の静的検証が可能なら実施し、不可なら理由をoutputに記録する。bash -n install script は必須
+  - id: E-5
     check: commit message に cmd_683 を含めて origin/main へpushする。未関係dirtyを巻き込まない
-  - id: D-6
-    check: output に implementation-verifier 指摘への対応、動作確認、skill候補(dead-reference after deletion)の要否を記録する
-  description: 'implementation-verifier L3 の軽微指摘対応。cmd_683 Phase3で scripts/discord_to_ntfy.py を削除済みだが、scripts/start_discord_bot.sh L26 の BOT_SCRIPT
-    が同ファイルを参照している。production影響は低いが、dead reference after deletion の後処理として同cmd内で軽補修する。
+  - id: E-6
+    check: output に683d検収で追加漏れを発見した経緯、対応範囲、skill候補(dead-reference after deletion)の扱いを記録する
+  description: '683d検収で追加の実行系dead referenceを発見。scripts/shogun-discord.service.template ExecStart が削除済 scripts/discord_to_ntfy.py を参照し、install-shogun-discord-service.sh
+    も discord_to_ntfy process名で停止/確認している。cmd_683内のpost-complete cleanupとして、現行 scripts/discord_gateway.py / shogun-discord.service に整合させる。
 
 
     完了報告:
 
-    bash /home/ubuntu/shogun/scripts/inbox_write.sh karo "【subtask_683d_start_discord_bot_dead_ref_fix 完了】cmd_683d完了。dead_ref=<PASS|FAIL> syntax=<PASS|FAIL>
-    scan=<PASS|FAIL> commit=<sha> output=output/cmd_683d_start_discord_bot_dead_ref_fix.md。report確認されたし。" task_completed ashigaru5
+    bash /home/ubuntu/shogun/scripts/inbox_write.sh karo "【subtask_683e_discord_service_template_dead_ref_fix 完了】cmd_683e完了。service=<PASS|FAIL>
+    installer=<PASS|FAIL> scan=<PASS|FAIL> commit=<sha> output=output/cmd_683e_discord_service_template_dead_ref_fix.md。report確認されたし。" task_completed
+    ashigaru5
 
     '

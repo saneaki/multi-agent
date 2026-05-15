@@ -5,14 +5,19 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SERVICE_DIR="$HOME/.config/systemd/user"
 SERVICE_FILE="$SERVICE_DIR/shogun-discord.service"
 
-# ── DI-01: 既存 tmux Bot を先に停止 ──────────────────────────────
+# ── DI-01: 既存 Bot を先に停止 ──────────────────────────────────
+# cmd_683 Phase3 で旧 discord_to_ntfy.py は削除済。現行 Bot は scripts/discord_gateway.py
+# を systemd user service (shogun-discord.service) 配下で常駐運用する。本 install
+# スクリプトを再実行する際は systemd を先に停止し、残存 tmux window や手動起動の
+# discord_gateway プロセスを念のため掃除する。
 echo "=== 既存 Discord Bot 停止 ==="
-pkill -f discord_to_ntfy || true
+systemctl --user stop shogun-discord.service 2>/dev/null || true
+pkill -f scripts/discord_gateway.py || true
 sleep 2
 tmux kill-window -t multiagent:shogun-discord 2>/dev/null || true
 sleep 1
-if pgrep -f discord_to_ntfy > /dev/null; then
-  echo "ERROR: discord_to_ntfy プロセスが残存しています。手動で停止してから再実行してください。"
+if pgrep -f scripts/discord_gateway.py > /dev/null; then
+  echo "ERROR: discord_gateway プロセスが残存しています。手動で停止してから再実行してください。"
   exit 1
 fi
 echo "OK: 既存 Bot 停止確認"
@@ -36,6 +41,6 @@ echo "OK: shogun-discord.service enabled and started"
 sleep 3
 echo "=== 起動確認 ==="
 systemctl --user status shogun-discord.service --no-pager
-pgrep -f discord_to_ntfy && echo "OK: Bot プロセス確認" || echo "WARN: プロセス未検出"
+pgrep -f scripts/discord_gateway.py && echo "OK: Bot プロセス確認" || echo "WARN: プロセス未検出"
 echo ""
 echo "ログ確認: tail -20 /home/ubuntu/shogun/logs/discord_bot.log"
