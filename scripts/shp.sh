@@ -14,9 +14,9 @@
 #   bash scripts/shp.sh --preset <name>              # preset (skip interactive)
 #   bash scripts/shp.sh --preset <name> --dry-run
 #   bash scripts/shp.sh 1                            # positional: 全員 = 1
-#   bash scripts/shp.sh 2 1                          # positional: 家老=2, 他全員=1
-#   bash scripts/shp.sh 1 2 3                        # positional: 家老=1, 足軽1-7=2, 軍師=3
-#   bash scripts/shp.sh 1 2 1 1 1 1 1 1 1 [--yes]   # positional: 9名個別指定 (家老/足軽1-7/軍師)
+#   bash scripts/shp.sh 2 1                          # positional: 将軍=2, 他全員=1
+#   bash scripts/shp.sh 1 2 3                        # positional: 将軍=1, 家老+足軽1-7=2, 軍師=3
+#   bash scripts/shp.sh 1 2 1 1 1 1 1 1 1 3 [--yes] # positional: 10名個別指定 (将軍/家老/足軽1-7/軍師)
 #   bash scripts/shp.sh --yes                        # confirm prompt skip (interactive 後)
 #   bash scripts/shp.sh --kill                       # interactive (retreat)
 #   bash scripts/shp.sh --retreat                    # same as --kill
@@ -55,10 +55,11 @@ CYAN='\033[0;36m'
 BOLD='\033[1m'
 NC='\033[0m'
 
-# ─── 構成員 9名 (将軍除く: prompt順固定) ───
-MEMBER_IDS=(karo ashigaru1 ashigaru2 ashigaru3 ashigaru4 ashigaru5 ashigaru6 ashigaru7 gunshi)
+# ─── 出陣対象構成員 10名 (prompt順固定) ───
+MEMBER_IDS=(shogun karo ashigaru1 ashigaru2 ashigaru3 ashigaru4 ashigaru5 ashigaru6 ashigaru7 gunshi)
+NON_SHOGUN_MEMBER_IDS=(karo ashigaru1 ashigaru2 ashigaru3 ashigaru4 ashigaru5 ashigaru6 ashigaru7 gunshi)
 
-# ─── 撤収対象構成員 = MEMBER_IDS と同一 ───
+# ─── 撤収対象構成員 (将軍は別管理) ───
 RETREAT_MEMBER_IDS=(karo ashigaru1 ashigaru2 ashigaru3 ashigaru4 ashigaru5 ashigaru6 ashigaru7 gunshi)
 
 member_label() {
@@ -130,11 +131,11 @@ usage() {
     echo -e "  ${CYAN}3${NC} = Codex     (gpt-5.5)"
     echo ""
     echo "positional args (出陣モード, 1/2/3 の数字のみ):"
-    echo "  shp <N1>                       全員 (9名) = N1"
-    echo "  shp <N1> <N2>                  家老 = N1, 他8構成員 = N2"
-    echo "  shp <N1> <N2> <N3>             家老=N1, 足軽1-7=N2, 軍師=N3"
-    echo "  shp <N1>...<N9>               構成員 9名を個別指定 (順: 家老/足軽1-7/軍師)"
-    echo "  ※ 1/2/3/9 個が正式仕様 (10個は互換のみ: 将軍指定を無視)。--yes / --dry-run と併用可。"
+    echo "  shp <N1>                       全員 (10名) = N1"
+    echo "  shp <N1> <N2>                  将軍 = N1, 他9構成員 = N2"
+    echo "  shp <N1> <N2> <N3>             将軍=N1, 家老+足軽1-7=N2, 軍師=N3"
+    echo "  shp <N1>...<N10>              構成員 10名を個別指定 (順: 将軍/家老/足軽1-7/軍師)"
+    echo "  ※ 1/2/3/10 個が正式仕様。9個は旧仕様互換 (将軍は現在値維持)。--yes / --dry-run と併用可。"
     echo ""
     echo "プリセット (出陣モード, shp 専用 — formations.* とは別系統):"
     echo "  current          現在の settings.yaml の cli.agents 値をそのまま使用"
@@ -158,9 +159,9 @@ usage() {
     echo "例 (出陣 positional):"
     echo "  shp 1                            # 全員 Sonnet+T"
     echo "  shp 2                            # 全員 Opus+T"
-    echo "  shp 2 1                          # 家老=Opus+T, 他全員=Sonnet+T"
-    echo "  shp 1 2 3                        # 家老=Sonnet+T, 足軽1-7=Opus+T, 軍師=Codex"
-    echo "  shp 1 2 1 1 1 1 1 1 1 --yes      # 構成員9名個別指定 + 確認スキップ"
+    echo "  shp 2 1                          # 将軍=Opus+T, 他全員=Sonnet+T"
+    echo "  shp 1 2 3                        # 将軍=Sonnet+T, 家老+足軽1-7=Opus+T, 軍師=Codex"
+    echo "  shp 1 2 1 1 1 1 1 1 1 3 --yes    # 構成員10名個別指定 + 確認スキップ"
     echo ""
     echo "例 (撤収):"
     echo "  shp --kill                       # 対象を選択して撤収"
@@ -259,8 +260,8 @@ interactive_select() {
 
 # ─── positional args 適用 ───
 # POSITIONAL_NUMS 配列の長さに応じて SELECTIONS に値を展開する
-# 1個: 全員=N1 / 2個: 家老=N1, 他全員=N2 / 3個: 家老=N1, 足軽1-7=N2, 軍師=N3
-# 9個: MEMBER_IDS 順 (家老/足軽1-7/軍師) / 10個(互換): 将軍指定を無視して9名適用
+# 1個: 全員=N1 / 2個: 将軍=N1, 他全員=N2 / 3個: 将軍=N1, 家老+足軽1-7=N2, 軍師=N3
+# 10個: MEMBER_IDS 順 (将軍/家老/足軽1-7/軍師) / 9個(互換): 将軍は現在値維持、残り9名に適用
 apply_positional() {
     local count="${#POSITIONAL_NUMS[@]}"
     local agent_id i
@@ -272,38 +273,40 @@ apply_positional() {
             done
             ;;
         2)
-            SELECTIONS[karo]="${POSITIONAL_NUMS[0]}"
+            SELECTIONS[shogun]="${POSITIONAL_NUMS[0]}"
             for agent_id in "${MEMBER_IDS[@]}"; do
-                [[ "$agent_id" == "karo" ]] && continue
+                [[ "$agent_id" == "shogun" ]] && continue
                 SELECTIONS["$agent_id"]="${POSITIONAL_NUMS[1]}"
             done
             ;;
         3)
-            SELECTIONS[karo]="${POSITIONAL_NUMS[0]}"
+            SELECTIONS[shogun]="${POSITIONAL_NUMS[0]}"
+            SELECTIONS[karo]="${POSITIONAL_NUMS[1]}"
             for i in 1 2 3 4 5 6 7; do
                 SELECTIONS["ashigaru${i}"]="${POSITIONAL_NUMS[1]}"
             done
             SELECTIONS[gunshi]="${POSITIONAL_NUMS[2]}"
             ;;
         9)
+            echo -e "${YELLOW}WARN:${NC} positional 9個指定は旧仕様互換です。将軍は現在値を維持し、残り9名に適用します。" >&2
+            SELECTIONS[shogun]="$(get_current_number shogun)"
+            for i in "${!NON_SHOGUN_MEMBER_IDS[@]}"; do
+                SELECTIONS["${NON_SHOGUN_MEMBER_IDS[$i]}"]="${POSITIONAL_NUMS[$i]}"
+            done
+            ;;
+        10)
             for i in "${!MEMBER_IDS[@]}"; do
                 SELECTIONS["${MEMBER_IDS[$i]}"]="${POSITIONAL_NUMS[$i]}"
             done
             ;;
-        10)
-            echo -e "${YELLOW}WARN:${NC} positional 10個指定は廃止予定です。将軍指定 (N1=${POSITIONAL_NUMS[0]}) を無視して残り9名に適用します。" >&2
-            for i in "${!MEMBER_IDS[@]}"; do
-                SELECTIONS["${MEMBER_IDS[$i]}"]="${POSITIONAL_NUMS[$((i + 1))]}"
-            done
-            ;;
         *)
-            echo -e "${RED}ERROR:${NC} positional 引数は 1 / 2 / 3 / 9 個のみ対応 (指定: ${count} 個)" >&2
+            echo -e "${RED}ERROR:${NC} positional 引数は 1 / 2 / 3 / 10 個のみ対応 (9個は旧仕様互換、指定: ${count} 個)" >&2
             echo ""
             echo "使用例:"
             echo "  shp 1                       # 全員 = 1"
-            echo "  shp 2 1                     # 家老=2, 他=1"
-            echo "  shp 1 2 3                   # 家老=1, 足軽1-7=2, 軍師=3"
-            echo "  shp 1 2 1 1 1 1 1 1 1       # 構成員9名個別 (家老/足軽1-7/軍師)"
+            echo "  shp 2 1                     # 将軍=2, 他=1"
+            echo "  shp 1 2 3                   # 将軍=1, 家老+足軽1-7=2, 軍師=3"
+            echo "  shp 1 2 1 1 1 1 1 1 1 3     # 構成員10名個別 (将軍/家老/足軽1-7/軍師)"
             exit 1
             ;;
     esac

@@ -48,7 +48,7 @@ log() {
 usage() {
     echo "Usage: $0 <agent_id> [--type <cli_type>] [--model <model_name>]"
     echo ""
-    echo "  agent_id   karo, ashigaru1-7, gunshi"
+    echo "  agent_id   shogun, karo, ashigaru1-7, gunshi"
     echo "  --type     claude | codex | copilot | kimi"
     echo "  --model    claude-sonnet-4-6 | claude-opus-4-7 | gpt-5.3-codex | etc."
     echo ""
@@ -62,9 +62,22 @@ usage() {
 resolve_pane() {
     local agent_id="$1"
 
-    # Phase 1: @agent_id メタデータから動的検索
+    # Phase 1: 将軍セッションの @agent_id メタデータから動的検索
     local pane_count
-    pane_count=$(tmux list-panes -t "multiagent:agents" 2>/dev/null | wc -l)
+    pane_count=$(tmux list-panes -t "shogun:0" 2>/dev/null | wc -l || true)
+    if [[ "$pane_count" -gt 0 ]]; then
+        for i in $(seq 0 $((pane_count - 1))); do
+            local aid
+            aid=$(tmux display-message -t "shogun:0.$i" -p '#{@agent_id}' 2>/dev/null)
+            if [[ "$aid" == "$agent_id" ]]; then
+                echo "shogun:0.$i"
+                return 0
+            fi
+        done
+    fi
+
+    # Phase 2: multiagent セッションの @agent_id メタデータから動的検索
+    pane_count=$(tmux list-panes -t "multiagent:agents" 2>/dev/null | wc -l || true)
     if [[ "$pane_count" -gt 0 ]]; then
         for i in $(seq 0 $((pane_count - 1))); do
             local aid
@@ -74,14 +87,15 @@ resolve_pane() {
                 return 0
             fi
         done
-        log "WARN: @agent_id=$agent_id not found in any pane. Falling back to fixed mapping."
+        log "WARN: @agent_id=$agent_id not found in shogun/multiagent panes. Falling back to fixed mapping."
     fi
 
-    # Phase 2: フォールバック（従来の固定マッピング）
+    # Phase 3: フォールバック（従来の固定マッピング）
     local pane_base
     pane_base=$(tmux show-options -t multiagent -v @pane_base 2>/dev/null || echo "0")
 
     case "$agent_id" in
+        shogun)     echo "shogun:0.0" ;;
         karo)       echo "multiagent:agents.$((pane_base + 0))" ;;
         ashigaru1)  echo "multiagent:agents.$((pane_base + 1))" ;;
         ashigaru2)  echo "multiagent:agents.$((pane_base + 2))" ;;
