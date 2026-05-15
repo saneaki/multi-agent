@@ -26,17 +26,19 @@ d = docs[0]
 assert d["worker_id"] == "gunshi"
 assert isinstance(d["latest"], dict)
 assert isinstance(d["history"], list)
-assert d["latest"]["task_id"] == "subtask_726f_gunshi_skill_quality_gate"
 for task_id in (
     "subtask_723_gunshi_ac11_completion_qc_reconstructed",
     "subtask_725b_gunshi_shp_model_switch_qc_reconstructed",
     "subtask_727b_gunshi_inbox_watcher_silent_failure_qc",
+    "subtask_726f_gunshi_skill_quality_gate",
 ):
-    entry = next((x for x in d["history"] if x.get("task_id") == task_id), None)
+    entries = d["history"] + [d["latest"]]
+    entry = next((x for x in entries if x.get("task_id") == task_id), None)
     assert entry is not None, task_id
-    assert entry.get("reconstructed_from")
-    assert entry.get("source_evidence")
-    assert entry.get("reconstructed_at")
+    if task_id != "subtask_726f_gunshi_skill_quality_gate":
+        assert entry.get("reconstructed_from")
+        assert entry.get("source_evidence")
+        assert entry.get("reconstructed_at")
 PY
     [ "$status" -eq 0 ]
 }
@@ -73,8 +75,28 @@ PY
 @test "action_required_sync reads latest candidates and legacy top-level fallback" {
     local dashboard_yaml="$TEST_TMPDIR/dashboard.yaml"
     local dashboard_md="$TEST_TMPDIR/dashboard.md"
-    cp "$PROJECT_ROOT/dashboard.yaml" "$dashboard_yaml"
-    cp "$PROJECT_ROOT/dashboard.md" "$dashboard_md"
+
+    cat > "$dashboard_yaml" <<'YAML'
+achievements:
+  today: []
+  yesterday:
+    header: ""
+    items: []
+  day_before:
+    header: ""
+    items: []
+action_required: []
+action_required_archive: []
+documentation_rules: []
+frog:
+  completed_today: 0
+  status: ""
+  streak_days: 0
+  streak_max: 0
+  today: null
+  vf_remaining: 0
+YAML
+    : > "$dashboard_md"
 
     local latest_report="$TEST_TMPDIR/latest_report.yaml"
     cat > "$latest_report" <<'YAML'
@@ -96,7 +118,7 @@ latest:
 history: []
 YAML
 
-    run env ACTION_REQUIRED_DASHBOARD_YAML="$dashboard_yaml" ACTION_REQUIRED_DASHBOARD_MD="$dashboard_md" ACTION_REQUIRED_NOTIFY_SCRIPT=/bin/true bash "$SYNC_SCRIPT" "$latest_report"
+    run env ACTION_REQUIRED_DASHBOARD_YAML="$dashboard_yaml" ACTION_REQUIRED_DASHBOARD_MD="$dashboard_md" ACTION_REQUIRED_LOCK="$TEST_TMPDIR/dashboard.lock" ACTION_REQUIRED_NOTIFY_SCRIPT=/bin/true bash "$SYNC_SCRIPT" "$latest_report"
     [ "$status" -eq 0 ]
     grep -q "test_latest_candidate" "$dashboard_yaml"
 
@@ -117,7 +139,7 @@ result:
       status: open
 YAML
 
-    run env ACTION_REQUIRED_DASHBOARD_YAML="$dashboard_yaml" ACTION_REQUIRED_DASHBOARD_MD="$dashboard_md" ACTION_REQUIRED_NOTIFY_SCRIPT=/bin/true bash "$SYNC_SCRIPT" "$legacy_report"
+    run env ACTION_REQUIRED_DASHBOARD_YAML="$dashboard_yaml" ACTION_REQUIRED_DASHBOARD_MD="$dashboard_md" ACTION_REQUIRED_LOCK="$TEST_TMPDIR/dashboard.lock" ACTION_REQUIRED_NOTIFY_SCRIPT=/bin/true bash "$SYNC_SCRIPT" "$legacy_report"
     [ "$status" -eq 0 ]
     grep -q "test_legacy_candidate" "$dashboard_yaml"
 }

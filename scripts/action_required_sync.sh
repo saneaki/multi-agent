@@ -69,12 +69,29 @@ if ! ( : > "$LOCK_FILE" ) 2>/dev/null; then
     }
 fi
 
-exec {LOCK_FD}>"$LOCK_FILE"
-trap 'exec {LOCK_FD}>&- 2>/dev/null || true' EXIT
+LOCK_DIR=""
+release_lock() {
+    if [ -n "${LOCK_FD+x}" ]; then
+        exec {LOCK_FD}>&- 2>/dev/null || true
+    fi
+    if [ -n "$LOCK_DIR" ] && [ -d "$LOCK_DIR" ]; then
+        rmdir "$LOCK_DIR" 2>/dev/null || true
+    fi
+}
+trap release_lock EXIT
 
-if ! flock --timeout 30 "$LOCK_FD"; then
-    err "flock timeout (30s): $LOCK_FILE — another sync/rotate process holding the lock"
-    exit 2
+if command -v flock >/dev/null 2>&1; then
+    exec {LOCK_FD}>"$LOCK_FILE"
+    if ! flock --timeout 30 "$LOCK_FD"; then
+        err "flock timeout (30s): $LOCK_FILE — another sync/rotate process holding the lock"
+        exit 2
+    fi
+else
+    LOCK_DIR="${LOCK_FILE}.d"
+    if ! mkdir "$LOCK_DIR" 2>/dev/null; then
+        err "lock unavailable: $LOCK_DIR — another sync/rotate process holding the lock"
+        exit 2
+    fi
 fi
 
 log "Lock acquired: $LOCK_FILE"

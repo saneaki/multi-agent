@@ -46,13 +46,25 @@ if [ ! -f "$REPORT" ]; then
 fi
 
 LOCK_FILE="${REPORT}.lock"
-exec {LOCK_FD}>"$LOCK_FILE"
-flock --timeout 30 "$LOCK_FD"
+LOCK_DIR=""
+if command -v flock >/dev/null 2>&1; then
+    exec {LOCK_FD}>"$LOCK_FILE"
+    flock --timeout 30 "$LOCK_FD"
+else
+    LOCK_DIR="${LOCK_FILE}.d"
+    if ! mkdir "$LOCK_DIR" 2>/dev/null; then
+        echo "lock unavailable: $LOCK_DIR" >&2
+        exit 2
+    fi
+fi
 
 ENTRY_TMP=""
 cleanup() {
     if [ -n "$ENTRY_TMP" ] && [ -f "$ENTRY_TMP" ]; then
         rm -f "$ENTRY_TMP"
+    fi
+    if [ -n "$LOCK_DIR" ] && [ -d "$LOCK_DIR" ]; then
+        rmdir "$LOCK_DIR" 2>/dev/null || true
     fi
 }
 trap cleanup EXIT
