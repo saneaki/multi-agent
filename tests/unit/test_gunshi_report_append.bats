@@ -41,11 +41,14 @@ PY
     [ "$status" -eq 0 ]
 }
 
-@test "gunshi_report_append updates latest and preserves prior entries in isolated copy" {
+@test "gunshi_report_append updates latest twice and preserves restored history in isolated copy" {
     local report="$TEST_TMPDIR/gunshi_report.yaml"
     cp "$PROJECT_ROOT/queue/reports/gunshi_report.yaml" "$report"
 
     run bash "$APPEND_SCRIPT" --report "$report" --task-id smoke_test_001 --parent-cmd cmd_smoke --status done --verdict go --note "smoke entry"
+    [ "$status" -eq 0 ]
+
+    run bash "$APPEND_SCRIPT" --report "$report" --task-id smoke_test_002 --parent-cmd cmd_smoke --status done --verdict go --note "second smoke entry"
     [ "$status" -eq 0 ]
 
     python3 - "$report" <<'PY'
@@ -54,9 +57,16 @@ import yaml
 
 with open(sys.argv[1], encoding="utf-8") as f:
     d = yaml.safe_load(f)
-assert d["latest"]["task_id"] == "smoke_test_001"
-assert any(x.get("task_id") == "subtask_726f_gunshi_skill_quality_gate" for x in d["history"])
-assert d["history"][-1]["task_id"] == "subtask_726f_gunshi_skill_quality_gate"
+history_ids = [x.get("task_id") for x in d["history"]]
+assert d["latest"]["task_id"] == "smoke_test_002"
+for task_id in (
+    "subtask_725b_gunshi_shp_model_switch_qc_reconstructed",
+    "subtask_727b_gunshi_inbox_watcher_silent_failure_qc",
+    "subtask_726f_gunshi_skill_quality_gate",
+    "smoke_test_001",
+):
+    assert task_id in history_ids, task_id
+assert history_ids[-1] == "smoke_test_001"
 PY
 }
 
