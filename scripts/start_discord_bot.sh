@@ -1,84 +1,45 @@
 #!/usr/bin/env bash
 # ─────────────────────────────────────────────────────────────────
-# DEPRECATED: このスクリプトは cmd_497 (2026-04-15) より非推奨。
-# 通常運用は systemd user service (shogun-discord.service) を使用すること:
-#   systemctl --user status shogun-discord   # 状態確認
-#   systemctl --user restart shogun-discord  # 再起動
-#   systemctl --user stop shogun-discord     # 停止
-# このスクリプトは緊急時手動デバッグ用として残す。
-# 再インストール: bash scripts/install-shogun-discord-service.sh
+# DEPRECATED: このスクリプトは cmd_497 (2026-04-15) で systemd user service
+# (shogun-discord.service) に移行済。さらに cmd_683 Phase3 (2026-05-15) で
+# 旧 BOT_SCRIPT (scripts/discord_to_ntfy.py) が削除されたため、ここから起動
+# しても動作しない。dead reference 起動を防ぐため deprecation メッセージを
+# 出して即時失敗のみ行う。cmd_683d で本体ロジックを除去。
+#
+# 通常運用は systemd user service:
+#   systemctl --user status   shogun-discord    # 状態確認
+#   systemctl --user restart  shogun-discord    # 再起動
+#   systemctl --user stop     shogun-discord    # 停止
+#   journalctl --user -u shogun-discord -f      # ログ追跡
+#
+# 再インストール:
+#   bash scripts/install-shogun-discord-service.sh
+#
+# 現行 Bot 本体: scripts/discord_gateway.py (systemd 配下で常駐)
+# 旧 BOT_SCRIPT (scripts/discord_to_ntfy.py) は cmd_683 Phase3 で削除済
 # ─────────────────────────────────────────────────────────────────
-# start_discord_bot.sh — Discord Bot → ntfy 中継スクリプト起動
-#
-# [使い方]
-#   bash scripts/start_discord_bot.sh          # 通常起動 (tmux pane で常駐)
-#   bash scripts/start_discord_bot.sh --dry-run # DRY-RUN (ntfy転送なし、動作確認用)
-#
-# [前提条件]
-#   1. config/discord_bot.env に DISCORD_BOT_TOKEN と DISCORD_ALLOWED_USER_IDS を設定済み
-#   2. pip install "discord.py>=2.3" httpx
-#   3. tmux セッション "multiagent" が起動中であること
 
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-BOT_ENV="$SCRIPT_DIR/config/discord_bot.env"
-BOT_SCRIPT="$SCRIPT_DIR/scripts/discord_to_ntfy.py"
-TMUX_SESSION="multiagent"
-TMUX_WINDOW="shogun-discord"
-DRY_RUN="${1:-}"
+cat >&2 <<'EOF'
+[DEPRECATED] scripts/start_discord_bot.sh は使用不可。
+  - cmd_497 (2026-04-15): systemd user service (shogun-discord.service) に移行
+  - cmd_683 Phase3 (2026-05-15): 旧 BOT_SCRIPT (scripts/discord_to_ntfy.py) 削除済
+  - cmd_683d (2026-05-15): 本スクリプト本体ロジック撤去 (dead reference 解消)
 
-# --- 設定ファイル確認 ---
-if [ ! -f "$BOT_ENV" ]; then
-    echo "[ERROR] $BOT_ENV が見つかりません。" >&2
-    echo "        cp config/discord_bot.env.sample config/discord_bot.env して編集してください。" >&2
-    exit 1
-fi
+通常運用コマンド:
+  systemctl --user status   shogun-discord
+  systemctl --user restart  shogun-discord
+  systemctl --user stop     shogun-discord
+  journalctl --user -u shogun-discord -f
 
-# BOT_TOKENが設定済みか確認
-# shellcheck disable=SC1090
-source "$BOT_ENV"
-if [ -z "${DISCORD_BOT_TOKEN:-}" ] || [ "${DISCORD_BOT_TOKEN}" = "your_bot_token_here" ]; then
-    echo "[ERROR] DISCORD_BOT_TOKEN が未設定です。" >&2
-    echo "        $BOT_ENV を編集して Bot Token を設定してください。" >&2
-    echo "" >&2
-    echo "  [Discord Bot Token 取得手順]" >&2
-    echo "  1. https://discord.com/developers/applications にアクセス" >&2
-    echo "  2. New Application → Bot → Token をコピー" >&2
-    echo "  3. $BOT_ENV の DISCORD_BOT_TOKEN= に貼り付け" >&2
-    exit 1
-fi
+再インストール:
+  bash scripts/install-shogun-discord-service.sh
 
-# DRY_RUN引数処理
-BOT_ARGS=()
-if [ "$DRY_RUN" = "--dry-run" ]; then
-    BOT_ARGS+=("--dry-run")
-    echo "[INFO] DRY-RUNモードで起動します（ntfy転送なし）"
-fi
+現行 Bot 本体は scripts/discord_gateway.py (systemd 配下) です。
+緊急時手動デバッグは systemd を停止してから直接起動してください:
+  systemctl --user stop shogun-discord
+  .venv/discord-bot/bin/python3 scripts/discord_gateway.py
+EOF
 
-# --- tmux pane 確認・作成 ---
-if ! tmux has-session -t "$TMUX_SESSION" 2>/dev/null; then
-    echo "[ERROR] tmux セッション '$TMUX_SESSION' が見つかりません。" >&2
-    echo "        先に tmux セッションを起動してください。" >&2
-    exit 1
-fi
-
-# 既存の shogun-discord window があれば閉じる
-if tmux list-windows -t "$TMUX_SESSION" -F '#{window_name}' 2>/dev/null | grep -q "^${TMUX_WINDOW}$"; then
-    echo "[INFO] 既存の '$TMUX_WINDOW' window を終了します..."
-    tmux kill-window -t "$TMUX_SESSION:$TMUX_WINDOW"
-fi
-
-# 新しい window で Bot を起動
-echo "[INFO] tmux window '$TMUX_WINDOW' で Discord Bot を起動します..."
-VENV_PYTHON="$SCRIPT_DIR/.venv/discord-bot/bin/python3"
-if [ ! -x "$VENV_PYTHON" ]; then
-    VENV_PYTHON="python3"
-fi
-
-tmux new-window -d -t "$TMUX_SESSION" -n "$TMUX_WINDOW" \
-    "$VENV_PYTHON $BOT_SCRIPT ${BOT_ARGS[*]:-}; echo '[Bot terminated] Press Enter to close'; read"
-
-echo "[INFO] Discord Bot 起動完了。"
-echo "       確認: tmux attach -t $TMUX_SESSION && 'w' でウィンドウ一覧確認"
-echo "       停止: tmux kill-window -t $TMUX_SESSION:$TMUX_WINDOW"
+exit 2

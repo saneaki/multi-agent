@@ -1,53 +1,49 @@
 task:
-  task_id: subtask_683c_inbox_write_notify_gate_fix
+  task_id: subtask_683d_start_discord_bot_dead_ref_fix
   parent_cmd: cmd_683
-  title: cmd_683c cmd完了通知gate修復
-  bloom_level: L4
+  title: cmd_683d start_discord_bot dead ref補修
+  bloom_level: L3
   assigned_to: ashigaru5
   report_to: karo
   status: done
-  timestamp: '2026-05-15T21:58:10+09:00'
-  completed_at: '2026-05-15T22:04:32+09:00'
-  priority: medium
+  timestamp: '2026-05-15T22:15:20+09:00'
+  completed_at: '2026-05-15T22:20:36+09:00'
+  priority: low
   project: shogun
   target_path: /home/ubuntu/shogun
   context_policy: clear_between
   blocked_by: []
   context_files:
-  - output/cmd_683b_ntfy_launcher_residual_remove.md
-  - scripts/inbox_write.sh
-  - scripts/notify.sh
-  - config/settings.yaml
+  - scripts/start_discord_bot.sh
+  - output/cmd_683c_inbox_write_notify_gate_fix.md
   - queue/shogun_to_karo.yaml
   - dashboard.md
   editable_files:
-  - scripts/inbox_write.sh
-  - config/settings.yaml
-  - tests/unit/test_notify_discord.bats
-  - output/cmd_683c_inbox_write_notify_gate_fix.md
+  - scripts/start_discord_bot.sh
+  - output/cmd_683d_start_discord_bot_dead_ref_fix.md
   - queue/reports/ashigaru5_report.yaml
   - queue/tasks/ashigaru5.yaml
   - queue/inbox/ashigaru5.yaml
   acceptance_criteria:
-  - id: N-1
-    check: scripts/inbox_write.sh の shogun cmd_complete/cmd_milestone 通知gateが退役済 ntfy_topic に依存しないこと。Discord/notify.sh 用の現行設定または明示設定へ置換する
-  - id: N-2
-    check: ntfy_topic / NTFY_TOPIC を新規設定として復活させない。ntfy経路は退役のまま維持する
-  - id: N-3
-    check: cmd_complete/cmd_milestone to shogun の dry-run または隔離検証で notify.sh 呼出経路が到達可能であることを確認する。実送信が危険なら mock/stub で検証する
-  - id: N-4
-    check: 既存 tests/unit/test_notify_discord.bats と追加/更新テストを実行し、SKIP=0で報告する
-  - id: N-5
-    check: cmd_704 git preflightを実施し、未関係dirtyを巻き込まず、commit messageに cmd_683 を含めて origin/main へpushする
-  - id: N-6
-    check: output に副作用、設定キー、SO-18 Issue要否判断を記録する
-  description: 'cmd_683b で ntfy_topic を廃止した結果、scripts/inbox_write.sh L136-L173 の shogun cmd_complete/cmd_milestone 自動通知gateが常時falseとなる副作用が確認された。notify.sh
-    はDiscord backendなので、ntfy退役を維持しつつ通知gateをDiscord向け設定へ修正する。家老検収後にcmd_683完了処理へ進む。
+  - id: D-1
+    check: scripts/start_discord_bot.sh が削除済 scripts/discord_to_ntfy.py を参照しないこと
+  - id: D-2
+    check: bash -n scripts/start_discord_bot.sh を実行し SYNTAX_OK を確認する
+  - id: D-3
+    check: dead reference scanで scripts/discord_to_ntfy.py への実行系参照が残らないこと。歴史的docs/output/queue archiveは対象外でよい
+  - id: D-4
+    check: 必要に応じて deprecated script として明確に失敗する、または現行 shogun-discord.service への案内に寄せる。削除済script起動は不可
+  - id: D-5
+    check: commit message に cmd_683 を含めて origin/main へpushする。未関係dirtyを巻き込まない
+  - id: D-6
+    check: output に implementation-verifier 指摘への対応、動作確認、skill候補(dead-reference after deletion)の要否を記録する
+  description: 'implementation-verifier L3 の軽微指摘対応。cmd_683 Phase3で scripts/discord_to_ntfy.py を削除済みだが、scripts/start_discord_bot.sh L26 の BOT_SCRIPT
+    が同ファイルを参照している。production影響は低いが、dead reference after deletion の後処理として同cmd内で軽補修する。
 
 
     完了報告:
 
-    bash /home/ubuntu/shogun/scripts/inbox_write.sh karo "【subtask_683c_inbox_write_notify_gate_fix 完了】cmd_683c完了。gate=<PASS|FAIL> ntfy_retired=<PASS|FAIL>
-    tests=<PASS|FAIL> commit=<sha> output=output/cmd_683c_inbox_write_notify_gate_fix.md。report確認されたし。" task_completed ashigaru5
+    bash /home/ubuntu/shogun/scripts/inbox_write.sh karo "【subtask_683d_start_discord_bot_dead_ref_fix 完了】cmd_683d完了。dead_ref=<PASS|FAIL> syntax=<PASS|FAIL>
+    scan=<PASS|FAIL> commit=<sha> output=output/cmd_683d_start_discord_bot_dead_ref_fix.md。report確認されたし。" task_completed ashigaru5
 
     '
