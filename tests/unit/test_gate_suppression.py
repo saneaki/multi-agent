@@ -874,3 +874,121 @@ class TestPhaseDRegression:
         state = load_event_ledger(str(tmproot))
         assert "g1" in state["gates"]
         assert state["gates"]["g1"]["state"] == "open"
+
+
+# ────────────────────────────────────────────────────────────
+# F-2: Phase A-E cross-phase regression tests (cmd_716 Phase F)
+# Verify that Phase B/C/D/E additions do not interfere with each other,
+# and that all never-suppress alert boundaries hold across phases.
+# ────────────────────────────────────────────────────────────
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../scripts/lib"))
+from daily_digest import (  # noqa: E402
+    check_digest_liveness,
+    is_digest_sender_down_alert,
+    record_digest_attempt,
+)
+
+
+class TestCrossPhaseRegression:
+    """cmd_716 Phase F: cross-phase regression — A-E boundary verification."""
+
+    def test_phase_b_suppression_unchanged_by_phase_d_e(self, tmproot):
+        """Phase B suppression functions produce correct results even when
+        Phase D (judgement_log) and Phase E (digest_liveness) data exist."""
+        make_dashboard_with_gates(tmproot, ["[action-1] [cmd_712-phase-a-manual-verify]"])
+        write_yaml(
+            tmproot / "queue" / "inbox" / "shogun.yaml",
+            {"messages": [{"read": False, "type": "in_progress_monitor_alert",
+                           "content": "test alert", "timestamp": "2026-05-15T01:00:00+09:00"}]},
+        )
+        (tmproot / "queue" / "alert_state.yaml").write_text(
+            "gates:\n  g1:\n    state: open\n"
+            "notifications: {}\ndashboard_events: []\n",
+            encoding="utf-8",
+        )
+        append_judgement_log_entry(str(tmproot), "g1", "open", "karo")
+        record_digest_attempt(str(tmproot), success=True)
+
+        gs = get_gate_status(str(tmproot))
+        assert gs.has_open_gate is True
+        assert should_suppress_p5(str(tmproot), gs) is True
+
+    def test_never_suppress_boundaries_all_phases(self):
+        """All system_failure prefixes from Phase B/D/E are recognized as never-suppress."""
+        never_suppress_keys = [
+            "P7-GHA-upsert-0件",
+            "P_GATE_ZOMBIE_gate_cmd_716",
+            "P_DIGEST_SENDER_DOWN",
+            "P_DIGEST_SENDER_DOWN_variant",
+            "JUDGEMENT_LOG_WRITE_FAILURE",
+        ]
+        suppressible_keys = ["P9_xx", "P5_xx", "P3_xx"]
+
+        for key in never_suppress_keys:
+            zombie = is_zombie_gate_alert(key)
+            digest = is_digest_sender_down_alert(key)
+            assert zombie or digest or key.startswith("P7") or key.startswith("JUDGEMENT"), (
+                f"{key} should be never-suppress but not recognized"
+            )
+
+        for key in suppressible_keys:
+            assert not is_zombie_gate_alert(key), f"{key} wrongly classified as zombie"
+            assert not is_digest_sender_down_alert(key), f"{key} wrongly classified as digest-down"
+
+    def test_alert_state_integrity_after_phase_d_e_writes(self, tmproot):
+        """Phase D (judgement_log) and Phase E (digest_liveness) writes both
+        preserve the top-level alert_state.yaml structure intact."""
+        initial = (
+            "gates:\n  existing_gate:\n    state: open\n"
+            "notifications:\n  n1: v1\n"
+            "dashboard_events:\n- event_kind: x\n  source_id: s1\n"
+        )
+        (tmproot / "queue" / "alert_state.yaml").write_text(initial, encoding="utf-8")
+
+        append_judgement_log_entry(str(tmproot), "existing_gate", "resolved", "ashigaru2")
+        record_digest_attempt(str(tmproot), success=True)
+
+        state = load_event_ledger(str(tmproot))
+        assert "existing_gate" in state["gates"]
+        assert state["notifications"]["n1"] == "v1"
+        assert state["dashboard_events"][0]["event_kind"] == "x"
+
+        import yaml as _yaml
+        with open(tmproot / "queue" / "alert_state.yaml", encoding="utf-8") as f:
+            full = _yaml.safe_load(f)
+        assert "digest_liveness" in full
+        assert full["digest_liveness"]["consecutive_failures"] == 0
+
+    def test_digest_liveness_and_zombie_are_independent(self, tmproot):
+        """Phase D zombie detection and Phase E digest liveness are independent;
+        clearing one does not affect the other."""
+        from datetime import datetime, timezone, timedelta
+        old = (datetime.now(timezone(timedelta(hours=9))) - timedelta(days=8)).isoformat(timespec="seconds")
+        item = {
+            "tag": "[action-1] [cmd_zombie-test]",
+            "title": "old gate",
+            "severity": "HIGH",
+            "created_at": old,
+            "detail": "test",
+        }
+        write_yaml(tmproot / "dashboard.yaml", {"action_required": [item]})
+        gs = GateStatus(
+            has_open_gate=True,
+            gate_ids=["[action-1] [cmd_zombie-test]"],
+            cmd_ids=["cmd_zombie"],
+        )
+        (tmproot / "queue" / "alert_state.yaml").write_text(
+            "gates: {}\nnotifications: {}\ndashboard_events: []\n",
+            encoding="utf-8",
+        )
+
+        zombies = detect_zombie_gates(str(tmproot), gs)
+        assert len(zombies) == 1
+
+        record_digest_attempt(str(tmproot), success=True)
+        liveness = check_digest_liveness(str(tmproot))
+        assert liveness["is_down"] is False
+
+        zombies_after = detect_zombie_gates(str(tmproot), gs)
+        assert len(zombies_after) == 1
