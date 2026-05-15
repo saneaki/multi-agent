@@ -4,6 +4,9 @@ parent_cmd: cmd_726
 status: done
 timestamp: "2026-05-15T15:01:45+09:00"
 report_to: karo
+skill_candidate:
+  found: false
+  notes: "本タスク自体は skill 候補処理であり、新規の追加候補はなし。"
 result:
   verdict: pass
   output_path: /home/ubuntu/shogun/output/cmd_726e_skill_shared_sync_push.md
@@ -113,9 +116,6 @@ result:
       branch: main
       remote: origin
       result: "c3d719d..231e970 main -> main"
-  skill_candidate:
-    found: false
-    notes: "本タスク自体は skill 候補処理であり、新規の追加候補はなし。"
 history:
   - task_id: subtask_727a_inbox_watcher_silent_failure_remediation
     parent_cmd: cmd_727
