@@ -7,6 +7,13 @@ import sys
 from datetime import datetime, timedelta, timezone
 import yaml
 
+# Phase B (cmd_716): gate suppression support
+try:
+    from gate_suppression import get_gate_status, should_suppress_stall, should_suppress_uncommitted
+    _GATE_SUPPRESSION_AVAILABLE = True
+except ImportError:
+    _GATE_SUPPRESSION_AVAILABLE = False
+
 DONE_MAX_AGE_MIN = 6 * 60
 ACTIVE_HOOK_LOGS = [
     "logs/cmd_complete_notifier.log",
@@ -32,7 +39,13 @@ def check_dashboard_stall(root: str) -> str:
     if age_h < 4:
         return "ok"
     items = ["{cmd}({assignee})".format(cmd=item.get("cmd", "?"), assignee=item.get("assignee", "?")) for item in in_progress]
-    return "STALL: {n}件進行中, {h:.1f}h更新なし: {items}".format(n=len(in_progress), h=age_h, items=", ".join(items))
+    stall_msg = "STALL: {n}件進行中, {h:.1f}h更新なし: {items}".format(n=len(in_progress), h=age_h, items=", ".join(items))
+    # Phase B gate suppression: suppress if ALL stalled cmds have open judgement gates
+    if _GATE_SUPPRESSION_AVAILABLE:
+        gate_status = get_gate_status(root)
+        if should_suppress_stall(root, gate_status):
+            return "ok"  # suppressed: stall is gate-driven
+    return stall_msg
 
 def check_ash_done_pending(root: str) -> str:
     task_files = glob.glob(os.path.join(root, "queue/tasks/ashigaru*.yaml"))
@@ -133,7 +146,13 @@ def check_git_uncommitted(root: str) -> str:
     age_h = (datetime.now().timestamp() - commit_ts) / 3600
     if age_h >= 4:
         change_count = len([l for l in result.stdout.strip().split("\n") if l.strip()])
-        return "UNCOMMITTED: {n}件変更あり, last_commit {h:.1f}h前".format(n=change_count, h=age_h)
+        uncommitted_msg = "UNCOMMITTED: {n}件変更あり, last_commit {h:.1f}h前".format(n=change_count, h=age_h)
+        # Phase B gate suppression: suppress if ALL uncommitted files are gate-related runtime
+        if _GATE_SUPPRESSION_AVAILABLE:
+            gate_status = get_gate_status(root)
+            if should_suppress_uncommitted(root, gate_status):
+                return "ok"  # suppressed: only gate runtime files uncommitted
+        return uncommitted_msg
     return "ok"
 
 CHECKS = {

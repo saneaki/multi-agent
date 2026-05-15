@@ -522,16 +522,35 @@ def check_pattern_5():
             t = t.astimezone(JST)
         age_min = (now - t).total_seconds() / 60
         if age_min > 30:
-            unread_action.append(f"{mtype}({age_min:.0f}min)")
+            unread_action.append((mtype, age_min))
 
     if unread_action:
-        sample = ', '.join(unread_action[:3])
+        # Phase B gate suppression: suppress if gate open AND all unread are monitor reminders
+        try:
+            import sys as _sys
+            _sys.path.insert(0, os.path.join(ROOT, 'scripts/lib'))
+            from gate_suppression import get_gate_status, should_suppress_p5
+            gate_status = get_gate_status(ROOT)
+            if should_suppress_p5(ROOT, gate_status):
+                return  # suppressed: gate open, unread are monitor reminders only
+        except Exception:
+            pass  # suppression unavailable — proceed with alert
+        sample = ', '.join(f"{mtype}({age_min:.0f}min)" for mtype, age_min in unread_action[:3])
         more = f" (他{len(unread_action)-3}件)" if len(unread_action) > 3 else ""
         out('P5-殿手作業滞留',
             f"shogun inbox 未処理 {len(unread_action)}件: {sample}{more}")
 
 # ---------- Pattern 6: dashboard.md last_updated 鮮度 ----------
 def check_pattern_6():
+    """Phase B: fire P6 only when pending dashboard events exist (mtime-based).
+
+    Full event ledger approach (Phase C). Current implementation:
+    - Parse dashboard.md last_updated timestamp
+    - Suppress if no task/report/dispatch files are newer than dashboard.md
+    - Alert only when actual updates are pending (reduces false positives)
+
+    Phase C boundary: full event-kind ledger with state tracking deferred.
+    """
     dashboard_path = os.path.join(ROOT, 'dashboard.md')
     if not os.path.exists(dashboard_path):
         return
@@ -555,6 +574,19 @@ def check_pattern_6():
     elapsed_minutes = (now_jst() - last_updated).total_seconds() / 60
 
     if elapsed_minutes > 120:
+        # Phase B: suppress if no pending events (basic mtime check)
+        has_events = False
+        try:
+            import sys as _sys
+            _sys.path.insert(0, os.path.join(ROOT, 'scripts/lib'))
+            from gate_suppression import has_pending_dashboard_events
+            has_events = has_pending_dashboard_events(ROOT)
+        except Exception:
+            has_events = True  # suppression unavailable — default to alert
+
+        if not has_events:
+            return  # no pending updates → suppress P6 (Phase B)
+
         out('P6-dashboard鮮度stale',
             f"dashboard.md 最終更新から {int(elapsed_minutes)}分経過 "
             f"(last_updated={last_updated_str} JST). "

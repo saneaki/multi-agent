@@ -1,0 +1,12 @@
+# alert_state.yaml — Phase B gate dedup state (cmd_716)
+# Managed by gate_suppression.py; do not edit manually.
+# Format:
+#   gates:
+#     <gate_id>:
+#       state: open|notified|resolved|archived
+#       first_seen_at: <ISO JST>
+#       notified_at: <ISO JST | null>
+#       resolved_at: <ISO JST | null>
+#       state_version: 1
+gates: {}
+notifications: {}
