@@ -285,12 +285,51 @@ gunshi に horizontal 横展開されないまま運用されていた。
 - dashboard 変更を伴う cmd の QC では `grep -n '<tag>' dashboard.{md,yaml}` 両方を実行
 - closed entry retain は許容、active section から消えていることを必須化
 
+### Incident #5: .gitignore drift による skill / artifact commit 漏れ (cmd_728)
+
+**症状**: skill 配置または artifact 生成は完了しているが、whitelist 型 `.gitignore` に追跡許可が
+無いため `git status` では `!!` ignored として扱われ、commit / squash / publish 対象から
+漏れる。作業者 report では「作成済み」と記録されるが、repository reality では未追跡のまま残り、
+後続 verifier が `git ls-files <path>` で確認すると存在しない。
+
+**実例 (cmd_728 lord approval skill whitelist 漏れ)**:
+- `skills/shogun-lord-approval-request-pattern/SKILL.md` は作成・3源同期まで進んだ。
+- しかし whitelist `.gitignore` に `skills/shogun-lord-approval-request-pattern/` 系の許可が無く、
+  publish 対象に入らない drift が発生した。
+- これは report と filesystem の完了状態だけを見て、git index / ignored state を
+  Stage 5 前に確認しなかったことが根因。
+
+**検出**:
+- `git ls-files <skill-or-artifact-path>` が空なら commit 対象外。
+- `git status --short --ignored <path>` が `!! <path>` なら whitelist 漏れ。
+- whitelist 型 repo では `rg` が `.gitignore` glob parse warning を出す場合があるため、
+  `.gitignore` 自体の確認は `grep -n` / `sed -n` でも補完する。
+
+**防止 (skill-creation-workflow §5 前段 gate)**:
+skill 作成・共有・登録 workflow の Stage 5 (commit / publish / registry sync) に入る前に、
+以下を必須 preflight とする。
+
+```bash
+git ls-files <new-skill-or-artifact-path>
+git status --short --ignored <new-skill-or-artifact-path>
+grep -n '<new-skill-or-artifact-slug>' .gitignore
+```
+
+判定規律:
+- `git ls-files` が空、かつ `git status --ignored` が `!!` の場合は **.gitignore drift**。
+- whitelist 追記が必要な path を task/report に明記し、editable_files に `.gitignore` が無ければ
+  家老へ即報告して whitelist 追記 task を切る。
+- `.gitignore` 追記後は `git ls-files <path>` で index 登録を確認してから Stage 5 に進む。
+- output deliverables は artifact registration targets であり、現行方針では原則 git 追跡対象にしない。
+  skill / scripts / docs など repository asset と混同しない。
+
 ### Common Root Cause: Report ↔ Reality 整合確認手順の不徹底
 
-4 incident に通底する根因は「report と reality の整合確認手順が不十分」。
+5 incident に通底する根因は「report と reality の整合確認手順が不十分」。
 本 SKILL.md §Core Pattern (3段予防) で扱う `2>/dev/null || true` 型の silent failure
 (L1-L3 子/親/規律) とは物理動作が異なるが、**「unit AC pass だが outcome 観測されない」**
-構造は共通。SO-17 outcome E2E 強化 + 直読 grep + history 化が並行防御として有効。
+構造は共通。SO-17 outcome E2E 強化 + 直読 grep + history 化 + git index/ignored state 確認が
+並行防御として有効。
 
 ### Battle-Tested (cmd_729 系列)
 
@@ -300,3 +339,4 @@ gunshi に horizontal 横展開されないまま運用されていた。
 | cmd_729b | append-only schema 移行 + helper 新設 + 復元 entry 3 件 (ash7) | commit 4a5bea2、bats 3/3 PASS、β 完了 |
 | cmd_729c | append regression smoke + report-reality drift fixture test (ash6) | commit 269c4fb + 36fdbe7、bats 4/4 local PASS、γ 完了。GHA macOS は CI 環境依存 (PyYAML 等) で依然 fail |
 | cmd_729d | 本 SKILL.md §Report Drift Patterns 追記 + 全 QC (本 gunshi) | δ 完遂 |
+| cmd_729f | verifier PARTIAL_PASS 補修: .gitignore drift family 追加 + 4a5bea2 scope 証跡化 (ash7) | skill-creation-workflow §5 前段 gate を明文化。4a5bea2 の `shutsujin_departure.sh` 変更は B-4 scope 内と判定 |
