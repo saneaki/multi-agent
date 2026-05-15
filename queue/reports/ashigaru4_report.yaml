@@ -1,139 +1,94 @@
 worker_id: ashigaru4
-task_id: subtask_729a_gunshi_report_write_path_audit
-parent_cmd: cmd_729
-timestamp: '2026-05-15T15:33:25+09:00'
+task_id: subtask_730e_beta_runtime_overlay
+parent_cmd: cmd_730
+timestamp: '2026-05-16T06:09:05+09:00'
 status: done
 report_to: karo
 result:
   summary: |
-    cmd_729 α subtask_729a 完了。queue/reports/gunshi_report.yaml の書込経路を全網羅監査:
-      - 書込経路は 2 経路のみ (shutsujin_departure.sh:468 init reset / gunshi agent Write tool)
-      - append/history/backup 機構は 0 件
-      - cmd_725b/727b/旧726f の消失は scripts 暴走でも race でもなく、設計上の単一文書 overwrite (RC-1) +
-        history schema 不在 (RC-2) の構造欠陥に起因
-      - gunshi.md §8.5 / qc_checklist.yaml §162 が「次回上書きされる」前提を明文化済 (suggestions.yaml のみ救済)
-      - cmd_723 で同種事案が再発済 (RC-4)
-      - 復元材料は ash output + karo 指示文 + commit/push evidence で揃っており、β (subtask_727c) で reconstructable
-    output に β 修正候補 9 項目 (F1-F9) と smoke test 方針を集約。
-    本 α は監査のみ。queue/reports/gunshi_report.yaml / scripts本体 / skill本体は編集せず (RACE-001 回避 / A-5)。
-    git preflight 記録済、commit/push は karo 指示に従い β 以降で実施 (A-6)。
+    cmd_730 β subtask_730e runtime overlay 化完了。
+    BETA-1: karo → claude/claude-sonnet-4-6 (canonical baseline修正)
+    BETA-2: ash6-7 → claude/claude-sonnet-4-6 (canonical baseline修正)
+    BETA-3: ash4-5 → claude-opus-4-7 復元 (settings.yaml canonical維持)
+    BETA-4: shc.sh deploy --settings-only 3経路削除 (0件確認済)
+    BETA-5: shx ash6-7 runtime overlay = codex/gpt-5.5/xhigh (settings.yaml不変)
+    BETA-6: shk 全員 claude/opus+T overlay + karo @agent_cli/@model_name 同期
+    BETA-7: SHOGUN_NO_THINKING = MAX_THINKING_TOKENS=0 prefix化 (settings.yaml書込み排除)
+    BETA-8: ashigaru全pane @model_name 書込み追加
+    BETA-9: grep確認 scripts/shc.sh deploy.*--settings-only = 0件
+    BETA-10: reverse-validate (起動後 hash比較 + @agent_cli整合チェック、非0終了)
+    BETA-11: 静的検証完了 (yaml.safe_dump/open 'w'が0件、起動前後hash比較ロジック実装)
+    BETA-12: bash -n SYNTAX OK + YAML parse OK
+    BETA-13: atomic commit fd75c67 (config/settings.yaml + shutsujin_departure.sh + output)
+    BETA-14: output/cmd_730e_beta_runtime_overlay.md 作成済
   files_modified:
-    - output/cmd_729a_gunshi_report_write_path_audit.md       # 新規 (監査レポート)
-    - queue/reports/ashigaru4_report.yaml                     # 本ファイル更新
-    - queue/tasks/ashigaru4.yaml                              # 不変 (status は karo 側で管理)
-    - queue/inbox/ashigaru4.yaml                              # msg_20260515_062210_4d0857e2 read true 化
-  output_path: output/cmd_729a_gunshi_report_write_path_audit.md
-  write_paths_classified:
-    overwrite_init:
-      - script: shutsujin_departure.sh
-        line: 468
-        pattern: "cat > ./queue/reports/gunshi_report.yaml << EOF"
-        trigger: "--clean モード時のみ idle template に reset"
-    overwrite_manual:
-      - actor: gunshi agent
-        tool: "Write / Edit"
-        evidence: "instructions/gunshi.md L363/L544 (Write only this) + L365 (overwritten by next QC)"
-    append: []
-    third_party_edit: []
-    read_only_consumers:
-      - scripts/action_required_sync.sh   # L33,156-161,298 (read-only)
-      - tests/dashboard_pipeline_test.sh  # L509,519 (E-4.2 schema test)
-      - scripts/slim_yaml.py              # L19 (CANONICAL_REPORTS 名前のみ)
-  root_causes:
-    - id: RC-1
-      priority: PRIMARY
-      confidence: high
-      title: "設計上の単一文書 overwrite"
-      evidence: "instructions/gunshi.md:365 + config/qc_checklist.yaml:162 で明文化"
-    - id: RC-2
-      priority: SECONDARY
-      confidence: high
-      title: "history schema / append helper が不在"
-      evidence: "ashigaru report は history: 配列を持つ (cf. ash2/4/5/7/3 の grep) が gunshi_report.yaml は単一文書"
-    - id: RC-3
-      priority: TERTIARY
-      confidence: medium
-      title: "救済路 suggestions.yaml は QC 本体を保存しない"
-      evidence: "gunshi.md §8.5 は suggestions/concerns のみ append、AC review/means_ends/north_star_outcome は救済外"
-    - id: RC-4
-      priority: HISTORICAL
-      confidence: high
-      title: "同種事案の再発"
-      evidence: "msg_20260513_052236 cmd_723 補完事案"
-    - id: RC-5
-      priority: NOT_A_CAUSE
-      confidence: high
-      title: "script 暴走/race/git 履歴破壊は否定"
-      evidence: "A-2 全域 grep で書込 script は shutsujin 1 本のみ / reflog は順方向 push のみ / dirty 差分の前 entry は cmd_702 (idle template ではない)"
+    - config/settings.yaml
+    - shutsujin_departure.sh
+    - output/cmd_730e_beta_runtime_overlay.md
+  output_path: output/cmd_730e_beta_runtime_overlay.md
   acceptance_criteria:
-    - id: A-1
+    - id: BETA-1
       status: PASS
-      note: "書込経路を 3 区分 (overwrite_init / overwrite_manual / append) に分類済。append=0 件確定。output §A-1 参照"
-    - id: A-2
+      note: "karo → claude/claude-sonnet-4-6 canonical baseline修正"
+    - id: BETA-2
       status: PASS
-      note: "yaml.safe_dump / yaml.dump / write_text / open / cat> / tee を sh+py 全域で grep。直接 hit=1件 (shutsujin) + 間接 hit=1件 (gunshi Write) + 否定 evidence=13 件。output §A-2 参照"
-    - id: A-3
+      note: "ash6-7 → claude/claude-sonnet-4-6 canonical baseline修正"
+    - id: BETA-3
       status: PASS
-      note: "RC-1 (PRIMARY) ~ RC-5 (NOT_A_CAUSE) の 5 仮説を優先順位付きで列挙。git history / 現行 gunshi_report dirty 差分 / inbox/verifier evidence を全て根拠化"
-    - id: A-4
+      note: "ash4-5 → claude-opus-4-7 復元 (settings.yaml canonical維持)"
+    - id: BETA-4
       status: PASS
-      note: "β 修正候補 7 ファイル + 復元 entry 3 件 (cmd_725 γ / cmd_727 β / cmd_723 補完) の一次根拠 + 隔離 staging smoke test 方針を output §A-4 に明記"
-    - id: A-4b
+      note: "shc.sh deploy --settings-only 3経路削除 (0件確認済)"
+    - id: BETA-5
       status: PASS
-      note: "report-reality drift (YomiToku 削除済報告 ↔ dashboard.yaml L369-377 closed entry 残存) を output §A-4b に分析。F10-F13 (SO-24 強化 / 用語表 / gunshi QC checklist 追補 / drift detector) を後段β/γ/δ修正候補として記録"
-    - id: A-5
+      note: "shx ash6-7 runtime overlay = codex/gpt-5.5/xhigh (settings.yaml不変)"
+    - id: BETA-6
       status: PASS
-      note: "queue/reports/gunshi_report.yaml / scripts本体 / skill本体は read のみ、編集なし。touch したのは editable_files 4 件のみ"
-    - id: A-6
+      note: "shk 全員 claude/opus+T overlay + karo @agent_cli/@model_name 同期"
+    - id: BETA-7
       status: PASS
-      note: "git preflight 記録 (output §A-6)。ahead/behind=0/0。HEAD=f20b887。本 α では commit/push 不実施"
-  followups_for_beta:
-    - id: F1
-      type: data_restore
-      detail: "history 化と並行して cmd_723 / cmd_725 γ / cmd_727 β の QC entry を復元"
-    - id: F2
-      type: structural
-      detail: "gunshi_report.yaml schema を latest: + history:[] に変更"
-    - id: F3
-      type: helper
-      detail: "scripts/gunshi_report_append.sh 新規作成 (atomic write + lock + schema validate)"
-    - id: F4
-      type: protocol
-      detail: "instructions/gunshi.md §8 を append helper 経由に書換"
-    - id: F5
-      type: init
-      detail: "shutsujin_departure.sh L468-474 の reset template を新 schema 整合"
-    - id: F6
-      type: downstream
-      detail: "scripts/action_required_sync.sh の read path 調整 (latest fallback)"
-    - id: F7
-      type: doc
-      detail: "config/qc_checklist.yaml L162 注釈削除 (history 化後不要)"
-    - id: F8
-      type: regression
-      detail: "tests/dashboard_pipeline_test.sh の E-4.2 を新 schema 化"
-    - id: F9
-      type: future_audit
-      detail: "RACE-001 強化: editable_files 重複監査を karo dispatch 時に gate 化 (再発防止)"
-    - id: F10
-      type: dashboard_verification
-      detail: "scripts/so24_verify.sh の (b) artifact 確認に dashboard.yaml SoT 直読 grep を追加 (YomiToku drift 由来)"
-    - id: F11
-      type: semantic_clarification
-      detail: "報告語彙の用語表整備 (削除/close/archive/retire) を instructions/common/dashboard_responsibility_matrix.md に追補"
-    - id: F12
-      type: gunshi_qc_checklist
-      detail: "gunshi.md §8.7 SO-24 三点照合に dashboard.yaml 直読 grep PASS を必須項目化"
-    - id: F13
-      type: drift_detector
-      detail: "(任意) scripts/dashboard_drift_check.sh 新設で render 不在 / SoT 残存 entry を自動検出"
+      note: "SHOGUN_NO_THINKING = MAX_THINKING_TOKENS=0 prefix化 (settings.yaml書込み排除)"
+    - id: BETA-8
+      status: PASS
+      note: "ashigaru全pane @model_name 書込み追加"
+    - id: BETA-9
+      status: PASS
+      note: "grep確認 scripts/shc.sh deploy.*--settings-only = 0件"
+    - id: BETA-10
+      status: PASS
+      note: "reverse-validate (起動後 hash比較 + @agent_cli整合チェック、非0終了)"
+    - id: BETA-11
+      status: PASS
+      note: "静的検証完了 (yaml.safe_dump/open 'w'が0件、起動前後hash比較ロジック実装)"
+    - id: BETA-12
+      status: PASS
+      note: "bash -n SYNTAX OK + YAML parse OK"
+    - id: BETA-13
+      status: PASS
+      note: "atomic commit fd75c67 (config/settings.yaml + shutsujin_departure.sh + output)"
+    - id: BETA-14
+      status: PASS
+      note: "output/cmd_730e_beta_runtime_overlay.md 作成済"
 agent_tool_used: false
 skill_candidate:
   found: false
-  reason: "本 α は監査のみで、新 skill 化対象なし。Followups F2-F4 が β で確立されれば 'shogun-gunshi-report-history-discipline' 等の skill 化候補が後続 cmd で抽出される可能性あり (現段階は observation 段階)"
+  reason: "β runtime overlay 化は実装パターン。後続 cmd で skill 化候補として観察継続。"
 
 # ===== 履歴 (新しい順 → 古い順 / append-only) =====
 history:
+  - task_id: subtask_730a_opus_root_cause_review
+    parent_cmd: cmd_730
+    timestamp: '2026-05-16T03:22:43+09:00'
+    status: done
+    summary: |
+      cmd_730 Opus arm レビュー完了。verdict=BLOCK。
+      真因A: shp update_settings_batch() karo 永続汚染 / 真因A付随: shu all-sonnet が ash4-5 上書き /
+      真因C: kessen mode @agent_cli 未オーバーライド (shutsujin_departure.sh:828) /
+      真因D: shx --settings-only 汚染。β-1〜β-6 修正ステップ提案。
+    output_path: output/cmd_730a_opus_root_cause_review.md
+    skill_candidate:
+      found: false
+  - task_id: subtask_729a_gunshi_report_write_path_audit
   - task_id: subtask_726c_skill_batch_silent_preset_tmux
     parent_cmd: cmd_726
     timestamp: '2026-05-15T14:55:00+09:00'

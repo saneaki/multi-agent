@@ -109,7 +109,7 @@ reverse-validate ロジックにより、次回起動時に起動前後の hash 
 
 ## 4. commit SHA
 
-commit: (BETA-13 atomic commit 後に記録)
+commit: fd75c67
 
 ---
 
