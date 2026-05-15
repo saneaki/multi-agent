@@ -113,11 +113,35 @@ grep -c "scripts/shc.sh deploy.*--settings-only" shutsujin_departure.sh
 → 0
 ```
 
+### 3.4 T3: shc status 非破壊実行 (exit=0)
+
+```
+bash scripts/shc.sh status
+→ [1] Pane Meta: karo/ashigaru1-8/gunshi 全 pane 表示
+→ [2] diff: karo=MISMATCH(pane=codex,settings=claude) / ashigaru1-8/gunshi=OK / shogun=NO_PANE
+→ [3] dashboard.yaml: last_updated 2026-05-16T06:23:10+09:00 / in_progress cmd_730 / formation_status not yet synced
+exit=0
+```
+
+### 3.5 T4: sync-meta ロジック temp copy 検証 (forbidden_keys 保護)
+
+```python
+# dashboard.yaml を temp copy に複製して sync-meta ロジックを直接実行
+# formation_status 追加 + FORBIDDEN_KEYS 13種 snapshot 比較
+→ sync-meta wrote formation_status OK
+→ formation_status.last_sync: 2026-05-16T06:38:17+09:00
+→ formation_status.agents: ['ashigaru1', 'karo']
+→ forbidden_keys unchanged: True
+T4: PASS
+```
+
 ---
 
 ## 4. commit SHA
 
-(本ファイル作成後に記録)
+```
+e6b6601 feat(cmd_730g): δ-A shc status 3系統diff + sync-meta + --settings-only deprecated (Refs cmd_730)
+```
 
 ---
 

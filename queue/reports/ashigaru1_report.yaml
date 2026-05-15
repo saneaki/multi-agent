@@ -1,73 +1,52 @@
-verdict: BLOCK
 worker_id: ashigaru1
-task_id: subtask_700b_codex_review
-parent_cmd: cmd_700
-status: done
-timestamp: "2026-05-10T17:15:46+09:00"
-report_to: karo
-type: review
-
+task_id: subtask_730g_delta_shc_dashboard_sync
+parent_cmd: cmd_730
+status: completed
+timestamp: "2026-05-16T06:39:46+09:00"
 result:
   summary: |
-    cmd_700 Codex dedup全範囲レビューを完了。現行 Parse & Dedup は staticData を使っているが、
-    primary dedup key が `{repo}|{workflow}|{hourWindow}` のため、同一 run_id でも毎時再通知される。
-    Gmail processed label/既読化も未実装のため、同じ未読メールが再取得され続ける。
-    staticData永続化regressionは第一原因ではなく、production exec間保持の既存証跡あり。
-  output_path: output/cmd_700b_codex_dedup_review.md
+    cmd_730 δ-A 完了。scripts/shc.sh に3変更を実装し全ACをPASS。
+    DELTA-A1: deploy --settings-only deprecated警告追加 (shu/shk/shx 呼び出し0件確認)
+    DELTA-A2: shc status 3-way diff拡張 (pane meta / settings.yaml / dashboard.yaml)
+    DELTA-A3/A4: shc sync-meta 新設 (formation_status 限定、FORBIDDEN_KEYS 13種保護)
+    検証 T1-T4 全PASS (SKIP=0)。commit e6b6601 push済み。
+  output_path: output/cmd_730g_delta_shc_dashboard_sync.md
   changed_files:
-    - output/cmd_700b_codex_dedup_review.md
-    - queue/reports/ashigaru1_report.yaml
-    - queue/tasks/ashigaru1.yaml
-    - queue/inbox/ashigaru1.yaml
-  findings:
-    critical: 1
-    high: 1
-    medium: 1
-    low: 1
-  root_cause:
-    primary: "dedup key excludes run_id and includes hourWindow"
-    secondary: "Gmail message processed label is not applied, so the same unread email remains in the search result"
-    not_primary: "staticData persistence regression"
-  hypothesis_review:
-    A_hourWindow_key: 採用
-    B_gmail_redelivery_or_unread_refetch: 採用
-    C_staticData_persistence_regression: 却下寄り
-    additional: "active workflow filter does not exclude old deleted-branch runs when workflow_id remains active"
-  phase1_minimum_fix: "Use run_id-based persistent dedup key, e.g. run:${repo}:${runInfo.runId}; extend TTL to 7-14 days."
-  acceptance_criteria:
-    - id: R-1
+    - scripts/shc.sh
+    - output/cmd_730g_delta_shc_dashboard_sync.md
+  git:
+    repo: /home/ubuntu/shogun
+    commit: e6b6601
+    commit_message: "feat(cmd_730g): δ-A shc status 3系統diff + sync-meta + --settings-only deprecated (Refs cmd_730)"
+    push: DONE
+  test_results:
+    skip_count: 0
+    T1_bash_n:
+      command: "bash -n scripts/shc.sh"
       status: PASS
-      evidence: "Same資料/same promptで全範囲を独立審理し、outputへ記録。"
-    - id: R-2
+      output: "SYNTAX OK"
+    T2_yaml_parse:
+      command: ".venv/bin/python3 -c 'yaml.safe_load(settings.yaml + dashboard.yaml)'"
       status: PASS
-      evidence: "Hypothesis A/B/C and additional deleted-branch active workflow hypothesisを検証。"
-    - id: R-3
+      output: "cli.agents 10 agents / metadata.last_updated confirmed"
+    T3_shc_status:
+      command: "bash scripts/shc.sh status"
+      exit_code: 0
       status: PASS
-      evidence: "root cause / 仮説検証 / 修正案 / 影響範囲 / Issue #48 close条件を同一artifactに記録。"
-    - id: R-4
+      notes: "3-section output OK. karo MISMATCH(pane=codex,settings=claude) correctly detected. shogun NO_PANE (expected). formation_status shows not-yet-synced."
+    T4_sync_meta_temp_copy:
+      command: "python3 sync-meta logic against temp copy of dashboard.yaml"
       status: PASS
-      evidence: "CRITICAL/HIGH/MEDIUM/LOW findingsを分類し、Phase 1 CRITICAL最小修正を明示。"
-    - id: R-5
-      status: PASS
-      evidence: "output artifact and this report start with verdict=BLOCK."
-  verification:
-    - command: "tmux display-message -t \"$TMUX_PANE\" -p '#{@agent_id}'"
-      status: PASS
-      notes: "ashigaru1"
-    - command: "context files read"
-      status: PASS
-      notes: "All six listed context_files read; extra Phase3 dedup regression repair file used as supporting local evidence."
-    - command: "rg/nl review of queue/inbox/shogun.yaml"
-      status: PASS
-      notes: "Confirmed same run 25620552772 at 06:00:59Z, 07:01:00Z, 08:01:00Z."
-    - command: "official docs review"
-      status: PASS
-      notes: "Checked n8n staticData/execution docs, GitHub workflow state docs, Gmail modify label docs."
-  residual_risk: |
-    Review only per instruction. No n8n workflow, GitHub repository, Gmail state, or application code was modified.
-
+      notes: "formation_status written (last_sync + agents). forbidden_keys 13種 unchanged confirmed."
+  ac_results:
+    DELTA-A1: PASS
+    DELTA-A2: PASS
+    DELTA-A3: PASS
+    DELTA-A4: PASS
+    DELTA-A5: "PASS (T1+T2+T3+T4 SKIP=0)"
+    DELTA-A6: PASS
+    DELTA-A7: PASS
 agent_tool_used: false
 agent_tool_tokens: 0
-
 skill_candidate:
   found: false
