@@ -475,8 +475,8 @@ latest:
 history: []
 EOF
 
-    # ntfy inbox リセット
-    echo "inbox:" > ./queue/ntfy_inbox.yaml
+    # ntfy inbox リセット — cmd_692/cmd_683 で ntfy 経路は退役済
+    # （queue/ntfy_inbox.yaml 自体も cmd_683 Phase3 で削除）
 
     # agent inbox リセット
     for agent in shogun karo $_ASHIGARU_IDS_STR gunshi; do
@@ -1054,78 +1054,10 @@ NINJA_EOF
     echo ""
 fi
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# STEP 6.7.5: ntfy_inbox 古メッセージ退避（7日より前のprocessed分をアーカイブ）
-# ═══════════════════════════════════════════════════════════════════════════════
-if [ -f ./queue/ntfy_inbox.yaml ]; then
-    _archive_result=$(python3 -c "
-import yaml, sys
-from datetime import datetime, timedelta, timezone
+# STEP 6.7.5 / STEP 6.8 (ntfy_inbox archive + ntfy_listener 起動) は
+# cmd_692/cmd_683 にて ntfy 経路退役・scripts/ntfy_listener.sh 削除に伴い廃止。
+# (cmd_683b: 削除済 script の nohup 起動による silent fail を除去)
 
-INBOX = './queue/ntfy_inbox.yaml'
-ARCHIVE = './queue/ntfy_inbox_archive.yaml'
-DAYS = 7
-
-with open(INBOX) as f:
-    data = yaml.safe_load(f) or {}
-
-entries = data.get('inbox', []) or []
-if not entries:
-    sys.exit(0)
-
-cutoff = datetime.now(timezone(timedelta(hours=9))) - timedelta(days=DAYS)
-recent, old = [], []
-
-for e in entries:
-    ts = e.get('timestamp', '')
-    try:
-        dt = datetime.fromisoformat(str(ts))
-        if dt < cutoff and e.get('status') == 'processed':
-            old.append(e)
-        else:
-            recent.append(e)
-    except Exception:
-        recent.append(e)
-
-if not old:
-    sys.exit(0)
-
-# Append to archive
-try:
-    with open(ARCHIVE) as f:
-        archive = yaml.safe_load(f) or {}
-except FileNotFoundError:
-    archive = {}
-archive_entries = archive.get('inbox', []) or []
-archive_entries.extend(old)
-with open(ARCHIVE, 'w') as f:
-    yaml.dump({'inbox': archive_entries}, f, allow_unicode=True, default_flow_style=False)
-
-# Write back recent only
-with open(INBOX, 'w') as f:
-    yaml.dump({'inbox': recent}, f, allow_unicode=True, default_flow_style=False)
-
-print(f'{len(old)}件退避 {len(recent)}件保持')
-" 2>/dev/null) || true
-    if [ -n "$_archive_result" ]; then
-        log_info "📱 ntfy_inbox整理: $_archive_result → ntfy_inbox_archive.yaml"
-    fi
-fi
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# STEP 6.8: ntfy入力リスナー起動
-# ═══════════════════════════════════════════════════════════════════════════════
-NTFY_TOPIC=$(grep 'ntfy_topic:' ./config/settings.yaml 2>/dev/null | awk '{print $2}' | tr -d '"')
-if [ -n "$NTFY_TOPIC" ]; then
-    pkill -f "ntfy_listener.sh" 2>/dev/null || true
-    [ ! -f ./queue/ntfy_inbox.yaml ] && echo "inbox:" > ./queue/ntfy_inbox.yaml
-    nohup bash "$SCRIPT_DIR/scripts/ntfy_listener.sh" &>/dev/null &
-    disown
-    log_info "📱 ntfy入力リスナー起動 (topic: $NTFY_TOPIC)"
-else
-    log_info "📱 ntfy未設定のためリスナーはスキップ"
-fi
-echo ""
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # STEP 7: 環境確認・完了メッセージ

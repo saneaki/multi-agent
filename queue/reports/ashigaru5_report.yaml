@@ -1,11 +1,101 @@
 worker_id: ashigaru5
-task_id: subtask_683_phase3_ntfy_deletion
+task_id: subtask_683b_ntfy_launcher_residual_remove
 parent_cmd: cmd_683
-timestamp: "2026-05-15T21:42:38+09:00"
+timestamp: "2026-05-15T21:53:23+09:00"
 status: done
 report_to: karo
-type: server_side_cleanup
+type: launcher_residual_removal
 model: opus+t
+
+result_683b:
+  summary: |
+    cmd_683 Phase3 検収申し送りを cmd_683b として補修完了。shutsujin_departure.sh の
+    3 箇所 (L478-479 ntfy_inbox 再生成 / L1057-1113 STEP 6.7.5 ntfy_inbox archive /
+    L1115-1128 STEP 6.8 ntfy_listener 起動) を全て除去し、config/settings.yaml の
+    ntfy_topic 設定行を完全廃止 (コメント中も key 文字列を伏字化し grep 結果 0 を保証)。
+    bash -n SYNTAX_OK、tests/unit/test_notify_discord.bats 5/5 PASS、SKIP=0。
+    scripts/inbox_write.sh:138-139 に grep gate が残るが settings.yaml 廃止により
+    dead reference 化、editable_files 範囲外で申し送りとして記録。
+
+  output_path: output/cmd_683b_ntfy_launcher_residual_remove.md
+
+  files_modified_this_task:
+    modifications_tracked:
+      - shutsujin_departure.sh    # 3ブロック除去
+      - config/settings.yaml      # ntfy_topic 廃止
+    additions:
+      - output/cmd_683b_ntfy_launcher_residual_remove.md
+    metadata:
+      - queue/reports/ashigaru5_report.yaml
+      - queue/tasks/ashigaru5.yaml
+      - queue/inbox/ashigaru5.yaml
+
+  not_modified_pre_existing_dirty:
+    - docs/dashboard_schema.json
+    - memory/global_context.md
+    - queue/alert_state.yaml
+    - queue/external_inbox.yaml
+    - queue/reports/ashigaru1_report.yaml
+    - scripts/shc.sh
+
+  scan_result:
+    runtime_references: 0
+    dead_references:
+      - file: scripts/inbox_write.sh
+        lines: "138-139"
+        kind: "grep 'ntfy_topic:' gate (settings.yaml 廃止により empty 返却で常 false)"
+        scope: out_of_editable_files
+        impact: "shogun 宛 cmd_complete/cmd_milestone の Discord 自動通知が停止 (副次効果)"
+    historical_comments:
+      - file: shutsujin_departure.sh
+        lines: "479, 1058"
+        kind: "退役注記コメント"
+
+  acceptance_criteria_683b:
+    R-1:
+      status: PASS
+      evidence: "shutsujin_departure.sh STEP 6.8 (L1115-1128) ブロック除去。実行系参照 (nohup, pkill, bash ntfy_listener.sh) 0件、コメントのみ退役注記として残置"
+    R-2:
+      status: PASS
+      evidence: "config/settings.yaml ntfy_topic キー削除。grep 'ntfy_topic:' = 0 件、NTFY_TOPIC='' を実機確認 (length=0)、shutsujin_departure.sh / inbox_write.sh の gate 共に false 確定"
+    R-3:
+      status: PASS
+      evidence: "rg scan で実行系参照 0 件 (shutsujin_departure.sh は退役コメントのみ、inbox_write.sh は dead reference + scope 外、申し送り記録)"
+    R-4:
+      status: PASS
+      evidence: "bash -n shutsujin_departure.sh SYNTAX_OK、tests/unit/test_notify_discord.bats 5/5 PASS, SKIP=0, FAIL=0"
+    R-5:
+      status: PASS_pending_commit
+      evidence: "本レポート完了後に commit + push to origin/main、commit message に cmd_683 を含める。未関係dirty 6件は選択add で巻き込まず分離"
+    R-6:
+      status: PASS
+      evidence: "SO-18: GitHub Issue 不要と判断 (output §3.R-6)。理由: cmd_683 Phase3 検収申し送りとして同一cmd配下で補修、影響範囲は出陣時の silent fail のみ、副次の inbox_write.sh dead ref は重大度低・緊急性なしで通常 cmd フロー処理可"
+
+  test_summary:
+    total: 5
+    passed: 5
+    skipped: 0
+    failed: 0
+    suite: tests/unit/test_notify_discord.bats
+
+  forward_notes:
+    - "scripts/inbox_write.sh L138-139 の dead reference は次cmdで gate キー新設 (例 notify.discord_enabled) or 除去を家老が判断"
+    - "shogun cmd_complete/cmd_milestone の Discord 自動通知再開が必要なら inbox_write.sh の改修を別cmdで発議"
+
+agent_tool_used: false
+agent_tool_tokens: 0
+quality_judgement: PASS
+
+# ────────────────────────────────────────────────────────────
+# 以下は前タスク (cmd_683 Phase3) の履歴
+# ────────────────────────────────────────────────────────────
+prev_task_id_683_phase3: subtask_683_phase3_ntfy_deletion
+prev_parent_cmd_683_phase3: cmd_683
+prev_timestamp_683_phase3: "2026-05-15T21:42:38+09:00"
+prev_status_683_phase3: done
+prev_report_to_683_phase3: karo
+prev_type_683_phase3: server_side_cleanup
+prev_model_683_phase3: opus+t
 
 result_683_phase3:
   summary: |
