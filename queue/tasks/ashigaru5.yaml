@@ -1,0 +1,77 @@
+task:
+  task_id: subtask_683_phase3_ntfy_deletion
+  parent_cmd: cmd_683
+  title: "cmd_683 Phase3 ntfy 14件削除"
+  bloom_level: L4
+  assigned_to: ashigaru5
+  report_to: karo
+  status: done
+  completed_at: '2026-05-15T21:42:38+09:00'
+  timestamp: '2026-05-15T21:36:02+09:00'
+  priority: medium
+  project: shogun
+  target_path: /home/ubuntu/shogun
+  context_policy: clear_between
+  blocked_by: []
+  approval:
+    approved_at: '2026-05-15T17:00:00+09:00'
+    approved_by: lord
+    approval_channel: discord
+    approved_items:
+      - action-8 [cmd_683-phase3-delete-approval]
+      - cmd_683 Phase3 ntfy server-side deletion target list, 14 entries
+    decision_path:
+      - dashboard action-8 created from suggestions triage batch1
+      - lord approved action-8 on Discord
+      - karo dispatched one ashigaru because F001 forbids direct execution
+  context_files:
+    - queue/shogun_to_karo.yaml
+    - output/shogun/cmd_683_tier2_repair_phase3_cleanup.md
+    - output/shogun/cmd_677_tier2_audit.md
+    - dashboard.md
+    - dashboard.yaml
+  editable_files:
+    - scripts/ntfy.sh
+    - scripts/ntfy_wsl_template.sh
+    - scripts/discord_to_ntfy.py
+    - scripts/__pycache__/discord_to_ntfy.cpython-312.pyc
+    - lib/ntfy_auth.sh
+    - queue/ntfy_inbox.yaml
+    - queue/ntfy_inbox.yaml.lock
+    - queue/ntfy_inbox_archive.yaml
+    - logs/ntfy_listener.log
+    - logs/ntfy_inbox_corrupt/
+    - logs/ntfy_completed_cmds.txt
+    - logs/ntfy_notified_cmds.txt
+    - tests/unit/test_ntfy_ack.bats
+    - tests/unit/test_ntfy_auth.bats
+    - output/cmd_683_phase3_ntfy_deletion.md
+    - queue/reports/ashigaru5_report.yaml
+    - queue/tasks/ashigaru5.yaml
+    - queue/inbox/ashigaru5.yaml
+  acceptance_criteria:
+    - id: P3-1
+      check: "output/shogun/cmd_683_tier2_repair_phase3_cleanup.md の Phase3 削除対象14件と実削除対象が一致し、削除前に各targetのrealpathが /home/ubuntu/shogun 配下であることを記録する"
+    - id: P3-2
+      check: "殿承認ログ approved_at/approved_by/approval_channel/approved_items/decision_path を output/cmd_683_phase3_ntfy_deletion.md と report YAML に記録する"
+    - id: P3-3
+      check: "cmd_704 git preflightを実施し、未関係dirtyを巻き込まず、削除対象14件と必要な成果物/report/taskのみを扱う"
+    - id: P3-4
+      check: "rm前に存在確認、rm時は rm -v 等で削除ログを残す。logs/ntfy_inbox_corrupt/ は realpath確認後に限り削除する"
+    - id: P3-5
+      check: "削除後に ls/find/test -e で14対象の残存なしを確認する。存在しない任意対象があった場合は理由を記録し、対象外削除で補わない"
+    - id: P3-6
+      check: "ntfy参照残存を rg で確認し、歴史的docs/output/images/config sampleを除き、実行系参照が残る場合は報告する"
+    - id: P3-7
+      check: "関連unit/preflightを実行可能な範囲で実施し、SKIPが1件でもあれば done ではなく incomplete として報告する"
+    - id: P3-8
+      check: "削除commitを作成して origin/main へpushする。commit message は cmd_683 を含める"
+  description: |
+    殿が Discord で action-8 を承認済み。Destructive Safety Tier2 (10件以上削除) の承認要件は満たした。
+    家老F001により、実削除は足軽5号へ単独配備する。
+
+    削除対象は output/shogun/cmd_683_tier2_repair_phase3_cleanup.md の Phase3 削除対象14件と一致させること。
+    対象外のファイルを削除してはならぬ。sudo / git reset --hard / force pushは禁止。
+
+    完了報告:
+    bash /home/ubuntu/shogun/scripts/inbox_write.sh karo "【subtask_683_phase3_ntfy_deletion 完了】cmd_683 Phase3完了。deleted=<N>/14 residual=<0|N> tests=<PASS|INCOMPLETE|FAIL> commit=<sha> output=output/cmd_683_phase3_ntfy_deletion.md。report確認されたし。" task_completed ashigaru5

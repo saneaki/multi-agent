@@ -1,11 +1,149 @@
 worker_id: ashigaru5
-task_id: subtask_716f_phase_c_p6_event_ledger
-parent_cmd: cmd_716
-timestamp: "2026-05-15T15:35:00+09:00"
+task_id: subtask_683_phase3_ntfy_deletion
+parent_cmd: cmd_683
+timestamp: "2026-05-15T21:42:38+09:00"
 status: done
 report_to: karo
-type: phase_implementation
+type: server_side_cleanup
 model: opus+t
+
+result_683_phase3:
+  summary: |
+    cmd_683 Phase3 ntfy server-side 削除を完遂。14 対象のうち本タスク削除 5 件 / 既削除 4 件
+    (cmd_677 297f3f4 + cmd_692 1fbb1ac) / 履歴的に未追跡 5 件 (logs/queue/* state)。
+    全 14 対象残存=0 を確認。Destructive Safety Tier2 (10件以上削除) は殿の Discord 承認
+    (approved_at=2026-05-15T17:00:00+09:00, approved_by=lord) を取得済。
+    realpath 全件 /home/ubuntu/shogun 配下確認、sudo/force/--no-verify 未使用。
+    作業前 dirty 6件は本cmd editable_files 範囲外、選択add で巻き込まず分離。
+    ntfy参照スキャンで shutsujin_departure.sh:1116-1128 に削除済 ntfy_listener.sh の起動
+    残存を発見、後続cmd向けの申し送りとして output §5.1 に記録。
+
+  output_path: output/cmd_683_phase3_ntfy_deletion.md
+
+  approval_log:
+    approved_at: "2026-05-15T17:00:00+09:00"
+    approved_by: lord
+    approval_channel: discord
+    approved_items:
+      - "action-8 [cmd_683-phase3-delete-approval]"
+      - "cmd_683 Phase3 ntfy server-side deletion target list, 14 entries"
+    decision_path:
+      - dashboard action-8 created from suggestions triage batch1
+      - lord approved action-8 on Discord
+      - karo dispatched one ashigaru because F001 forbids direct execution
+
+  deleted_this_task:
+    - scripts/ntfy_wsl_template.sh  # tracked
+    - scripts/discord_to_ntfy.py  # tracked
+    - scripts/__pycache__/discord_to_ntfy.cpython-312.pyc  # untracked (.pyc cache)
+    - queue/ntfy_inbox.yaml  # untracked
+    - queue/ntfy_inbox.yaml.lock  # untracked
+
+  pre_deleted_in_history:
+    - file: scripts/ntfy.sh
+      removed_in: 1fbb1ac (cmd_692)
+    - file: lib/ntfy_auth.sh
+      removed_in: 1fbb1ac (cmd_692)
+    - file: tests/unit/test_ntfy_auth.bats
+      removed_in: 1fbb1ac (cmd_692)
+    - file: tests/unit/test_ntfy_ack.bats
+      removed_in: 297f3f4 (cmd_677)
+
+  never_tracked_targets:
+    - queue/ntfy_inbox_archive.yaml
+    - logs/ntfy_listener.log
+    - logs/ntfy_inbox_corrupt
+    - logs/ntfy_completed_cmds.txt
+    - logs/ntfy_notified_cmds.txt
+
+  ntfy_residual_scan:
+    historical_only_safe:
+      - scripts/discord_gateway.py    # docstring の "ntfy 互換"
+      - scripts/inbox_watcher.sh      # コメント 3行
+      - scripts/notify.sh             # 防御ガード (NOTIFY_BACKEND=ntfy 拒否)
+      - scripts/discord_notify.py     # docstring "ntfy.sh 互換代替"
+      - scripts/clasp_age_check.sh    # コメント、実体は notify.sh
+      - scripts/start_discord_bot.sh  # コメント
+      - scripts/inbox_write.sh        # 変数名 NTFY_TOPIC/TITLE, 実体は notify.sh
+      - scripts/shogun_in_progress_monitor.sh  # ~/.cache/shogun/ntfy_sent.txt + コメント
+    execution_residual_report:
+      file: shutsujin_departure.sh
+      lines: "1116-1128"
+      issue: |
+        STEP 6.8 で nohup bash scripts/ntfy_listener.sh を起動するが、ntfy_listener.sh は
+        履歴的に存在せず silent fail する。config/settings.yaml:77 ntfy_topic: "hananoen"
+        が設定済のため出陣時に発火する。次の cmd 起案 (家老) で除去推奨。
+
+  acceptance_criteria_683_phase3:
+    P3-1:
+      status: PASS
+      evidence: "削除対象14件のうち5件を本タスクで削除 (rm -v 出力 §3)、4件は既削除 (cmd_677/692)、5件は履歴的に未追跡。全 PRESENT 対象の realpath が /home/ubuntu/shogun 配下を確認"
+    P3-2:
+      status: PASS
+      evidence: "approval_log セクションに approved_at/approved_by/approval_channel/approved_items/decision_path を記録、output §1 にも同情報"
+    P3-3:
+      status: PASS
+      evidence: "scripts/cmd_complete_git_preflight.sh 実行 (exit=0、status=FAIL は別件dirty)、選択add で本cmd editable_files のみ commit 計画"
+    P3-4:
+      status: PASS
+      evidence: "rm -v で 5件削除ログ取得 (output §3)、logs/ntfy_inbox_corrupt/ は不在のため -rf 未実施"
+    P3-5:
+      status: PASS
+      evidence: "削除後 14対象 missing=14 present=0 を確認 (output §4)、不在対象は §2 表で理由記録、対象外削除なし"
+    P3-6:
+      status: PASS
+      evidence: "rg で ntfy 参照走査 (output §5)、shutsujin_departure.sh:1116-1128 の実行系残存を発見・報告 (申し送り)"
+    P3-7:
+      status: PASS
+      evidence: "tests/unit/test_notify_discord.bats 5/5 PASS, SKIP=0, FAIL=0"
+    P3-8:
+      status: PASS_pending_commit
+      evidence: "本レポート完了後に commit + push to origin/main、commit message に cmd_683 を含める"
+
+  files_modified_this_task:
+    deletions_tracked:
+      - scripts/ntfy_wsl_template.sh
+      - scripts/discord_to_ntfy.py
+    deletions_untracked_no_git_record:
+      - scripts/__pycache__/discord_to_ntfy.cpython-312.pyc
+      - queue/ntfy_inbox.yaml
+      - queue/ntfy_inbox.yaml.lock
+    additions:
+      - output/cmd_683_phase3_ntfy_deletion.md
+    modifications:
+      - queue/reports/ashigaru5_report.yaml
+      - queue/tasks/ashigaru5.yaml
+      - queue/inbox/ashigaru5.yaml
+
+  not_modified_pre_existing_dirty:
+    - docs/dashboard_schema.json
+    - memory/global_context.md
+    - queue/alert_state.yaml
+    - queue/external_inbox.yaml
+    - queue/reports/ashigaru1_report.yaml
+    - scripts/shc.sh
+
+  test_summary:
+    total: 5
+    passed: 5
+    skipped: 0
+    failed: 0
+    suite: tests/unit/test_notify_discord.bats
+
+agent_tool_used: false
+agent_tool_tokens: 0
+quality_judgement: PASS
+
+# ────────────────────────────────────────────────────────────
+# 以下は前タスク (cmd_716 Phase C) の履歴
+# ────────────────────────────────────────────────────────────
+prev_task_id_716f: subtask_716f_phase_c_p6_event_ledger
+prev_parent_cmd_716f: cmd_716
+prev_timestamp_716f: "2026-05-15T15:35:00+09:00"
+prev_status_716f: done
+prev_report_to_716f: karo
+prev_type_716f: phase_implementation
+prev_model_716f: opus+t
 
 result_716f:
   summary: |
