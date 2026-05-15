@@ -73,3 +73,106 @@ EOF
     [ "$status" -eq 1 ]
     [[ "$output" == *"expected: discord"* ]]
 }
+
+# ============================================================
+# cmd_683c: inbox_write.sh の cmd_complete/cmd_milestone gate test
+#
+# 旧 ntfy_topic 依存 gate を Discord backend prerequisite gate へ置換。
+# 以下を verify する:
+#   1. discord.env 存在 + 既定 backend → gate OPEN (notify.sh 呼出)
+#   2. discord.env 不在 → gate CLOSED
+#   3. discord.env 存在 + NOTIFY_BACKEND=ntfy (退役) → gate CLOSED
+#   4. TARGET != shogun → gate CLOSED
+#   5. TYPE != cmd_complete/cmd_milestone → gate CLOSED
+# ============================================================
+
+_gate_setup() {
+    # NB: setup() で TEST_TMPDIR/scripts/notify.sh はテスト用 stub 済み。
+    # ここでは inbox_write.sh 用の最小ツリーを追加し、
+    # notify.sh stub を invocation log へ書き換える。
+    mkdir -p "$TEST_TMPDIR/queue/inbox"
+    cp "$PROJECT_ROOT/scripts/inbox_write.sh" "$TEST_TMPDIR/scripts/inbox_write.sh"
+    chmod +x "$TEST_TMPDIR/scripts/inbox_write.sh"
+
+    # venv は python3 -c '...' で yaml dump を行うため必須
+    if [ ! -e "$TEST_TMPDIR/.venv" ]; then
+        ln -s "$PROJECT_ROOT/.venv" "$TEST_TMPDIR/.venv"
+    fi
+
+    # notify.sh stub: 呼出されたら NOTIFY_STUB_LOG に記録するだけ
+    export NOTIFY_STUB_LOG="$TEST_TMPDIR/notify_stub.log"
+    cat > "$TEST_TMPDIR/scripts/notify.sh" <<'SH'
+#!/usr/bin/env bash
+{
+  echo "called=1"
+  echo "body=$1"
+  echo "title=$2"
+  echo "type=$3"
+} > "$NOTIFY_STUB_LOG"
+exit 0
+SH
+    chmod +x "$TEST_TMPDIR/scripts/notify.sh"
+}
+
+@test "inbox_write gate: opens when discord.env exists with default backend (cmd_683c)" {
+    _gate_setup
+    cat > "$TEST_TMPDIR/config/discord.env" <<'EOF'
+NOTIFY_BACKEND=discord
+DISCORD_BOT_TOKEN=dummy
+EOF
+    run bash "$TEST_TMPDIR/scripts/inbox_write.sh" shogun "cmd_999 完了" cmd_complete ashigaru5
+    [ "$status" -eq 0 ]
+    [ -f "$NOTIFY_STUB_LOG" ]
+    grep -q "called=1" "$NOTIFY_STUB_LOG"
+    grep -q "type=cmd_complete" "$NOTIFY_STUB_LOG"
+}
+
+@test "inbox_write gate: stays closed when discord.env is absent (cmd_683c)" {
+    _gate_setup
+    # discord.env intentionally not created
+    [ ! -f "$TEST_TMPDIR/config/discord.env" ]
+    run bash "$TEST_TMPDIR/scripts/inbox_write.sh" shogun "cmd_999 完了" cmd_complete ashigaru5
+    [ "$status" -eq 0 ]
+    [ ! -f "$NOTIFY_STUB_LOG" ]
+}
+
+@test "inbox_write gate: stays closed when NOTIFY_BACKEND=ntfy is set (cmd_683c)" {
+    _gate_setup
+    cat > "$TEST_TMPDIR/config/discord.env" <<'EOF'
+NOTIFY_BACKEND=ntfy
+EOF
+    run bash "$TEST_TMPDIR/scripts/inbox_write.sh" shogun "cmd_999 完了" cmd_complete ashigaru5
+    [ "$status" -eq 0 ]
+    [ ! -f "$NOTIFY_STUB_LOG" ]
+}
+
+@test "inbox_write gate: does not fire for non-shogun target (cmd_683c)" {
+    _gate_setup
+    cat > "$TEST_TMPDIR/config/discord.env" <<'EOF'
+NOTIFY_BACKEND=discord
+EOF
+    run bash "$TEST_TMPDIR/scripts/inbox_write.sh" karo "cmd_999 完了" cmd_complete ashigaru5
+    [ "$status" -eq 0 ]
+    [ ! -f "$NOTIFY_STUB_LOG" ]
+}
+
+@test "inbox_write gate: does not fire for non cmd_complete/cmd_milestone type (cmd_683c)" {
+    _gate_setup
+    cat > "$TEST_TMPDIR/config/discord.env" <<'EOF'
+NOTIFY_BACKEND=discord
+EOF
+    run bash "$TEST_TMPDIR/scripts/inbox_write.sh" shogun "report received" report_received ashigaru5
+    [ "$status" -eq 0 ]
+    [ ! -f "$NOTIFY_STUB_LOG" ]
+}
+
+@test "inbox_write gate: opens for cmd_milestone to shogun (cmd_683c)" {
+    _gate_setup
+    cat > "$TEST_TMPDIR/config/discord.env" <<'EOF'
+NOTIFY_BACKEND=discord
+EOF
+    run bash "$TEST_TMPDIR/scripts/inbox_write.sh" shogun "cmd_999 phase milestone" cmd_milestone ashigaru5
+    [ "$status" -eq 0 ]
+    [ -f "$NOTIFY_STUB_LOG" ]
+    grep -q "type=cmd_milestone" "$NOTIFY_STUB_LOG"
+}

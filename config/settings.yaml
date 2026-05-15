@@ -75,8 +75,10 @@ karo:
 
 # ntfy 通知は cmd_692 で退役・cmd_683 Phase3 で関連 scripts 削除済
 # cmd_683b: 旧トピック設定キー (n_t_p) を完全廃止
-# (gateキーをそのまま記述するとgrepにヒットして silent fail の芽になるため
-# コメント中もkey名は伏字で表記)
+# cmd_683c: scripts/inbox_write.sh の cmd_complete/cmd_milestone gate は
+#   旧 n_t_p 参照から config/discord.env の存在 + NOTIFY_BACKEND != ntfy へ置換済。
+#   gateキーをそのまま記述するとgrepにヒットして silent fail の芽になるため
+#   コメント中もkey名は伏字で表記する。
 
 screenshot:
   path: "/mnt/c/Users/drug-/OneDrive/画像/スクリーンショット"

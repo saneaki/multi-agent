@@ -133,11 +133,22 @@ if new_content != content:
                 fi
             fi
 
-            # ntfy auto-notification (cmd_complete/cmd_milestone → shogun only)
+            # Discord auto-notification gate (cmd_complete/cmd_milestone → shogun only)
+            # cmd_683c: 旧 ntfy_topic 依存 gate を Discord backend prerequisite gate へ置換。
+            #          notify.sh は Discord backend なので config/discord.env が存在し
+            #          かつ NOTIFY_BACKEND が ntfy 退役状態でないことを条件とする。
             if [[ "$TARGET" == "shogun" ]] && [[ "$TYPE" == "cmd_complete" || "$TYPE" == "cmd_milestone" ]]; then
-                # Check if ntfy_topic is configured
-                NTFY_TOPIC=$(grep 'ntfy_topic:' "$SCRIPT_DIR/config/settings.yaml" 2>/dev/null | awk '{print $2}' | tr -d '"')
-                if [ -n "$NTFY_TOPIC" ]; then
+                DISCORD_ENV_FILE="$SCRIPT_DIR/config/discord.env"
+                NOTIFY_GATE_OPEN=0
+                if [ -f "$DISCORD_ENV_FILE" ]; then
+                    BACKEND_LINE=$(grep '^NOTIFY_BACKEND=' "$DISCORD_ENV_FILE" 2>/dev/null | tail -1 | cut -d= -f2- | tr -d '"' | tr -d "'")
+                    BACKEND_LINE="${BACKEND_LINE:-discord}"
+                    if [ "$BACKEND_LINE" != "ntfy" ]; then
+                        NOTIFY_GATE_OPEN=1
+                    fi
+                fi
+
+                if [ "$NOTIFY_GATE_OPEN" = "1" ]; then
                     # Extract cmd_id for title
                     cmd_id=$(echo "$CONTENT" | grep -oP 'cmd_\d+' | head -1)
 

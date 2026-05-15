@@ -1,11 +1,97 @@
 worker_id: ashigaru5
-task_id: subtask_683b_ntfy_launcher_residual_remove
+task_id: subtask_683c_inbox_write_notify_gate_fix
 parent_cmd: cmd_683
-timestamp: "2026-05-15T21:53:23+09:00"
+timestamp: "2026-05-15T22:04:32+09:00"
 status: done
 report_to: karo
-type: launcher_residual_removal
+type: notify_gate_repair
 model: opus+t
+
+result_683c:
+  summary: |
+    cmd_683b 検収 §5.2 申し送りを cmd_683c として補修完了。
+    scripts/inbox_write.sh の shogun cmd_complete/cmd_milestone 自動通知 gate を
+    退役済 ntfy_topic 依存から Discord backend prerequisite (config/discord.env 存在
+    + NOTIFY_BACKEND != ntfy) へ完全置換。settings.yaml 退役注記コメントを cmd_683c
+    経緯に拡張 (ntfy_topic 復活なし、伏字 n_t_p 維持)。tests/unit/test_notify_discord.bats
+    に gate 統合テスト 6 件追加で計 11/11 PASS、SKIP=0。本番 discord.env で
+    NOTIFY_GATE_OPEN=1 simulation 確認、副次的に停止していた Discord 自動通知が再開。
+
+  output_path: output/cmd_683c_inbox_write_notify_gate_fix.md
+
+  files_modified_this_task:
+    modifications_tracked:
+      - scripts/inbox_write.sh        # gate を Discord backend prerequisite 構造へ置換
+      - config/settings.yaml          # 退役注記に cmd_683c 経緯追記 (key 復活なし)
+      - tests/unit/test_notify_discord.bats  # gate 統合テスト 6 件追加
+    additions:
+      - output/cmd_683c_inbox_write_notify_gate_fix.md
+    metadata:
+      - queue/reports/ashigaru5_report.yaml
+      - queue/tasks/ashigaru5.yaml
+      - queue/inbox/ashigaru5.yaml
+
+  not_modified_pre_existing_dirty:
+    - docs/dashboard_schema.json
+    - memory/global_context.md
+    - queue/alert_state.yaml
+    - queue/external_inbox.yaml
+    - queue/reports/ashigaru1_report.yaml
+    - scripts/shc.sh
+
+  gate_logic:
+    file: scripts/inbox_write.sh
+    lines: "136-177"
+    conditions:
+      - TARGET == shogun
+      - TYPE in [cmd_complete, cmd_milestone]
+      - config/discord.env exists
+      - NOTIFY_BACKEND (in discord.env) != "ntfy" (default "discord")
+    on_open: "notify.sh body=$CONTENT title=$NTFY_TITLE type=$TYPE"
+    on_closed: "no-op (silent skip)"
+
+  acceptance_criteria_683c:
+    N-1:
+      status: PASS
+      evidence: "scripts/inbox_write.sh L137-L177 完全置換。grep 'ntfy_topic\\|NTFY_TOPIC' scripts/inbox_write.sh → 1 hit (新コメントのみ、実行系 0)。gate 第一条件を config/discord.env 存在へ変更"
+    N-2:
+      status: PASS
+      evidence: "grep -c 'ntfy_topic:' config/settings.yaml = 0。settings.yaml は cmd_683b の伏字方針 (n_t_p) を維持、新設定キー復活なし"
+    N-3:
+      status: PASS
+      evidence: "bats #6, #11 で notify.sh stub が body/title/type 引数付きで呼出されることを確認。本番 discord.env (NOTIFY_BACKEND=discord) で gate simulation OPEN=1。実 webhook は危険のため mock/stub 検証 (タスク本文許可)"
+    N-4:
+      status: PASS
+      evidence: "bats tests/unit/test_notify_discord.bats → 11/11 PASS, SKIP=0, FAIL=0 (既存 5 件 + 新規 gate test 6 件)"
+    N-5:
+      status: PENDING_AFTER_REPORT
+      evidence: "git preflight 完了、未関係 dirty 6 件を意図的除外し editable_files+output のみ選択 add 計画。commit/push は本レポート確定直後に実施 (commit message に cmd_683 を含める)"
+    N-6:
+      status: PASS
+      evidence: "output §3 N-6 で副作用 (Discord 通知再開、ntfy 維持) / 設定キー (discord.env 存在 + NOTIFY_BACKEND) / SO-18 Issue 不要判断 (cmd_683 配下完結) を記録"
+
+  bats_run_log:
+    command: "bats tests/unit/test_notify_discord.bats"
+    total: 11
+    passed: 11
+    skipped: 0
+    failed: 0
+    new_tests:
+      - "inbox_write gate: opens when discord.env exists with default backend (cmd_683c)"
+      - "inbox_write gate: stays closed when discord.env is absent (cmd_683c)"
+      - "inbox_write gate: stays closed when NOTIFY_BACKEND=ntfy is set (cmd_683c)"
+      - "inbox_write gate: does not fire for non-shogun target (cmd_683c)"
+      - "inbox_write gate: does not fire for non cmd_complete/cmd_milestone type (cmd_683c)"
+      - "inbox_write gate: opens for cmd_milestone to shogun (cmd_683c)"
+
+  so_18_decision:
+    issue_required: false
+    rationale: |
+      1. cmd_683b 検収 §5.2 申し送り (家老配備 msg_20260515_125900_27c3de46) に基づく
+         同一 cmd 内補修であり、cmd_683 整理パッケージ完結条件の一部。
+      2. 修正範囲は inbox_write.sh の単一 gate ブロック + 退役注記 + 単体テスト追加のみ。
+         複数モジュール跨ぎの design 変更なし。
+      3. 後続作業なし (申し送り §5.2 restoration 目的達成、dead reference 除去も同時完了)。
 
 result_683b:
   summary: |

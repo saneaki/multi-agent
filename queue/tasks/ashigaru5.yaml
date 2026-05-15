@@ -1,50 +1,53 @@
 task:
-  task_id: subtask_683b_ntfy_launcher_residual_remove
+  task_id: subtask_683c_inbox_write_notify_gate_fix
   parent_cmd: cmd_683
-  title: cmd_683b ntfy起動残存除去
+  title: cmd_683c cmd完了通知gate修復
   bloom_level: L4
   assigned_to: ashigaru5
   report_to: karo
   status: done
-  timestamp: '2026-05-15T21:54:00+09:00'
+  timestamp: '2026-05-15T21:58:10+09:00'
+  completed_at: '2026-05-15T22:04:32+09:00'
   priority: medium
   project: shogun
   target_path: /home/ubuntu/shogun
   context_policy: clear_between
   blocked_by: []
   context_files:
-  - output/cmd_683_phase3_ntfy_deletion.md
-  - queue/shogun_to_karo.yaml
-  - shutsujin_departure.sh
+  - output/cmd_683b_ntfy_launcher_residual_remove.md
+  - scripts/inbox_write.sh
+  - scripts/notify.sh
   - config/settings.yaml
+  - queue/shogun_to_karo.yaml
   - dashboard.md
   editable_files:
-  - shutsujin_departure.sh
+  - scripts/inbox_write.sh
   - config/settings.yaml
-  - output/cmd_683b_ntfy_launcher_residual_remove.md
+  - tests/unit/test_notify_discord.bats
+  - output/cmd_683c_inbox_write_notify_gate_fix.md
   - queue/reports/ashigaru5_report.yaml
   - queue/tasks/ashigaru5.yaml
   - queue/inbox/ashigaru5.yaml
   acceptance_criteria:
-  - id: R-1
-    check: shutsujin_departure.sh STEP 6.8 の削除済 scripts/ntfy_listener.sh 起動ブロックを除去し、存在しないscriptをnohup起動しないこと
-  - id: R-2
-    check: config/settings.yaml の ntfy_topic 設定を廃止または無効化し、出陣時に ntfy listener path が有効化されないこと
-  - id: R-3
-    check: rg で ntfy_listener.sh / ntfy_topic / queue/ntfy_inbox.yaml の実行系参照が残らないこと。歴史的docs/outputは対象外でよいが、結果をoutputに記録する
-  - id: R-4
-    check: bash -n shutsujin_departure.sh と関連軽量testを実行し、SKIP=0で報告する
-  - id: R-5
+  - id: N-1
+    check: scripts/inbox_write.sh の shogun cmd_complete/cmd_milestone 通知gateが退役済 ntfy_topic に依存しないこと。Discord/notify.sh 用の現行設定または明示設定へ置換する
+  - id: N-2
+    check: ntfy_topic / NTFY_TOPIC を新規設定として復活させない。ntfy経路は退役のまま維持する
+  - id: N-3
+    check: cmd_complete/cmd_milestone to shogun の dry-run または隔離検証で notify.sh 呼出経路が到達可能であることを確認する。実送信が危険なら mock/stub で検証する
+  - id: N-4
+    check: 既存 tests/unit/test_notify_discord.bats と追加/更新テストを実行し、SKIP=0で報告する
+  - id: N-5
     check: cmd_704 git preflightを実施し、未関係dirtyを巻き込まず、commit messageに cmd_683 を含めて origin/main へpushする
-  - id: R-6
-    check: 'SO-18: 本残存起動bugが既存cmd_683内で処理された根拠、またはGitHub Issue要否判断をoutputに記録する'
-  description: 'cmd_683 Phase3削除後の検収で、shutsujin_departure.sh:1116-1128 が削除済 scripts/ntfy_listener.sh を nohup 起動する実行系参照を残していると判明。config/settings.yaml
-    に ntfy_topic も残るため、出陣時 silent fail の芽になる。Phase3 cleanupの完了条件に含めて同一cmd配下で補修する。対象外dirtyは巻き込まない。
+  - id: N-6
+    check: output に副作用、設定キー、SO-18 Issue要否判断を記録する
+  description: 'cmd_683b で ntfy_topic を廃止した結果、scripts/inbox_write.sh L136-L173 の shogun cmd_complete/cmd_milestone 自動通知gateが常時falseとなる副作用が確認された。notify.sh
+    はDiscord backendなので、ntfy退役を維持しつつ通知gateをDiscord向け設定へ修正する。家老検収後にcmd_683完了処理へ進む。
 
 
     完了報告:
 
-    bash /home/ubuntu/shogun/scripts/inbox_write.sh karo "【subtask_683b_ntfy_launcher_residual_remove 完了】cmd_683b完了。launcher=<PASS|FAIL> config=<PASS|FAIL>
-    scan=<PASS|FAIL> tests=<PASS|FAIL> commit=<sha> output=output/cmd_683b_ntfy_launcher_residual_remove.md。report確認されたし。" task_completed ashigaru5
+    bash /home/ubuntu/shogun/scripts/inbox_write.sh karo "【subtask_683c_inbox_write_notify_gate_fix 完了】cmd_683c完了。gate=<PASS|FAIL> ntfy_retired=<PASS|FAIL>
+    tests=<PASS|FAIL> commit=<sha> output=output/cmd_683c_inbox_write_notify_gate_fix.md。report確認されたし。" task_completed ashigaru5
 
     '
