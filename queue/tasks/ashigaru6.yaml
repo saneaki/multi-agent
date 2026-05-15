@@ -1,57 +1,82 @@
 task:
-  task_id: subtask_726e_skill_shared_sync_push
-  parent_cmd: cmd_726
-  title: "cmd_726e: skill共有3源同期+push"
-  bloom_level: L5
+  task_id: subtask_729e_macos_gha_fix
+  parent_cmd: cmd_729
+  title: 'cmd_729e: macOS GHA report tests fix'
+  bloom_level: L4
   assigned_to: ashigaru6
   report_to: karo
   status: done
-  timestamp: '2026-05-15T14:58:30+09:00'
-  priority: medium
-  completed_at: '2026-05-15T15:09:54+09:00'
+  timestamp: '2026-05-15T16:24:01+09:00'
+  priority: high
   project: shogun
   target_path: /home/ubuntu/shogun
-  context_policy: clear_between
+  context_policy: preserve_across_stages
+  blocked_by: []
   context_files:
-    - queue/shogun_to_karo.yaml
-    - skills/skill-creation-workflow/SKILL.md
-    - output/cmd_726a_skill_batch_github_health.md
-    - output/cmd_726b_skill_batch_shell_gas_smoke.md
-    - output/cmd_726c_skill_batch_silent_preset_tmux.md
-    - output/cmd_726d_skill_batch_watchdog_daemon_l017.md
-    - queue/skill_candidates.yaml
-    - memory/skill_history.md
-    - dashboard.md
+  - queue/shogun_to_karo.yaml
+  - output/cmd_729c_report_append_smoke_test.md
+  - output/cmd_729d_skill_pattern_qc.md
+  - tests/unit/test_gunshi_report_append.bats
+  - tests/unit/test_report_reality_drift.bats
+  - scripts/gunshi_report_append.sh
+  - scripts/action_required_sync.sh
+  - queue/reports/gunshi_report.yaml
+  - dashboard.yaml
+  - dashboard.md
+  - .github/workflows/test.yml
   editable_files:
-    - queue/skill_candidates.yaml
-    - memory/skill_history.md
-    - dashboard.md
-    - dashboard.yaml
-    - .gitignore
-    - output/cmd_726e_skill_shared_sync_push.md
-    - queue/reports/ashigaru6_report.yaml
-    - queue/tasks/ashigaru6.yaml
-    - queue/inbox/ashigaru6.yaml
+  - tests/unit/test_gunshi_report_append.bats
+  - tests/unit/test_report_reality_drift.bats
+  - scripts/gunshi_report_append.sh
+  - scripts/action_required_sync.sh
+  - output/cmd_729e_macos_gha_fix.md
+  - queue/reports/ashigaru6_report.yaml
+  - queue/tasks/ashigaru6.yaml
+  - queue/inbox/ashigaru6.yaml
   acceptance_criteria:
-    - id: E-1
-      check: "cmd_726 α/β/γ/δ outputs を全て読み、12候補の最終 created/merged/rejected/deferred を1表に統合する"
-    - id: E-2
-      check: "queue/skill_candidates.yaml に12候補分の entries を append/update し、id/name/status/source_cmd/decided_at/notes/skill_path or merged_into を記録する"
-    - id: E-3
-      check: "memory/skill_history.md を更新し、created/merged/rejected/deferred が dashboard と矛盾しないようにする"
-    - id: E-4
-      check: "dashboard.md / dashboard.yaml のスキル候補欄から処理済みを除去し、deferred があれば残す。cmd_716観察継続など無関係欄を壊さない"
-    - id: E-5
-      check: "必要なら .gitignore whitelist を追加し、新規 skills/*/SKILL.md が git 管理対象になることを確認する"
-    - id: E-6
-      check: "対象 SKILL.md の line count と frontmatter を確認し、可能なら markdownlint または代替 lint を実行する。SKIP は理由を記録し、軍師QCへ残す"
-    - id: E-7
-      check: "cmd_704 git preflight を遵守し、cmd_726 を含む commit を作成して origin/main へ push する"
-  description: |
-    cmd_726 ε。4並列の成果を集約し、共有3源同期と commit/push を直列で行う。
-    RACE-001 回避のため、この段階でのみ queue/skill_candidates.yaml / memory/skill_history.md / dashboard を編集する。
+  - id: E-1
+    check: GHA run 25905364431 / job 76137747342 の macOS log を確認し、not ok 211/212/213/250 の根因を output に記録する
+  - id: E-2
+    check: macOS 固有差分 (bash/PATH/PyYAML/fixture path/GNU tool 依存/regex 挙動) を特定し、Linux/macOS 両対応の修正にする
+  - id: E-3
+    check: tests/unit/test_gunshi_report_append.bats の 211/212/213 相当と tests/unit/test_report_reality_drift.bats の 250 相当を
+      macOS GHA で落ちない構造へ補修する
+  - id: E-4
+    check: 必要なら scripts/gunshi_report_append.sh / scripts/action_required_sync.sh を最小修正し、bash -n を通す
+  - id: E-5
+    check: ローカルで bats tests/unit/test_gunshi_report_append.bats tests/unit/test_report_reality_drift.bats を実行し、SKIP=0 を記録する
+  - id: E-6
+    check: cmd_704 git preflight を記録し、commit message に Refs cmd_729 を含める。push は家老が行うため原則 commit までに留める
+  - id: E-7
+    check: output/cmd_729e_macos_gha_fix.md に root cause、変更内容、実行コマンド、commit SHA、残リスクを記録する
+  description: 'cmd_729 ε。軍師δ QC は conditional_go だが、GHA run 25905364431 の macOS Unit Tests が 4件 failure のため cmd_729 完遂不可。
+
+
+    失敗ログ要点:
+
+    - run: 25905364431 / job: 76137747342 / workflow: Multi-CLI Test Suite / head: 36fdbe7
+
+    - ubuntu-latest: success
+
+    - macOS: failure
+
+    - not ok 211 tests/unit/test_gunshi_report_append.bats line 43: schema has latest/history
+
+    - not ok 212 line 51: append helper isolated copy
+
+    - not ok 213 line 122: action_required_sync latest + legacy fallback
+
+    - not ok 250 tests/unit/test_report_reality_drift.bats line 80: resolved dashboard tags active/archive distinction
+
+    - shell: /opt/homebrew/bin/bash -e {0}
+
+
+    まず GitHub log と該当 test を読み、再現不能でも macOS 差分の根因を output に記録すること。推測修正を重ねず、必要なら公式/GitHub docs等を調べてから二手目を打つこと。
+
 
     【完了報告】
-    bash /home/ubuntu/shogun/scripts/inbox_write.sh karo \
-      "【subtask_726e_skill_shared_sync_push 完了】cmd_726 ε完了。created=<N> merged=<N> rejected=<N> deferred=<N> commit=<sha> push=<PASS|FAIL> output=output/cmd_726e_skill_shared_sync_push.md。report確認されたし。" \
-      task_completed ashigaru6
+
+    bash /home/ubuntu/shogun/scripts/inbox_write.sh karo   "【subtask_729e_macos_gha_fix 完了】cmd_729 ε完了。root_cause=<要約> local_tests=<PASS|FAIL>
+    skip=<0|N> commit=<sha|none> output=output/cmd_729e_macos_gha_fix.md。家老にてpush/GHA確認されたし。"   task_completed ashigaru6
+
+    '

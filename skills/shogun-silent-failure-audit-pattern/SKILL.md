@@ -196,3 +196,107 @@ active runtime と隔離 runtime は最低限以下を一致させる:
 - cmd_717c: 軍師 autonomous extraction (gunshi report) — 子 cmd_705/706 + 親 cmd_717a + audit cmd_717b の 3段から pattern 抽出
 - cmd_726c: skill 化 (本 SKILL.md 作成 — γ subtask ashigaru4)
 - cmd_727: Stage 1 audit fixture を follow-up cmd の一次根拠として活用 (inbox_watcher 28件 cascading)
+- cmd_729 (2026-05-15): gunshi_report.yaml の単一文書 overwrite + report-reality drift の 4 incident pattern を追加 (本 SKILL.md §Report Drift Patterns を新設)
+
+## Report Drift Patterns (cmd_729 追補)
+
+`scripts/*.sh` の suppression とは別系統の silent failure として、**report yaml 系の構造欠陥** と
+**dashboard 報告実態乖離** が cmd_729 で確認された。本 pattern §Core Pattern (3段予防) と並列して、
+report 系の 4 incident pattern を観察対象とする。
+
+### Incident #1: gunshi_report 単一文書 overwrite (cmd_725b / 727b / 726f 中間版消失)
+
+**症状**: gunshi が QC を 4 件連続実施した結果、最後の cmd_726f だけが残り、cmd_723 補完 /
+cmd_725 γ / cmd_727 β / 中間 cmd_726f が `Write/Edit` ツールの全文上書きで消失。
+
+**根因 (cmd_729a A-3 RC-1)**: gunshi_report.yaml schema が単一 task の field set のみで
+`history:` 配列を持たず、append/history schema 不在 (構造欠陥)。
+
+**修正 (cmd_729b)**:
+- schema 移行: `worker_id / latest / history[]` へ。`latest` = 最新、`history` = 過去 append-only
+- helper 新設: `scripts/gunshi_report_append.sh` (`flock` + atomic write + schema validate)
+- protocol 改訂: `instructions/gunshi.md` を append helper 経由に書換
+- init template: `shutsujin_departure.sh --clean` の reset template を new schema に整合
+- downstream: `scripts/action_required_sync.sh` を `latest.result.action_required_candidates` 優先
+  + 旧 schema fallback (互換維持)
+- 復元: cmd_723 + cmd_725 γ + cmd_727 β + cmd_726f を `history[]` に append (post-hoc
+  `reconstructed_from` / `source_evidence` / `reconstructed_at` 明示)
+
+**Diagnostic**:
+- `python3 -c "import yaml; d=yaml.safe_load(open('queue/reports/gunshi_report.yaml')); assert 'latest' in d and 'history' in d"`
+- helper 経由以外の編集を gunshi がしていないか `git log -p` で確認
+
+### Incident #2: append-only report 構造の非対称 (gunshi vs ashigaru)
+
+**症状**: ashigaru report は `worker_id / latest / history` の二段構成で過去 entry を維持する
+のに対し、gunshi report のみ単一文書のままで非対称になっていた (`grep -c "^history:"
+queue/reports/*.yaml` 結果)。
+
+**根因**: report schema を統一する規律不在。ashigaru で先行採用された append-only パターンが
+gunshi に horizontal 横展開されないまま運用されていた。
+
+**修正 (cmd_729b)**:
+- schema 統一: gunshi_report を ashigaru report と同じ append-only 構造へ移行
+- regression test: `tests/unit/test_gunshi_report_append.bats` (隔離 smoke で latest 更新 +
+  history append + 復元 entry 保持を assertion)
+
+**Diagnostic**:
+- `bats tests/unit/test_gunshi_report_append.bats` (SKIP=0 必須)
+- 隔離 staging で 2 回連続 append → latest が 2 回目に更新 + history に 1 回目 entry が残る
+
+### Incident #3: report-reality semantic drift (YomiToku close vs deleted)
+
+**症状**: 殿削除指示後の dashboard 状態を「削除済」と報告したが、実態は dashboard.yaml SoT で
+`status: closed` として archived 保持 (render から除外されるが SoT には残存)。報告語彙と
+実体の semantic gap が drift を生む。
+
+**根因 (cmd_729a A-4b)**:
+- SO-24 三点照合の (b) artifact 確認を dashboard.md (render) のみで終え、dashboard.yaml (SoT)
+  を直読 grep せず。
+- 「削除」「close」「archive」「retire」の用語が報告と SoT で混在し semantic clarification 不在。
+
+**修正 (cmd_729a F10-F13, cmd_729c)**:
+- `tests/unit/test_report_reality_drift.bats`: 削除済 tag が active `dashboard.yaml.action_required`
+  と dashboard.md `ACTION_REQUIRED` block から消えていることを assertion。archive / observation
+  archive に残ることは許容。
+- gunshi QC checklist に dashboard.yaml 直読 grep PASS を必須項目化 (F12)
+- 用語表整備 (F11): `instructions/common/dashboard_responsibility_matrix.md` に「削除」/
+  「close」/「archive」/「retire」の semantic を明文化 (followup 候補)
+- runtime drift detector (F13): `scripts/dashboard_drift_check.sh` で render 不在 / SoT 残存
+  entry を自動検出 (任意 followup)
+
+**Diagnostic**:
+- `grep -in 'yomitoku' dashboard.{md,yaml}` で両方を確認。md 0 件 + yaml `status: closed` retained = 正常
+- `bats tests/unit/test_report_reality_drift.bats` (SKIP=0 必須)
+
+### Incident #4: dashboard physical grep 不足 (SO-24 b 項の SoT 検証不徹底)
+
+**症状**: dashboard 反映確認を render 側 (dashboard.md) のみで完了させ、SoT (dashboard.yaml)
+への反映を grep で確認していなかった。Incident #3 と同根。
+
+**根因**: SO-24 (b) artifact 確認の検証手段が render only と暗黙運用。SoT 直読 grep が必須化
+されていなかった。
+
+**修正 (cmd_729a F10, cmd_729c)**:
+- gunshi QC checklist 強化 (F12): dashboard.yaml SoT 直読 grep を必須項目化
+- `scripts/so24_verify.sh` の (b) artifact 確認に dashboard.yaml SoT 直読 grep を追加候補 (F10)
+
+**Diagnostic**:
+- dashboard 変更を伴う cmd の QC では `grep -n '<tag>' dashboard.{md,yaml}` 両方を実行
+- closed entry retain は許容、active section から消えていることを必須化
+
+### Common Root Cause: Report ↔ Reality 整合確認手順の不徹底
+
+4 incident に通底する根因は「report と reality の整合確認手順が不十分」。
+本 SKILL.md §Core Pattern (3段予防) で扱う `2>/dev/null || true` 型の silent failure
+(L1-L3 子/親/規律) とは物理動作が異なるが、**「unit AC pass だが outcome 観測されない」**
+構造は共通。SO-17 outcome E2E 強化 + 直読 grep + history 化が並行防御として有効。
+
+### Battle-Tested (cmd_729 系列)
+
+| cmd | 状況 | 結果 |
+|-----|------|------|
+| cmd_729a | gunshi_report.yaml 書込経路監査 (ash4) → 2 経路のみ確定 + RC-1〜RC-5 確定 | 構造欠陥を audit で確定、α 完了 |
+| cmd_729b | append-only schema 移行 + helper 新設 + 復元 entry 3 件 (ash7) | commit 4a5bea2、bats 3/3 PASS、β 完了 |
+| cmd_729c | append regression smoke + report-reality drift fixture test (ash6) | commit 269c4fb + 36fdbe7、bats 4/4 local PASS、γ 完了。GHA macOS は CI 環境依存 (PyYAML 等) で依然 fail |
+| cmd_729d | 本 SKILL.md §Report Drift Patterns 追記 + 全 QC (本 gunshi) | δ 完遂 |

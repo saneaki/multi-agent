@@ -1,127 +1,110 @@
 worker_id: ashigaru6
-task_id: subtask_726e_skill_shared_sync_push
-parent_cmd: cmd_726
+task_id: subtask_729e_macos_gha_fix
+parent_cmd: cmd_729
 status: done
-timestamp: "2026-05-15T15:01:45+09:00"
+timestamp: "2026-05-15T16:30:19+09:00"
 report_to: karo
 skill_candidate:
-  found: false
-  notes: "本タスク自体は skill 候補処理であり、新規の追加候補はなし。"
+  found: true
+  notes: "GHA venv/PyYAML path mismatch pattern: CI installs Python deps into .venv but tests/scripts invoke system python3. Reusable across shell+Bats repos."
 result:
   verdict: pass
-  output_path: /home/ubuntu/shogun/output/cmd_726e_skill_shared_sync_push.md
+  output_path: /home/ubuntu/shogun/output/cmd_729e_macos_gha_fix.md
   summary: |
-    cmd_726 α/β/γ/δ の4出力を統合し、12候補を created=10 / merged=2 /
-    rejected=0 / deferred=0 として共有3源へ同期した。新規 skill ディレクトリは
-    .gitignore whitelist を追加し、cmd_726 範囲のみ commit/push 対象に限定した。
-  counts:
-    created: 10
-    merged: 2
-    rejected: 0
-    deferred: 0
+    GHA run 25905364431 / job 76137747342 の macOS Unit Tests failure を調査し、
+    not ok 211/212/213/250 は .venv に入れた PyYAML を system python3 が見られない
+    Python path mismatch が根因と特定した。Ubuntu は system PyYAML が存在したため偶然PASS。
+    対象 Bats と helper scripts を repo-local .venv/bin/python3 優先の PYTHON_BIN 経路へ統一し、
+    ローカル対象 Bats 4/4 PASS、SKIP=0、bash -n PASS を確認した。
   changed_files:
-    - path: queue/skill_candidates.yaml
-      change: "cmd_726 12候補を append し、summary total/by_status を更新"
-    - path: memory/skill_history.md
-      change: "created/merged 結果を先頭アーカイブし、処理済み承認待ち重複を削除"
-    - path: dashboard.md
-      change: "処理済み skill 候補を削除し、deferred 2件のみ残置"
-    - path: dashboard.yaml
-      change: "action_required の処理済み skill 承認待ち2件と skill_candidates 処理済み分を削除"
-    - path: .gitignore
-      change: "新規 skill 10ディレクトリの whitelist を追加"
-    - path: skills/shogun-gas-clasp-rapt-reauth-fallback/SKILL.md
-      change: "shogun-gas-clasp-run-creds-fallback を統合し tags を補完"
-    - path: output/cmd_726e_skill_shared_sync_push.md
-      change: "統合表、共有3源更新、検証、lint結果を記録"
+    - path: tests/unit/test_gunshi_report_append.bats
+      change: "PYTHON_BIN を .venv/bin/python3 優先で設定し、inline YAML checks と sync subprocess に適用"
+    - path: tests/unit/test_report_reality_drift.bats
+      change: "PYTHON_BIN を .venv/bin/python3 優先で設定し、YAML/markdown assertion snippets に適用"
+    - path: scripts/gunshi_report_append.sh
+      change: "repo-local .venv/bin/python3 優先の PYTHON_BIN を導入し、append Python logic に適用"
+    - path: scripts/action_required_sync.sh
+      change: "PYTHON_BIN を sync logic / notify JSON parsing / notify dispatch / dashboard renderer に適用"
+    - path: output/cmd_729e_macos_gha_fix.md
+      change: "root cause、GHA evidence、変更内容、実行コマンド、残リスクを記録"
     - path: queue/inbox/ashigaru6.yaml
-      change: "cmd_726e 配備通知を read:true に更新"
+      change: "subtask_729e 配備通知を read:true に更新"
     - path: queue/tasks/ashigaru6.yaml
-      change: "status done/completed_at を記録"
+      change: "status in_progress を経て done へ更新"
     - path: queue/reports/ashigaru6_report.yaml
       change: "本報告へ更新"
   acceptance_criteria:
     - id: E-1
       status: PASS
-      evidence: "α/β/γ/δ output を全て読み、12候補の最終表を output に統合。created=10 merged=2 rejected=0 deferred=0。"
+      evidence: "gh run view 25905364431 --repo saneaki/multi-agent --job 76137747342 --log で macOS not ok 211/212/213/250 を確認し、output に記録。"
     - id: E-2
       status: PASS
-      evidence: "queue/skill_candidates.yaml に12候補分の id/name/status/source_cmd/decided_at/notes と skill_path または merged_into を記録。"
+      evidence: "macOS 固有差分は workflow が .venv に PyYAML を入れる一方で tests/scripts が system python3 を直呼びする PATH/PyYAML mismatch と特定。PYTHON_BIN により Linux/macOS 両対応。"
     - id: E-3
       status: PASS
-      evidence: "memory/skill_history.md 先頭へ created/merged 結果を反映し、処理済み pending 重複を削除。"
+      evidence: "tests/unit/test_gunshi_report_append.bats の 211/212/213 相当と tests/unit/test_report_reality_drift.bats の 250 相当を .venv-aware に補修。"
     - id: E-4
       status: PASS
-      evidence: "dashboard.md / dashboard.yaml の skill_candidates から処理済みを除去。deferred の suggestions/codex 2件を維持し、cmd_716観察継続は保持。"
+      evidence: "scripts/gunshi_report_append.sh / scripts/action_required_sync.sh を最小修正し、bash -n PASS。"
     - id: E-5
       status: PASS
-      evidence: ".gitignore に新規 skill 10ディレクトリを whitelist。git ls-files --others --exclude-standard skills で新規 SKILL.md が検出可能。"
+      evidence: "bats tests/unit/test_gunshi_report_append.bats tests/unit/test_report_reality_drift.bats: 4/4 PASS, SKIP=0。"
     - id: E-6
-      status: PASS_WITH_NOTES
-      evidence: "wc -l と frontmatter name/description/tags は全11対象 PASS。markdownlint 0.48.0 は実行済みだが MD013/MD060/MD040 等の style violations で FAIL。SKIP なし、詳細は output へ記録。"
+      status: PASS
+      evidence: "cmd_704 git preflight は output/report に記録。commits eb0e020 / 591a76a は Refs cmd_729 を含む。push は未実施。"
     - id: E-7
       status: PASS
-      evidence: "commit 231e970 を作成し origin/main へ push 済み。commit message は cmd_726 を含む。"
+      evidence: "output/cmd_729e_macos_gha_fix.md に root cause、変更内容、実行コマンド、code commit SHA eb0e020、残リスクを記録。成果物追記 commit は 591a76a。"
   verification:
-    - command: "python3 YAML parse for queue/skill_candidates.yaml dashboard.yaml task/inbox YAML"
+    - command: "gh auth status"
       result: PASS
-      stdout: "yaml_ok"
-    - command: "wc -l target SKILL.md files"
+      stdout: "Logged in to github.com account saneaki; repo/workflow scopes present"
+    - command: "gh run view 25905364431 --repo saneaki/multi-agent --json name,workflowName,conclusion,status,url,event,headBranch,headSha,jobs"
       result: PASS
-      stdout: "all target files <= 205 lines; total 1578 lines"
-    - command: "frontmatter scan for name/description/tags"
+      stdout: "conclusion=failure; macos-latest job 76137747342 failure; ubuntu-latest success; head=36fdbe7"
+    - command: "gh run view 25905364431 --repo saneaki/multi-agent --job 76137747342 --log"
       result: PASS
-      stdout: "all 11 target SKILL.md files contain name/description/tags"
-    - command: "markdownlint target SKILL.md files"
-      result: FAIL_RECORDED
-      stdout: "style violations: MD013, MD060, MD040, MD032, MD031, MD022, MD056, MD036"
+      stdout: "not ok 211/212/213/250 confirmed; macOS runner macos-15-arm64; PyYAML installed into .venv"
+    - command: "command -v bats"
+      result: PASS
+      stdout: "/home/ubuntu/.npm-global/bin/bats"
+    - command: "python3 import yaml; .venv/bin/python3 import yaml"
+      result: PASS
+      stdout: "system_pyyaml=present; venv_pyyaml=present"
+    - command: "bash -n scripts/gunshi_report_append.sh scripts/action_required_sync.sh"
+      result: PASS
+      stdout: ""
+    - command: "bats tests/unit/test_gunshi_report_append.bats tests/unit/test_report_reality_drift.bats"
+      result: PASS
+      stdout: "1..4; ok 1-4; SKIP=0"
   git_preflight:
     before_status:
+      - "M docs/dashboard_schema.json"
       - "M memory/global_context.md"
-      - "M memory/skill_history.md"
       - "M queue/external_inbox.yaml"
       - "M queue/reports/ashigaru1_report.yaml"
       - "M queue/reports/ashigaru4_report.yaml"
-      - "M queue/reports/ashigaru5_report.yaml"
+      - "M queue/reports/ashigaru6_report.yaml"
       - "M queue/reports/gunshi_report.yaml"
       - "M queue/suggestions.yaml"
       - "M queue/tasks/ashigaru4.yaml"
-      - "M scripts/discord_notify.py"
-      - "M scripts/notify.sh"
-      - "M scripts/shc.sh"
-      - "M tests/unit/test_notify_discord.bats"
-    after_relevant_status:
-      - "M .gitignore"
-      - "M memory/skill_history.md"
-      - "M queue/skill_candidates.yaml"
-      - "M queue/reports/ashigaru6_report.yaml"
       - "M queue/tasks/ashigaru6.yaml"
-      - "M skills/shogun-gas-clasp-rapt-reauth-fallback/SKILL.md"
-      - "?? skills/daemon-health-monitor-process-vs-log-stale/"
-      - "?? skills/github-actions-dynamic-sparse-checkout/"
-      - "?? skills/github-actions-release-please-workflow-permissions/"
-      - "?? skills/sh-health-log-noise-root-cause-review/"
-      - "?? skills/shogun-nondestructive-tmux-smoke/"
-      - "?? skills/shogun-preset-immutability-discipline/"
-      - "?? skills/shogun-shc-switch-silent-failure/"
-      - "?? skills/shogun-silent-failure-audit-pattern/"
-      - "?? skills/shogun-tmux-busy-aware-send-keys/"
-      - "?? skills/windows-watchdog-folder-daemon/"
+      - "M scripts/shc.sh"
+      - "M skills/shogun-silent-failure-audit-pattern/SKILL.md"
     commit:
       status: done
-      sha: 231e970
-      message: "feat: sync cmd_726 skill candidates (cmd_726)"
+      sha:
+        - eb0e020
+        - 591a76a
+      message:
+        - "fix: use venv python in report tests (Refs cmd_729)"
+        - "docs: record cmd_729e gha fix result (Refs cmd_729)"
+      scope:
+        - scripts/gunshi_report_append.sh
+        - scripts/action_required_sync.sh
+        - tests/unit/test_gunshi_report_append.bats
+        - tests/unit/test_report_reality_drift.bats
+        - output/cmd_729e_macos_gha_fix.md
     push:
-      status: done
-      branch: main
-      remote: origin
-      result: "c3d719d..231e970 main -> main"
-history:
-  - task_id: subtask_727a_inbox_watcher_silent_failure_remediation
-    parent_cmd: cmd_727
-    timestamp: "2026-05-15T14:54:38+09:00"
-    summary: "inbox_watcher.sh の tmux send-keys silent failure を明示ログ化し、unit/e2e PASS。commit 7e0a03c push済み。"
-  - task_id: subtask_725a_shu_shk_startup_fix
-    parent_cmd: cmd_725
-    timestamp: "2026-05-15T13:56:54+09:00"
-    summary: "shu/shk/shx 起動不能修復。shutsujin_departure.sh 非対話 clear guard と smoke script を実装。"
+      status: not_run
+      reason: "task instruction: push は家老が行うため commit まで。"

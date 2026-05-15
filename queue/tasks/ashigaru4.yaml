@@ -1,56 +1,52 @@
 task:
-  task_id: subtask_718a_hybrid_preset_revert_e2e
-  parent_cmd: cmd_718
-  title: "cmd_718a: formations.hybrid revert + 隔離E2E"
-  bloom_level: L4
+  acceptance_criteria:
+  - check: queue/reports/gunshi_report.yaml を書く可能性がある scripts/、instructions/、queue
+      task description、report helper、inbox/review/QC 関連を rg で全探索し、overwrite/append/手動編集の経路を分類する
+    id: A-1
+  - check: yaml.safe_dump、cat >、tee、cp、mv、一括 redirect、python write_text/open('w')
+      など overwrite 可能パターンを grep し、gunshi_report.yaml に到達するものを evidence 付きで列挙する
+    id: A-2
+  - check: cmd_725b/subtask_727b/subtask_726f の消失について、git history・現行 gunshi_report・inbox/verifier
+      から root cause 仮説を優先順位付きでまとめる
+    id: A-3
+  - check: βで修正すべきファイル候補、復元すべき entry の一次根拠、smoke test 方針を output に明記する
+    id: A-4
+  - check: report-reality drift 事例 (YomiToku 要対応削除報告と dashboard.md 残存) を cmd_729 検証範囲に含め、SO-24/dashboard
+      直読 grep 確認を後段β/γ/δへ渡す修正候補として記録する
+    id: A-4b
+  - check: RACE-001回避のため、本タスクでは queue/reports/gunshi_report.yaml・scripts本体・skill本体を編集しない
+    id: A-5
+  - check: cmd_704 git preflight を記録し、commit/push は実施しない
+    id: A-6
   assigned_to: ashigaru4
+  bloom_level: L4
+  completed_at: '2026-05-15T15:38:42+09:00'
+  context_files:
+  - queue/shogun_to_karo.yaml
+  - queue/reports/gunshi_report.yaml
+  - output/cmd_725b_shp_model_switch_fix.md
+  - output/cmd_727a_inbox_watcher_silent_failure_remediation.md
+  - output/cmd_726e_skill_shared_sync_push.md
+  - skills/shogun-silent-failure-audit-pattern/SKILL.md
+  context_policy: preserve_across_stages
+  description: "cmd_729 α。implementation-verifier が cmd_725/726/727 で連続検出した gunshi_report.yaml\
+    \ 上書き silent failure の書込みパスを特定する。\n追加要件として、YomiToku 情報項目が「削除済み」と報告されながら dashboard.md\
+    \ に残存した report-reality drift も検証範囲に含める。\n本段階は監査のみ。gunshi_report.yaml 本体の復元は subtask_727c\
+    \ と競合するため、βへ渡す。\n\n【完了報告】\nbash /home/ubuntu/shogun/scripts/inbox_write.sh karo\
+    \ \\\n  \"【subtask_729a_gunshi_report_write_path_audit 完了】cmd_729 α完了。paths=<N>\
+    \ overwrite_suspects=<N> root_cause=<summary> output=output/cmd_729a_gunshi_report_write_path_audit.md。report確認されたし。\"\
+    \ \\\n  task_completed ashigaru4\n"
+  editable_files:
+  - output/cmd_729a_gunshi_report_write_path_audit.md
+  - queue/reports/ashigaru4_report.yaml
+  - queue/tasks/ashigaru4.yaml
+  - queue/inbox/ashigaru4.yaml
+  parent_cmd: cmd_729
+  priority: high
+  project: shogun
   report_to: karo
   status: done
-  timestamp: '2026-05-13T09:50:08+09:00'
-  priority: highest
-  project: shogun
-  issue: https://github.com/saneaki/multi-agent/issues/53
   target_path: /home/ubuntu/shogun
-  context_policy: preserve_across_stages
-  context_files:
-    - queue/shogun_to_karo.yaml
-    - config/settings.yaml
-    - scripts/shc.sh
-    - output/cmd_717a_shx_parent_silent_failure_fix.md
-    - queue/reports/ashigaru4_report.yaml
-  editable_files:
-    - config/settings.yaml
-    - output/cmd_718a_hybrid_preset_revert_e2e.md
-    - queue/reports/ashigaru4_report.yaml
-    - queue/tasks/ashigaru4.yaml
-    - queue/inbox/ashigaru4.yaml
-  acceptance_criteria:
-    - id: A-1
-      check: "config/settings.yaml の formations.hybrid を b8ac913^ の値へ revert する: description=Sonnet×3+Opus×2+Codex×2の併用陣形、ash1-3=claude/sonnet-4-6/max、ash4-5=claude/opus-4-7/max、ash6-7=codex/gpt-5.5 effort行なし"
-    - id: A-2
-      check: "formations.all-sonnet / formations.all-opus には触らない"
-    - id: A-3
-      check: "cmd_717 の正しい成果である shutsujin halt化、shc.sh --settings-only、audit_silent_failure.sh、north_star_outcome_check.md、gunshi.md SO-17拡張に触らない"
-    - id: A-4
-      check: "隔離 tmux session test_718_isolation 等で bash scripts/shc.sh deploy hybrid --settings-only を実行し、cli.agents が Sonnet×3 + Opus×2 + Codex×2 に書き換わることを output に証跡記録する"
-    - id: A-5
-      check: "active multiagent/shogun session で shx/shp を実行しない"
-    - id: A-6
-      check: "cmd_704 git preflight: 作業前後 git status、commit、push済みを report に記録する"
-    - id: A-7
-      check: "Issue #53 に cmd_718 corrective コメントを追加したか、β/軍師と重複する場合は担当外として明記する"
-  description: |
-    【目的】
-    cmd_717 AC-4 で誤って書き換えた formations.hybrid を、cmd_705 当時の不変リファレンス値へ戻す。
-    この任務は settings revert と隔離E2Eのみ担当する。
-
-    【重要】
-    - active multiagent / shogun / 実作業 pane で shx/shp を実行してはならない。
-    - 検証は必ず隔離 tmux session (例: test_718_isolation) で行う。
-    - β任務の scripts/shp.sh / docs / instructions / output/cmd_717a*.md には触らない (RACE-001)。
-    - cmd_717 の halt化、--settings-only、audit script、SO-17拡張は保持する。
-
-    【完了報告】
-    bash /home/ubuntu/shogun/scripts/inbox_write.sh karo \
-      "【subtask_718a_hybrid_preset_revert_e2e 完了】cmd_718 α完了。revert=<PASS|FAIL> e2e=<PASS|FAIL> commit=<sha> push=<PASS|FAIL> issue=#53。report確認されたし。" \
-      task_completed ashigaru4
+  task_id: subtask_729a_gunshi_report_write_path_audit
+  timestamp: '2026-05-15T15:18:35+09:00'
+  title: 'cmd_729a: gunshi_report書込経路監査'

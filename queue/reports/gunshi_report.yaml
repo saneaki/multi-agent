@@ -1,6 +1,631 @@
 worker_id: gunshi
 latest:
   worker_id: gunshi
+  task_id: subtask_729d_skill_pattern_qc
+  parent_cmd: cmd_729
+  timestamp: '2026-05-15T16:16:09+09:00'
+  status: done
+  trigger: karo_assigned
+  priority: high
+  note: 'cmd_729 δ. shogun-silent-failure-audit-pattern skill に §Report Drift Patterns
+    (4 incident pattern: gunshi_report 単一文書 overwrite / append-only 非対称 / report-reality
+    semantic drift YomiToku / dashboard physical grep 不足) + Battle-Tested cmd_729
+    系列を追記。復元 entries (cmd_723 + cmd_725b + cmd_727b + cmd_726f) と latest/history schema
+    完全性確認、bats local 4/4 PASS。verdict=conditional_go: GHA run 25905364431 macOS で
+    4 件 not ok (cmd_729c §C-8 CI portable fix が macOS 不完全)。本 cmd_729 完遂は macOS GHA
+    PASS まで保留推奨、家老が cmd_729e 起案要。
+
+    '
+  result:
+    type: quality_check
+    verdict: conditional_go
+    conditional_go_reason: '主要機能 (schema + helper + 復元 + local tests + skill 追記) は全
+      PASS。GHA run 25905364431 macOS Unit Tests 4 件 (211 schema / 212 append twice
+      / 213 action_required_sync fallback / 250 dashboard drift) が completed failure。cmd_729c
+      §C-8 の CI portable fix は ubuntu-latest PASS / macOS FAIL の非対称、macOS 環境依存 (homebrew
+      bash / GNU tools / PyYAML 等) で不完全。cmd_729e として macOS GHA root cause 調査 + 補完
+      fix が必要。家老が後続 dispatch を起案する番。
+
+      '
+    acceptance_criteria_review:
+    - id: D-1
+      gunshi_verify: PASS
+      result: 'skills/shogun-silent-failure-audit-pattern/SKILL.md §Source 末尾に cmd_729
+        (2026-05-15) を追加し、§Report Drift Patterns を新設。
+
+        Incident #1 (gunshi_report 単一文書 overwrite, cmd_725b/727b/726f中間版消失) — RC-1〜RC-5
+        + cmd_729b 修正 (schema 移行 + helper + protocol 改訂 + downstream + 復元)。
+
+        Incident #2 (append-only report 構造の非対称 gunshi vs ashigaru) — 修正 + bats regression。
+
+        Incident #3 (report-reality semantic drift YomiToku close vs deleted) — F10-F13
+        修正候補 + test_report_reality_drift.bats 確立。
+
+        Incident #4 (dashboard physical grep 不足、SO-24 b 項の SoT 検証不徹底) — gunshi QC
+        checklist 強化 + so24_verify.sh の SoT 直読 grep 追加候補。
+
+        Common Root Cause: Report ↔ Reality 整合確認手順の不徹底 (4 incident 共通通底)。
+
+        Battle-Tested (cmd_729 系列) 4 cmd 経歴を表化。
+
+        既存 §Core Pattern (3段予防) と矛盾なし、shell suppression (L1-L3) と report 系 (4 incident)
+        を並列構成として整合。
+
+        '
+    - id: D-2
+      gunshi_verify: PASS
+      result: "queue/reports/gunshi_report.yaml python3 safe_load 確認:\n  - worker_id:\
+        \ gunshi\n  - latest.task_id: subtask_728d_gunshi_lord_approval_qc (前回 QC、本\
+        \ cmd_729d entry append 後は subtask_729d_skill_pattern_qc へ更新)\n  - history\
+        \ 配列 4 entry:\n    (1) subtask_723_gunshi_ac11_completion_qc_reconstructed\
+        \ (cmd_723)\n    (2) subtask_725b_gunshi_shp_model_switch_qc_reconstructed\
+        \ (cmd_725)\n    (3) subtask_727b_gunshi_inbox_watcher_silent_failure_qc (cmd_727,\
+        \ real)\n    (4) subtask_726f_gunshi_skill_quality_gate (cmd_726, real)\n\
+        reconstructed entry は `reconstructed_from / source_evidence / reconstructed_at`\
+        \ 明示 (cmd_729b output §Changes で確認)。\nschema 完全性 PASS。\n"
+    - id: D-3
+      gunshi_verify: PASS_WITH_NOTE
+      result: "軍師再実行 2026-05-15T16:16+09:00 で確認:\nbats tests/unit/test_gunshi_report_append.bats\
+        \ tests/unit/test_report_reality_drift.bats:\n  ok 1 gunshi_report schema\
+        \ has latest and history after migration\n  ok 2 gunshi_report_append updates\
+        \ latest twice and preserves restored history in isolated copy\n  ok 3 action_required_sync\
+        \ reads latest candidates and legacy top-level fallback\n  ok 4 resolved dashboard\
+        \ tags are absent from active action_required but may remain archived\n4/4\
+        \ PASS、SKIP=0。\n網羅性: schema 移行 + append helper 2 回連続 + action_required_sync\
+        \ latest 優先 + legacy fallback + drift fixture (active 削除 + archive retain\
+        \ 許容)。\nPASS_WITH_NOTE 理由: 同 test 群が GHA macOS では failure (D-4 参照)、local 環境では\
+        \ PASS だが CI macOS で再現せず。\n"
+    - id: D-4
+      gunshi_verify: FAIL
+      result: "GHA 確認 (gh run view --repo saneaki/multi-agent):\n  - 25904789492 (cmd_716g\
+        \ Phase D, 06:54Z) = completed failure\n  - 269c4fb (cmd_729c test) + 36fdbe7\
+        \ (cmd_729c CI portable) push 済\n  - 25905364431 (cmd_729c CI portable fix,\
+        \ 07:10Z) = completed failure 1m38s\n    * Unit Tests (ubuntu-latest): success\
+        \ 1m28s\n    * Unit Tests (macos-latest): FAIL 1m34s — 211/212/213/250 not\
+        \ ok\n      211 `gunshi_report schema has latest and history after migration`\n\
+        \      212 `gunshi_report_append updates latest twice and preserves restored\
+        \ history in isolated copy`\n      213 `action_required_sync reads latest\
+        \ candidates and legacy top-level fallback`\n      250 `resolved dashboard\
+        \ tags are absent from active action_required but may remain archived`\n \
+        \ - 25905455510 (cmd_716 Phase E, 07:12Z) = in_progress — cmd_716 関連で本 cmd_729\
+        \ と無関係\ntask description は \"25905364431 は配備時点で in_progress\" を想定したが、QC 時点\
+        \ (16:14 JST) で completed failure 確定。gha=FAIL を記録、PENDING ではない。\ncmd_729c\
+        \ §C-8 (no-flock fallback + ubuntu PASS) は ubuntu-latest で機能したが、macOS では bats\
+        \ test 4 件が依然 failure。CI 環境依存 (homebrew bash / GNU tools / PyYAML 等) で cmd_729c\
+        \ 修復は不完全。\n"
+    - id: D-5
+      gunshi_verify: PASS
+      result: 'north_star 3点検証:
+
+        (i) 独立検証可能性復旧: append-only schema (worker_id + latest + history[]) により過去 entry
+        が永続保持、後続 verifier (implementation-verifier 等) が QC evidence を独立に検証可能。cmd_723
+        で同種事案 (verifier L3 指摘) 再発済、構造修正で根因解消。
+
+        (ii) silent overwrite 再発防止: scripts/gunshi_report_append.sh + flock + atomic
+        write + schema validate で Write/Edit 直接編集経路を排除。gunshi.md protocol も append
+        helper 経由を mandate。task description が「append-only helper が入ったため、report 書込みは
+        scripts/gunshi_report_append.sh を使い history を破壊しない」と明示。
+
+        (iii) dashboard 報告実態乖離の機械検出: tests/unit/test_report_reality_drift.bats で active
+        vs archive 区別を fixture 化、grep-based assertion で render (dashboard.md) と SoT
+        (dashboard.yaml) 両方を確認する規律を test 化。SO-24 (b) artifact 確認の検証手段を render only
+        から SoT 直読 grep 必須化へ昇格 (skill §Incident #4)。
+
+        三点全て構造修正 + helper + tests + skill で実現可能を確認、north_star aligned。
+
+        '
+    - id: D-6
+      gunshi_verify: PASS
+      result: 'verdict=conditional_go を本 entry に記録。残件 followup (本 entry §suggestions
+        参照):
+
+        (a) cmd_729e として macOS GHA failure root cause 調査 + 補完 fix 起案 (HIGH)
+
+        (b) ashigaru report append-only schema 統一 cmd (cmd_730?) 起案 (cmd_725b / 728e
+        silent failure 構造対策)
+
+        (c) gunshi.md §8.7 SO-24 三点照合 に dashboard.yaml 直読 grep 必須化追補 (cmd_729a F12)
+
+        本 entry は scripts/gunshi_report_append.sh で append-only 報告。前回 cmd_728d entry
+        は history[] へ保留、本 cmd_729d entry を latest に置く。history 破壊なし、history=5 想定 (cmd_725c
+        → cmd_726f → cmd_727b → cmd_728e → cmd_728d → 新 latest=cmd_729d)。
+
+        実際は cmd_725c entry は cmd_729b 復元で history[0] に reconstructed として配置済。本 cmd_729d
+        append 後の history 構成: [cmd_723 reconstructed, cmd_725b reconstructed, cmd_727b
+        real, cmd_726f real, cmd_728d real] = 5 entry + latest=cmd_729d。
+
+        '
+    means_ends_classification:
+      schema_version: '1.0'
+      ac_classification:
+      - id: D-1
+        type: means
+        rationale: skill 追記は構造記録 (means)
+        corresponding_ends_ac: D-5
+      - id: D-2
+        type: ends
+        rationale: 復元 entry + schema 完全性は独立検証可能性復旧の ends
+        corresponding_ends_ac: null
+      - id: D-3
+        type: means
+        rationale: regression test 網羅は機構制約 (means)
+        corresponding_ends_ac: D-4
+      - id: D-4
+        type: ends
+        rationale: GHA red 修復は CI 動作担保の ends (本 cmd では FAIL)
+        corresponding_ends_ac: null
+      - id: D-5
+        type: ends
+        rationale: north_star 3点 (独立検証 / silent overwrite 防止 / dashboard drift 検出)
+          は本 cmd 目的到達 (ends)
+        corresponding_ends_ac: null
+      - id: D-6
+        type: means
+        rationale: verdict 記録は記録 means
+        corresponding_ends_ac: null
+      ends_coverage_note: 'ends 系 3/3 のうち D-2 PASS + D-4 FAIL + D-5 PASS = 2/3 PASS。D-4
+        ends 未達 (macOS GHA failure) のため conditional_go。家老が cmd_729e dispatch で D-4
+        を解消した時点で full_pass へ昇格可能。
+
+        '
+      both_systems_verified: false
+      verdict: means 系 3/3 PASS。ends 系 2/3 PASS (D-4 macOS GHA failure)。conditional_go
+        = 主要機能 PASS だが CI ends 未達。
+    north_star_outcome_evidence:
+      status: pass_with_followup
+      evidence_type: e2e
+      command_or_artifact: 'bats tests/unit/test_gunshi_report_append.bats tests/unit/test_report_reality_drift.bats
+        → 4/4 PASS local
+
+        python3 schema check → worker_id/latest/history present, history=4 entries
+
+        SKILL.md §Report Drift Patterns 新設 + Incident #1-4 + Battle-Tested cmd_729
+        系列 (4 cmd)
+
+        GHA 25905364431: ubuntu PASS / macOS FAIL (4 tests)
+
+        '
+      reason: 'north_star 3点は schema + helper + tests + skill 追記の 4 層で達成。ただし GHA macOS
+        failure は ends 未達 followup、家老 dispatch (cmd_729e) で解消必要。
+
+        '
+    qc_auto_check_results:
+      note: 'SO-01/SO-03 各 ash report PASS、SO-06 (報告経路 ash→karo→δ gunshi 統合) 意図設計、SO-12
+        N/A、SO-19 cmd_729 完遂時に dashboard 🚨 処理予定、SO-21 既存 4件 violation (本 cmd 無関係)。
+
+        '
+    implementation_qc_checklist:
+    - check: AC に Stage 3 (登録確認) 含むか
+      result: pass
+      detail: cmd_729b で helper script 配置 + chmod +x + 各 α/β/γ commit 完了 (4a5bea2
+        / 269c4fb / 36fdbe7)
+    - check: Stage 4 実行ログ
+      result: pass_with_note
+      detail: local bats 4/4 PASS + GHA ubuntu PASS。macOS GHA 依然 fail (D-4 参照)
+    - check: dashboard 反映
+      result: warn
+      detail: skill 3 源同期は cmd_729 完遂 dispatch で家老実施予定、本 cmd では skill SKILL.md 直接追記のみ
+    commit_push_status:
+      cmd_729b_commit: '4a5bea2 fix: make gunshi report append-only (Refs cmd_729)'
+      cmd_729b_push: done
+      cmd_729c_test_commit: '269c4fb test: cover gunshi report append smoke (Refs
+        cmd_729)'
+      cmd_729c_test_push: done
+      cmd_729c_ci_portable_commit: '36fdbe7 fix: make gunshi report smoke CI portable
+        (Refs cmd_729)'
+      cmd_729c_ci_portable_push: done (macOS GHA は未解決)
+      cmd_727_補完: '441b9c8 chore: restore gunshi subtask_727b QC entry and add loss
+        analysis (cmd_727)'
+      cmd_729d_skill: 本 cmd で skill SKILL.md 編集、家老 dispatch で commit/push 想定 (本 entry
+        完了報告と並行)
+    drift_patterns_added:
+    - id: incident_1
+      title: gunshi_report 単一文書 overwrite (cmd_725b / 727b / 726f 中間版消失)
+      root_cause: schema 単一文書 + history 不在の構造欠陥 (cmd_729a A-3 RC-1)
+      fix: cmd_729b schema 移行 + helper 新設 + protocol 改訂 + downstream 互換 + 復元
+    - id: incident_2
+      title: append-only report 構造の非対称 (gunshi vs ashigaru)
+      root_cause: schema 統一規律不在、ashigaru 先行採用が gunshi へ horizontal 横展開未実施
+      fix: schema 統一 + bats regression test 化
+    - id: incident_3
+      title: report-reality semantic drift (YomiToku close vs deleted)
+      root_cause: SO-24 b 項 artifact 確認を render only で完了、SoT 直読 grep 不在 + 用語 semantic
+        不明確
+      fix: test_report_reality_drift.bats + gunshi QC checklist 強化 (F12) + 用語表整備候補
+        (F11) + drift detector 候補 (F13)
+    - id: incident_4
+      title: dashboard physical grep 不足 (SO-24 b 項の SoT 検証不徹底)
+      root_cause: SO-24 b 項の検証手段が render only 暗黙運用、SoT 直読 grep が必須化されず
+      fix: gunshi QC checklist 強化 + so24_verify.sh の SoT 直読 grep 追加候補 (F10)
+    concerns_flagged:
+    - id: c1
+      severity: high
+      title: GHA macOS Unit Tests 4 件 failure (cmd_729c §C-8 CI portable fix 不完全)
+      detail: 'GHA run 25905364431 macOS で test 211/212/213/250 が not ok。ubuntu-latest
+        では同 test 4 件 PASS。cmd_729c §C-8 で no-flock fallback + PATH=<bin without flock>
+        smoke PASS を主張したが、macOS GHA で別の依存問題で失敗。homebrew bash / GNU tools / PyYAML
+        等の CI 環境依存が候補。
+
+        '
+      action_for_karo: cmd_729e として macOS GHA root cause 調査 cmd を起案。bats test 4 件の
+        macOS failure ログ詳細解析 + cmd_729c §C-8 修復の補完 fix。cmd_729 完遂は macOS GHA PASS
+        まで保留推奨。
+    - id: c2
+      severity: low
+      title: task description 'in_progress' 想定差分
+      detail: task description は『新 GHA run 25905364431 は配備時点で in_progress』と記載。実際は
+        QC 時点で completed failure。1m38s で完了済。家老 dispatch timing と QC timing のずれを示す。
+      action_for_karo: 上記 c1 と統合して cmd_729e 起案。gha=PENDING gate は QC 時点で gha=FAIL
+        へ昇格。
+    - id: c3
+      severity: low
+      title: append helper FD lifecycle on macOS no-flock fallback
+      detail: cmd_729c §C-8 で『fallback時に未定義FDをcloseしない cleanup に修正』と記載。macOS GHA failure
+        と関連するかは不明 (詳細ログでは不確定)。後続 cmd_729e で同根因かを確認推奨。
+      action_for_karo: cmd_729e の調査範囲に append_only fallback の FD lifecycle 検証も含める。
+    follow_up_observations:
+    - shogun-silent-failure-audit-pattern skill が shell control-plane suppression
+      (3段予防) + report yaml 系 (4 incident) の 2 大カテゴリを包括する skill に成長。今後の skill 改訂で『報告
+      yaml schema 系の incident』を追加観察対象として運用継続。
+    - gunshi_report append-only への移行を機に、ashigaru report の append-only schema も helper
+      script (scripts/ashigaru_report_append.sh 等) で正規化する余地。cmd_725b / cmd_728e で
+      flag した『ash7 report yaml 追記欠落』の構造的対策として cmd_730 系で起案候補。
+    - dashboard.yaml SoT 直読 grep の必須化 (F12) は gunshi.md §8.7 SO-24 三点照合 への追補が必要。本
+      cmd_729 では skill 側で言及のみ、instructions への反映は別 cmd 候補。
+    action_required_candidates:
+    - severity: HIGH
+      title: cmd_729 macOS GHA failure 補完 (cmd_729e 起案)
+      summary: GHA run 25905364431 macOS で 4 件 bats not ok。cmd_729c §C-8 CI portable
+        fix が macOS 環境で不完全。root cause 調査 + 補完 fix を後続 dispatch で実施。cmd_729 完遂は macOS
+        GHA PASS まで保留推奨。
+      cmd_ref: cmd_729
+      issue_id: auto-by-action_required_sync
+      manual_gate_required: false
+    suggestions:
+    - 'cmd_729e 起案: macOS GHA failure root cause 調査 + bats test 4 件の macOS 環境失敗ログ詳細解析。cmd_729
+      完遂は macOS GHA PASS まで保留推奨。'
+    - ashigaru report の append-only schema 統一 cmd (cmd_730?) 起案。gunshi 用 helper を
+      model に scripts/ashigaru_report_append.sh 等を整備、ash7 report yaml silent failure
+      の構造的対策。
+    - gunshi.md §8.7 SO-24 三点照合 へ dashboard.yaml 直読 grep の必須化を追補する別 cmd 候補 (cmd_729a
+      F12 / cmd_729 γ test_report_reality_drift.bats の本体規律化)。
+    files_modified:
+    - skills/shogun-silent-failure-audit-pattern/SKILL.md (§Source 末尾 + §Report Drift
+      Patterns 新設)
+    - queue/reports/gunshi_report.yaml (via scripts/gunshi_report_append.sh)
+    - queue/tasks/gunshi.yaml (status: assigned → done)
+    - queue/inbox/gunshi.yaml
+    - output/cmd_729d_skill_pattern_qc.md (新規)
+  skill_candidate:
+    found: false
+    reason: '本 cmd は既存 skill (shogun-silent-failure-audit-pattern) への追記であり、新規 skill
+      候補抽出はしない。
+
+      ただし concerns c1 で flag した macOS GHA failure や、follow_up observations の ashigaru
+      append-only 統一 / SO-24 SoT grep 必須化は将来 skill / 規律強化候補として記録。
+
+      '
+  north_star_alignment:
+    status: aligned
+    reason: '本 cmd の north_star は「gunshi_report overwrite + report-reality drift incident
+      を skill に体系化し、独立検証可能性 + silent overwrite 防止 + dashboard drift 機械検出の 3 ends を達成」。schema
+      + helper + tests + skill 追記の 4 層で達成、復元 entry 4 件 + drift fixture test で audit
+      trail 永続化。
+
+      '
+    risks_to_north_star:
+    - GHA macOS failure (D-4) は ends 未達。cmd_729 完遂前に家老 dispatch (cmd_729e) で解消必要。conditional_go
+      は構造改善 ends 達成、CI ends 未達の混合状態。
+    - skill §Report Drift Patterns は本 cmd_729 単独で抽出した pattern。今後の類似 incident で revision
+      が必要なら skill 改訂 cmd を機動的に起案する規律化候補。
+    - ashigaru report の append-only schema 未統一は cmd_725b / cmd_728e silent failure
+      の根因として残存。cmd_730 系で構造的対策が必要、放置は再発リスク。
+history:
+- worker_id: gunshi
+  task_id: subtask_723_gunshi_ac11_completion_qc_reconstructed
+  parent_cmd: cmd_723
+  timestamp: '2026-05-13T05:22:36+09:00'
+  status: done
+  trigger: post_hoc_reconstruction
+  priority: medium
+  note: cmd_723 AC-11 completion QC entry reconstructed after gunshi_report overwrite
+    incident. This is not the original live QC text.
+  result:
+    type: quality_check
+    verdict: go
+    action_required_candidates: []
+    acceptance_criteria_review:
+    - id: AC-11-1
+      gunshi_verify: PASS
+      result: saneaki/legal-pdf-ocr private main repository exists and Pattern B runtime
+        files were migrated out of shogun.
+    - id: AC-11-2
+      gunshi_verify: PASS
+      result: Repository evidence records clone size around 412K, supporting the intended
+        lightweight external runtime repository.
+    - id: AC-11-3
+      gunshi_verify: PASS
+      result: shogun runtime files for Pattern B were removed from shogun while preserving
+        operational references and migration notes.
+    - id: AC-11-4
+      gunshi_verify: PASS
+      result: 'GitHub Issue #54-57 comments and VPS clone evidence were referenced
+        by karo as completion evidence.'
+    north_star_outcome_evidence:
+      status: pass
+      evidence_type: artifact_and_repository
+      command_or_artifact: queue/inbox/gunshi.yaml msg_20260513_052236 completion-QC
+        request evidence; queue/shogun_to_karo.yaml cmd_723 result lines around 27560-27831
+      reason: Pattern B runtime was moved to the private legal-pdf-ocr repository
+        and shogun-side runtime deletion/migration evidence was present.
+  skill_candidate:
+    found: false
+    reason: Reconstructed QC entry; no new skill candidate is asserted post hoc.
+  reconstructed_from:
+  - queue/inbox/gunshi.yaml msg_20260513_052236
+  - queue/shogun_to_karo.yaml cmd_723 result/context
+  - cmd_729a audit A-4 restoration table
+  source_evidence:
+  - path: queue/shogun_to_karo.yaml
+    detail: cmd_723 result records Pattern B runtime files migrated to saneaki/legal-pdf-ocr
+      private repository.
+  - path: output/cmd_729a_gunshi_report_write_path_audit.md
+    detail: A-4 identifies cmd_723 AC-11 QC补完 as reconstructable from karo evidence.
+  reconstructed_at: '2026-05-15T15:44:32+09:00'
+- worker_id: gunshi
+  task_id: subtask_725b_gunshi_shp_model_switch_qc_reconstructed
+  parent_cmd: cmd_725
+  timestamp: '2026-05-15T14:10:00+09:00'
+  status: done
+  trigger: post_hoc_reconstruction
+  priority: medium
+  note: cmd_725 γ / shp model switch QC entry reconstructed after gunshi_report overwrite
+    incident. This is not the original live QC text.
+  result:
+    type: quality_check
+    verdict: go
+    action_required_candidates: []
+    acceptance_criteria_review:
+    - id: B-1
+      gunshi_verify: PASS
+      result: Old docs/scripts excluded shogun from shp target; conflict with Lord
+        expectation was identified and resolved.
+    - id: B-2
+      gunshi_verify: PASS
+      result: scripts/shp.sh restored shogun as a managed model-switch target without
+        editing formations.*.
+    - id: B-3
+      gunshi_verify: PASS
+      result: scripts/switch_cli.sh gained shogun pane resolution and ashigaru7 model
+        positional handling remained verified.
+    - id: B-4
+      gunshi_verify: PASS
+      result: scripts/smoke_shp_model_switch.sh performs isolated smoke verification
+        without mutating live panes/settings.
+    - id: B-5
+      gunshi_verify: PASS
+      result: git diff -- config/settings.yaml was empty after dry-run; formations.*
+        remained unchanged.
+    - id: B-6
+      gunshi_verify: PASS
+      result: bash -n and smoke commands passed with SKIP=0.
+    - id: B-7
+      gunshi_verify: PASS
+      result: Commit 495091f recorded implementation scope with Refs cmd_725; push
+        deferred by ashigaru rule.
+    north_star_outcome_evidence:
+      status: pass
+      evidence_type: smoke
+      command_or_artifact: output/cmd_725b_shp_model_switch_fix.md; commit 495091f
+      reason: shp can select shogun and ashigaru7 model changes in isolated dry-run/smoke
+        without mutating formations.*.
+  skill_candidate:
+    found: false
+    reason: Reconstructed QC entry; cmd_725a related nondestructive tmux smoke skill
+      was already processed under cmd_726.
+  reconstructed_from:
+  - output/cmd_725b_shp_model_switch_fix.md
+  - queue/inbox/gunshi.yaml msg_20260515_050055
+  - output/cmd_729a_gunshi_report_write_path_audit.md A-4
+  source_evidence:
+  - path: output/cmd_725b_shp_model_switch_fix.md
+    detail: Records implementation, verification commands, SKIP=0, and commit 495091f.
+  - path: output/cmd_729a_gunshi_report_write_path_audit.md
+    detail: A-4 lists cmd_725 γ QC as a lost entry and identifies ash7 output as primary
+      restoration evidence.
+  reconstructed_at: '2026-05-15T15:44:32+09:00'
+- worker_id: gunshi
+  task_id: subtask_727b_gunshi_inbox_watcher_silent_failure_qc
+  parent_cmd: cmd_727
+  timestamp: '2026-05-15T15:05:00+09:00'
+  status: done
+  trigger: karo_assigned
+  priority: medium
+  note: 'cmd_727 β. inbox_watcher.sh の tmux send-keys silent failure 31件への remediation
+    QC。
+
+    bats unit 58/58 + e2e 5/5 PASS、SKIP=0、residual tmux suppression 0、commits 7e0a03c+c3d719d
+    push済。
+
+    cmd_717b audit fixture (#9-#41) との整合確認: 31件全件 tmux_send_keys_logged() 経由の明示ログ化に変換、#38/#40
+    (allowed_with_comment) はスコープ外として除外。
+
+    cmd_711 scroll/copy-mode regression: 維持確認。cmd_726 silent-failure-audit-pattern
+    と用語整合確認。
+
+    '
+  result:
+    type: quality_check
+    verdict: go
+    acceptance_criteria_review:
+    - id: Q-1
+      gunshi_verify: PASS
+      result: 'scripts/inbox_watcher.sh の suppression 31件 (#9-#41 の tmux send-keys
+        系) を全件 list 化確認。
+
+        各箇所に tmux_send_keys_logged() ヘルパー経由の明示 ERROR/WARN ログを適用済み。
+
+        #38 (touch idle-flag) / #40 (touch idle-flag) は send-keys 対象外のため除外 (audit
+        本体に記録済)。
+
+        '
+    - id: Q-2
+      gunshi_verify: PASS
+      result: 'halt 必須 vs 明示ログ化可の分類確認:
+
+        - daemon である inbox_watcher は単発 nudge 失敗で停止すると監視全体を失うため、全件 halt ではなく ERROR/WARN
+        ログ方針を採択 (正当)。
+
+        - 失敗ログ: context/destination/timestamp/rc/stderr を含む構造化形式で logs/inbox_watcher.log
+        に出力確認。
+
+        '
+    - id: Q-3
+      gunshi_verify: PASS
+      result: 'smoke test 確認: bats tests/unit/test_send_wakeup.bats 58/58 PASS (SKIP=0)、bats
+        tests/e2e/e2e_inbox_delivery.bats 5/5 PASS (SKIP=0)。
+
+        rg -n "tmux send-keys.*2>/dev/null || true|timeout [0-9]+ tmux send-keys"
+        scripts/inbox_watcher.sh → no matches。
+
+        residual tmux suppression = 0 を確認。
+
+        '
+    - id: Q-4
+      gunshi_verify: PASS
+      result: 'cmd_717 audit fixture (output/cmd_717b_silent_failure_audit_so17_hardening.md)
+        と整合確認:
+
+        - remediation_required 42件中 31件を cmd_727 で解消、remaining 11件は #43/#55/#56/#69-#72/#89-#92
+        (inbox_watcher.sh 以外)。
+
+        - cmd_726 silent-failure-audit-pattern スキルとの用語整合: tmux_send_keys_logged()
+        命名・ログ構造が audit-pattern 準拠。
+
+        '
+    - id: Q-5
+      gunshi_verify: PASS
+      result: 'commit 確認:
+
+        - 7e0a03c "fix: log inbox watcher send-keys failures (cmd_727)" — inbox_watcher.sh
+        本体修正 + test
+
+        - c3d719d "docs: record cmd_727 push evidence" — output + reports 更新
+
+        - git log origin/main..HEAD 空 = push 完了。
+
+        '
+    north_star_outcome_evidence:
+      status: pass
+      evidence_type: e2e
+      command_or_artifact: 'bats tests/unit/test_send_wakeup.bats → 58/58 PASS (SKIP=0)
+
+        bats tests/e2e/e2e_inbox_delivery.bats → 5/5 PASS (SKIP=0)
+
+        rg "tmux send-keys.*2>/dev/null || true" scripts/inbox_watcher.sh → 0 matches
+
+        '
+      reason: 'north_star は「cascading silent failure の検出可能性確保」。inbox_watcher.sh の全
+        tmux send-keys 呼び出しが
+
+        tmux_send_keys_logged() 経由となり、失敗時に logs/inbox_watcher.log へ構造化 ERROR/WARN
+        が出力される状態が e2e 証跡。
+
+        '
+    loss_cause_analysis:
+      title: subtask_727b エントリ消失原因分析 (C-4)
+      analyzed_at: '2026-05-15T15:18:00+09:00'
+      cause_candidates:
+      - id: L-1
+        category: append_race
+        verdict: likely
+        detail: 'cmd_727b (gunshi) と cmd_728e (gunshi) が gunshi_report.yaml に対して append
+          競合した可能性。
+
+          gunshi_report.yaml は単一ファイルで複数 cmd の QC エントリが蓄積される構造。
+
+          cmd_728e エントリが後から write された際に、727b エントリを含む旧 YAML を読まずに
+
+          新規 write (worktree 内での fresh write) を行うと上書きになる。
+
+          gunshi_report.yaml L128 で軍師自身が「cmd_728e で上書きを指摘」とある (shogun_to_karo.yaml
+          L28277 参照)。
+
+          '
+      - id: L-2
+        category: parse_error
+        verdict: unlikely
+        detail: 'YAML parse error による truncate は、現在の gunshi_report.yaml が正常に読めるため否定的。
+
+          cmd_726f エントリが intact であることから、ファイル自体の破損ではなく書込タイミング問題と判断。
+
+          '
+      - id: L-3
+        category: spec_change
+        verdict: unlikely
+        detail: '仕様変更 (single entry policy への変更) は、CLAUDE.md や instructions に記録がなく否定的。
+
+          '
+      - id: L-4
+        category: single_report_overwrite
+        verdict: likely
+        detail: 'gunshi がタスク完了時に gunshi_report.yaml を「全体 rewrite」方式で更新した場合、
+
+          直前に別 cmd が書いたエントリを読み込まずに overwrite すると消失する。
+
+          cmd_728e 完了時に cmd_727b エントリ込みの旧状態を参照せず write した可能性。
+
+          '
+      prevention:
+      - gunshi_report.yaml 書込前に必ず最新ファイルを Read し、既存エントリに append する規律を徹底
+      - "gunshi_report.yaml の先頭に worker_id/task_id を直書きする現行構造は 1 エントリのみを前提としており、\n\
+        \  複数エントリを共存させるには yaml list 形式への移行が望ましい (cmd_729 で監査中)"
+      - "RACE-001 と同様の排他制御が gunshi_report.yaml への書込にも必要。\n  複数 gunshi QC が並走する場合は\
+        \ karo が順序を管理すること"
+    commit_push_status:
+      commit_done: true
+      commit_hash_implementation: 7e0a03c
+      commit_hash_evidence: c3d719d
+      push_done: true
+      push_evidence: git log origin/main..HEAD 空 = push 完了
+    files_modified:
+    - scripts/inbox_watcher.sh
+    - tests/unit/test_send_wakeup.bats
+    - output/cmd_727a_inbox_watcher_silent_failure_remediation.md
+    - queue/reports/ashigaru6_report.yaml
+    - queue/reports/gunshi_report.yaml
+  skill_candidate:
+    found: false
+    reason: '本 QC は inbox_watcher.sh silent failure 修正の品質確認であり、skill 化対象の新パターンではない。
+
+      ただし loss_cause_analysis (L-1/L-4) の防止策は shogun-observation-queue-archive-rule
+      や
+
+      cmd_729 gunshi_report 書込経路監査と関連する実装知見として記録。
+
+      '
+  north_star_alignment:
+    status: aligned
+    reason: 'north_star「cascading silent failure 検出可能性確保」を inbox_watcher.sh 全 tmux
+      send-keys 箇所の
+
+      明示ログ化で達成。unit 58/58 + e2e 5/5 PASS、residual suppression 0、commit push済の evidence
+      揃い。
+
+      '
+  reconstructed_from:
+  - existing pre-migration YAML document in queue/reports/gunshi_report.yaml
+  - output/cmd_727c_status_fixture_gunshi_report_repair.md
+  - output/cmd_727a_inbox_watcher_silent_failure_remediation.md
+  source_evidence:
+  - path: queue/reports/gunshi_report.yaml
+    detail: Pre-migration first YAML document contained subtask_727b QC text.
+  - path: output/cmd_727c_status_fixture_gunshi_report_repair.md
+    detail: C-3/C-4 records subtask_727b restoration and loss-cause analysis.
+  - path: output/cmd_727a_inbox_watcher_silent_failure_remediation.md
+    detail: Records unit 58/58, e2e 5/5, residual suppression 0, commits 7e0a03c/c3d719d.
+  reconstructed_at: '2026-05-15T15:44:32+09:00'
+- worker_id: gunshi
   task_id: subtask_726f_gunshi_skill_quality_gate
   parent_cmd: cmd_726
   timestamp: '2026-05-15T15:14:44+09:00'
@@ -309,138 +934,21 @@ latest:
       で対応推奨。
     - markdownlint style violations は content 欠陥ではない cosmetic level。skill 利用に影響なし。
     - deferred 2 件は 2026-06-08 まで観察継続中。期限到達時に判定漏れがあると skill 候補池が陳腐化リスク。
-history:
 - worker_id: gunshi
-  task_id: subtask_723_gunshi_ac11_completion_qc_reconstructed
-  parent_cmd: cmd_723
-  timestamp: '2026-05-13T05:22:36+09:00'
-  status: done
-  trigger: post_hoc_reconstruction
-  priority: medium
-  note: cmd_723 AC-11 completion QC entry reconstructed after gunshi_report overwrite
-    incident. This is not the original live QC text.
-  result:
-    type: quality_check
-    verdict: go
-    action_required_candidates: []
-    acceptance_criteria_review:
-    - id: AC-11-1
-      gunshi_verify: PASS
-      result: saneaki/legal-pdf-ocr private main repository exists and Pattern B runtime
-        files were migrated out of shogun.
-    - id: AC-11-2
-      gunshi_verify: PASS
-      result: Repository evidence records clone size around 412K, supporting the intended
-        lightweight external runtime repository.
-    - id: AC-11-3
-      gunshi_verify: PASS
-      result: shogun runtime files for Pattern B were removed from shogun while preserving
-        operational references and migration notes.
-    - id: AC-11-4
-      gunshi_verify: PASS
-      result: 'GitHub Issue #54-57 comments and VPS clone evidence were referenced
-        by karo as completion evidence.'
-    north_star_outcome_evidence:
-      status: pass
-      evidence_type: artifact_and_repository
-      command_or_artifact: queue/inbox/gunshi.yaml msg_20260513_052236 completion-QC
-        request evidence; queue/shogun_to_karo.yaml cmd_723 result lines around 27560-27831
-      reason: Pattern B runtime was moved to the private legal-pdf-ocr repository
-        and shogun-side runtime deletion/migration evidence was present.
-  skill_candidate:
-    found: false
-    reason: Reconstructed QC entry; no new skill candidate is asserted post hoc.
-  reconstructed_from:
-  - queue/inbox/gunshi.yaml msg_20260513_052236
-  - queue/shogun_to_karo.yaml cmd_723 result/context
-  - cmd_729a audit A-4 restoration table
-  source_evidence:
-  - path: queue/shogun_to_karo.yaml
-    detail: cmd_723 result records Pattern B runtime files migrated to saneaki/legal-pdf-ocr
-      private repository.
-  - path: output/cmd_729a_gunshi_report_write_path_audit.md
-    detail: A-4 identifies cmd_723 AC-11 QC补完 as reconstructable from karo evidence.
-  reconstructed_at: '2026-05-15T15:44:32+09:00'
-- worker_id: gunshi
-  task_id: subtask_725b_gunshi_shp_model_switch_qc_reconstructed
-  parent_cmd: cmd_725
-  timestamp: '2026-05-15T14:10:00+09:00'
-  status: done
-  trigger: post_hoc_reconstruction
-  priority: medium
-  note: cmd_725 γ / shp model switch QC entry reconstructed after gunshi_report overwrite
-    incident. This is not the original live QC text.
-  result:
-    type: quality_check
-    verdict: go
-    action_required_candidates: []
-    acceptance_criteria_review:
-    - id: B-1
-      gunshi_verify: PASS
-      result: Old docs/scripts excluded shogun from shp target; conflict with Lord
-        expectation was identified and resolved.
-    - id: B-2
-      gunshi_verify: PASS
-      result: scripts/shp.sh restored shogun as a managed model-switch target without
-        editing formations.*.
-    - id: B-3
-      gunshi_verify: PASS
-      result: scripts/switch_cli.sh gained shogun pane resolution and ashigaru7 model
-        positional handling remained verified.
-    - id: B-4
-      gunshi_verify: PASS
-      result: scripts/smoke_shp_model_switch.sh performs isolated smoke verification
-        without mutating live panes/settings.
-    - id: B-5
-      gunshi_verify: PASS
-      result: git diff -- config/settings.yaml was empty after dry-run; formations.*
-        remained unchanged.
-    - id: B-6
-      gunshi_verify: PASS
-      result: bash -n and smoke commands passed with SKIP=0.
-    - id: B-7
-      gunshi_verify: PASS
-      result: Commit 495091f recorded implementation scope with Refs cmd_725; push
-        deferred by ashigaru rule.
-    north_star_outcome_evidence:
-      status: pass
-      evidence_type: smoke
-      command_or_artifact: output/cmd_725b_shp_model_switch_fix.md; commit 495091f
-      reason: shp can select shogun and ashigaru7 model changes in isolated dry-run/smoke
-        without mutating formations.*.
-  skill_candidate:
-    found: false
-    reason: Reconstructed QC entry; cmd_725a related nondestructive tmux smoke skill
-      was already processed under cmd_726.
-  reconstructed_from:
-  - output/cmd_725b_shp_model_switch_fix.md
-  - queue/inbox/gunshi.yaml msg_20260515_050055
-  - output/cmd_729a_gunshi_report_write_path_audit.md A-4
-  source_evidence:
-  - path: output/cmd_725b_shp_model_switch_fix.md
-    detail: Records implementation, verification commands, SKIP=0, and commit 495091f.
-  - path: output/cmd_729a_gunshi_report_write_path_audit.md
-    detail: A-4 lists cmd_725 γ QC as a lost entry and identifies ash7 output as primary
-      restoration evidence.
-  reconstructed_at: '2026-05-15T15:44:32+09:00'
-- worker_id: gunshi
-  task_id: subtask_727b_gunshi_inbox_watcher_silent_failure_qc
-  parent_cmd: cmd_727
-  timestamp: '2026-05-15T15:05:00+09:00'
+  task_id: subtask_728d_gunshi_lord_approval_qc
+  parent_cmd: cmd_728
+  timestamp: '2026-05-15T16:01:59+09:00'
   status: done
   trigger: karo_assigned
-  priority: medium
-  note: 'cmd_727 β. inbox_watcher.sh の tmux send-keys silent failure 31件への remediation
-    QC。
-
-    bats unit 58/58 + e2e 5/5 PASS、SKIP=0、residual tmux suppression 0、commits 7e0a03c+c3d719d
-    push済。
-
-    cmd_717b audit fixture (#9-#41) との整合確認: 31件全件 tmux_send_keys_logged() 経由の明示ログ化に変換、#38/#40
-    (allowed_with_comment) はスコープ外として除外。
-
-    cmd_711 scroll/copy-mode regression: 維持確認。cmd_726 silent-failure-audit-pattern
-    と用語整合確認。
+  priority: high
+  note: 'cmd_728 δ. Lord Approval Request skill (shogun-lord-approval-request-pattern,
+    284行) + shogun.md/karo.md instructions §Lord Approval Request + Discord chunked
+    notification (scripts/discord_notify.py / notify.sh + tests) の最終統合 QC。AC Q-1〜Q-7
+    全 PASS、cmd_728a 11 source 出典整合、必須8フィールド + Discord 詳細 + dashboard 短縮 + terminal/inbox-only
+    禁止 + --chunked usage が skill と instructions で矛盾なく定義。既存 skill (cmd_716 gate registry
+    / shogun-error-fix-dual-review / skill-creation-workflow / shogun-decision-notify-pattern)
+    との non-overlap 明示。append helper (scripts/gunshi_report_append.sh) で history 保持の上で本
+    entry を latest 化、過去 cmd_726f report は history[] へ保留。verdict=go。
 
     '
   result:
@@ -449,168 +957,263 @@ history:
     acceptance_criteria_review:
     - id: Q-1
       gunshi_verify: PASS
-      result: 'scripts/inbox_watcher.sh の suppression 31件 (#9-#41 の tmux send-keys
-        系) を全件 list 化確認。
-
-        各箇所に tmux_send_keys_logged() ヘルパー経由の明示 ERROR/WARN ログを適用済み。
-
-        #38 (touch idle-flag) / #40 (touch idle-flag) は send-keys 対象外のため除外 (audit
-        本体に記録済)。
-
-        '
+      result: "skills/shogun-lord-approval-request-pattern/SKILL.md frontmatter (line\
+        \ 1-15):\n  - name: shogun-lord-approval-request-pattern\n  - description:\
+        \ [English] Use when ... Do NOT use for ... + [日本語] 同 ... Do NOT use for ...\n\
+        \  - tags: [shogun-system, human-oversight, decision-memo, dashboard, discord,\
+        \ gate-registry]\ndescription 内に英日双方で \"Use when\" / \"Do NOT use for\" 文言を明示含有、section\
+        \ heading として `## When to Use` / `## When NOT to Use (Do NOT use for)` も完備。trigger\
+        \ 判定 PASS (description match + section heading match の二重)。\n"
     - id: Q-2
       gunshi_verify: PASS
-      result: 'halt 必須 vs 明示ログ化可の分類確認:
+      result: '必須8フィールド (件名 / 背景・経緯 / 調査・検討プロセス / 選択肢 + trade-off / 推奨判断 / 殿のアクション
+        / 期限・SLA / 参考資料) は skill §8 Required Fields + instructions/shogun.md line
+        234-244 + instructions/karo.md line 254 で順序固定で記載、3 箇所で矛盾なし。
 
-        - daemon である inbox_watcher は単発 nudge 失敗で停止すると監視全体を失うため、全件 halt ではなく ERROR/WARN
-        ログ方針を採択 (正当)。
+        Discord 詳細 (skill §Discord Detailed Template + instructions/karo.md NOTIFY_CHUNKED=1
+        usage) と dashboard 短縮 (skill §Dashboard Short Template + instructions/karo.md
+        `Action Required` 二系統) は明確に分離記載。
 
-        - 失敗ログ: context/destination/timestamp/rc/stderr を含む構造化形式で logs/inbox_watcher.log
-        に出力確認。
+        terminal-only / inbox-only 禁止は skill §Anti-Patterns + instructions/shogun.md
+        line 252 + instructions/karo.md line 250 で 3 重に明示。
 
         '
     - id: Q-3
       gunshi_verify: PASS
-      result: 'smoke test 確認: bats tests/unit/test_send_wakeup.bats 58/58 PASS (SKIP=0)、bats
-        tests/e2e/e2e_inbox_delivery.bats 5/5 PASS (SKIP=0)。
-
-        rg -n "tmux send-keys.*2>/dev/null || true|timeout [0-9]+ tmux send-keys"
-        scripts/inbox_watcher.sh → no matches。
-
-        residual tmux suppression = 0 を確認。
-
-        '
+      result: "cmd_728a output 11 source (OpenAI agent practical guide / Preparedness\
+        \ Framework / Frontier Risk / Anthropic RSP v3 + v1 PDF / Google Cloud ADR\
+        \ / MADR + ADR templates / IETF RFC 7282 / HBR premortem / McKinsey premortem\
+        \ / Python PEP 387):\n  - skill §Why This Skill Exists で 7 source 列挙 (OpenAI\
+        \ agent oversight / Anthropic RSP / Google Cloud ADR / IETF RFC 7282 / MADR\
+        \ / HBR + McKinsey premortem / PEP 387)\n  - skill §Source で全 cmd 経歴 (cmd_716\
+        \ 起源 incident / cmd_728a 業界調査 11 source / cmd_728b 起草 / cmd_728e --chunked)\
+        \ を明示\n過剰引用なし、出典欠落なし、Anthropic RSP v1 vs v3 の限界 (cmd_728a §2 注記) も適切に反映。\n"
     - id: Q-4
       gunshi_verify: PASS
-      result: 'cmd_717 audit fixture (output/cmd_717b_silent_failure_audit_so17_hardening.md)
-        と整合確認:
-
-        - remediation_required 42件中 31件を cmd_727 で解消、remaining 11件は #43/#55/#56/#69-#72/#89-#92
-        (inbox_watcher.sh 以外)。
-
-        - cmd_726 silent-failure-audit-pattern スキルとの用語整合: tmux_send_keys_logged()
-        命名・ログ構造が audit-pattern 準拠。
-
-        '
+      result: "既存 skill との non-overlap 明示:\n  - cmd_716 gate registry: skill §Relation\
+        \ to cmd_716 Gate Registry で 8フィールド ↔ gate registry mapping 表 + Coexistence\
+        \ (issue_id ↔ gate_id 後方互換) 明示\n  - shogun-error-fix-dual-review: skill §Relation\
+        \ to shogun-error-fix-dual-review で「材料 → 承認依頼」前後関係明示、Variant 1 conditional\
+        \ verdict 昇格条件も記載\n  - skill-creation-workflow: skill §Relation to skill-creation-workflow\
+        \ で並列関係 + skill 化承認の dashboard 表現に本 skill 使用、本 skill 自身も skill-creation-workflow\
+        \ §1-§6 準拠で作成\n  - shogun-decision-notify-pattern: skill §Related Skills で補完関係明示\
+        \ (本 skill = content structured format / 通知配信機構の堅牢性 = decision-notify-pattern)\n\
+        役割分担明確、機能重複なし。\n"
     - id: Q-5
       gunshi_verify: PASS
-      result: 'commit 確認:
+      result: "scripts/discord_notify.py --chunked usage 整合:\n  - skill §--chunked\
+        \ Usage (Discord Long Body) で直接実行 / notify.sh wrapper 経由 / 判定基準 (1600 字超必須\
+        \ / 1200-1600 通常 / 1200 未満通常) / dry-run 確認手順 / Behavior Note (CHUNK_TARGET=1800、Part\
+        \ N/M、title/tag 維持)\n  - instructions/karo.md (line 286-301) で NOTIFY_CHUNKED=1\
+        \ bash scripts/notify.sh + python3 scripts/discord_notify.py --chunked + truncate\
+        \ 放置禁止 明示\n  - cmd_728e output (output/cmd_728e_discord_notify_long_message_support.md)\
+        \ で 8KB dry-run 5 parts (1789-1835 chars/part) + short 1 part + default long\
+        \ 1 part (truncated) 確認済、skill / instructions と矛盾なし\n4-8KB dry-run evidence\
+        \ (cmd_728e Verification 表) を skill が `output/cmd_728e_...` で参照、test 連鎖 PASS。\n"
+    - id: Q-6
+      gunshi_verify: PASS
+      result: 'north_star 3点検証:
 
-        - 7e0a03c "fix: log inbox watcher send-keys failures (cmd_727)" — inbox_watcher.sh
-        本体修正 + test
+        (i) 殿が何を判断するか明確: skill §When to Use で 6 局面、必須フィールド #1 (件名) で「判断事項30字以内」+ #6
+        (殿のアクション) で「A/B/C/保留/差戻し」返信 keyword 強制、§Anti-Patterns で「選択肢なし → 報告として差戻す」「推奨判断なし
+        → dual-review に差戻す」明文化
 
-        - c3d719d "docs: record cmd_727 push evidence" — output + reports 更新
+        (ii) 背景・経緯が追える: 必須フィールド #2 (背景・経緯) で「起案 cmd + 関連 cmd + why_now」、#3 (調査・検討プロセス)
+        で「dual-review 担当 + 軍師統合 + 業界調査 source」、#8 (参考資料) で「output / report / commit
+        / Issue / source URL」を強制
 
-        - git log origin/main..HEAD 空 = push 完了。
+        (iii) Discord + dashboard 二系統運用: skill §Discord Detailed Template + §Dashboard
+        Short Template + instructions §Two-Channel Rule + §Anti-Patterns terminal-only/inbox-only
+        禁止で四重に明示
+
+        三点全て本 skill / instructions / chunked で実現可能、north_star aligned。
 
         '
+    - id: Q-7
+      gunshi_verify: PASS
+      result: "verdict=go を確定。残件 followup:\n  (a) skill 3 源同期 (queue/skill_candidates.yaml\
+        \ / memory/skill_history.md / dashboard.md) は cmd_728b §B-5 制約により skill 起草段階では編集禁止だった。本\
+        \ QC 完了後の cmd_728 完遂 dispatch で家老が同期実施予定 (cmd_728b §Output / Sync Proposal\
+        \ 案 3 件を参照)。\n  (b) cmd_716 gate registry (Phase A-F 進行中) との完全統合は cmd_716\
+        \ Phase D 完成後の後続 cmd で実施。本 skill では mapping 表 + Coexistence 方針記載のみ。\n  (c)\
+        \ 過去 incident (cmd_716 dogfooding 9 時間遅延) を battle-tested 1 例として記録済、今後の運用で追加例を\
+        \ skill §Battle-Tested Examples に append する規律化候補。\n本 entry は scripts/gunshi_report_append.sh\
+        \ で append-only 報告。前回 cmd_726f report は history[] へ保留、本 cmd_728d entry を latest\
+        \ に置く。history 破壊なし。\n"
+    means_ends_classification:
+      schema_version: '1.0'
+      ac_classification:
+      - id: Q-1
+        type: means
+        rationale: frontmatter trigger 判定は機構制約 (means)。
+        corresponding_ends_ac: Q-6
+      - id: Q-2
+        type: means
+        rationale: 必須8フィールド + 二系統運用 + 禁止事項は構造制約 (means)。
+        corresponding_ends_ac: Q-6
+      - id: Q-3
+        type: means
+        rationale: best practice 出典整合は記録制約 (means)。
+        corresponding_ends_ac: null
+      - id: Q-4
+        type: means
+        rationale: 既存 skill non-overlap は設計制約 (means)。
+        corresponding_ends_ac: null
+      - id: Q-5
+        type: means
+        rationale: --chunked integration は機構整合 (means)。
+        corresponding_ends_ac: Q-6
+      - id: Q-6
+        type: ends
+        rationale: north_star 3点 (殿判断明確 / 経緯追える / 二系統運用) は本 skill の目的到達 ends。skill
+          + instructions + chunked で全項目実装可能を確認。
+        corresponding_ends_ac: null
+      - id: Q-7
+        type: means
+        rationale: verdict 記録 + append helper 経由報告は記録 means。
+        corresponding_ends_ac: null
+      ends_coverage_note: 'Q-6 が ends AC。本 skill / instructions / discord chunked
+        が一体として「殿が選べる decision memo を Discord + dashboard 二系統で発火し、必要十分な背景・選択肢・推奨・期限・参考資料を含む」運用を実現可能であることを
+        skill+instructions+chunked の三層で確認。
+
+        '
+      both_systems_verified: true
+      verdict: means 系 6/6 PASS。ends 系 1/1 PASS (north_star 3点が skill + instructions
+        + chunked の三層で実装可能を確認)。
     north_star_outcome_evidence:
       status: pass
       evidence_type: e2e
-      command_or_artifact: 'bats tests/unit/test_send_wakeup.bats → 58/58 PASS (SKIP=0)
+      command_or_artifact: '(1) skill SKILL.md (284 行) frontmatter + 8 sections +
+        8 必須フィールド + Discord/dashboard 二系統テンプレ + --chunked usage + cmd_716 mapping
+        + 既存 skill non-overlap + anti-patterns + battle-tested + source 全て収録
 
-        bats tests/e2e/e2e_inbox_delivery.bats → 5/5 PASS (SKIP=0)
+        (2) instructions/shogun.md line 225 §Lord Approval Request 節 + instructions/karo.md
+        line 244 同節で 8 フィールド + 二系統 + terminal-only/inbox-only 禁止 + chunked usage 一致
 
-        rg "tmux send-keys.*2>/dev/null || true" scripts/inbox_watcher.sh → 0 matches
+        (3) scripts/discord_notify.py --chunked + scripts/notify.sh NOTIFY_CHUNKED=1
+        + cmd_728e output 8KB dry-run 5 parts (1789-1835 chars/part) + bats 5/5 +
+        unittest 3/3 PASS (本軍師 cmd_728e QC で確認済)
+
+        (4) skill が cmd_728a 11 source (OpenAI / Anthropic / Google ADR / MADR / IETF
+        RFC / HBR + McKinsey / PEP 387) を §Why + §Source で適切に統合
+
+        (5) system-reminder 利用可能 skill リストに shogun-lord-approval-request-pattern が
+        trigger 判定として自動載録 (前回 cmd_728e 後の system-reminder 確認時に既に含有)
 
         '
-      reason: 'north_star は「cascading silent failure の検出可能性確保」。inbox_watcher.sh の全
-        tmux send-keys 呼び出しが
-
-        tmux_send_keys_logged() 経由となり、失敗時に logs/inbox_watcher.log へ構造化 ERROR/WARN
-        が出力される状態が e2e 証跡。
+      reason: '本 cmd の north_star は「殿への承認依頼を『殿が選べる状態』にして提示する標準書式を確立する」。skill + instructions
+        + chunked + 出典 + system-reminder 載録の 5 層完遂で ends 達成。cmd_716 dogfooding 9 時間遅延の再発防止に直接寄与する設計が確立。
 
         '
-    loss_cause_analysis:
-      title: subtask_727b エントリ消失原因分析 (C-4)
-      analyzed_at: '2026-05-15T15:18:00+09:00'
-      cause_candidates:
-      - id: L-1
-        category: append_race
-        verdict: likely
-        detail: 'cmd_727b (gunshi) と cmd_728e (gunshi) が gunshi_report.yaml に対して append
-          競合した可能性。
+    qc_auto_check_results:
+      note: 'qc_auto_check.sh ashigaru5 subtask_728b 相当および ashigaru6 subtask_728c
+        相当の手動確認。SO-01 全 field PASS (skill/instructions が各 task report に詳細記録)、SO-03
+        PASS JST、SO-06 report_to=karo (cmd_728 δ 構造で gunshi 統合)、SO-12 N/A、SO-19 dashboard
+        cmd_728 残件は本 QC 完了時に家老が SO-19 処理予定、SO-21 既存 4件 violation (本 cmd 無関係)。
 
-          gunshi_report.yaml は単一ファイルで複数 cmd の QC エントリが蓄積される構造。
-
-          cmd_728e エントリが後から write された際に、727b エントリを含む旧 YAML を読まずに
-
-          新規 write (worktree 内での fresh write) を行うと上書きになる。
-
-          gunshi_report.yaml L128 で軍師自身が「cmd_728e で上書きを指摘」とある (shogun_to_karo.yaml
-          L28277 参照)。
-
-          '
-      - id: L-2
-        category: parse_error
-        verdict: unlikely
-        detail: 'YAML parse error による truncate は、現在の gunshi_report.yaml が正常に読めるため否定的。
-
-          cmd_726f エントリが intact であることから、ファイル自体の破損ではなく書込タイミング問題と判断。
-
-          '
-      - id: L-3
-        category: spec_change
-        verdict: unlikely
-        detail: '仕様変更 (single entry policy への変更) は、CLAUDE.md や instructions に記録がなく否定的。
-
-          '
-      - id: L-4
-        category: single_report_overwrite
-        verdict: likely
-        detail: 'gunshi がタスク完了時に gunshi_report.yaml を「全体 rewrite」方式で更新した場合、
-
-          直前に別 cmd が書いたエントリを読み込まずに overwrite すると消失する。
-
-          cmd_728e 完了時に cmd_727b エントリ込みの旧状態を参照せず write した可能性。
-
-          '
-      prevention:
-      - gunshi_report.yaml 書込前に必ず最新ファイルを Read し、既存エントリに append する規律を徹底
-      - "gunshi_report.yaml の先頭に worker_id/task_id を直書きする現行構造は 1 エントリのみを前提としており、\n\
-        \  複数エントリを共存させるには yaml list 形式への移行が望ましい (cmd_729 で監査中)"
-      - "RACE-001 と同様の排他制御が gunshi_report.yaml への書込にも必要。\n  複数 gunshi QC が並走する場合は\
-        \ karo が順序を管理すること"
+        '
+    implementation_qc_checklist:
+    - check: AC に Stage 3 (登録確認) 含むか
+      result: pass
+      detail: skill 登録は cmd_728 完遂 dispatch で 3 源同期予定 (cmd_728b §B-5 制約により skill 起草段階では編集禁止だった)。本
+        cmd では skill / instructions / chunked の Stage 1-2 (実装 + 配置) 完遂を確認。Stage 3
+        は後段同期で実施。
+    - check: Stage 4 実行ログ
+      result: pass
+      detail: cmd_728e bats unit 58/58 + e2e 5/5 + dry-run 3 ケース PASS (前回軍師 QC で確認済)。skill
+        自体は description trigger が system-reminder で機能していることが Stage 4 実行ログ相当。
+    - check: dashboard 反映
+      result: warn
+      detail: skill 3 源同期 (queue/skill_candidates.yaml / memory/skill_history.md /
+        dashboard.md 🛠️ ) は cmd_728b §B-5 制約により skill 起草段階では編集禁止だった。本 cmd 完遂 dispatch
+        で家老が同期実施予定。
     commit_push_status:
-      commit_done: true
-      commit_hash_implementation: 7e0a03c
-      commit_hash_evidence: c3d719d
-      push_done: true
-      push_evidence: git log origin/main..HEAD 空 = push 完了
+      note: 'cmd_728b (skill 起草) / cmd_728c (instructions 改訂) / cmd_728e (discord
+        chunked) は preserve_across_stages cmd の中間段階として commit/push 未実施 (各 ash output
+        §Git Preflight で明示)。本 cmd_728d QC 完遂後、cmd_728 統合段階で家老が squash commit + push
+        を `Refs cmd_728` で実施予定。本 QC 自体の編集は queue/reports/gunshi_report.yaml / queue/tasks/gunshi.yaml
+        / queue/inbox/gunshi.yaml のみ。
+
+        '
+    three_layer_integration_check:
+    - layer: skill
+      target: skills/shogun-lord-approval-request-pattern/SKILL.md
+      lines: 284
+      status: complete
+      coverage: frontmatter / 8 Required Fields / Discord Detailed Template / Dashboard
+        Short Template / --chunked Usage / cmd_716 Mapping / Anti-Patterns / Battle-Tested
+        Examples / Source 11 件
+    - layer: instructions
+      target: instructions/shogun.md line 225 + instructions/karo.md line 244
+      status: complete
+      coverage: §Lord Approval Request 節 + 必須8フィールド + Two-Channel Rule + cmd_716 /
+        dual-review / skill-creation-workflow 関連
+    - layer: chunked_notification
+      target: scripts/discord_notify.py / scripts/notify.sh + tests/unit/test_discord_notify.py
+        + tests/unit/test_notify_discord.bats
+      status: complete
+      coverage: --chunked opt-in + CHUNK_TARGET=1800 + Part N/M + title/tag 維持 + NOTIFY_CHUNKED=1
+        wrapper + 後方互換 + cmd_728e dry-run 5 parts evidence
+    concerns_flagged:
+    - id: c1
+      severity: low
+      title: skill 3 源同期 (skill_candidates.yaml / skill_history.md / dashboard.md)
+        未実施
+      detail: "cmd_728b §B-5 制約により skill 起草段階では 3 源編集禁止。本 QC 完了後の cmd_728 完遂 dispatch\
+        \ で家老が同期予定 (cmd_728b §Output / Sync Proposal 案 3 件参照)。\n想定 entry:\n  - queue/skill_candidates.yaml:\
+        \ SC entry shogun-lord-approval-request-pattern (status: created, source_cmd:\
+        \ cmd_728b)\n  - memory/skill_history.md: `| **shogun-lord-approval-request-pattern**\
+        \ ✅ | cmd_728b: 殿承認依頼必須8フィールド + Discord/dashboard 二系統テンプレ + --chunked usage、~284L\
+        \ |`\n  - dashboard.md: cmd_728 戦果欄追記 + 要対応欄から該当 action_required 削除 (SO-19)\n"
+      action_for_karo: cmd_728 完遂 dispatch で 3 源同期 + commit/push を `Refs cmd_728`
+        で実施。
+    - id: c2
+      severity: low
+      title: cmd_716 gate registry 完全統合は Phase D 完成後
+      detail: 'skill §Relation to cmd_716 Gate Registry で mapping 表 + Coexistence
+        方針記載済。cmd_716 Phase D 完成後に gate_type: lord_approval を本 skill テンプレで登録するフローへ統合予定。'
+      action_for_karo: cmd_716 Phase D 完遂時に本 skill との完全統合 cmd を起案検討。
+    follow_up_observations:
+    - scripts/gunshi_report_append.sh の導入は cmd_725 QC sug_cmd_725_002 / cmd_727 sug_cmd_727_001
+      / cmd_728e sug_cmd_728e_001 で繰り返し flag した『ash7 report yaml append silent failure』への即応策。家老の運用改善対応の速さを記録
+      (本 QC で初使用)。今後は append helper 経由で history 破壊なしの累積 QC report を維持。
+    - 本 skill のテンプレを使った最初の実 lord_approval 依頼が発生したら、skill §Battle-Tested Examples に
+      append して battle-tested 強化する規律化候補。cmd_716 (1 例) 単独では弱い、2-3 例で安定化。
+    - cmd_728 全体 (α 業界調査 / β 起草 / γ instructions / δ QC / ε discord chunked) の 5 段構造は今後の
+      skill 化 cmd 一連のテンプレとして再利用可能。skill-creation-workflow §1-§6 と相補的に並列運用候補。
+    action_required_candidates: []
+    suggestions:
+    - cmd_728 完遂 dispatch で 3 源同期 (skill_candidates.yaml / skill_history.md / dashboard.md)
+      を家老が実施。本 skill が dashboard 🛠️ 欄に entry 追加されることで Claude trigger 判定が正規化される。
+    - 本 skill 初実 lord_approval 依頼発生時に skill §Battle-Tested Examples へ append する規律を
+      skill-creation-workflow §5 (battle-tested 強化) に補強候補。
+    - scripts/gunshi_report_append.sh 導入を機に、ash{N}_report.yaml にも同様の append helper
+      (scripts/ashigaru_report_append.sh 等) を整備する余地。cmd_725b/cmd_728e silent failure
+      再発防止の構造的対策。
     files_modified:
-    - scripts/inbox_watcher.sh
-    - tests/unit/test_send_wakeup.bats
-    - output/cmd_727a_inbox_watcher_silent_failure_remediation.md
-    - queue/reports/ashigaru6_report.yaml
-    - queue/reports/gunshi_report.yaml
+    - queue/reports/gunshi_report.yaml (via scripts/gunshi_report_append.sh)
+    - queue/inbox/gunshi.yaml
+    - queue/tasks/gunshi.yaml (status: assigned → done)
   skill_candidate:
     found: false
-    reason: '本 QC は inbox_watcher.sh silent failure 修正の品質確認であり、skill 化対象の新パターンではない。
+    reason: '本 cmd 自体が shogun-lord-approval-request-pattern skill の QC であり、QC 自体は新規
+      skill 化対象とならない。
 
-      ただし loss_cause_analysis (L-1/L-4) の防止策は shogun-observation-queue-archive-rule
-      や
-
-      cmd_729 gunshi_report 書込経路監査と関連する実装知見として記録。
+      ただし concerns c1 で flag した「3 源同期の dispatch 標準化」「append helper の ashigaru 用整備」は将来
+      skill-creation-workflow / 運用改善 cmd の候補として記録。
 
       '
   north_star_alignment:
     status: aligned
-    reason: 'north_star「cascading silent failure 検出可能性確保」を inbox_watcher.sh 全 tmux
-      send-keys 箇所の
-
-      明示ログ化で達成。unit 58/58 + e2e 5/5 PASS、residual suppression 0、commit push済の evidence
-      揃い。
+    reason: '本 cmd の north_star は「殿への承認依頼を decision memo として標準化し、Discord + dashboard
+      二系統で運用」。skill (284 行) + instructions (両者 §Lord Approval Request 節) + chunked
+      notification + cmd_728a 11 source 出典 + cmd_716 gate registry mapping + 既存 skill
+      non-overlap + system-reminder 載録の 7 層完遂で ends 達成。cmd_716 9 時間遅延の再発防止に直接寄与する設計が確立。
 
       '
-  reconstructed_from:
-  - existing pre-migration YAML document in queue/reports/gunshi_report.yaml
-  - output/cmd_727c_status_fixture_gunshi_report_repair.md
-  - output/cmd_727a_inbox_watcher_silent_failure_remediation.md
-  source_evidence:
-  - path: queue/reports/gunshi_report.yaml
-    detail: Pre-migration first YAML document contained subtask_727b QC text.
-  - path: output/cmd_727c_status_fixture_gunshi_report_repair.md
-    detail: C-3/C-4 records subtask_727b restoration and loss-cause analysis.
-  - path: output/cmd_727a_inbox_watcher_silent_failure_remediation.md
-    detail: Records unit 58/58, e2e 5/5, residual suppression 0, commits 7e0a03c/c3d719d.
-  reconstructed_at: '2026-05-15T15:44:32+09:00'
+    risks_to_north_star:
+    - skill 3 源同期未実施 (cmd_728 完遂 dispatch で家老実施予定)。同期前は dashboard 🛠️ 欄に entry なし、Claude
+      trigger は description match で機能するが、dashboard 上の可視性が弱い。
+    - cmd_716 gate registry 完全統合は Phase D 完成後。それまでは本 skill と cmd_716 の連携は手動 mapping
+      運用となる。
+    - battle-tested 1 例 (cmd_716 dogfooding) のみ。2-3 例の蓄積で安定化、未蓄積期間は skill 改訂リスクあり。
