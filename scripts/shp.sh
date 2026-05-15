@@ -111,7 +111,7 @@ num_cli_cmd() {
     case "$1" in
         1) echo "claude --model claude-sonnet-4-6 --dangerously-skip-permissions" ;;
         2) echo "claude --model claude-opus-4-7 --dangerously-skip-permissions" ;;
-        3) echo "codex --model gpt-5.5 --reasoning-effort xhigh --search --dangerously-bypass-approvals-and-sandbox --no-alt-screen" ;;
+        3) echo 'codex --model gpt-5.5 -c model_reasoning_effort="xhigh" --search --dangerously-bypass-approvals-and-sandbox --no-alt-screen' ;;
         *) echo "claude --model claude-sonnet-4-6 --dangerously-skip-permissions" ;;
     esac
 }

@@ -104,7 +104,7 @@ for agent in ('ashigaru6', 'ashigaru7'):
 }
 
 @test "T3-hybrid-codex: shx ash6-7 codex/gpt-5.5/xhigh runtime overlay present" {
-    grep -q "codex --model gpt-5.5 --reasoning-effort xhigh" \
+    grep -q 'model_reasoning_effort="xhigh"' \
         "${PROJECT_ROOT}/shutsujin_departure.sh"
 }
 

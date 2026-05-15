@@ -1,110 +1,63 @@
 worker_id: ashigaru6
-task_id: subtask_729e_macos_gha_fix
-parent_cmd: cmd_729
+task_id: subtask_730y_codex_flag_compat
+parent_cmd: cmd_730
 status: done
-timestamp: "2026-05-15T16:30:19+09:00"
+timestamp: "2026-05-16T07:49:37+09:00"
 report_to: karo
 skill_candidate:
-  found: true
-  notes: "GHA venv/PyYAML path mismatch pattern: CI installs Python deps into .venv but tests/scripts invoke system python3. Reusable across shell+Bats repos."
+  found: false
+  notes: ""
 result:
   verdict: pass
-  output_path: /home/ubuntu/shogun/output/cmd_729e_macos_gha_fix.md
+  output_path: /home/ubuntu/shogun/output/cmd_730y_codex_flag_compat.md
   summary: |
-    GHA run 25905364431 / job 76137747342 の macOS Unit Tests failure を調査し、
-    not ok 211/212/213/250 は .venv に入れた PyYAML を system python3 が見られない
-    Python path mismatch が根因と特定した。Ubuntu は system PyYAML が存在したため偶然PASS。
-    対象 Bats と helper scripts を repo-local .venv/bin/python3 優先の PYTHON_BIN 経路へ統一し、
-    ローカル対象 Bats 4/4 PASS、SKIP=0、bash -n PASS を確認した。
+    Codex CLI v0.130.0 で --reasoning-effort が廃止され、
+    -c model_reasoning_effort="xhigh" への移行が必要だった。
+    shutsujin_departure.sh (shx path, line 860) と scripts/shp.sh (num_cli_cmd, line 114) を
+    シングルクォート化してリテラル一致を保証。
+    smoke PASS=34 SKIP=0、bats 23/23 PASS SKIP=0 を確認。
+    cmd_730f SHA note (88d1324) をコミットで解消。
   changed_files:
-    - path: tests/unit/test_gunshi_report_append.bats
-      change: "PYTHON_BIN を .venv/bin/python3 優先で設定し、inline YAML checks と sync subprocess に適用"
-    - path: tests/unit/test_report_reality_drift.bats
-      change: "PYTHON_BIN を .venv/bin/python3 優先で設定し、YAML/markdown assertion snippets に適用"
-    - path: scripts/gunshi_report_append.sh
-      change: "repo-local .venv/bin/python3 優先の PYTHON_BIN を導入し、append Python logic に適用"
-    - path: scripts/action_required_sync.sh
-      change: "PYTHON_BIN を sync logic / notify JSON parsing / notify dispatch / dashboard renderer に適用"
-    - path: output/cmd_729e_macos_gha_fix.md
-      change: "root cause、GHA evidence、変更内容、実行コマンド、残リスクを記録"
-    - path: queue/inbox/ashigaru6.yaml
-      change: "subtask_729e 配備通知を read:true に更新"
-    - path: queue/tasks/ashigaru6.yaml
-      change: "status in_progress を経て done へ更新"
-    - path: queue/reports/ashigaru6_report.yaml
-      change: "本報告へ更新"
+    - path: shutsujin_departure.sh
+      change: "line 860: _ashi_cmd をシングルクォート化（model_reasoning_effort=\"xhigh\" → 'model_reasoning_effort=\"xhigh\"'）"
+    - path: scripts/shp.sh
+      change: "line 114: echo をシングルクォート化（同上）"
+    - path: output/cmd_730f_gamma_shp_transient.md
+      change: "num_cli_cmd説明に-c model_reasoning_effort=\"xhigh\"フラグ形式と廃止注記を追加、SHA note確定"
+    - path: output/cmd_730y_codex_flag_compat.md
+      change: "本タスク成果物（新規）"
   acceptance_criteria:
-    - id: E-1
+    - id: Y-1
       status: PASS
-      evidence: "gh run view 25905364431 --repo saneaki/multi-agent --job 76137747342 --log で macOS not ok 211/212/213/250 を確認し、output に記録。"
-    - id: E-2
+      evidence: "codex --help に --reasoning-effort は存在せず。output/cmd_730y_codex_flag_compat.md Section 2 に記録。"
+    - id: Y-2
       status: PASS
-      evidence: "macOS 固有差分は workflow が .venv に PyYAML を入れる一方で tests/scripts が system python3 を直呼びする PATH/PyYAML mismatch と特定。PYTHON_BIN により Linux/macOS 両対応。"
-    - id: E-3
+      evidence: "shutsujin_departure.sh line 860 / scripts/shp.sh line 114 をシングルクォート化。config/settings.yaml 変更なし。"
+    - id: Y-3
       status: PASS
-      evidence: "tests/unit/test_gunshi_report_append.bats の 211/212/213 相当と tests/unit/test_report_reality_drift.bats の 250 相当を .venv-aware に補修。"
-    - id: E-4
+      evidence: "smoke T3-2 / bats T3-hybrid-codex はともに model_reasoning_effort=\"xhigh\" grep PASS。旧 --reasoning-effort 期待値なし。"
+    - id: Y-4
       status: PASS
-      evidence: "scripts/gunshi_report_append.sh / scripts/action_required_sync.sh を最小修正し、bash -n PASS。"
-    - id: E-5
+      evidence: "bash -n shutsujin_departure.sh scripts/shp.sh tests/smoke/launcher_spec_consistency.sh → ALL PASS"
+    - id: Y-5
       status: PASS
-      evidence: "bats tests/unit/test_gunshi_report_append.bats tests/unit/test_report_reality_drift.bats: 4/4 PASS, SKIP=0。"
-    - id: E-6
+      evidence: "smoke PASS=34 FAIL=0 SKIP=0。bats 23/23 PASS SKIP=0。"
+    - id: Y-6
       status: PASS
-      evidence: "cmd_704 git preflight は output/report に記録。commits eb0e020 / 591a76a は Refs cmd_729 を含む。push は未実施。"
-    - id: E-7
+      evidence: "cmd_730f num_cli_cmd説明にフラグ形式明記。SHA 88d1324 note を本コミットで解消。"
+    - id: Y-7
       status: PASS
-      evidence: "output/cmd_729e_macos_gha_fix.md に root cause、変更内容、実行コマンド、code commit SHA eb0e020、残リスクを記録。成果物追記 commit は 591a76a。"
+      evidence: "commit SHA: (本コミット後確定)。Refs cmd_730 含む。"
   verification:
-    - command: "gh auth status"
+    - command: "bash -n shutsujin_departure.sh scripts/shp.sh tests/smoke/launcher_spec_consistency.sh"
       result: PASS
-      stdout: "Logged in to github.com account saneaki; repo/workflow scopes present"
-    - command: "gh run view 25905364431 --repo saneaki/multi-agent --json name,workflowName,conclusion,status,url,event,headBranch,headSha,jobs"
+      stdout: "ALL PASS"
+    - command: "bash tests/smoke/launcher_spec_consistency.sh"
       result: PASS
-      stdout: "conclusion=failure; macos-latest job 76137747342 failure; ubuntu-latest success; head=36fdbe7"
-    - command: "gh run view 25905364431 --repo saneaki/multi-agent --job 76137747342 --log"
+      stdout: "PASS=34 FAIL=0 SKIP=0"
+    - command: "bats tests/unit/test_launcher_spec.bats"
       result: PASS
-      stdout: "not ok 211/212/213/250 confirmed; macOS runner macos-15-arm64; PyYAML installed into .venv"
-    - command: "command -v bats"
-      result: PASS
-      stdout: "/home/ubuntu/.npm-global/bin/bats"
-    - command: "python3 import yaml; .venv/bin/python3 import yaml"
-      result: PASS
-      stdout: "system_pyyaml=present; venv_pyyaml=present"
-    - command: "bash -n scripts/gunshi_report_append.sh scripts/action_required_sync.sh"
+      stdout: "23/23 PASS SKIP=0"
+    - command: "grep -q 'model_reasoning_effort=\"xhigh\"' shutsujin_departure.sh"
       result: PASS
       stdout: ""
-    - command: "bats tests/unit/test_gunshi_report_append.bats tests/unit/test_report_reality_drift.bats"
-      result: PASS
-      stdout: "1..4; ok 1-4; SKIP=0"
-  git_preflight:
-    before_status:
-      - "M docs/dashboard_schema.json"
-      - "M memory/global_context.md"
-      - "M queue/external_inbox.yaml"
-      - "M queue/reports/ashigaru1_report.yaml"
-      - "M queue/reports/ashigaru4_report.yaml"
-      - "M queue/reports/ashigaru6_report.yaml"
-      - "M queue/reports/gunshi_report.yaml"
-      - "M queue/suggestions.yaml"
-      - "M queue/tasks/ashigaru4.yaml"
-      - "M queue/tasks/ashigaru6.yaml"
-      - "M scripts/shc.sh"
-      - "M skills/shogun-silent-failure-audit-pattern/SKILL.md"
-    commit:
-      status: done
-      sha:
-        - eb0e020
-        - 591a76a
-      message:
-        - "fix: use venv python in report tests (Refs cmd_729)"
-        - "docs: record cmd_729e gha fix result (Refs cmd_729)"
-      scope:
-        - scripts/gunshi_report_append.sh
-        - scripts/action_required_sync.sh
-        - tests/unit/test_gunshi_report_append.bats
-        - tests/unit/test_report_reality_drift.bats
-        - output/cmd_729e_macos_gha_fix.md
-    push:
-      status: not_run
-      reason: "task instruction: push は家老が行うため commit まで。"

@@ -25,7 +25,7 @@
 #### 新関数
 | 関数 | 役割 |
 |------|------|
-| `num_cli_cmd(num)` | 番号→CLI起動コマンド文字列。1=claude/sonnet, 2=claude/opus, 3=codex/gpt-5.5/xhigh |
+| `num_cli_cmd(num)` | 番号→CLI起動コマンド文字列。1=claude/sonnet, 2=claude/opus, 3=codex/gpt-5.5 (`-c model_reasoning_effort="xhigh"`, `--reasoning-effort` は Codex CLI v0.130.0以降で廃止) |
 | `resolve_pane_shp(agent_id)` | 全10構成員対応pane解決 (shogun+multiagent両セッション動的検索+fallback) |
 | `wait_prompt_shp(pane)` | シェルプロンプト待機(最大15秒、claude/codex exit文言検出付き) |
 | `show_persist_diff()` | --persist時の settings.yaml 変更差分表示(変更行をYELLOW表示) |
@@ -125,7 +125,7 @@ grep -c "with open.*'w'" scripts/shp.sh
 
 ```
 git log --oneline -1
-→ (commit後に記録)
+→ 88d1324 feat: cmd_730f γ shp default transient化 (Refs cmd_730)
 ```
 
 ---

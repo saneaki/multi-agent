@@ -857,7 +857,7 @@ if [ "$SETUP_ONLY" = false ]; then
             if [ "$HYBRID_MODE" = true ] && [ "$i" -ge 6 ]; then
                 # shx: ashigaru6-7 runtime overlay → codex 最新 + xhigh（settings.yaml 不変）
                 _ashi_cli_type="codex"
-                _ashi_cmd="codex --model gpt-5.5 --reasoning-effort xhigh --search --dangerously-bypass-approvals-and-sandbox --no-alt-screen"
+                _ashi_cmd='codex --model gpt-5.5 -c model_reasoning_effort="xhigh" --search --dangerously-bypass-approvals-and-sandbox --no-alt-screen'
                 _ashi_display="Codex"
                 _startup_prompt="Session Start — do ALL of this in one turn, do NOT stop early: 1) tmux display-message -t \"\$TMUX_PANE\" -p '#{@agent_id}' to identify yourself. 2) Read queue/tasks/ashigaru${i}.yaml. 3) Read queue/inbox/ashigaru${i}.yaml, mark read:true. 4) Read files listed in context_files. 5) Execute the assigned task to completion — edit files, run commands, write reports. Keep working until the task is done."
                 _ashi_cmd="$_ashi_cmd \"$_startup_prompt\""

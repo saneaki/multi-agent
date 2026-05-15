@@ -196,7 +196,7 @@ else
 fi
 
 # T3-2: ash6-7 向け codex xhigh runtime overlay が存在する (β実装)
-if grep -q "codex --model gpt-5.5 --reasoning-effort xhigh" "$SHU_SCRIPT"; then
+if grep -q 'model_reasoning_effort="xhigh"' "$SHU_SCRIPT"; then
     ok "T3-2: shx ash6-7 codex/gpt-5.5/xhigh runtime overlay present"
 else
     fail "T3-2: shx ash6-7 codex/xhigh command not found"

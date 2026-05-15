@@ -1,82 +1,73 @@
 task:
-  task_id: subtask_729e_macos_gha_fix
-  parent_cmd: cmd_729
-  title: 'cmd_729e: macOS GHA report tests fix'
+  task_id: subtask_730y_codex_flag_compat
+  parent_cmd: cmd_730
+  title: 'cmd_730y: Codex起動flag互換修復'
   bloom_level: L4
   assigned_to: ashigaru6
   report_to: karo
   status: done
-  timestamp: '2026-05-15T16:24:01+09:00'
+  timestamp: '2026-05-16T07:18:30+09:00'
   priority: high
   project: shogun
   target_path: /home/ubuntu/shogun
   context_policy: preserve_across_stages
   blocked_by: []
   context_files:
-  - queue/shogun_to_karo.yaml
-  - output/cmd_729c_report_append_smoke_test.md
-  - output/cmd_729d_skill_pattern_qc.md
-  - tests/unit/test_gunshi_report_append.bats
-  - tests/unit/test_report_reality_drift.bats
-  - scripts/gunshi_report_append.sh
-  - scripts/action_required_sync.sh
-  - queue/reports/gunshi_report.yaml
-  - dashboard.yaml
-  - dashboard.md
-  - .github/workflows/test.yml
+    - queue/shogun_to_karo.yaml
+    - output/cmd_730z_codex_completion_verification.md
+    - output/cmd_730e_beta_runtime_overlay.md
+    - output/cmd_730f_gamma_shp_transient.md
+    - output/cmd_730h_delta_smoke_tests.md
+    - shutsujin_departure.sh
+    - scripts/shp.sh
+    - tests/smoke/launcher_spec_consistency.sh
+    - tests/unit/test_launcher_spec.bats
   editable_files:
-  - tests/unit/test_gunshi_report_append.bats
-  - tests/unit/test_report_reality_drift.bats
-  - scripts/gunshi_report_append.sh
-  - scripts/action_required_sync.sh
-  - output/cmd_729e_macos_gha_fix.md
-  - queue/reports/ashigaru6_report.yaml
-  - queue/tasks/ashigaru6.yaml
-  - queue/inbox/ashigaru6.yaml
+    - shutsujin_departure.sh
+    - scripts/shp.sh
+    - tests/smoke/launcher_spec_consistency.sh
+    - tests/unit/test_launcher_spec.bats
+    - output/cmd_730y_codex_flag_compat.md
+    - output/cmd_730f_gamma_shp_transient.md
+    - queue/reports/ashigaru6_report.yaml
+    - queue/tasks/ashigaru6.yaml
+    - queue/inbox/ashigaru6.yaml
+  forbidden_files:
+    - config/settings.yaml
+    - dashboard.md
+    - dashboard.yaml
+    - queue/reports/ashigaru4_report.yaml
+    - queue/reports/ashigaru1_report.yaml
+    - output/cmd_730e_beta_runtime_overlay.md
   acceptance_criteria:
-  - id: E-1
-    check: GHA run 25905364431 / job 76137747342 の macOS log を確認し、not ok 211/212/213/250 の根因を output に記録する
-  - id: E-2
-    check: macOS 固有差分 (bash/PATH/PyYAML/fixture path/GNU tool 依存/regex 挙動) を特定し、Linux/macOS 両対応の修正にする
-  - id: E-3
-    check: tests/unit/test_gunshi_report_append.bats の 211/212/213 相当と tests/unit/test_report_reality_drift.bats の 250 相当を
-      macOS GHA で落ちない構造へ補修する
-  - id: E-4
-    check: 必要なら scripts/gunshi_report_append.sh / scripts/action_required_sync.sh を最小修正し、bash -n を通す
-  - id: E-5
-    check: ローカルで bats tests/unit/test_gunshi_report_append.bats tests/unit/test_report_reality_drift.bats を実行し、SKIP=0 を記録する
-  - id: E-6
-    check: cmd_704 git preflight を記録し、commit message に Refs cmd_729 を含める。push は家老が行うため原則 commit までに留める
-  - id: E-7
-    check: output/cmd_729e_macos_gha_fix.md に root cause、変更内容、実行コマンド、commit SHA、残リスクを記録する
-  description: 'cmd_729 ε。軍師δ QC は conditional_go だが、GHA run 25905364431 の macOS Unit Tests が 4件 failure のため cmd_729 完遂不可。
+    - id: Y-1
+      check: "現行 `codex --help` で `--reasoning-effort` が非対応である事実を output に記録する"
+    - id: Y-2
+      check: "shutsujin_departure.sh と scripts/shp.sh の Codex 起動コマンドを `-c model_reasoning_effort=\"xhigh\"` 形式へ修正し、settings.yaml は変更しない"
+    - id: Y-3
+      check: "tests/smoke/launcher_spec_consistency.sh と tests/unit/test_launcher_spec.bats の期待値を新flagへ更新し、旧 `--reasoning-effort` 期待を残さない"
+    - id: Y-4
+      check: "`bash -n shutsujin_departure.sh scripts/shp.sh tests/smoke/launcher_spec_consistency.sh` をPASSさせる"
+    - id: Y-5
+      check: "`bash tests/smoke/launcher_spec_consistency.sh` と `bats tests/unit/test_launcher_spec.bats` をSKIP=0でPASSさせる"
+    - id: Y-6
+      check: output/cmd_730f_gamma_shp_transient.md のCodex起動記述も必要最小限で整合させ、未コミットSHA note dirtyを解消する
+    - id: Y-7
+      check: commit message に Refs cmd_730 を含め、編集対象だけをcommit/pushする
+  description: |
+    cmd_730 ε後の追加修復。家老が ashigaru7 を実際に Codex 起動した際、現行 Codex CLI v0.130.0 が `--reasoning-effort` を拒否した。
+    `-c model_reasoning_effort="xhigh"` では `gpt-5.5 xhigh` 起動に成功し、settings.yaml hash は不変だった。
 
+    【目的】
+    shx/shp の Codex 起動が実環境で失敗しないよう、Codex CLI 現行仕様に合わせて起動flagとテスト期待値を修復する。
 
-    失敗ログ要点:
-
-    - run: 25905364431 / job: 76137747342 / workflow: Multi-CLI Test Suite / head: 36fdbe7
-
-    - ubuntu-latest: success
-
-    - macOS: failure
-
-    - not ok 211 tests/unit/test_gunshi_report_append.bats line 43: schema has latest/history
-
-    - not ok 212 line 51: append helper isolated copy
-
-    - not ok 213 line 122: action_required_sync latest + legacy fallback
-
-    - not ok 250 tests/unit/test_report_reality_drift.bats line 80: resolved dashboard tags active/archive distinction
-
-    - shell: /opt/homebrew/bin/bash -e {0}
-
-
-    まず GitHub log と該当 test を読み、再現不能でも macOS 差分の根因を output に記録すること。推測修正を重ねず、必要なら公式/GitHub docs等を調べてから二手目を打つこと。
-
+    【厳守】
+    - config/settings.yaml は編集禁止。transient維持。
+    - dashboard は編集禁止。
+    - report hygiene修復は ash4/ash1 が別担当。該当reportには触らない。
+    - 無関係dirtyを巻き込まない。
 
     【完了報告】
-
-    bash /home/ubuntu/shogun/scripts/inbox_write.sh karo   "【subtask_729e_macos_gha_fix 完了】cmd_729 ε完了。root_cause=<要約> local_tests=<PASS|FAIL>
-    skip=<0|N> commit=<sha|none> output=output/cmd_729e_macos_gha_fix.md。家老にてpush/GHA確認されたし。"   task_completed ashigaru6
-
-    '
+    bash /home/ubuntu/shogun/scripts/inbox_write.sh karo \
+      "【subtask_730y_codex_flag_compat 完了】cmd_730 y修復完了。codex_flag=<PASS|FAIL> tests=<PASS|FAIL> skip=<0|N> commit=<sha|none> output=output/cmd_730y_codex_flag_compat.md。report確認されたし。" \
+      task_completed ashigaru6
