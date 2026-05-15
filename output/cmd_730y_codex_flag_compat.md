@@ -147,5 +147,5 @@ ok 23 smoke-full-run: tests/smoke/launcher_spec_consistency.sh PASS
 
 ```
 git log --oneline -1
-→ (本コミット後に確定)
+→ 8004aa3 fix(cmd_730y): Codex CLI flag互換修復 -c model_reasoning_effort="xhigh" (Refs cmd_730)
 ```
