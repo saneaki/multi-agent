@@ -88,12 +88,14 @@ result:
       - "M scripts/shc.sh"
       - "M skills/shogun-gas-clasp-rapt-reauth-fallback/SKILL.md"
     commit:
-      status: pending
-      sha: pending
+      status: done
+      sha: 7e0a03c
       message: "fix: log inbox watcher send-keys failures (cmd_727)"
     push:
-      status: pending
+      status: done
       branch: main
+      remote: origin
+      result: "87d6446..7e0a03c main -> main"
   remediation:
     classified_tmux_send_keys: 31
     remediated_tmux_send_keys: 31

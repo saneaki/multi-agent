@@ -81,4 +81,8 @@ Relevant changed files for cmd_727a:
 - `queue/tasks/ashigaru6.yaml`
 - `queue/inbox/ashigaru6.yaml`
 
-Commit/push status will be recorded in `queue/reports/ashigaru6_report.yaml` after the selected-file commit and push.
+Selected-file code/remediation commit:
+
+- commit: `7e0a03c`
+- message: `fix: log inbox watcher send-keys failures (cmd_727)`
+- push: PASS (`origin/main`, `87d6446..7e0a03c`)
