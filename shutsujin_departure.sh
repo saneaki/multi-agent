@@ -81,6 +81,16 @@ log_war() {
     echo -e "\033[1;31m【戦】\033[0m $1"
 }
 
+log_warn() {
+    echo -e "\033[1;33m【警】\033[0m $1"
+}
+
+# Test hooks may set SHOGUN_TMUX="tmux -L <name> -f /dev/null" to exercise
+# setup paths without touching the live shogun/multiagent sessions.
+tmux() {
+    command ${SHOGUN_TMUX:-tmux} "$@"
+}
+
 # ダッシュボード🏯セクションのモデル表記を現在の陣形に合わせて更新
 update_dashboard_formation() {
     local dashboard="./dashboard.md"
@@ -299,7 +309,9 @@ fi
 # "all files and scripts in this repo are released CC0 / kopimi!"
 # ═══════════════════════════════════════════════════════════════════════════════
 show_battle_cry() {
-    clear
+    if [ -t 1 ] && [ -n "${TERM:-}" ]; then
+        clear
+    fi
 
     # タイトルバナー（色付き）
     echo ""
