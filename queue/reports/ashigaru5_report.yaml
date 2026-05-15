@@ -1,113 +1,196 @@
 worker_id: ashigaru5
-task_id: subtask_693_sh_followup_triage
-parent_cmd: cmd_693
-timestamp: "2026-05-09T07:03:00+09:00"
+task_id: subtask_716f_phase_c_p6_event_ledger
+parent_cmd: cmd_716
+timestamp: "2026-05-15T15:35:00+09:00"
 status: done
 report_to: karo
-type: investigation
+type: phase_implementation
+model: opus+t
+
+result_716f:
+  summary: |
+    cmd_716 Phase C 完了。P6 dashboard 鮮度 alert を event ledger 駆動に置換。
+    - scripts/lib/gate_suppression.py に event ledger コア追加 (+~180L)
+    - queue/alert_state.yaml に dashboard_events セクション (Phase A/B gates/notifications は無編集)
+    - scripts/shogun_in_progress_monitor.sh check_pattern_6 を ledger 駆動へ
+    - unit test 64/64 PASS (既存40件維持 + Phase C 24件追加, SKIP=0)
+    - PoC 検出率 100% (>=95% threshold pass)
+    - dry-run で P7 system alert 発火継続、P6 dashboard fresh のため非発火を確認
+
+  output_path: output/cmd_716f_phase_c_p6_event_ledger.md
+
+  acceptance_criteria_716f:
+    C-1:
+      status: PASS
+      evidence: "event_kind/source_id/source_mtime/first_seen_at/resolved_at の 5フィールド event ledger を gate_suppression.py に実装。classify_event_kind() で 4種別+unknown へ分類。TestClassifyEventKind 8件 + TestEventLedger 10件で検証"
+    C-2:
+      status: PASS
+      evidence: "has_unresolved_dashboard_events() で未解消検出。test_event_resolves_when_dashboard_catches_up で再発火抑制 (resolved_at セット後 unresolved=0)、test_event_reopens_when_source_changes_again で再変更時の再オープンを検証"
+    C-3:
+      status: PASS
+      evidence: "event_ledger_detection_rate() PoC ヘルパー実装。TestEventLedgerDetectionRate::test_detection_rate_meets_95pct_on_fixture で 20 fixture 100% 検出 (>=95% threshold pass)。dry-run で P7 system alert 発火継続を確認 (system alert 非抑制)"
+    C-4:
+      status: PASS
+      evidence: "test_ledger_does_not_touch_gates_section で Phase A/B の gates/notifications 既存値の維持を検証。test_phase_a_b_functions_still_work で Phase B 関数の回帰なしを確認。load_event_ledger は corrupt YAML でも defaults を返す"
+    C-5:
+      status: PASS
+      evidence: "tests/unit/test_gate_suppression.py 64/64 PASS (40+24, SKIP=0, FAIL=0, 1.26s)。bash -n / py_compile 全 syntax OK。dry-run で 7件検出 (P7+P9+P9b、P5 抑制、P6 非発火) を確認"
+    C-6:
+      status: PASS_pending_commit
+      evidence: "git preflight: 作業前13件 dirty は editable_files 範囲外。本cmdの変更対象 7ファイル (gate_suppression.py / monitor.sh / alert_state.yaml / test / output / report / task)。commit message に Refs cmd_716 を含める方針"
+
+  files_modified_716f:
+    - scripts/lib/gate_suppression.py  # event ledger コア追加
+    - scripts/shogun_in_progress_monitor.sh  # check_pattern_6 ledger 駆動化
+    - queue/alert_state.yaml  # dashboard_events セクション追加
+    - tests/unit/test_gate_suppression.py  # Phase C 24件追加
+    - output/cmd_716f_phase_c_p6_event_ledger.md  # 新規 (本レポートと別)
+    - queue/reports/ashigaru5_report.yaml  # 本ファイル (history append)
+    - queue/tasks/ashigaru5.yaml  # status: done
+
+# ────────────────────────────────────────────────────────────
+# 以下は前タスク (cmd_728 β) の履歴
+# ────────────────────────────────────────────────────────────
+prev_task_id: subtask_728b_lord_approval_skill_draft
+prev_parent_cmd: cmd_728
+prev_timestamp: "2026-05-15T15:15:45+09:00"
+prev_status: done
+prev_report_to: karo
+prev_type: skill_creation
+prev_model: opus+t
 
 result:
   summary: |
-    cmd_693 sh残課題+fork-upstream棚卸し完了。
-    A-1 cmd_683-followup: inbox_watcher[karo] restart確認済、WARNING消滅、CLOSE。
-    A-2 cmd_677-followup Tier2: D-1〜D-4全件cmd_683で修正済を確認、CLOSE。
-      残存: cmd_squash_pub_hook red=1 (update_dashboard.sh non-fatal, SH_HEALTHマーカー欠落)。
-    A-3 fork-upstream β戦略: cmd_653で戦略確定済のため観察CLOSE。
-      HIGH cherry-pick候補 4件 (PR#116/136/141, persona recovery) を将来cmd候補として記録。
-  output_path: output/cmd_693_sh_followup_triage.md
-  close_candidates: 7
-  followup_cmd_candidates:
-    - name: upstream cherry-pick PR #116 (inbox_write self-send guard)
-      priority: HIGH
-    - name: upstream cherry-pick #136 (switch_cli fix)
-      priority: MEDIUM
-    - name: cmd_squash_pub_hook SH_HEALTH marker repair
-      priority: LOW
-    - name: upstream cherry-pick #141 (inbox_watcher /clear recovery)
-      priority: LOW
+    cmd_728 β完了。α (cmd_728a 業界調査 11 source) と cmd_728e (discord_notify --chunked 実装)
+    の結果を踏まえ、殿承認依頼 skill `shogun-lord-approval-request-pattern` を起草した。
+    - 新規 skill: skills/shogun-lord-approval-request-pattern/SKILL.md (283L)
+    - frontmatter: Use when (殿承認依頼) + Do NOT use for (家老内/軍師内/足軽内 技術判断) 両明示
+    - 必須8フィールド: 件名/背景/調査プロセス/選択肢+trade-off/推奨判断/殿のアクション/期限SLA/参考資料
+    - Discord 詳細版 (1200-1600字) + dashboard 短縮版 (120-180字) 二系統テンプレ
+    - --chunked usage: 直接実行 / NOTIFY_CHUNKED=1 wrapper / 判定基準 / --dry-run 確認手順
+    - cmd_716 gate registry mapping (7項目 + coexistence) / dual-review 前段 / skill-creation-workflow 並列 を明示
+    - 共有3源 (skill_candidates.yaml / skill_history.md / dashboard.md) は無編集、後段同期案を output §5 に記録
+    - shogun-decision-notify-pattern (ntfy infrastructure) との重複なし確認 (ドメイン分離: content format vs 配信機構)
+
+  output_path: output/cmd_728b_lord_approval_skill_draft.md
+  skill_path: skills/shogun-lord-approval-request-pattern/SKILL.md
+  skill_lines: 283
+  skill_h2_sections: 15
+
   acceptance_criteria:
-    - id: A-1
+    B-1:
       status: PASS
-      evidence: logs/inbox_watcher_karo.log にて codex-no-verify 動作確認。WARNING ゼロ (cmd_683 デプロイ後)。
-    - id: A-2
+      evidence: "skills/shogun-lord-approval-request-pattern/SKILL.md 新設 (skill-creation-workflow §1-§3 準拠: 評価→統合判断→SKILL.md作成)。shogun-decision-notify-pattern (ntfy infrastructure) と独立ドメインのため統合せず新規"
+    B-2:
       status: PASS
-      evidence: sh_health_check で D-1(kpi_observer)/D-2(inbox_watcher shogun)/D-3(karo)/D-4(notifier) 全件改善確認。
-    - id: A-3
+      evidence: "frontmatter description に [English]/[日本語] 両方で Use when (殿への承認依頼・判断要請時) と Do NOT use for (家老内/軍師内/足軽内の技術判断) を明示 (SKILL.md L4-L13)"
+    B-3:
       status: PASS
-      evidence: cmd_653 成果物照合。β戦略確定、upstream 直 remote 設定済、dashboard観察エントリなし。
-    - id: A-4
+      evidence: "(a) 必須8フィールド §8 Required Fields; (b) Discord 詳細テンプレ §Discord Detailed Template; (c) dashboard 短縮テンプレ §Dashboard Short Template; (d) --chunked usage §--chunked Usage (直接実行/wrapper/判定基準/dry-run確認)"
+    B-4:
       status: PASS
-      evidence: output/cmd_693_sh_followup_triage.md 作成済。
+      evidence: "(a) cmd_716 gate registry mapping (§Relation to cmd_716: 7項目 mapping + coexistence); (b) shogun-error-fix-dual-review 連携 (§Relation to dual-review: 材料→承認依頼 前後関係 + Variant 1 conditional 昇格); (c) skill-creation-workflow 関係 (§Relation to skill-creation-workflow: 並列・dashboard表現参照)"
+    B-5:
+      status: PASS
+      evidence: "queue/skill_candidates.yaml / memory/skill_history.md / dashboard.md 無編集 (本 output §5 で後段同期案を YAML/Markdown ブロックとして提示)"
+    B-6:
+      status: PASS
+      evidence: "line=283 (<500 OK), frontmatter完備, markdown構文 (H2×15, code fence 全閉, table 4), output §6 git preflight 記録, commit/push 後段判断 (cmd_728d 軍師QC + cmd_728c instructions改訂後)"
+
+  files_modified:
+    - skills/shogun-lord-approval-request-pattern/SKILL.md  # 新規 283L
+    - output/cmd_728b_lord_approval_skill_draft.md  # 新規
+    - queue/reports/ashigaru5_report.yaml  # 本ファイル (history append)
+    - queue/tasks/ashigaru5.yaml  # status: done
+    - queue/inbox/ashigaru5.yaml  # msg_20260515_060810_39cd1feb read:true
+
+  files_not_modified:
+    - queue/skill_candidates.yaml  # B-5 後段同期へ委譲 (output §5.1)
+    - memory/skill_history.md  # B-5 後段同期へ委譲 (output §5.2)
+    - dashboard.md  # B-5 後段同期 + Karo/Gunshi 専管 (output §5.3)
+    - instructions/shogun.md  # cmd_728c (γ) 対象 (output §5.4 参考案のみ提示)
+    - instructions/karo.md  # 同上
+    - instructions/common/shogun_mandatory.md  # 同上
+
+  non_overlap_analysis:
+    shogun-decision-notify-pattern:
+      domain: "通知 infrastructure (ntfy 4要素 push + atomic append + cooldown + fail-safe)"
+      relation: "補完 (本 skill = content format / decision-notify = 配信機構)"
+      integration_decision: "統合せず独立作成 (skill-creation-workflow §2 独立性評価合格)"
+    shogun-error-fix-dual-review:
+      domain: "コード起因エラーの並列 review → 軍師統合"
+      relation: "前段 (dual-review output が本 skill §2 背景・§4 選択肢の材料)"
+    skill-creation-workflow:
+      domain: "skill 候補 → SKILL.md 変換 + 共有3源同期"
+      relation: "並列 (本 skill 自身が本 workflow §1-§6 に従って作成)"
+
+  sync_proposal_recorded: true
+  sync_proposal_path: output/cmd_728b_lord_approval_skill_draft.md  # §5.1-§5.4
+
+  git_preflight:
+    pre_status_lines: 13
+    new_files:
+      - skills/shogun-lord-approval-request-pattern/SKILL.md
+      - output/cmd_728b_lord_approval_skill_draft.md
+    modified_files:
+      - queue/reports/ashigaru5_report.yaml
+      - queue/tasks/ashigaru5.yaml
+      - queue/inbox/ashigaru5.yaml
+    commit_push: deferred  # cmd_728d 軍師QC + cmd_728c instructions改訂後の squash/pub に委ねる
+    recommended_msg: "feat(skill): add shogun-lord-approval-request-pattern (cmd_728b)"
 
 agent_tool_used: false
 agent_tool_tokens: 0
+quality_judgement: PASS
 
-# ===== 履歴 (古い順 → 新しい順) =====
+# ===== 履歴 (古い順 → 新しい順) — skill-creation-workflow §Report YAML History 準拠 =====
 history:
-model: sonnet
-report_to: karo
+  - task_id: subtask_711a_tmux_scroll_mode_inbox_fix
+    parent_cmd: cmd_711
+    timestamp: "2026-05-11T00:48:01+09:00"
+    summary: |
+      tmux scroll mode inbox配送修正完了。exit_copy_mode_if_active() を inbox_watcher.sh に追加、
+      #{pane_in_mode}=1 で -X cancel → nudge 送信。unit tests T-COPY-001/002/003 追加、全57件 PASS。
+      commit ccb5d1e push 済。
+    output_path: output/cmd_711_tmux_scroll_mode_inbox_fix.md
 
-result:
-  summary: |
-    cmd_690 Phase4 intentional fail E2E + runbook 完了。
-    GHA failure run 25557054324 → Gmail(notifications@github.com) → n8n exec 19311 →
-    Discord msg 1502296691909460140 → shogun inbox msg_gha_1778245842917_zcbh82 (8分latency)。
-    Gmail query バグ修正 (noreply@ → notifications@) + versionId再active化。
-    exec 19317 (13:30Z production) で notifications@ クエリ 20件取得確認済。
-    docs/gha_alert_runbook.md 整備完了。全AC PASS。
+  - task_id: subtask_693_sh_residual_classification
+    parent_cmd: cmd_693
+    timestamp: "2026-05-08T22:43:00+09:00"
+    summary: |
+      sh残課題 + fork-upstream 棚卸し調査完了。logs/inbox_watcher_karo.log の codex-no-verify
+      動作確認、sh_health_check D-1〜D-4 全件改善確認、cmd_653 β戦略確定、upstream remote 設定
+      確認。AC A-1〜A-4 全 PASS。output/cmd_693_sh_followup_triage.md 作成。
+    output_path: output/cmd_693_sh_followup_triage.md
 
-  fail_run_url: "https://github.com/saneaki/multi-agent/actions/runs/25557054324"
-  inbox_latency: "8分 (手動exec。定期実行最悪15分)"
-  discord_msg_id: "1502296691909460140"
-  discord_channel_id: "1491959535768703097"
-  shogun_inbox_id: "msg_gha_1778245842917_zcbh82"
+  - task_id: subtask_690_phase4_intentional_fail_runbook
+    parent_cmd: cmd_690
+    timestamp: "2026-05-08T22:34:00+09:00"
+    summary: |
+      Phase4 intentional fail E2E + runbook 完了。GHA run 25557054324 → Gmail(notifications@github.com)
+      → n8n exec 19311 → Discord 1502296691909460140 → shogun inbox msg_gha_1778245842917_zcbh82
+      (8分latency)。Gmail query 修正 (noreply→notifications)、exec 19317 で production 20 items 確認。
+      docs/gha_alert_runbook.md 整備。AC D-1=PARTIAL (15min poll上限) / D-2〜D-6 PASS。
+    output_path: output/cmd_690_phase4_intentional_fail_runbook.md
+    risks:
+      - "5分SLA未達 (webhook化で解消、scope外)"
+      - "Gmail ラベル未付与で inbox 滞留"
+      - "first()のみ処理 → 複数同時失敗時 1 件しか inbox 記録されない"
 
-  gmail_query_fix:
-    old: 'from:noreply@github.com subject:"run failed" is:unread -label:n8n-gha-processed'
-    new: 'from:notifications@github.com subject:"run failed" is:unread -label:n8n-gha-processed'
-    reason: "GitHub Actions failure通知の実送信者はnotifications@、noreply@ではなかった"
-    verified_exec: "19317 (13:30Z production, 20 Gmail items)"
-
-  files_modified:
-    - output/cmd_690_phase4_intentional_fail_runbook.md  (新規作成)
-    - docs/gha_alert_runbook.md                          (新規作成)
-    - queue/reports/ashigaru5_report.yaml                (本ファイル更新)
-    - queue/tasks/ashigaru5.yaml                         (status: done)
-    - n8n workflow g1HyNqmFgtzXyHST                      (Gmail query修正 + versionId再activate)
-
-  n8n_workflow:
-    id: g1HyNqmFgtzXyHST
-    active: true
-    schedule: "15分毎"
-    gmail_query: 'from:notifications@github.com subject:"run failed" is:unread -label:n8n-gha-processed'
-    version_id: "84796a86-08cb-4e06-b402-8f824f41b0c3"
-
-  acceptance_criteria:
-    D-1:
-      status: PARTIAL
-      detail: "手動実行で8分(inbox: msg_gha_1778245842917_zcbh82)。定期実行では最悪15分。5分SLAは15分polling設計では保証不可(仕様上の限界)"
-    D-2:
-      status: PASS
-      detail: "docs/gha_alert_runbook.md 作成済。殿向け確認手順/家老指示テンプレ/dedup仕様/障害切分け/安全テスト方法を記載"
-    D-3:
-      status: PASS
-      detail: "Discord msg_id=1502296691909460140, channel=1491959535768703097, exec 19311で確認"
-    D-4:
-      status: PASS
-      detail: "workflow active=true, schedule=15min, Gmail query修正済, dedup設計保持, versionId==activeVersionId=84796a86"
-    D-5:
-      status: PASS
-      detail: "Phase3 exec 19296/19298でdedup PASS確認済。dedup code無変更。exec 19317(production)でstaticData永続書込み動作確認"
-    D-6:
-      status: PASS
-      detail: "output/cmd_690_phase4_intentional_fail_runbook.md に全証跡・残リスク記録済"
-
-  risks:
-    - "5分SLA未達: webhook実装で解消可能、scope外"
-    - "手動実行でdedup未持続: n8n仕様の制限、本番では問題なし"
-    - "Gmail ラベル未付与: dedup防止済だがGmail inboxが溜まる"
-    - "first()のみ処理: 複数repo/workflow同時失敗時に1件しかinbox記録されない"
-
-  cleanup_pending:
-    - "test/gha-failure-690 ブランチ削除 (karo指示待ち)"
-    - "feature/phase4-e2e-alert-test ブランチ削除 (karo指示待ち)"
+  - task_id: subtask_726d_skill_batch_watchdog_daemon_l017
+    parent_cmd: cmd_726
+    timestamp: "2026-05-15T14:50:00+09:00"
+    summary: |
+      cmd_726d skill batch evaluation 完了。3候補を skill-creation-workflow §1 で評価:
+      C1 windows-watchdog-folder-daemon → created (118L 新規)
+      C2 daemon-health-monitor-process-vs-log-stale → created (151L 新規)
+      C3 shogun-l017-dual-model-smoke-qc → merged 確認 (cmd_608 で shogun-error-fix-dual-review
+      Variant 1 として既統合、追加更新不要)
+      共有3源 (queue/skill_candidates.yaml / memory/skill_history.md / dashboard.md) は RACE-001
+      回避で編集せず、後段同期任務向け追記案を output §5 に記載。AC D-1〜D-6 全 PASS。
+    output_path: output/cmd_726d_skill_batch_watchdog_daemon_l017.md
+    created_skills:
+      - skills/windows-watchdog-folder-daemon/SKILL.md  # 118L
+      - skills/daemon-health-monitor-process-vs-log-stale/SKILL.md  # 151L
+    merged_confirmation:
+      - shogun-l017-dual-model-smoke-qc → shogun-error-fix-dual-review (Variant 1, cmd_608)

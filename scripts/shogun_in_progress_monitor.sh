@@ -574,22 +574,41 @@ def check_pattern_6():
     elapsed_minutes = (now_jst() - last_updated).total_seconds() / 60
 
     if elapsed_minutes > 120:
-        # Phase B: suppress if no pending events (basic mtime check)
-        has_events = False
+        # Phase C: prefer event-ledger; fall back to Phase B mtime check
+        has_events = True  # default to alert if suppression library missing
+        ledger_summary = ""
         try:
             import sys as _sys
             _sys.path.insert(0, os.path.join(ROOT, 'scripts/lib'))
-            from gate_suppression import has_pending_dashboard_events
-            has_events = has_pending_dashboard_events(ROOT)
+            from gate_suppression import (
+                has_unresolved_dashboard_events,
+                update_event_ledger,
+                unresolved_events,
+            )
+            state = update_event_ledger(ROOT)
+            pending = unresolved_events(state)
+            has_events = len(pending) > 0
+            if pending:
+                # Build a compact summary like
+                #   "task_status_change×3, report_appended×2, ..."
+                counts = {}
+                for ev in pending:
+                    k = ev.get('event_kind') or 'unknown'
+                    counts[k] = counts.get(k, 0) + 1
+                ledger_summary = (
+                    " event_ledger=" +
+                    ", ".join(f"{k}×{v}" for k, v in counts.items())
+                )
+            _ = has_unresolved_dashboard_events  # reserved for direct use
         except Exception:
-            has_events = True  # suppression unavailable — default to alert
+            has_events = True
 
         if not has_events:
-            return  # no pending updates → suppress P6 (Phase B)
+            return  # no pending updates → suppress P6 (Phase C event ledger)
 
         out('P6-dashboard鮮度stale',
             f"dashboard.md 最終更新から {int(elapsed_minutes)}分経過 "
-            f"(last_updated={last_updated_str} JST). "
+            f"(last_updated={last_updated_str} JST).{ledger_summary} "
             f"rotate 失敗 / karo 更新漏れを確認せよ。")
 
     # cmd_644 Scope B (B-1): 4h 超過で auto cmd 自動発令 (rate limit 1日3回)
