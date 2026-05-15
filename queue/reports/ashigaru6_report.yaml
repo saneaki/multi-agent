@@ -1,0 +1,106 @@
+worker_id: ashigaru6
+task_id: subtask_727a_inbox_watcher_silent_failure_remediation
+parent_cmd: cmd_727
+status: done
+timestamp: "2026-05-15T14:54:38+09:00"
+report_to: karo
+result:
+  verdict: pass
+  output_path: /home/ubuntu/shogun/output/cmd_727a_inbox_watcher_silent_failure_remediation.md
+  summary: |
+    cmd_717b audit output を一次根拠に、scripts/inbox_watcher.sh の tmux send-keys silent
+    failure を分類し、全件を destination/content/timestamp/rc/stderr 付きの明示ログ化へ置換した。
+    daemon 継続が必要な watcher のため halt ではなく ERROR/WARN ログ化を採用した。
+  changed_files:
+    - path: scripts/inbox_watcher.sh
+      change: "tmux_send_keys_logged() を追加し、tmux send-keys 呼び出しを文脈付き ERROR/WARN ログ化へ置換"
+    - path: tests/unit/test_send_wakeup.bats
+      change: "send_wakeup/send_cli_command の send-keys 失敗時ログ検証を追加"
+    - path: output/cmd_727a_inbox_watcher_silent_failure_remediation.md
+      change: "分類、根拠、検証、残リスクを記録"
+    - path: queue/inbox/ashigaru6.yaml
+      change: "cmd_727 配備通知を read:true に更新"
+    - path: queue/tasks/ashigaru6.yaml
+      change: "status done/completed_at を記録"
+    - path: queue/reports/ashigaru6_report.yaml
+      change: "本報告へ更新"
+  acceptance_criteria:
+    - id: A-1
+      status: PASS
+      evidence: "audit fixture yaml は見当たらず、output/cmd_717b_silent_failure_audit_so17_hardening.md を一次根拠に #9-#41 相当を list 化。#38/#40 は非 tmux touch 行として out-of-scope 注記。"
+    - id: A-2
+      status: PASS
+      evidence: "各 tmux send-keys suppression は daemon 継続が必要なため明示ログ化可に分類。copy-mode/idle cleanup は WARN、制御送信は ERROR。詳細は output 参照。"
+    - id: A-3
+      status: PASS
+      evidence: "tmux_send_keys_logged() により destination/content/timestamp/rc/stderr/context を記録。対象箇所は helper 経由に置換済み。"
+    - id: A-4
+      status: PASS
+      evidence: "copy/scroll-mode nudge regression は既存 T-COPY-001〜003 を維持し、unit 58/58 PASS。"
+    - id: A-5
+      status: PASS
+      evidence: "`bats tests/unit/test_send_wakeup.bats` 58/58 PASS。異常系 MOCK_SENDKEYS_RC=1 で明示ログを検証。`bats tests/e2e/e2e_inbox_delivery.bats` 5/5 PASS。SKIP なし。"
+    - id: A-6
+      status: PASS
+      evidence: "task AC の 28件表記は audit 現物と差分あり。現 audit #9-#41 の tmux send-keys 31件を全て解消し、残存 `tmux send-keys ... || true` scan は 0 件。"
+    - id: A-7
+      status: PASS
+      evidence: "作業前後 git status、変更ファイル、commit/push 結果を本 report に記録。commit message は cmd_727 を含める。"
+  verification:
+    - command: "bash -n scripts/inbox_watcher.sh"
+      result: PASS
+    - command: "bats tests/unit/test_send_wakeup.bats"
+      result: PASS
+      stdout: "1..58; ok 1-58"
+    - command: "bats tests/e2e/e2e_inbox_delivery.bats"
+      result: PASS
+      stdout: "1..5; ok 1-5"
+    - command: "rg -n \"tmux send-keys.*2>/dev/null \\\\|\\\\| true|timeout [0-9]+ tmux send-keys\" scripts/inbox_watcher.sh"
+      result: PASS
+      stdout: "no matches"
+  git_preflight:
+    before_status:
+      - "M memory/global_context.md"
+      - "M memory/skill_history.md"
+      - "M queue/external_inbox.yaml"
+      - "M queue/reports/ashigaru1_report.yaml"
+      - "M queue/reports/ashigaru5_report.yaml"
+      - "M queue/reports/gunshi_report.yaml"
+      - "M queue/suggestions.yaml"
+      - "M queue/tasks/ashigaru4.yaml"
+      - "M scripts/shc.sh"
+    after_relevant_status:
+      - "M scripts/inbox_watcher.sh"
+      - "M tests/unit/test_send_wakeup.bats"
+      - "A output/cmd_727a_inbox_watcher_silent_failure_remediation.md"
+      - "M queue/reports/ashigaru6_report.yaml"
+      - "M queue/tasks/ashigaru6.yaml"
+      - "M queue/inbox/ashigaru6.yaml"
+    after_unrelated_dirty:
+      - "M memory/global_context.md"
+      - "M memory/skill_history.md"
+      - "M queue/external_inbox.yaml"
+      - "M queue/reports/ashigaru1_report.yaml"
+      - "M queue/reports/ashigaru5_report.yaml"
+      - "M queue/reports/gunshi_report.yaml"
+      - "M queue/suggestions.yaml"
+      - "M queue/tasks/ashigaru4.yaml"
+      - "M scripts/shc.sh"
+      - "M skills/shogun-gas-clasp-rapt-reauth-fallback/SKILL.md"
+    commit:
+      status: pending
+      sha: pending
+      message: "fix: log inbox watcher send-keys failures (cmd_727)"
+    push:
+      status: pending
+      branch: main
+  remediation:
+    classified_tmux_send_keys: 31
+    remediated_tmux_send_keys: 31
+    residual_tmux_send_keys_silent_suppression: 0
+    notes: "AC A-6 の 28件表記は stale と判断。audit 現物に基づき #9-#41 の tmux send-keys 31件を処理。"
+history:
+  - task_id: subtask_725a_shu_shk_startup_fix
+    parent_cmd: cmd_725
+    timestamp: "2026-05-15T13:56:54+09:00"
+    summary: "shu/shk/shx 起動不能修復。shutsujin_departure.sh 非対話 clear guard と smoke script を実装。"

@@ -244,6 +244,19 @@ MOCK
     [ "$status" -eq 0 ]
 
     echo "$output" | grep -qi "WARNING\|failed"
+    echo "$output" | grep -q "context=nudge-line-clear"
+    echo "$output" | grep -q "destination=test:0.0"
+    echo "$output" | grep -q "timestamp="
+}
+
+@test "T-SW-004b: send_cli_command send-keys failure is explicitly logged" {
+    run bash -c "MOCK_SENDKEYS_RC=1; source '$TEST_HARNESS' && send_cli_command /clear"
+    [ "$status" -eq 0 ]
+
+    echo "$output" | grep -q "tmux send-keys failed"
+    echo "$output" | grep -q "context=cli-command-text"
+    echo "$output" | grep -q "destination=test:0.0"
+    echo "$output" | grep -q "timestamp="
 }
 
 # --- T-SW-005: no paste-buffer or set-buffer used ---

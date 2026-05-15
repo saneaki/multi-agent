@@ -122,6 +122,28 @@ if ! command -v timeout &>/dev/null; then
   fi
 fi
 
+tmux_send_keys_logged() {
+    local timeout_sec="$1"
+    local severity="$2"
+    local context="$3"
+    shift 3
+
+    local timestamp rc output errexit_was_set=0
+    timestamp=$(date '+%Y-%m-%dT%H:%M:%S%z')
+    case $- in
+        *e*) errexit_was_set=1; set +e ;;
+    esac
+    output=$(timeout "$timeout_sec" tmux send-keys "$@" 2>&1)
+    rc=$?
+    if [ "$errexit_was_set" -eq 1 ]; then
+        set -e
+    fi
+    if [ "$rc" -ne 0 ]; then
+        echo "[$(date)] [$severity] tmux send-keys failed context=$context destination=${PANE_TARGET:-unknown} timestamp=$timestamp rc=$rc content=$(printf '%q ' "$@") stderr=${output:-<empty>}" >&2
+    fi
+    return "$rc"
+}
+
 # ─── Escalation state ───
 # Time-based escalation: track how long unread messages have been waiting
 FIRST_UNREAD_SEEN=${FIRST_UNREAD_SEEN:-0}
@@ -604,13 +626,13 @@ send_cli_command() {
                 fi
                 echo "[$(date)] [SEND-KEYS] Codex /clear→/new: starting new conversation for $AGENT_ID" >&2
                 # Dismiss suggestion UI first (typing "x" clears autocomplete prompt)
-                timeout 5 tmux send-keys -t "$PANE_TARGET" "x" 2>/dev/null || true
+                tmux_send_keys_logged 5 ERROR "codex-clear-dismiss-suggestion" -t "$PANE_TARGET" "x" || true
                 sleep 0.3
-                timeout 5 tmux send-keys -t "$PANE_TARGET" C-u 2>/dev/null || true
+                tmux_send_keys_logged 5 ERROR "codex-clear-line-clear" -t "$PANE_TARGET" C-u || true
                 sleep 0.3
-                timeout 5 tmux send-keys -t "$PANE_TARGET" "/new" 2>/dev/null || true
+                tmux_send_keys_logged 5 ERROR "codex-clear-new-command" -t "$PANE_TARGET" "/new" || true
                 sleep 0.3
-                timeout 5 tmux send-keys -t "$PANE_TARGET" Enter 2>/dev/null || true
+                tmux_send_keys_logged 5 ERROR "codex-clear-enter" -t "$PANE_TARGET" Enter || true
                 sleep 3
                 # Send startup prompt immediately (don't defer to context-reset cycle)
                 send_codex_startup_prompt
@@ -626,11 +648,11 @@ send_cli_command() {
             # Copilot: /clearはCtrl-C+再起動, /model非対応→スキップ
             if [[ "$cmd" == "/clear" ]]; then
                 echo "[$(date)] [SEND-KEYS] Copilot /clear: sending Ctrl-C + restart for $AGENT_ID" >&2
-                timeout 5 tmux send-keys -t "$PANE_TARGET" C-c 2>/dev/null || true
+                tmux_send_keys_logged 5 ERROR "copilot-clear-interrupt" -t "$PANE_TARGET" C-c || true
                 sleep 2
-                timeout 5 tmux send-keys -t "$PANE_TARGET" "copilot --yolo" 2>/dev/null || true
+                tmux_send_keys_logged 5 ERROR "copilot-clear-restart-command" -t "$PANE_TARGET" "copilot --yolo" || true
                 sleep 0.3
-                timeout 5 tmux send-keys -t "$PANE_TARGET" Enter 2>/dev/null || true
+                tmux_send_keys_logged 5 ERROR "copilot-clear-enter" -t "$PANE_TARGET" Enter || true
                 sleep 3
                 return 0
             fi
@@ -646,17 +668,17 @@ send_cli_command() {
     # Clear stale input first, then send command (text and Enter separated for Codex TUI)
     # Codex CLI: C-c when idle causes CLI to exit — skip it
     if [[ "$effective_cli" != "codex" ]]; then
-        timeout 5 tmux send-keys -t "$PANE_TARGET" C-c 2>/dev/null || true
+        tmux_send_keys_logged 5 ERROR "cli-command-interrupt" -t "$PANE_TARGET" C-c || true
         sleep 0.5
     fi
-    timeout 5 tmux send-keys -t "$PANE_TARGET" "$actual_cmd" 2>/dev/null || true
+    tmux_send_keys_logged 5 ERROR "cli-command-text" -t "$PANE_TARGET" "$actual_cmd" || true
     # Wait for idle before Enter to avoid Enter-loss race while the agent turns busy.
     if [[ "$actual_cmd" == "/clear" || "$actual_cmd" == "/new" ]]; then
         wait_until_idle 30
     else
         wait_until_idle 5
     fi
-    timeout 5 tmux send-keys -t "$PANE_TARGET" Enter 2>/dev/null || true
+    tmux_send_keys_logged 5 ERROR "cli-command-enter" -t "$PANE_TARGET" Enter || true
 
     # /clear needs extra wait time before follow-up
     if [[ "$actual_cmd" == "/clear" ]]; then
@@ -696,13 +718,13 @@ send_codex_startup_prompt() {
     fi
     echo "[$(date)] [STARTUP] Sending startup prompt to $AGENT_ID (codex): ${startup_prompt:0:80}..." >&2
     # Dismiss suggestion UI, then send startup prompt
-    timeout 5 tmux send-keys -t "$PANE_TARGET" "x" 2>/dev/null || true
+    tmux_send_keys_logged 5 ERROR "startup-dismiss-suggestion" -t "$PANE_TARGET" "x" || true
     sleep 0.3
-    timeout 5 tmux send-keys -t "$PANE_TARGET" C-u 2>/dev/null || true
+    tmux_send_keys_logged 5 ERROR "startup-line-clear" -t "$PANE_TARGET" C-u || true
     sleep 0.3
-    timeout 5 tmux send-keys -l -t "$PANE_TARGET" "$startup_prompt" 2>/dev/null || true
+    tmux_send_keys_logged 5 ERROR "startup-prompt-literal" -l -t "$PANE_TARGET" "$startup_prompt" || true
     sleep 0.3
-    timeout 5 tmux send-keys -t "$PANE_TARGET" Enter 2>/dev/null || true
+    tmux_send_keys_logged 5 ERROR "startup-enter" -t "$PANE_TARGET" Enter || true
     STARTUP_PROMPT_SENT=1
 }
 
@@ -763,13 +785,13 @@ send_context_reset() {
     # When called for standalone task_assigned, this is the only /new send.
     if [[ "$effective_cli" == "codex" ]]; then
         # Dismiss suggestion UI + send /new
-        timeout 5 tmux send-keys -t "$PANE_TARGET" "x" 2>/dev/null || true
+        tmux_send_keys_logged 5 ERROR "context-reset-codex-dismiss-suggestion" -t "$PANE_TARGET" "x" || true
         sleep 0.3
-        timeout 5 tmux send-keys -t "$PANE_TARGET" C-u 2>/dev/null || true
+        tmux_send_keys_logged 5 ERROR "context-reset-codex-line-clear" -t "$PANE_TARGET" C-u || true
         sleep 0.3
-        timeout 5 tmux send-keys -t "$PANE_TARGET" "/new" 2>/dev/null || true
+        tmux_send_keys_logged 5 ERROR "context-reset-codex-new-command" -t "$PANE_TARGET" "/new" || true
         sleep 0.3
-        timeout 5 tmux send-keys -t "$PANE_TARGET" Enter 2>/dev/null || true
+        tmux_send_keys_logged 5 ERROR "context-reset-codex-enter" -t "$PANE_TARGET" Enter || true
         sleep 3
         # Wait for idle + send startup prompt via shared helper
         send_codex_startup_prompt
@@ -778,10 +800,10 @@ send_context_reset() {
 
     # Non-Codex CLIs: send /clear and wait for idle
     # Send the command (text and Enter separated for TUI compatibility)
-    timeout 5 tmux send-keys -t "$PANE_TARGET" "$reset_cmd" 2>/dev/null || true
+    tmux_send_keys_logged 5 ERROR "context-reset-command" -t "$PANE_TARGET" "$reset_cmd" || true
     # Longer gap for /clear — CLI prompt rendering needs time
     sleep 1.0
-    timeout 5 tmux send-keys -t "$PANE_TARGET" Enter 2>/dev/null || true
+    tmux_send_keys_logged 5 ERROR "context-reset-enter" -t "$PANE_TARGET" Enter || true
     # Mark /clear timestamp so agent_is_busy() treats it as busy during processing
     if [[ "$reset_cmd" == "/clear" ]]; then
         LAST_CLEAR_TS=$(date +%s)
@@ -904,7 +926,7 @@ exit_copy_mode_if_active() {
     pane_in_mode=$(timeout 3 tmux display-message -t "$PANE_TARGET" -p '#{pane_in_mode}' 2>/dev/null || echo "0")
     if [ "${pane_in_mode:-0}" = "1" ]; then
         echo "[$(date)] [COPY-MODE] Pane $PANE_TARGET in copy/scroll mode — sending cancel to exit" >&2
-        timeout 3 tmux send-keys -t "$PANE_TARGET" -X cancel 2>/dev/null || true
+        tmux_send_keys_logged 3 WARN "copy-mode-cancel" -t "$PANE_TARGET" -X cancel || true
         sleep 0.2
     fi
 }
@@ -962,9 +984,9 @@ send_wakeup() {
     local effective_cli_for_nudge
     effective_cli_for_nudge=$(get_effective_cli_type)
     if [[ "$effective_cli_for_nudge" == "codex" ]]; then
-        timeout 5 tmux send-keys -t "$PANE_TARGET" "x" 2>/dev/null || true
+        tmux_send_keys_logged 5 ERROR "nudge-codex-dismiss-suggestion" -t "$PANE_TARGET" "x" || true
         sleep 0.3
-        timeout 5 tmux send-keys -t "$PANE_TARGET" C-u 2>/dev/null || true
+        tmux_send_keys_logged 5 ERROR "nudge-codex-line-clear" -t "$PANE_TARGET" C-u || true
         sleep 0.3
     fi
 
@@ -973,16 +995,16 @@ send_wakeup() {
     local attempt=0
     while [ $attempt -le $max_retries ]; do
         # C-u で行をクリア
-        timeout 5 tmux send-keys -t "$PANE_TARGET" C-u 2>/dev/null || true
+        tmux_send_keys_logged 5 ERROR "nudge-line-clear" -t "$PANE_TARGET" C-u || true
         sleep 0.3
         # nudge 送信
-        if ! timeout 5 tmux send-keys -t "$PANE_TARGET" "$nudge" 2>/dev/null; then
+        if ! tmux_send_keys_logged 5 ERROR "nudge-text" -t "$PANE_TARGET" "$nudge"; then
             echo "[$(date)] WARNING: send-keys nudge failed for $AGENT_ID (attempt $((attempt+1)))" >&2
             attempt=$((attempt+1))
             continue
         fi
         sleep 0.3
-        timeout 5 tmux send-keys -t "$PANE_TARGET" Enter 2>/dev/null || true
+        tmux_send_keys_logged 5 ERROR "nudge-enter" -t "$PANE_TARGET" Enter || true
         sleep 0.5
         # Codex pane: pane verification is unreliable (nudge text appears in output buffer)
         # Skip retry loop to avoid false "send-keys failed" warnings on CLI drift
@@ -996,7 +1018,7 @@ send_wakeup() {
         if echo "$pane_content" | grep -qF "$nudge"; then
             # nudgeテキストが残存 → 送信失敗 → C-u クリアしてリトライ
             echo "[$(date)] WARNING: nudge text still visible in pane, retrying (attempt $((attempt+1)))" >&2
-            timeout 5 tmux send-keys -t "$PANE_TARGET" C-u 2>/dev/null || true
+            tmux_send_keys_logged 5 WARN "nudge-retry-line-clear" -t "$PANE_TARGET" C-u || true
             sleep 0.3
             attempt=$((attempt+1))
             continue
@@ -1062,17 +1084,17 @@ send_wakeup_with_escape() {
 
     echo "[$(date)] [SEND-KEYS] ESCALATION Phase 2: Escape×2 + nudge for $AGENT_ID (cli=$effective_cli)" >&2
     # Escape×2 to exit any mode
-    timeout 5 tmux send-keys -t "$PANE_TARGET" Escape Escape 2>/dev/null || true
+    tmux_send_keys_logged 5 ERROR "escape-nudge-escape-prefix" -t "$PANE_TARGET" Escape Escape || true
     sleep 0.5
     # C-c to clear stale input (but Codex CLI terminates on C-c when idle, so skip it)
     if [[ "$effective_cli" != "codex" ]]; then
-        timeout 5 tmux send-keys -t "$PANE_TARGET" C-c 2>/dev/null || true
+        tmux_send_keys_logged 5 ERROR "escape-nudge-interrupt" -t "$PANE_TARGET" C-c || true
         sleep 0.5
         c_ctrl_state="sent"
     fi
-    if timeout 5 tmux send-keys -t "$PANE_TARGET" "$nudge" 2>/dev/null; then
+    if tmux_send_keys_logged 5 ERROR "escape-nudge-text" -t "$PANE_TARGET" "$nudge"; then
         sleep 0.3
-        timeout 5 tmux send-keys -t "$PANE_TARGET" Enter 2>/dev/null || true
+        tmux_send_keys_logged 5 ERROR "escape-nudge-enter" -t "$PANE_TARGET" Enter || true
         echo "[$(date)] Escape+nudge sent to $AGENT_ID (${unread_count} unread, cli=$effective_cli, C-c=$c_ctrl_state)" >&2
         return 0
     fi
@@ -1194,7 +1216,7 @@ process_unread() {
             if [ "$AGENT_ID" = "shogun" ] && pane_is_active; then
                 : # Lord may be typing — skip C-u
             else
-                timeout 2 tmux send-keys -t "$PANE_TARGET" C-u 2>/dev/null || true
+                tmux_send_keys_logged 2 WARN "fast-path-idle-line-clear" -t "$PANE_TARGET" C-u || true
             fi
         fi
         return 0
@@ -1416,7 +1438,7 @@ for s in data.get('specials', []):
             if [ "$AGENT_ID" = "shogun" ] && pane_is_active; then
                 : # Lord may be typing — skip C-u
             else
-                timeout 2 tmux send-keys -t "$PANE_TARGET" C-u 2>/dev/null || true
+                tmux_send_keys_logged 2 WARN "no-unread-idle-line-clear" -t "$PANE_TARGET" C-u || true
             fi
         fi
     fi

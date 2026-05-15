@@ -1,0 +1,59 @@
+task:
+  task_id: subtask_727a_inbox_watcher_silent_failure_remediation
+  parent_cmd: cmd_727
+  title: "cmd_727a: inbox_watcher silent failure是正"
+  bloom_level: L4
+  assigned_to: ashigaru6
+  report_to: karo
+  status: done
+  timestamp: '2026-05-15T14:46:28+09:00'
+  priority: medium
+  completed_at: '2026-05-15T14:54:38+09:00'
+  project: shogun
+  target_path: /home/ubuntu/shogun
+  context_policy: clear_between
+  context_files:
+    - queue/shogun_to_karo.yaml
+    - output/cmd_717b_silent_failure_audit_so17_hardening.md
+    - scripts/inbox_watcher.sh
+    - tests/unit/test_send_wakeup.bats
+    - tests/e2e/e2e_inbox_delivery.bats
+    - skills/skill-creation-workflow/SKILL.md
+  editable_files:
+    - scripts/inbox_watcher.sh
+    - tests/unit/test_send_wakeup.bats
+    - tests/e2e/e2e_inbox_delivery.bats
+    - output/cmd_727a_inbox_watcher_silent_failure_remediation.md
+    - queue/reports/ashigaru6_report.yaml
+    - queue/tasks/ashigaru6.yaml
+    - queue/inbox/ashigaru6.yaml
+  acceptance_criteria:
+    - id: A-1
+      check: "cmd_717b audit output を読み、inbox_watcher.sh の tmux send-keys suppression #9-#41 相当を全件 list 化する。audit fixture yaml が見つからない場合は output/cmd_717b_silent_failure_audit_so17_hardening.md を一次根拠とし、fixture不在を report に明記する"
+    - id: A-2
+      check: "各 suppression を halt 必須 / 明示ログ化可 に分類し、根拠を output に記録する"
+    - id: A-3
+      check: "scripts/inbox_watcher.sh の対象箇所に halt または log_warn/log_error を適用し、失敗時に destination/content/timestamp が追跡可能になる"
+    - id: A-4
+      check: "cmd_711 の scroll/copy-mode nudge 修正を regression させない。既存 unit/e2e があれば更新し、なければ最小 smoke を追加する"
+    - id: A-5
+      check: "正常系と tmux send-keys 失敗模擬の異常系を実行し、結果を output/report に記録する。SKIP は FAIL 扱い"
+    - id: A-6
+      check: "remediation_required 28件が解消されたか、残件がある場合は件数・理由・残リスクを output/report に明記する"
+    - id: A-7
+      check: "cmd_704 git preflight: 作業前後 git status、変更ファイル、commit、push済みを report に記録する。commit message に cmd_727 を含める"
+  description: |
+    【目的】
+    cmd_727 α。inbox_watcher.sh の tmux send-keys 系 silent failure を halt or 明示ログ化し、
+    cascading nudge failure を検出可能にする。
+
+    【重要】
+    - scripts/inbox_watcher.sh 単一ファイル編集のため RACE-001 上、並列編集は禁止。
+    - AC に smoke/test が含まれるが、同一ファイル同時編集を避けるため dual-model test dispatch は例外扱いとし、後段の軍師QCで独立確認する。
+    - cmd_726 の shogun-silent-failure-audit-pattern スキル化と矛盾しないよう、audit分類・用語を output に明示する。
+    - 失敗を握り潰す `2>/dev/null || true` / `|| log_info` 型を新規導入しない。
+
+    【完了報告】
+    bash /home/ubuntu/shogun/scripts/inbox_write.sh karo \
+      "【subtask_727a_inbox_watcher_silent_failure_remediation 完了】cmd_727 α完了。classified=<N> remediated=<N> tests=<PASS|FAIL> commit=<sha> push=<PASS|FAIL> output=output/cmd_727a_inbox_watcher_silent_failure_remediation.md。report確認されたし。" \
+      task_completed ashigaru6
