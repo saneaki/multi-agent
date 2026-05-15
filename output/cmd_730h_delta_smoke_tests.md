@@ -123,4 +123,5 @@ shu/shk/shx/shp の CLI/model spec、settings.yaml 不変性、pane meta 整合�
 
 ## commit SHA
 
-(コミット後記載)
+`6c77e11` — feat: cmd_730h δ-B launcher smoke PASS=34 SKIP=0 (Refs cmd_730)
+push 済み: origin/main @ 2026-05-16 06:55 JST

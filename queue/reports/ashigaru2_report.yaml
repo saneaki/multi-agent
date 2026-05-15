@@ -1,43 +1,40 @@
 worker_id: ashigaru2
-task_id: subtask_716i_phase_f_regression
-parent_cmd: cmd_716
+task_id: subtask_730h_delta_smoke_tests
+parent_cmd: cmd_730
 status: done
-timestamp: "2026-05-15T17:35:53+09:00"
+timestamp: "2026-05-16T06:55:00+09:00"
 result:
   summary: |
-    cmd_716 Phase F 完了。cross_phase=PASS never_suppress=PASS tests=PASS。
-    P_DIGEST_SENDER_DOWN 緊急修復: cron 0 23 * * * 登録 + 実送信で liveness 初期化。
-    cross-phase テスト 4 件追加 (TestCrossPhaseRegression)。
-    123/123 PASS (SKIP=0)。GHA 25904789492 は cmd_716 本体 regression でないことを証明。
-  output: output/cmd_716i_phase_f_regression.md
-  p_digest_sender_down_repair: output/cmd_716i_p_digest_sender_down_repair.md
-  cross_phase: PASS
-  never_suppress: PASS
-  tests: PASS
-  test_count: 123
-  test_pass: 123
-  test_skip: 0
-  cron_registered: "0 23 * * * python3 /home/ubuntu/shogun/scripts/lib/daily_digest.py"
-  digest_liveness: "is_down=False last_success_at=2026-05-15T17:30:21+09:00"
-  gha_25904789492: "cmd_729系テスト失敗 (gunshi_report/action_required_sync) — cmd_716 無関係を証明"
+    cmd_730 δ-B 完了。launcher spec consistency smoke 新設。
+    T6/T7 を SKIP から静的解析代替に置換し、PASS=34 FAIL=0 SKIP=0 達成。
+    bats 23/23 PASS (SKIP=0)。commit 6c77e11 Refs cmd_730。
+  output: output/cmd_730h_delta_smoke_tests.md
+  commit: "6c77e11"
+  smoke: PASS
+  bats: PASS
+  t8: PASS
+  bats_total: 23
+  bats_pass: 23
+  bats_skip: 0
+  smoke_pass: 34
+  smoke_fail: 0
+  smoke_skip: 0
+  acceptance_criteria:
+    DELTA-B1: PASS
+    DELTA-B2: PASS
+    DELTA-B3: PASS
+    DELTA-B4: PASS
+    DELTA-B5: PASS
+    DELTA-B6: PASS
+    DELTA-B7: PASS
+    DELTA-B8: PASS
+  t6_static: "update_dashboard_formation() 定義+呼出+sed コマンド確認"
+  t7_static: "@agent_cli/@model_name 全ペイン tmux set-option 確認"
   files_created:
-    - output/cmd_716i_phase_f_regression.md
-    - output/cmd_716i_p_digest_sender_down_repair.md
+    - tests/smoke/launcher_spec_consistency.sh
+    - tests/unit/test_launcher_spec.bats
+    - output/cmd_730h_delta_smoke_tests.md
   files_modified:
-    - tests/unit/test_gate_suppression.py
-    - queue/alert_state.yaml
-previous_task:
-  task_id: subtask_716g_phase_d_resolution_zombie_log
-  parent_cmd: cmd_716
-  status: done
-  timestamp: "2026-05-15T15:48:48+09:00"
-  result:
-    summary: |
-      cmd_716 Phase D 完了。judgement_log 新設 + zombie 7日 alert + gate resolution 検出を実装。
-      unit tests 85/85 PASS (0 SKIP)。dry-run: 7件検出 (P_GATE_ZOMBIE_ なし = 正常)。
-    output: output/cmd_716g_phase_d_resolution_zombie_log.md
-    tests: PASS
-    test_count: 85
-    test_pass: 85
-    test_skip: 0
-    - tests/unit/test_gate_suppression.py
+    - queue/tasks/ashigaru2.yaml
+    - queue/inbox/ashigaru2.yaml
+    - queue/reports/ashigaru2_report.yaml
