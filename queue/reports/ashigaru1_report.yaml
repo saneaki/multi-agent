@@ -1,52 +1,76 @@
 worker_id: ashigaru1
-task_id: subtask_730g_delta_shc_dashboard_sync
+task_id: subtask_730w_delta_report_status_normalize
 parent_cmd: cmd_730
-status: completed
-timestamp: "2026-05-16T06:39:46+09:00"
+status: done
+timestamp: "2026-05-16T07:46:14+09:00"
 result:
   summary: |
-    cmd_730 δ-A 完了。scripts/shc.sh に3変更を実装し全ACをPASS。
-    DELTA-A1: deploy --settings-only deprecated警告追加 (shu/shk/shx 呼び出し0件確認)
-    DELTA-A2: shc status 3-way diff拡張 (pane meta / settings.yaml / dashboard.yaml)
-    DELTA-A3/A4: shc sync-meta 新設 (formation_status 限定、FORBIDDEN_KEYS 13種保護)
-    検証 T1-T4 全PASS (SKIP=0)。commit e6b6601 push済み。
-  output_path: output/cmd_730g_delta_shc_dashboard_sync.md
+    queue/reports/ashigaru1_report.yaml の status=completed→done 正規化完了。
+    git diff確認: committed base は status=completed、現在は done に修正済み (未コミット状態)。
+    本taskでcommit確定。実装ファイル編集なし、repair_scope editable_only のみ変更。
   changed_files:
-    - scripts/shc.sh
-    - output/cmd_730g_delta_shc_dashboard_sync.md
+    - queue/reports/ashigaru1_report.yaml
+    - queue/tasks/ashigaru1.yaml
+    - queue/inbox/ashigaru1.yaml
   git:
-    repo: /home/ubuntu/shogun
-    commit: e6b6601
-    commit_message: "feat(cmd_730g): δ-A shc status 3系統diff + sync-meta + --settings-only deprecated (Refs cmd_730)"
-    push: DONE
-  test_results:
-    skip_count: 0
-    T1_bash_n:
-      command: "bash -n scripts/shc.sh"
-      status: PASS
-      output: "SYNTAX OK"
-    T2_yaml_parse:
-      command: ".venv/bin/python3 -c 'yaml.safe_load(settings.yaml + dashboard.yaml)'"
-      status: PASS
-      output: "cli.agents 10 agents / metadata.last_updated confirmed"
-    T3_shc_status:
-      command: "bash scripts/shc.sh status"
-      exit_code: 0
-      status: PASS
-      notes: "3-section output OK. karo MISMATCH(pane=codex,settings=claude) correctly detected. shogun NO_PANE (expected). formation_status shows not-yet-synced."
-    T4_sync_meta_temp_copy:
-      command: "python3 sync-meta logic against temp copy of dashboard.yaml"
-      status: PASS
-      notes: "formation_status written (last_sync + agents). forbidden_keys 13種 unchanged confirmed."
-  ac_results:
-    DELTA-A1: PASS
-    DELTA-A2: PASS
-    DELTA-A3: PASS
-    DELTA-A4: PASS
-    DELTA-A5: "PASS (T1+T2+T3+T4 SKIP=0)"
-    DELTA-A6: PASS
-    DELTA-A7: PASS
+    action: commit
+    note: "report/task/inbox のみ commit。実装ファイル変更なし。"
+  acceptance_criteria:
+    repair_scope_completed: "status=completed → done 正規化 PASS"
+    editable_only_respected: "repair_scope.editable_only 3ファイルのみ編集 PASS"
+    implementation_files_untouched: "scripts/shc.sh等 実装ファイル編集なし PASS"
 agent_tool_used: false
 agent_tool_tokens: 0
 skill_candidate:
   found: false
+
+history:
+  - task_id: subtask_730g_delta_shc_dashboard_sync
+    parent_cmd: cmd_730
+    timestamp: "2026-05-16T06:39:46+09:00"
+    status: done
+    result:
+      summary: |
+        cmd_730 δ-A 完了。scripts/shc.sh に3変更を実装し全ACをPASS。
+        DELTA-A1: deploy --settings-only deprecated警告追加 (shu/shk/shx 呼び出し0件確認)
+        DELTA-A2: shc status 3-way diff拡張 (pane meta / settings.yaml / dashboard.yaml)
+        DELTA-A3/A4: shc sync-meta 新設 (formation_status 限定、FORBIDDEN_KEYS 13種保護)
+        検証 T1-T4 全PASS (SKIP=0)。commit e6b6601 push済み。
+      output_path: output/cmd_730g_delta_shc_dashboard_sync.md
+      changed_files:
+        - scripts/shc.sh
+        - output/cmd_730g_delta_shc_dashboard_sync.md
+      git:
+        repo: /home/ubuntu/shogun
+        commit: e6b6601
+        commit_message: "feat(cmd_730g): δ-A shc status 3系統diff + sync-meta + --settings-only deprecated (Refs cmd_730)"
+        push: DONE
+      test_results:
+        skip_count: 0
+        T1_bash_n:
+          command: "bash -n scripts/shc.sh"
+          status: PASS
+          output: "SYNTAX OK"
+        T2_yaml_parse:
+          command: ".venv/bin/python3 -c 'yaml.safe_load(settings.yaml + dashboard.yaml)'"
+          status: PASS
+          output: "cli.agents 10 agents / metadata.last_updated confirmed"
+        T3_shc_status:
+          command: "bash scripts/shc.sh status"
+          exit_code: 0
+          status: PASS
+          notes: "3-section output OK. karo MISMATCH(pane=codex,settings=claude) correctly detected. shogun NO_PANE (expected). formation_status shows not-yet-synced."
+        T4_sync_meta_temp_copy:
+          command: "python3 sync-meta logic against temp copy of dashboard.yaml"
+          status: PASS
+          notes: "formation_status written (last_sync + agents). forbidden_keys 13種 unchanged confirmed."
+      ac_results:
+        DELTA-A1: PASS
+        DELTA-A2: PASS
+        DELTA-A3: PASS
+        DELTA-A4: PASS
+        DELTA-A5: "PASS (T1+T2+T3+T4 SKIP=0)"
+        DELTA-A6: PASS
+        DELTA-A7: PASS
+    skill_candidate:
+      found: false
