@@ -99,7 +99,7 @@ Task-scoped changes were isolated to the two tests, two scripts, this output, an
 
 ## Commit
 
-- pending until commit/amend step
+- `eb0e020 fix: use venv python in report tests (Refs cmd_729)`
 
 ## Residual Risk
 
