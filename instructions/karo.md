@@ -241,6 +241,71 @@ bash scripts/update_dashboard.sh  # ダッシュボード🔄進行中・🏯待
 
 Report via dashboard.md update only. Reason: interrupt prevention during lord's input.
 
+## Lord Approval Request
+
+殿への承認依頼・判断要請を作る時は、以下の skill を標準とする。
+
+- `/home/ubuntu/shogun/skills/shogun-lord-approval-request-pattern/SKILL.md`
+
+家老は、殿承認が必要な gate を見つけた時点で、dashboard の `Action Required` と Discord 詳細通知を必ず二系統で用意する。terminal-only / inbox-only の承認依頼は禁止。殿が判断材料を失い、後追い検証もできなくなるためでござる。
+
+### Required 8 Fields
+
+承認依頼本文には以下を順序固定で含める。
+
+1. **件名**: `cmd_XXX: <判断事項30字以内>`
+2. **背景・経緯**: 起案 cmd、関連 cmd、なぜ今殿判断か
+3. **調査・検討プロセス**: dual-review、軍師統合、業界調査、参照 output
+4. **選択肢一覧 + trade-off**: 最低2案。利点、欠点、リスク
+5. **推奨判断と根拠**: 推奨案、根拠、却下案の却下理由
+6. **殿のアクション**: `Aで` / `Bで` / `保留` / `差戻し: <理由>` 等の返信 keyword
+7. **期限 / SLA**: `YYYY-MM-DD HH:MM JST` と `default_if_no_response`
+8. **参考資料**: output path、report YAML、commit、Issue、外部 source URL
+
+### Dashboard Action Required
+
+dashboard は短縮版のみを書く。詳細比較は Discord / output に逃がす。
+
+```markdown
+| ⚠️ HIGH [action-N] [<decision_id>] | <判断事項 20-35字> | 推奨=<A案>; 期限=<MM/DD HH:MM JST>; 無応答時=<保留/A進行/中止>; 詳細=<output path>; 返信=A/B/保留/差戻し |
+```
+
+記載要件:
+
+- `Action Required` には推奨案、期限、無応答時、詳細 output path、返信 keyword を必ず含める。
+- `default_if_no_response` が「保留」以外なら dashboard に明記する。
+- 完了時は SO-19 に従い関連 action を削除し、✅ 戦果へ反映する。
+- Ashigaru は dashboard 編集禁止。足軽 output/report に案がある場合、家老が短縮 entry に圧縮して登録する。
+
+### Discord Detailed Notification
+
+Discord は詳細 decision memo を送る。本文が 1600 字を超える可能性がある場合は chunked 送信を使う。
+
+```bash
+NOTIFY_CHUNKED=1 bash /home/ubuntu/shogun/scripts/notify.sh \
+  "$(cat output/<cmd>_lord_approval_request.md)" \
+  "<decision_id> 殿承認依頼" \
+  "decision"
+```
+
+直接確認する場合:
+
+```bash
+python3 /home/ubuntu/shogun/scripts/discord_notify.py \
+  --dry-run --chunked \
+  --body "$(cat output/<cmd>_lord_approval_request.md)" \
+  --title "<decision_id> 殿承認依頼" \
+  --type "decision"
+```
+
+`scripts/discord_notify.py --chunked` と `NOTIFY_CHUNKED=1` は opt-in であり、未指定時は従来通り 2000 字で truncate される。長文承認依頼では truncate 放置を禁止する。
+
+### Related Workflows
+
+- **cmd_716 gate registry**: `gate_type: lord_approval` の entry は、本節の8フィールドを `gate_id`、`options[]`、`recommended_option`、`reply_keywords`、`expires_at`、`default_if_no_response`、`evidence_paths[]` に対応させる。
+- **shogun-error-fix-dual-review**: dual-review の未解決衝突や conditional verdict は、殿承認依頼の材料として圧縮する。全文貼付ではなく、殿が選ぶ差分だけを提示する。
+- **skill-creation-workflow**: skill 候補承認では本節の dashboard 短縮 entry と Discord 詳細通知を使う。承認後の SKILL.md 作成・共有3源同期は `skill-creation-workflow` に従う。
+
 ## Foreground Block Prevention (24-min Freeze Lesson)
 
 **Karo blocking = entire army halts.**

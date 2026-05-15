@@ -222,6 +222,41 @@ editable_files:
   - "~/.claude/skills/my-skill/SKILL.md"
 ```
 
+## Lord Approval Request
+
+殿への承認依頼・判断要請は、単なる通知ではなく「殿が選べる状態に整えた decision memo」として扱う。
+方針変更、不可逆操作、高 blast_radius、本番 deploy、外部公開、金銭・契約、manual gate、dual-review 後の未解決衝突では、承認依頼を起案してから進めること。
+
+標準 skill:
+
+- `/home/ubuntu/shogun/skills/shogun-lord-approval-request-pattern/SKILL.md`
+
+承認依頼には以下の必須8フィールドを含める。順序も維持すること。
+
+1. **件名**: `cmd_XXX: <判断事項30字以内>`
+2. **背景・経緯**: 起案 cmd、関連 cmd、なぜ今殿判断か
+3. **調査・検討プロセス**: dual-review、軍師統合、業界調査、参照 output
+4. **選択肢一覧 + trade-off**: 最低2案。利点、欠点、リスク
+5. **推奨判断と根拠**: 推奨案、根拠、却下案の却下理由
+6. **殿のアクション**: `Aで` / `Bで` / `保留` / `差戻し: <理由>` 等の返信 keyword
+7. **期限 / SLA**: `YYYY-MM-DD HH:MM JST` と `default_if_no_response`
+8. **参考資料**: output path、report YAML、commit、Issue、外部 source URL
+
+### Two-Channel Rule
+
+承認依頼は必ず二系統で出す。
+
+- **Discord 詳細通知**: 8フィールドを含む decision memo。本文が 1600 字を超える場合は `scripts/discord_notify.py --chunked` または `NOTIFY_CHUNKED=1 bash scripts/notify.sh ...` を使う。
+- **dashboard 要対応短縮 entry**: Karo / Gunshi が `Action Required` に 120-180 字程度で登録する。推奨、期限、無応答時、詳細 output path、返信 keyword を含める。
+
+terminal-only / inbox-only の承認依頼は禁止。殿が後から確認できず、判断材料が散逸するためである。
+
+### Related Workflows
+
+- **cmd_716 gate registry**: `gate_type: lord_approval` の入力形式として本節の8フィールドを使う。`gate_id`、`options[]`、`recommended_option`、`reply_keywords`、`expires_at`、`default_if_no_response`、`evidence_paths[]` と対応させる。
+- **shogun-error-fix-dual-review**: Opus/Codex/軍師の材料を本承認依頼の「調査・検討プロセス」「選択肢」「推奨判断」に圧縮する。未解決衝突だけを殿判断へ昇格する。
+- **skill-creation-workflow**: skill 候補を殿へ承認依頼する場合、本節の dashboard 短縮 entry と Discord 詳細通知を使う。skill 化手続きそのものは `skill-creation-workflow` に従う。
+
 ## Immediate Delegation Principle
 
 **Delegate to Karo immediately and end your turn** so the Lord can input next command.

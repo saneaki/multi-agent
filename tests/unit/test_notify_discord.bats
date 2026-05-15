@@ -17,12 +17,14 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--body", required=True)
 parser.add_argument("--title", default="")
 parser.add_argument("--type", default="")
+parser.add_argument("--chunked", action="store_true")
 args = parser.parse_args()
 
 with open(os.environ["DISCORD_NOTIFY_TEST_LOG"], "w", encoding="utf-8") as f:
     f.write(f"body={args.body}\n")
     f.write(f"title={args.title}\n")
     f.write(f"type={args.type}\n")
+    f.write(f"chunked={args.chunked}\n")
 PY
     chmod +x "$TEST_TMPDIR/scripts/discord_notify.py"
     export DISCORD_NOTIFY_TEST_LOG="$TEST_TMPDIR/discord_notify.log"
@@ -38,6 +40,12 @@ teardown() {
     grep -q "body=hello body" "$DISCORD_NOTIFY_TEST_LOG"
     grep -q "title=lord title" "$DISCORD_NOTIFY_TEST_LOG"
     grep -q "type=cmd_complete" "$DISCORD_NOTIFY_TEST_LOG"
+}
+
+@test "notify.sh passes --chunked when NOTIFY_CHUNKED is enabled" {
+    run env NOTIFY_CHUNKED=1 bash "$TEST_TMPDIR/scripts/notify.sh" "long body" "lord title" "decision"
+    [ "$status" -eq 0 ]
+    grep -q "chunked=True" "$DISCORD_NOTIFY_TEST_LOG"
 }
 
 @test "notify.sh rejects missing body" {

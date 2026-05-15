@@ -7,6 +7,7 @@ dashboard.md 🛠️スキル欄から溢れた全エントリ。最新順（上
 
 | スキル名 | 出典 |
 |----------|------|
+| **shogun-lord-approval-request-pattern** ✅ | cmd_728 (2026-05-15): `skills/shogun-lord-approval-request-pattern/SKILL.md` (284行)。軍師QC verdict=go。殿承認依頼の必須8フィールド、Discord詳細/dashboard短縮の二系統テンプレ、`--chunked` usage、cmd_716 gate registry mapping を体系化。created_at=2026-05-15T16:10:41+09:00。 |
 | **github-actions-dynamic-sparse-checkout** ✅ | cmd_690→cmd_726a/e (2026-05-15): `skills/github-actions-dynamic-sparse-checkout/SKILL.md` (113行)。巨大 repo の GitHub Actions checkout/disk failure を mapping CSV 等の実行時データから dynamic sparse-checkout 化する pattern。cmd_652/cmd_690/cmd_691 で再発。 |
 | **github-actions-release-please-workflow-permissions** ✅ | cmd_690→cmd_726a/e (2026-05-15): `skills/github-actions-release-please-workflow-permissions/SKILL.md` (104行)。release-please-action の PR 作成権限 failure に対する workflow YAML permissions + repo-level workflow permissions の二段設定 pattern。 |
 | **sh-health-log-noise-root-cause-review** ✅ | cmd_694→cmd_726a/e (2026-05-15): `skills/sh-health-log-noise-root-cause-review/SKILL.md` (130行)。sh-health fail7d 高止まりを現在障害・ログ誤検出・古い continuation line・filename false positive・重複ログに分類する root-cause review pattern。 |

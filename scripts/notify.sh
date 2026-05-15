@@ -10,6 +10,7 @@
 #
 # 環境変数 / config/discord.env:
 #   NOTIFY_BACKEND  : discord (default)
+#   NOTIFY_CHUNKED  : 1/true/yes で長文を Part N/M に分割送信
 #
 # 互換性:
 #   - 旧 `bash scripts/ntfy.sh "body" "title" "tags"` 呼出元は
@@ -55,10 +56,18 @@ case "$BACKEND" in
             echo "[notify.sh] ERROR: python3 not found; Discord backend cannot run" >&2
             exit 1
         fi
-        python3 "$SCRIPT_DIR/scripts/discord_notify.py" \
-            --body "$BODY" \
-            --title "$TITLE" \
+        DISCORD_ARGS=(
+            --body "$BODY"
+            --title "$TITLE"
             --type "$EXTRA"
+        )
+        case "${NOTIFY_CHUNKED:-}" in
+            1|true|TRUE|yes|YES)
+                DISCORD_ARGS+=(--chunked)
+                ;;
+        esac
+        python3 "$SCRIPT_DIR/scripts/discord_notify.py" \
+            "${DISCORD_ARGS[@]}"
         exit $?
         ;;
     ntfy)

@@ -513,11 +513,35 @@ entries:
       cmd_726d 判定。cmd_608 で shogun-error-fix-dual-review Variant 1 として既統合済を再確認。
       追加更新不要、battle-tested 確定済。
 
+  - id: SC-728-lord-approval-request-pattern
+    name: shogun-lord-approval-request-pattern
+    status: created
+    skill_path: skills/shogun-lord-approval-request-pattern/SKILL.md
+    source_cmd: cmd_728
+    related_cmds:
+      - cmd_716
+      - cmd_728
+      - cmd_728a
+      - cmd_728b
+      - cmd_728c
+      - cmd_728d
+      - cmd_728e
+    created_at: '2026-05-15T16:10:41+09:00'
+    decided_at: '2026-05-15T16:10:41+09:00'
+    qc_verdict: go
+    decision: implemented_created
+    notes: |
+      cmd_728 final同期。軍師QC verdict=go を受け、殿承認依頼 skill を実装済み候補として登録。
+      必須8フィールド、Discord詳細/dashboard短縮の二系統テンプレ、scripts/discord_notify.py --chunked usage、
+      cmd_716 gate registry mapping、shogun-error-fix-dual-review / skill-creation-workflow 連携を体系化。
+      c1 (skill_candidates.yaml / memory/skill_history.md / dashboard.md[yaml] 3源同期待ち) は cmd_728f で解消。
+      c2 (cmd_716 Phase D後の gate registry 完全統合) は別残件として保持。
+
 # ─── サマリ ───
 summary:
-  total_entries: 34
+  total_entries: 35
   by_status:
-    created: 15           # cmd_675b 3 + cmd_682 silent_inconsistency 解消 2 + cmd_726 10
+    created: 16           # cmd_675b 3 + cmd_682 silent_inconsistency 解消 2 + cmd_726 10 + cmd_728 1
     rejected: 2           # cmd_675b 棄却 (rule-inventory / qc-auto-naming)
     merged: 15            # cmd_675b 5 + cmd_682 legacy 6 + cmd_680 既存統合 2 + cmd_726 2
     deferred: 2           # 棚上げ 2026-06-08 (suggestions-lifecycle / codex-context-pane-border)
@@ -527,3 +551,5 @@ summary:
   cmd_682_implementation: output/cmd_682_skill_legacy_integration.md
   cmd_726_decision_basis: output/cmd_726a_skill_batch_github_health.md / output/cmd_726b_skill_batch_shell_gas_smoke.md / output/cmd_726c_skill_batch_silent_preset_tmux.md / output/cmd_726d_skill_batch_watchdog_daemon_l017.md
   cmd_726_implementation: output/cmd_726e_skill_shared_sync_push.md
+  cmd_728_decision_basis: output/cmd_728a_lord_approval_best_practice_research.md / output/cmd_728b_lord_approval_skill_draft.md / queue/reports/gunshi_report.yaml
+  cmd_728_implementation: output/cmd_728f_lord_approval_3source_sync.md

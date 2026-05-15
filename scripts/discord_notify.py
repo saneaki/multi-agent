@@ -7,7 +7,7 @@ notify.sh から呼び出される。
 
 [Usage]
   python3 scripts/discord_notify.py --body "<body>" [--title "<title>"] \\
-      [--type "<type_or_tag>"] [--priority normal|high|urgent]
+      [--type "<type_or_tag>"] [--priority normal|high|urgent] [--chunked]
 
 [Config]
   config/discord.env:
@@ -19,7 +19,8 @@ notify.sh から呼び出される。
 
 [Behavior]
   - Body 先頭に "[vps] " を付加 (旧 ntfy.sh と互換)
-  - 2000 文字超過時は安全に切り詰め
+  - デフォルトでは 2000 文字超過時に安全に切り詰め (後方互換)
+  - --chunked 指定時は約 1800 文字ごとに Part N/M 付きで分割送信
   - HTTP 429 受領時は Retry-After に従い指数バックオフで最大 3 回リトライ
   - 最終的に失敗しても exit 0 (best-effort) — 監視は logs/discord_notify.log で
 """
@@ -44,6 +45,7 @@ LOG_FILE = PROJECT_DIR / "logs" / "discord_notify.log"
 
 DISCORD_API = "https://discord.com/api/v10"
 MESSAGE_MAX = 2000
+CHUNK_TARGET = 1800
 MAX_RETRIES = 3
 DEFAULT_TIMEOUT = 10.0
 
@@ -112,6 +114,27 @@ def truncate(text: str, limit: int) -> str:
     return text[: limit - len(suffix)] + suffix
 
 
+def split_body_chunks(body: str, limit: int = CHUNK_TARGET) -> list[str]:
+    """Split body into readable chunks without dropping content."""
+    if limit <= 0:
+        raise ValueError("chunk limit must be positive")
+    if len(body) <= limit:
+        return [body]
+
+    chunks: list[str] = []
+    remaining = body
+    while len(remaining) > limit:
+        split_at = remaining.rfind("\n", 0, limit + 1)
+        if split_at < max(1, int(limit * 0.6)):
+            split_at = remaining.rfind(" ", 0, limit + 1)
+        if split_at < max(1, int(limit * 0.6)):
+            split_at = limit
+        chunks.append(remaining[:split_at].rstrip())
+        remaining = remaining[split_at:].lstrip()
+    chunks.append(remaining)
+    return chunks
+
+
 def format_message(body: str, title: str, tag: str) -> str:
     body_with_env = f"[vps] {body}"
     parts: list[str] = []
@@ -121,6 +144,45 @@ def format_message(body: str, title: str, tag: str) -> str:
     if tag:
         parts.append(f"_({tag})_")
     return truncate("\n".join(parts), MESSAGE_MAX)
+
+
+def format_chunked_messages(body: str, title: str, tag: str) -> list[str]:
+    """Format long body as Discord-safe Part N/M messages."""
+    chunks = split_body_chunks(body, CHUNK_TARGET)
+    while True:
+        total = len(chunks)
+        prefix_template = f"[vps] Part {total}/{total}\n"
+        overhead_parts: list[str] = []
+        if title:
+            overhead_parts.append(f"**{title}**")
+        overhead_parts.append(prefix_template)
+        if tag:
+            overhead_parts.append(f"_({tag})_")
+        overhead = len("\n".join(overhead_parts))
+        effective_limit = min(CHUNK_TARGET, MESSAGE_MAX - overhead - 1)
+        if effective_limit <= 0:
+            raise ValueError("title/tag overhead leaves no room for message body")
+        next_chunks = split_body_chunks(body, effective_limit)
+        if len(next_chunks) == total:
+            chunks = next_chunks
+            break
+        chunks = next_chunks
+
+    total = len(chunks)
+    messages: list[str] = []
+    for index, chunk in enumerate(chunks, start=1):
+        body_with_part = f"Part {index}/{total}\n{chunk}"
+        content = format_message(body_with_part, title, tag)
+        if len(content) > MESSAGE_MAX:
+            raise ValueError(f"chunk {index}/{total} exceeds Discord limit")
+        messages.append(content)
+    return messages
+
+
+def format_messages(body: str, title: str, tag: str, *, chunked: bool) -> list[str]:
+    if chunked:
+        return format_chunked_messages(body, title, tag)
+    return [format_message(body, title, tag)]
 
 
 def http_request(
@@ -223,6 +285,11 @@ def main() -> int:
     parser.add_argument(
         "--dry-run", action="store_true", help="format-only test, no API call"
     )
+    parser.add_argument(
+        "--chunked",
+        action="store_true",
+        help="split long messages into Discord-safe Part N/M chunks",
+    )
     args = parser.parse_args()
 
     logger = setup_logger()
@@ -236,11 +303,15 @@ def main() -> int:
         return 1
 
     tag = detect_extra_tag(args.body, args.type)
-    content = format_message(args.body, args.title, tag)
+    contents = format_messages(args.body, args.title, tag, chunked=args.chunked)
 
     if args.dry_run:
-        print(f"[discord_notify] DRY-RUN — formatted content ({len(content)} chars):")
-        print(content)
+        print(
+            f"[discord_notify] DRY-RUN — formatted {len(contents)} part(s):"
+        )
+        for index, content in enumerate(contents, start=1):
+            print(f"--- part {index}/{len(contents)} ({len(content)} chars) ---")
+            print(content)
         return 0
 
     channel_id = cfg.get("DISCORD_LORD_DM_CHANNEL_ID", "").strip()
@@ -262,16 +333,18 @@ def main() -> int:
             )
             return 1
 
-    ok = send_message_with_retry(token, channel_id, content, logger)
-    if ok:
-        logger.info(
-            "delivered tag=%s title=%r body_len=%s channel=%s",
-            tag,
-            args.title,
-            len(args.body),
-            channel_id,
-        )
-        return 0
+    for index, content in enumerate(contents, start=1):
+        ok = send_message_with_retry(token, channel_id, content, logger)
+        if ok:
+            logger.info(
+                "delivered part=%s/%s tag=%s title=%r body_len=%s channel=%s",
+                index,
+                len(contents),
+                tag,
+                args.title,
+                len(args.body),
+                channel_id,
+            )
     return 0  # best-effort: do not propagate failure to callers
 
 
