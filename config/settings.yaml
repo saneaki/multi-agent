@@ -108,20 +108,20 @@ cli:
       model: claude-opus-4-7
       effort: max
     ashigaru6:
-      cli_type: codex
-      model: gpt-5.5
+      cli_type: claude
+      model: claude-sonnet-4-6
       effort: max
     ashigaru7:
-      cli_type: codex
-      model: gpt-5.5
+      cli_type: claude
+      model: claude-sonnet-4-6
       effort: max
     gunshi:
       cli_type: claude
       model: claude-opus-4-7
       effort: max
     karo:
-      cli_type: codex
-      model: gpt-5.5
+      cli_type: claude
+      model: claude-sonnet-4-6
       effort: max
     shogun:
       cli_type: claude

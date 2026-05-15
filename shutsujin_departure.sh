@@ -767,23 +767,20 @@ if [ "$SETUP_ONLY" = false ]; then
     fi
 
     # ═══════════════════════════════════════════════════════════════════
-    # 陣形事前適用（エージェント起動前に settings.yaml を更新）
+    # 陣形 runtime overlay（settings.yaml は変更しない）
     # ═══════════════════════════════════════════════════════════════════
-    # pre-start: settings.yaml更新のみ(--settings-only)。エージェント未起動のためswitch_cli不要。
-    log_info "⚔️  陣形を事前適用中（settings.yaml更新のみ）..."
+    # shk: 全員 claude/opus+T を起動時オーバーライド (per-agent inline)
+    # shx: ash6-7 のみ codex/xhigh を起動時オーバーライド (per-agent inline)
+    # shu: settings.yaml canonical baseline をそのまま使用
     if [ "$HYBRID_MODE" = true ]; then
-        log_info "陣形適用: hybrid"
-        bash scripts/shc.sh deploy hybrid --settings-only \
-            || { log_war "ERROR: 陣形適用(hybrid)に失敗しました。halt."; exit 1; }
+        log_info "⚔️  混成の陣（shx）: ash6-7=codex/xhigh runtime overlay"
     elif [ "$KESSEN_MODE" = true ]; then
-        log_info "陣形適用: all-opus"
-        bash scripts/shc.sh deploy all-opus --settings-only \
-            || { log_war "ERROR: 陣形適用(all-opus)に失敗しました。halt."; exit 1; }
+        log_info "⚔️  決戦の陣（shk）: 全員=claude/opus+T runtime overlay"
     else
-        log_info "陣形適用: all-sonnet（平時の陣）"
-        bash scripts/shc.sh deploy all-sonnet --settings-only \
-            || { log_war "ERROR: 陣形適用(all-sonnet)に失敗しました。halt."; exit 1; }
+        log_info "⚔️  平時の陣（shu）: settings.yaml canonical baseline"
     fi
+    # reverse-validate (BETA-10) 用: 起動前 settings.yaml hash を記録
+    _settings_hash_before=$(sha256sum "${CLI_ADAPTER_SETTINGS}" 2>/dev/null | awk '{print $1}')
 
     log_war "👑 全軍に Claude Code を召喚中..."
 
@@ -794,17 +791,10 @@ if [ "$SETUP_ONLY" = false ]; then
         _shogun_cli_type=$(get_cli_type "shogun")
         _shogun_cmd=$(build_cli_command "shogun")
     fi
-    # --shogun-no-thinking → settings.yaml の thinking を一時的に false にして build_cli_command に任せる
-    if [ "$SHOGUN_NO_THINKING" = true ] && [ "$CLI_ADAPTER_LOADED" = true ]; then
-        "$CLI_ADAPTER_PROJECT_ROOT/.venv/bin/python3" -c "
-import yaml
-f = '${CLI_ADAPTER_SETTINGS}'
-with open(f) as fh: d = yaml.safe_load(fh) or {}
-d.setdefault('cli',{}).setdefault('agents',{}).setdefault('shogun',{})['thinking'] = False
-with open(f,'w') as fh: yaml.safe_dump(d, fh, default_flow_style=False, allow_unicode=True, sort_keys=False)
-" 2>/dev/null
-        _shogun_cmd=$(build_cli_command "shogun")
-        log_info "  └─ 将軍 settings.yaml thinking=false に設定"
+    # --shogun-no-thinking → MAX_THINKING_TOKENS=0 を runtime で先頭付与。settings.yaml は変更しない。
+    if [ "$SHOGUN_NO_THINKING" = true ]; then
+        _shogun_cmd="MAX_THINKING_TOKENS=0 ${_shogun_cmd}"
+        log_info "  └─ 将軍 thinking=off (runtime-only; settings.yaml unchanged)"
     fi
     tmux set-option -p -t "shogun:main" @agent_cli "$_shogun_cli_type"
     tmux send-keys -t shogun:main "$_shogun_cmd"
@@ -825,7 +815,9 @@ with open(f,'w') as fh: yaml.safe_dump(d, fh, default_flow_style=False, allow_un
         _karo_cmd=$(build_cli_command "karo")
     fi
     if [ "$KESSEN_MODE" = true ]; then
-        _karo_cmd="claude --model opus --effort max --dangerously-skip-permissions"
+        # shk: 家老も claude/opus+T runtime overlay（@agent_cli / @model_name も同期）
+        _karo_cli_type="claude"
+        _karo_cmd="CLAUDE_CODE_EFFORT_LEVEL=max claude --model claude-opus-4-7 --dangerously-skip-permissions"
     fi
     # Codex等の初期プロンプト付加（サジェストUI停止問題対策）
     _startup_prompt=$(get_startup_prompt "karo" 2>/dev/null)
@@ -835,54 +827,59 @@ with open(f,'w') as fh: yaml.safe_dump(d, fh, default_flow_style=False, allow_un
     tmux set-option -p -t "multiagent:agents.${p}" @agent_cli "$_karo_cli_type"
     tmux send-keys -t "multiagent:agents.${p}" "$_karo_cmd"
     tmux send-keys -t "multiagent:agents.${p}" Enter
-    _karo_display=$(get_model_display_name "karo" 2>/dev/null || echo "Sonnet")
+    if [ "$KESSEN_MODE" = true ]; then
+        _karo_display="Opus+T"
+    else
+        _karo_display=$(get_model_display_name "karo" 2>/dev/null || echo "Sonnet")
+    fi
     tmux set-option -p -t "multiagent:agents.${p}" @model_name "$_karo_display" 2>/dev/null || true
     log_info "  └─ 家老（${_karo_display}）、召喚完了"
 
     if [ "$KESSEN_MODE" = true ]; then
-        # 決戦の陣: CLI Adapter経由（claudeはOpus強制）
+        # shk: 全員 claude/opus+T runtime overlay（settings.yaml 不変）
         for i in $(seq 1 "$_ASHIGARU_COUNT"); do
             p=$((PANE_BASE + i))
             _ashi_cli_type="claude"
-            _ashi_cmd="claude --model opus --effort max --dangerously-skip-permissions"
-            if [ "$CLI_ADAPTER_LOADED" = true ]; then
-                _ashi_cli_type=$(get_cli_type "ashigaru${i}")
-                if [ "$_ashi_cli_type" = "claude" ]; then
-                    _ashi_cmd="claude --model opus --effort max --dangerously-skip-permissions"
-                else
-                    _ashi_cmd=$(build_cli_command "ashigaru${i}")
-                fi
-            fi
-            # Codex等の初期プロンプト付加（サジェストUI停止問題対策）
-            _startup_prompt=$(get_startup_prompt "ashigaru${i}" 2>/dev/null)
-            if [[ -n "$_startup_prompt" ]]; then
-                _ashi_cmd="$_ashi_cmd \"$_startup_prompt\""
-            fi
+            _ashi_cmd="CLAUDE_CODE_EFFORT_LEVEL=max claude --model claude-opus-4-7 --dangerously-skip-permissions"
             tmux set-option -p -t "multiagent:agents.${p}" @agent_cli "$_ashi_cli_type"
             tmux send-keys -t "multiagent:agents.${p}" "$_ashi_cmd"
             tmux send-keys -t "multiagent:agents.${p}" Enter
+            tmux set-option -p -t "multiagent:agents.${p}" @model_name "Opus+T" 2>/dev/null || true
         done
-        log_info "  └─ 足軽1-${_ASHIGARU_COUNT}（決戦の陣）、召喚完了"
+        log_info "  └─ 足軽1-${_ASHIGARU_COUNT}（決戦の陣 全員claude/Opus+T）、召喚完了"
     else
-        # 平時の陣: CLI Adapter経由（デフォルト: 全足軽=Sonnet）
+        # shu/shx: settings.yaml canonical baseline を使用。shx は ash6-7 に codex/xhigh overlay。
         for i in $(seq 1 "$_ASHIGARU_COUNT"); do
             p=$((PANE_BASE + i))
             _ashi_cli_type="claude"
             _ashi_cmd="claude --model sonnet --effort max --dangerously-skip-permissions"
-            if [ "$CLI_ADAPTER_LOADED" = true ]; then
+            _ashi_display="Sonnet+T"
+            if [ "$HYBRID_MODE" = true ] && [ "$i" -ge 6 ]; then
+                # shx: ashigaru6-7 runtime overlay → codex 最新 + xhigh（settings.yaml 不変）
+                _ashi_cli_type="codex"
+                _ashi_cmd="codex --model gpt-5.5 --reasoning-effort xhigh --search --dangerously-bypass-approvals-and-sandbox --no-alt-screen"
+                _ashi_display="Codex"
+                _startup_prompt="Session Start — do ALL of this in one turn, do NOT stop early: 1) tmux display-message -t \"\$TMUX_PANE\" -p '#{@agent_id}' to identify yourself. 2) Read queue/tasks/ashigaru${i}.yaml. 3) Read queue/inbox/ashigaru${i}.yaml, mark read:true. 4) Read files listed in context_files. 5) Execute the assigned task to completion — edit files, run commands, write reports. Keep working until the task is done."
+                _ashi_cmd="$_ashi_cmd \"$_startup_prompt\""
+            elif [ "$CLI_ADAPTER_LOADED" = true ]; then
                 _ashi_cli_type=$(get_cli_type "ashigaru${i}")
                 _ashi_cmd=$(build_cli_command "ashigaru${i}")
-            fi
-            # Codex等の初期プロンプト付加（サジェストUI停止問題対策）
-            _startup_prompt=$(get_startup_prompt "ashigaru${i}" 2>/dev/null)
-            if [[ -n "$_startup_prompt" ]]; then
-                _ashi_cmd="$_ashi_cmd \"$_startup_prompt\""
+                _ashi_display=$(get_model_display_name "ashigaru${i}" 2>/dev/null || echo "Sonnet+T")
+                _startup_prompt=$(get_startup_prompt "ashigaru${i}" 2>/dev/null)
+                if [[ -n "$_startup_prompt" ]]; then
+                    _ashi_cmd="$_ashi_cmd \"$_startup_prompt\""
+                fi
             fi
             tmux set-option -p -t "multiagent:agents.${p}" @agent_cli "$_ashi_cli_type"
             tmux send-keys -t "multiagent:agents.${p}" "$_ashi_cmd"
             tmux send-keys -t "multiagent:agents.${p}" Enter
+            tmux set-option -p -t "multiagent:agents.${p}" @model_name "$_ashi_display" 2>/dev/null || true
         done
-        log_info "  └─ 足軽1-${_ASHIGARU_COUNT}（平時の陣）、召喚完了"
+        if [ "$HYBRID_MODE" = true ]; then
+            log_info "  └─ 足軽1-${_ASHIGARU_COUNT}（混成の陣: ash1-5=shuベース, ash6-7=codex/xhigh）、召喚完了"
+        else
+            log_info "  └─ 足軽1-${_ASHIGARU_COUNT}（平時の陣）、召喚完了"
+        fi
     fi
 
     # 軍師（pane _ASHIGARU_COUNT+1）: Opus Thinking — 戦略立案・設計判断専任
@@ -915,6 +912,45 @@ with open(f,'w') as fh: yaml.safe_dump(d, fh, default_flow_style=False, allow_un
 
     # ダッシュボード🏯セクションを現在の陣形で更新
     update_dashboard_formation
+    echo ""
+
+    # ═══════════════════════════════════════════════════════════════════
+    # reverse-validate (BETA-10): 起動後 settings.yaml 不変確認 + pane 整合チェック
+    # 不整合を検出した場合は非0終了で呼び出し元に通知する
+    # ═══════════════════════════════════════════════════════════════════
+    _rv_exit=0
+    _settings_hash_after=$(sha256sum "${CLI_ADAPTER_SETTINGS}" 2>/dev/null | awk '{print $1}')
+    if [[ -n "$_settings_hash_before" && "$_settings_hash_before" != "$_settings_hash_after" ]]; then
+        log_war "⚠️  [reverse-validate FAIL] settings.yaml が起動中に変更されました"
+        log_war "    before=${_settings_hash_before}"
+        log_war "    after =${_settings_hash_after}"
+        _rv_exit=1
+    else
+        log_info "  ✅ [reverse-validate] settings.yaml 変更なし (hash=${_settings_hash_after:0:16}...)"
+    fi
+    if [ "$HYBRID_MODE" = true ]; then
+        for _rv_i in 6 7; do
+            _rv_p=$((PANE_BASE + _rv_i))
+            _rv_actual=$(tmux display-message -p -t "multiagent:agents.${_rv_p}" '#{@agent_cli}' 2>/dev/null || echo "unknown")
+            if [[ "$_rv_actual" != "codex" ]]; then
+                log_war "⚠️  [reverse-validate FAIL] ashigaru${_rv_i} @agent_cli=${_rv_actual} (expected: codex)"
+                _rv_exit=1
+            fi
+        done
+    fi
+    if [ "$KESSEN_MODE" = true ]; then
+        _rv_p_karo=$((PANE_BASE + 0))
+        _rv_karo_actual=$(tmux display-message -p -t "multiagent:agents.${_rv_p_karo}" '#{@agent_cli}' 2>/dev/null || echo "unknown")
+        if [[ "$_rv_karo_actual" != "claude" ]]; then
+            log_war "⚠️  [reverse-validate FAIL] karo @agent_cli=${_rv_karo_actual} (expected: claude)"
+            _rv_exit=1
+        fi
+    fi
+    if [ $_rv_exit -ne 0 ]; then
+        log_war "⚠️  [reverse-validate] 不整合を検出。起動は完了しましたが整合性確認が必要です。"
+        exit $_rv_exit
+    fi
+    log_info "  ✅ [reverse-validate] 全チェック通過"
     echo ""
 
     # ═══════════════════════════════════════════════════════════════════════════
