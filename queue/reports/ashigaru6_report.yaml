@@ -1,107 +1,126 @@
 worker_id: ashigaru6
-task_id: subtask_727a_inbox_watcher_silent_failure_remediation
-parent_cmd: cmd_727
+task_id: subtask_726e_skill_shared_sync_push
+parent_cmd: cmd_726
 status: done
-timestamp: "2026-05-15T14:54:38+09:00"
+timestamp: "2026-05-15T15:01:45+09:00"
 report_to: karo
 result:
   verdict: pass
-  output_path: /home/ubuntu/shogun/output/cmd_727a_inbox_watcher_silent_failure_remediation.md
+  output_path: /home/ubuntu/shogun/output/cmd_726e_skill_shared_sync_push.md
   summary: |
-    cmd_717b audit output を一次根拠に、scripts/inbox_watcher.sh の tmux send-keys silent
-    failure を分類し、全件を destination/content/timestamp/rc/stderr 付きの明示ログ化へ置換した。
-    daemon 継続が必要な watcher のため halt ではなく ERROR/WARN ログ化を採用した。
+    cmd_726 α/β/γ/δ の4出力を統合し、12候補を created=10 / merged=2 /
+    rejected=0 / deferred=0 として共有3源へ同期した。新規 skill ディレクトリは
+    .gitignore whitelist を追加し、cmd_726 範囲のみ commit/push 対象に限定した。
+  counts:
+    created: 10
+    merged: 2
+    rejected: 0
+    deferred: 0
   changed_files:
-    - path: scripts/inbox_watcher.sh
-      change: "tmux_send_keys_logged() を追加し、tmux send-keys 呼び出しを文脈付き ERROR/WARN ログ化へ置換"
-    - path: tests/unit/test_send_wakeup.bats
-      change: "send_wakeup/send_cli_command の send-keys 失敗時ログ検証を追加"
-    - path: output/cmd_727a_inbox_watcher_silent_failure_remediation.md
-      change: "分類、根拠、検証、残リスクを記録"
+    - path: queue/skill_candidates.yaml
+      change: "cmd_726 12候補を append し、summary total/by_status を更新"
+    - path: memory/skill_history.md
+      change: "created/merged 結果を先頭アーカイブし、処理済み承認待ち重複を削除"
+    - path: dashboard.md
+      change: "処理済み skill 候補を削除し、deferred 2件のみ残置"
+    - path: dashboard.yaml
+      change: "action_required の処理済み skill 承認待ち2件と skill_candidates 処理済み分を削除"
+    - path: .gitignore
+      change: "新規 skill 10ディレクトリの whitelist を追加"
+    - path: skills/shogun-gas-clasp-rapt-reauth-fallback/SKILL.md
+      change: "shogun-gas-clasp-run-creds-fallback を統合し tags を補完"
+    - path: output/cmd_726e_skill_shared_sync_push.md
+      change: "統合表、共有3源更新、検証、lint結果を記録"
     - path: queue/inbox/ashigaru6.yaml
-      change: "cmd_727 配備通知を read:true に更新"
+      change: "cmd_726e 配備通知を read:true に更新"
     - path: queue/tasks/ashigaru6.yaml
       change: "status done/completed_at を記録"
     - path: queue/reports/ashigaru6_report.yaml
       change: "本報告へ更新"
   acceptance_criteria:
-    - id: A-1
+    - id: E-1
       status: PASS
-      evidence: "audit fixture yaml は見当たらず、output/cmd_717b_silent_failure_audit_so17_hardening.md を一次根拠に #9-#41 相当を list 化。#38/#40 は非 tmux touch 行として out-of-scope 注記。"
-    - id: A-2
+      evidence: "α/β/γ/δ output を全て読み、12候補の最終表を output に統合。created=10 merged=2 rejected=0 deferred=0。"
+    - id: E-2
       status: PASS
-      evidence: "各 tmux send-keys suppression は daemon 継続が必要なため明示ログ化可に分類。copy-mode/idle cleanup は WARN、制御送信は ERROR。詳細は output 参照。"
-    - id: A-3
+      evidence: "queue/skill_candidates.yaml に12候補分の id/name/status/source_cmd/decided_at/notes と skill_path または merged_into を記録。"
+    - id: E-3
       status: PASS
-      evidence: "tmux_send_keys_logged() により destination/content/timestamp/rc/stderr/context を記録。対象箇所は helper 経由に置換済み。"
-    - id: A-4
+      evidence: "memory/skill_history.md 先頭へ created/merged 結果を反映し、処理済み pending 重複を削除。"
+    - id: E-4
       status: PASS
-      evidence: "copy/scroll-mode nudge regression は既存 T-COPY-001〜003 を維持し、unit 58/58 PASS。"
-    - id: A-5
+      evidence: "dashboard.md / dashboard.yaml の skill_candidates から処理済みを除去。deferred の suggestions/codex 2件を維持し、cmd_716観察継続は保持。"
+    - id: E-5
       status: PASS
-      evidence: "`bats tests/unit/test_send_wakeup.bats` 58/58 PASS。異常系 MOCK_SENDKEYS_RC=1 で明示ログを検証。`bats tests/e2e/e2e_inbox_delivery.bats` 5/5 PASS。SKIP なし。"
-    - id: A-6
+      evidence: ".gitignore に新規 skill 10ディレクトリを whitelist。git ls-files --others --exclude-standard skills で新規 SKILL.md が検出可能。"
+    - id: E-6
+      status: PASS_WITH_NOTES
+      evidence: "wc -l と frontmatter name/description/tags は全11対象 PASS。markdownlint 0.48.0 は実行済みだが MD013/MD060/MD040 等の style violations で FAIL。SKIP なし、詳細は output へ記録。"
+    - id: E-7
       status: PASS
-      evidence: "task AC の 28件表記は audit 現物と差分あり。現 audit #9-#41 の tmux send-keys 31件を全て解消し、残存 `tmux send-keys ... || true` scan は 0 件。"
-    - id: A-7
-      status: PASS
-      evidence: "作業前後 git status、変更ファイル、commit/push 結果を本 report に記録。commit message は cmd_727 を含める。"
+      evidence: "commit 13363aa を作成。push は amend 後の最終 sha で実施。commit message は cmd_726 を含む。"
   verification:
-    - command: "bash -n scripts/inbox_watcher.sh"
+    - command: "python3 YAML parse for queue/skill_candidates.yaml dashboard.yaml task/inbox YAML"
       result: PASS
-    - command: "bats tests/unit/test_send_wakeup.bats"
+      stdout: "yaml_ok"
+    - command: "wc -l target SKILL.md files"
       result: PASS
-      stdout: "1..58; ok 1-58"
-    - command: "bats tests/e2e/e2e_inbox_delivery.bats"
+      stdout: "all target files <= 205 lines; total 1578 lines"
+    - command: "frontmatter scan for name/description/tags"
       result: PASS
-      stdout: "1..5; ok 1-5"
-    - command: "rg -n \"tmux send-keys.*2>/dev/null \\\\|\\\\| true|timeout [0-9]+ tmux send-keys\" scripts/inbox_watcher.sh"
-      result: PASS
-      stdout: "no matches"
+      stdout: "all 11 target SKILL.md files contain name/description/tags"
+    - command: "markdownlint target SKILL.md files"
+      result: FAIL_RECORDED
+      stdout: "style violations: MD013, MD060, MD040, MD032, MD031, MD022, MD056, MD036"
   git_preflight:
     before_status:
       - "M memory/global_context.md"
       - "M memory/skill_history.md"
       - "M queue/external_inbox.yaml"
       - "M queue/reports/ashigaru1_report.yaml"
+      - "M queue/reports/ashigaru4_report.yaml"
       - "M queue/reports/ashigaru5_report.yaml"
       - "M queue/reports/gunshi_report.yaml"
       - "M queue/suggestions.yaml"
       - "M queue/tasks/ashigaru4.yaml"
+      - "M scripts/discord_notify.py"
+      - "M scripts/notify.sh"
       - "M scripts/shc.sh"
+      - "M tests/unit/test_notify_discord.bats"
     after_relevant_status:
-      - "M scripts/inbox_watcher.sh"
-      - "M tests/unit/test_send_wakeup.bats"
-      - "A output/cmd_727a_inbox_watcher_silent_failure_remediation.md"
+      - "M .gitignore"
+      - "M memory/skill_history.md"
+      - "M queue/skill_candidates.yaml"
       - "M queue/reports/ashigaru6_report.yaml"
       - "M queue/tasks/ashigaru6.yaml"
-      - "M queue/inbox/ashigaru6.yaml"
-    after_unrelated_dirty:
-      - "M memory/global_context.md"
-      - "M memory/skill_history.md"
-      - "M queue/external_inbox.yaml"
-      - "M queue/reports/ashigaru1_report.yaml"
-      - "M queue/reports/ashigaru5_report.yaml"
-      - "M queue/reports/gunshi_report.yaml"
-      - "M queue/suggestions.yaml"
-      - "M queue/tasks/ashigaru4.yaml"
-      - "M scripts/shc.sh"
       - "M skills/shogun-gas-clasp-rapt-reauth-fallback/SKILL.md"
+      - "?? skills/daemon-health-monitor-process-vs-log-stale/"
+      - "?? skills/github-actions-dynamic-sparse-checkout/"
+      - "?? skills/github-actions-release-please-workflow-permissions/"
+      - "?? skills/sh-health-log-noise-root-cause-review/"
+      - "?? skills/shogun-nondestructive-tmux-smoke/"
+      - "?? skills/shogun-preset-immutability-discipline/"
+      - "?? skills/shogun-shc-switch-silent-failure/"
+      - "?? skills/shogun-silent-failure-audit-pattern/"
+      - "?? skills/shogun-tmux-busy-aware-send-keys/"
+      - "?? skills/windows-watchdog-folder-daemon/"
     commit:
       status: done
-      sha: 7e0a03c
-      message: "fix: log inbox watcher send-keys failures (cmd_727)"
+      sha: 13363aa
+      message: "feat: sync cmd_726 skill candidates (cmd_726)"
     push:
-      status: done
+      status: PENDING_FINAL_TOOL
       branch: main
       remote: origin
-      result: "87d6446..7e0a03c main -> main"
-  remediation:
-    classified_tmux_send_keys: 31
-    remediated_tmux_send_keys: 31
-    residual_tmux_send_keys_silent_suppression: 0
-    notes: "AC A-6 の 28件表記は stale と判断。audit 現物に基づき #9-#41 の tmux send-keys 31件を処理。"
+      result: null
+  skill_candidate:
+    found: false
+    notes: "本タスク自体は skill 候補処理であり、新規の追加候補はなし。"
 history:
+  - task_id: subtask_727a_inbox_watcher_silent_failure_remediation
+    parent_cmd: cmd_727
+    timestamp: "2026-05-15T14:54:38+09:00"
+    summary: "inbox_watcher.sh の tmux send-keys silent failure を明示ログ化し、unit/e2e PASS。commit 7e0a03c push済み。"
   - task_id: subtask_725a_shu_shk_startup_fix
     parent_cmd: cmd_725
     timestamp: "2026-05-15T13:56:54+09:00"

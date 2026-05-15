@@ -1,59 +1,57 @@
 task:
-  task_id: subtask_727a_inbox_watcher_silent_failure_remediation
-  parent_cmd: cmd_727
-  title: "cmd_727a: inbox_watcher silent failure是正"
-  bloom_level: L4
+  task_id: subtask_726e_skill_shared_sync_push
+  parent_cmd: cmd_726
+  title: "cmd_726e: skill共有3源同期+push"
+  bloom_level: L5
   assigned_to: ashigaru6
   report_to: karo
   status: done
-  timestamp: '2026-05-15T14:46:28+09:00'
+  timestamp: '2026-05-15T14:58:30+09:00'
   priority: medium
-  completed_at: '2026-05-15T14:54:38+09:00'
+  completed_at: '2026-05-15T15:09:54+09:00'
   project: shogun
   target_path: /home/ubuntu/shogun
   context_policy: clear_between
   context_files:
     - queue/shogun_to_karo.yaml
-    - output/cmd_717b_silent_failure_audit_so17_hardening.md
-    - scripts/inbox_watcher.sh
-    - tests/unit/test_send_wakeup.bats
-    - tests/e2e/e2e_inbox_delivery.bats
     - skills/skill-creation-workflow/SKILL.md
+    - output/cmd_726a_skill_batch_github_health.md
+    - output/cmd_726b_skill_batch_shell_gas_smoke.md
+    - output/cmd_726c_skill_batch_silent_preset_tmux.md
+    - output/cmd_726d_skill_batch_watchdog_daemon_l017.md
+    - queue/skill_candidates.yaml
+    - memory/skill_history.md
+    - dashboard.md
   editable_files:
-    - scripts/inbox_watcher.sh
-    - tests/unit/test_send_wakeup.bats
-    - tests/e2e/e2e_inbox_delivery.bats
-    - output/cmd_727a_inbox_watcher_silent_failure_remediation.md
+    - queue/skill_candidates.yaml
+    - memory/skill_history.md
+    - dashboard.md
+    - dashboard.yaml
+    - .gitignore
+    - output/cmd_726e_skill_shared_sync_push.md
     - queue/reports/ashigaru6_report.yaml
     - queue/tasks/ashigaru6.yaml
     - queue/inbox/ashigaru6.yaml
   acceptance_criteria:
-    - id: A-1
-      check: "cmd_717b audit output を読み、inbox_watcher.sh の tmux send-keys suppression #9-#41 相当を全件 list 化する。audit fixture yaml が見つからない場合は output/cmd_717b_silent_failure_audit_so17_hardening.md を一次根拠とし、fixture不在を report に明記する"
-    - id: A-2
-      check: "各 suppression を halt 必須 / 明示ログ化可 に分類し、根拠を output に記録する"
-    - id: A-3
-      check: "scripts/inbox_watcher.sh の対象箇所に halt または log_warn/log_error を適用し、失敗時に destination/content/timestamp が追跡可能になる"
-    - id: A-4
-      check: "cmd_711 の scroll/copy-mode nudge 修正を regression させない。既存 unit/e2e があれば更新し、なければ最小 smoke を追加する"
-    - id: A-5
-      check: "正常系と tmux send-keys 失敗模擬の異常系を実行し、結果を output/report に記録する。SKIP は FAIL 扱い"
-    - id: A-6
-      check: "remediation_required 28件が解消されたか、残件がある場合は件数・理由・残リスクを output/report に明記する"
-    - id: A-7
-      check: "cmd_704 git preflight: 作業前後 git status、変更ファイル、commit、push済みを report に記録する。commit message に cmd_727 を含める"
+    - id: E-1
+      check: "cmd_726 α/β/γ/δ outputs を全て読み、12候補の最終 created/merged/rejected/deferred を1表に統合する"
+    - id: E-2
+      check: "queue/skill_candidates.yaml に12候補分の entries を append/update し、id/name/status/source_cmd/decided_at/notes/skill_path or merged_into を記録する"
+    - id: E-3
+      check: "memory/skill_history.md を更新し、created/merged/rejected/deferred が dashboard と矛盾しないようにする"
+    - id: E-4
+      check: "dashboard.md / dashboard.yaml のスキル候補欄から処理済みを除去し、deferred があれば残す。cmd_716観察継続など無関係欄を壊さない"
+    - id: E-5
+      check: "必要なら .gitignore whitelist を追加し、新規 skills/*/SKILL.md が git 管理対象になることを確認する"
+    - id: E-6
+      check: "対象 SKILL.md の line count と frontmatter を確認し、可能なら markdownlint または代替 lint を実行する。SKIP は理由を記録し、軍師QCへ残す"
+    - id: E-7
+      check: "cmd_704 git preflight を遵守し、cmd_726 を含む commit を作成して origin/main へ push する"
   description: |
-    【目的】
-    cmd_727 α。inbox_watcher.sh の tmux send-keys 系 silent failure を halt or 明示ログ化し、
-    cascading nudge failure を検出可能にする。
-
-    【重要】
-    - scripts/inbox_watcher.sh 単一ファイル編集のため RACE-001 上、並列編集は禁止。
-    - AC に smoke/test が含まれるが、同一ファイル同時編集を避けるため dual-model test dispatch は例外扱いとし、後段の軍師QCで独立確認する。
-    - cmd_726 の shogun-silent-failure-audit-pattern スキル化と矛盾しないよう、audit分類・用語を output に明示する。
-    - 失敗を握り潰す `2>/dev/null || true` / `|| log_info` 型を新規導入しない。
+    cmd_726 ε。4並列の成果を集約し、共有3源同期と commit/push を直列で行う。
+    RACE-001 回避のため、この段階でのみ queue/skill_candidates.yaml / memory/skill_history.md / dashboard を編集する。
 
     【完了報告】
     bash /home/ubuntu/shogun/scripts/inbox_write.sh karo \
-      "【subtask_727a_inbox_watcher_silent_failure_remediation 完了】cmd_727 α完了。classified=<N> remediated=<N> tests=<PASS|FAIL> commit=<sha> push=<PASS|FAIL> output=output/cmd_727a_inbox_watcher_silent_failure_remediation.md。report確認されたし。" \
+      "【subtask_726e_skill_shared_sync_push 完了】cmd_726 ε完了。created=<N> merged=<N> rejected=<N> deferred=<N> commit=<sha> push=<PASS|FAIL> output=output/cmd_726e_skill_shared_sync_push.md。report確認されたし。" \
       task_completed ashigaru6

@@ -292,6 +292,26 @@
 !skills/codex-context-pane-border/SKILL.md
 !skills/codex-skill-index/
 !skills/codex-skill-index/SKILL.md
+!skills/github-actions-dynamic-sparse-checkout/
+!skills/github-actions-dynamic-sparse-checkout/SKILL.md
+!skills/github-actions-release-please-workflow-permissions/
+!skills/github-actions-release-please-workflow-permissions/SKILL.md
+!skills/sh-health-log-noise-root-cause-review/
+!skills/sh-health-log-noise-root-cause-review/SKILL.md
+!skills/shogun-shc-switch-silent-failure/
+!skills/shogun-shc-switch-silent-failure/SKILL.md
+!skills/shogun-nondestructive-tmux-smoke/
+!skills/shogun-nondestructive-tmux-smoke/SKILL.md
+!skills/shogun-silent-failure-audit-pattern/
+!skills/shogun-silent-failure-audit-pattern/SKILL.md
+!skills/shogun-preset-immutability-discipline/
+!skills/shogun-preset-immutability-discipline/SKILL.md
+!skills/shogun-tmux-busy-aware-send-keys/
+!skills/shogun-tmux-busy-aware-send-keys/SKILL.md
+!skills/windows-watchdog-folder-daemon/
+!skills/windows-watchdog-folder-daemon/SKILL.md
+!skills/daemon-health-monitor-process-vs-log-stale/
+!skills/daemon-health-monitor-process-vs-log-stale/SKILL.md
 
 # cmd_675 skill integration skill_candidates
 !queue/skill_candidates.yaml

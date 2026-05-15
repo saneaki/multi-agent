@@ -329,15 +329,201 @@ entries:
       Web App endpoint 設計 + Service Account 制約マトリクス + scope 不足 runbook 分離。
       cmd_680 Codex 独立調査結論を反映。
 
+  # ───────── cmd_726 (2026-05-15) — skill batch shared sync ─────────
+  - id: SC-690a
+    name: github-actions-dynamic-sparse-checkout
+    status: created
+    skill_path: skills/github-actions-dynamic-sparse-checkout/SKILL.md
+    source_cmd: cmd_690
+    related_cmds:
+      - cmd_652
+      - cmd_690
+      - cmd_691
+    created_at: cmd_726
+    decided_at: '2026-05-15T15:01:45+09:00'
+    notes: |
+      cmd_726a 判定。巨大 repo の GitHub Actions checkout/disk failure を mapping CSV 等の実行時データから
+      dynamic sparse-checkout 化する pattern。113行新規作成。
+
+  - id: SC-690b
+    name: github-actions-release-please-workflow-permissions
+    status: created
+    skill_path: skills/github-actions-release-please-workflow-permissions/SKILL.md
+    source_cmd: cmd_690
+    related_cmds:
+      - cmd_690
+    created_at: cmd_726
+    decided_at: '2026-05-15T15:01:45+09:00'
+    notes: |
+      cmd_726a 判定。release-please-action の PR 作成権限 failure に対する workflow YAML permissions +
+      repo-level workflow permissions の二段設定 pattern。104行新規作成。
+
+  - id: SC-694
+    name: sh-health-log-noise-root-cause-review
+    status: created
+    skill_path: skills/sh-health-log-noise-root-cause-review/SKILL.md
+    source_cmd: cmd_694
+    related_cmds:
+      - cmd_694
+    created_at: cmd_726
+    decided_at: '2026-05-15T15:01:45+09:00'
+    notes: |
+      cmd_726a 判定。sh-health fail7d 高止まりを現在障害・ログ誤検出・古い continuation line・
+      filename false positive・重複ログに分類する root-cause review pattern。130行新規作成。
+
+  - id: SC-705-shc-switch
+    name: shogun-shc-switch-silent-failure
+    status: created
+    skill_path: skills/shogun-shc-switch-silent-failure/SKILL.md
+    source_cmd: cmd_705
+    related_cmds:
+      - cmd_705
+      - cmd_717
+    created_at: cmd_726b
+    decided_at: '2026-05-15T15:01:45+09:00'
+    notes: |
+      cmd_726b 判定。shc/switch_cli busy pane silent failure を is_pane_busy + halt + post-verify で
+      検出する pattern。121行新規作成。
+
+  - id: SC-707-clasp-run-fallback
+    name: shogun-gas-clasp-run-creds-fallback
+    status: merged
+    merged_into: skills/shogun-gas-clasp-rapt-reauth-fallback/SKILL.md
+    source_cmd: cmd_707
+    related_cmds:
+      - cmd_676
+      - cmd_680
+      - cmd_707
+    merged_at: cmd_726b
+    decided_at: '2026-05-15T15:01:45+09:00'
+    notes: |
+      cmd_726b 判定。既存 shogun-gas-clasp-rapt-reauth-fallback (110L) に clasp run 完全代替
+      フォールバック節として統合。統合後156行で skill-creation-workflow §2 の <500L 基準を満たす。
+
+  - id: SC-725a-nondestructive-tmux
+    name: shogun-nondestructive-tmux-smoke
+    status: created
+    skill_path: skills/shogun-nondestructive-tmux-smoke/SKILL.md
+    source_cmd: cmd_725a
+    related_cmds:
+      - cmd_725a
+      - cmd_725c
+    created_at: cmd_726b
+    decided_at: '2026-05-15T15:01:45+09:00'
+    notes: |
+      cmd_726b 判定。active shogun/multiagent session を破壊せず shell script を検証する isolated tmux
+      server + SHOGUN_TMUX env hook + setup-only/dry-run pattern。123行新規作成。
+
+  - id: SC-726c-silent-audit
+    name: shogun-silent-failure-audit-pattern
+    status: created
+    skill_path: skills/shogun-silent-failure-audit-pattern/SKILL.md
+    source_cmd: cmd_717c
+    related_cmds:
+      - cmd_705
+      - cmd_706
+      - cmd_717a
+      - cmd_717b
+      - cmd_717c
+      - cmd_718
+      - cmd_725a
+      - cmd_727
+    created_at: cmd_726c
+    decided_at: '2026-05-15T15:01:45+09:00'
+    notes: |
+      cmd_726c 判定。silent failure の audit 自動検出+分類、SO-17 outcome E2E enforcement、
+      隔離 tmux smoke で halt 実測の3段予防 pattern。198行新規作成。
+
+  - id: SC-726c-preset-immutability
+    name: shogun-preset-immutability-discipline
+    status: created
+    skill_path: skills/shogun-preset-immutability-discipline/SKILL.md
+    source_cmd: cmd_718c
+    related_cmds:
+      - cmd_705
+      - cmd_717
+      - cmd_718a
+      - cmd_718b
+      - cmd_718c
+    created_at: cmd_726c
+    decided_at: '2026-05-15T15:01:45+09:00'
+    notes: |
+      cmd_726c 判定。preset (formations.*) / live state (cli.agents) / 片方向適用エンジンの三層構造規律。
+      cmd_717 AC-4 違反と cmd_718 corrective から抽出。205行新規作成。
+
+  - id: SC-582-tmux-busy
+    name: shogun-tmux-busy-aware-send-keys
+    status: created
+    skill_path: skills/shogun-tmux-busy-aware-send-keys/SKILL.md
+    source_cmd: cmd_582
+    related_cmds:
+      - cmd_582
+      - cmd_605
+      - cmd_606
+      - cmd_607
+      - cmd_608
+      - cmd_711
+      - cmd_725a
+    created_at: cmd_582
+    decided_at: '2026-05-15T15:01:45+09:00'
+    notes: |
+      cmd_726c 判定。既存 SKILL.md を battle-tested 格上げ。cmd_582 起点で1週間以上、3件以上の
+      cmd_complete 通知運用で A-3 race 再発ゼロ確認。154→158行更新。
+
+  - id: SC-721b-watchdog
+    name: windows-watchdog-folder-daemon
+    status: created
+    skill_path: skills/windows-watchdog-folder-daemon/SKILL.md
+    source_cmd: cmd_721b
+    related_cmds:
+      - cmd_721
+      - cmd_721b
+    created_at: cmd_726d
+    decided_at: '2026-05-15T15:01:45+09:00'
+    notes: |
+      cmd_726d 判定。Drive Desktop / OneDrive / Dropbox 等の同期フォルダを watchdog 監視する Windows
+      daemon template。state JSON + retryless errors.log + PowerShell start/stop + Startup 登録。118行新規作成。
+
+  - id: SC-695-daemon-health
+    name: daemon-health-monitor-process-vs-log-stale
+    status: created
+    skill_path: skills/daemon-health-monitor-process-vs-log-stale/SKILL.md
+    source_cmd: cmd_695
+    related_cmds:
+      - cmd_695
+    created_at: cmd_726d
+    decided_at: '2026-05-15T15:01:45+09:00'
+    notes: |
+      cmd_726d 判定。idle / event-driven daemon の false RED 抑止 pattern。process_alive と log_stale を分離し、
+      watcher_supervisor roll-call を secondary heartbeat として扱う。151行新規作成。
+
+  - id: SC-608-l017-dual-model
+    name: shogun-l017-dual-model-smoke-qc
+    status: merged
+    merged_into: skills/shogun-error-fix-dual-review/SKILL.md
+    source_cmd: cmd_608
+    related_cmds:
+      - cmd_605
+      - cmd_606
+      - cmd_607
+      - cmd_608
+    merged_at: cmd_608
+    decided_at: '2026-05-15T15:01:45+09:00'
+    notes: |
+      cmd_726d 判定。cmd_608 で shogun-error-fix-dual-review Variant 1 として既統合済を再確認。
+      追加更新不要、battle-tested 確定済。
+
 # ─── サマリ ───
 summary:
-  total_entries: 22
+  total_entries: 34
   by_status:
-    created: 5            # cmd_675b 3 + cmd_682 silent_inconsistency 解消 2
+    created: 15           # cmd_675b 3 + cmd_682 silent_inconsistency 解消 2 + cmd_726 10
     rejected: 2           # cmd_675b 棄却 (rule-inventory / qc-auto-naming)
-    merged: 13            # cmd_675b 5 + cmd_682 legacy 6 + cmd_680 既存統合 2
+    merged: 15            # cmd_675b 5 + cmd_682 legacy 6 + cmd_680 既存統合 2 + cmd_726 2
     deferred: 2           # 棚上げ 2026-06-08 (suggestions-lifecycle / codex-context-pane-border)
   cmd_675b_decision_basis: output/cmd_675_skill_integration_audit.md (gunshi audit 2026-05-08 13:48 JST)
   cmd_675b_implementation: output/cmd_675b_skill_integration_implementation.md
   cmd_682_decision_basis: output/cmd_682_legacy_audit.md (skill-creation-workflow §2 統合検討マトリクス)
   cmd_682_implementation: output/cmd_682_skill_legacy_integration.md
+  cmd_726_decision_basis: output/cmd_726a_skill_batch_github_health.md / output/cmd_726b_skill_batch_shell_gas_smoke.md / output/cmd_726c_skill_batch_silent_preset_tmux.md / output/cmd_726d_skill_batch_watchdog_daemon_l017.md
+  cmd_726_implementation: output/cmd_726e_skill_shared_sync_push.md

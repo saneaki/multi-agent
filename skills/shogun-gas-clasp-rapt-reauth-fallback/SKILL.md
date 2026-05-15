@@ -3,6 +3,7 @@ name: shogun-gas-clasp-rapt-reauth-fallback
 description: clasp push 実行時に invalid_rapt / invalid_grant エラーが発生した場合の復旧パターン
 type: operational
 battle_tested: cmd_486 (2026-04-09) / cmd_564 (2026-04-24) / cmd_565 (2026-04-24)
+tags: [shogun, gas, clasp, oauth, rapt, fallback]
 ---
 
 # shogun-gas-clasp-rapt-reauth-fallback
@@ -108,3 +109,49 @@ curl -s "https://oauth2.googleapis.com/tokeninfo?access_token=$TOKEN" | jq '.sco
 ### 関連 cmd
 - cmd_676: scope 不足 403 の発見と修正
 - cmd_680: Codex 独立調査による短期/中期判断 (短期=creds再認証、中期=Web App化)
+
+## clasp run 完全代替フォールバック (cmd_707 統合)
+
+> SC-shogun-gas-clasp-run-creds-fallback: このセクションに包含。cmd_726b で統合 (ash3/gunshi 評価 — cmd_707 ash6 由来)。
+
+`clasp run` 自体が OAuth/scope 問題で回復不能な場合、または VPS 環境で `clasp login` が困難な場合の代替実行手段。
+
+### 代替手段マトリクス
+
+| 手段 | 条件 | 手順 |
+|------|------|------|
+| GAS Editor 直接実行 | ブラウザアクセス可能 | `script.google.com` → 対象関数選択 → 実行ボタン |
+| time-based trigger | 定期実行で可 | GAS Editor → トリガー → 時刻ベーストリガー設定 |
+| clasp login --creds | creds.json 取得済み | `clasp login --creds creds.json --use-project-scopes --include-clasp-scopes` |
+| API executable 配備 | Apps Script API 有効化済み | Web App または doPost エンドポイント経由で実行 |
+
+### clasp login --creds フロー (VPS 対応)
+
+```bash
+# 1. 殿ローカル PC で creds.json を生成
+#    GCP Console → API & Services → OAuth 2.0 Client IDs → Desktop app → JSON DL
+
+# 2. VPS に転送
+scp creds.json ubuntu@<VPS_IP>:/home/ubuntu/
+
+# 3. VPS で scope 付き再ログイン
+cd /home/ubuntu/gas-mail-manager
+clasp login --creds /home/ubuntu/creds.json \
+    --use-project-scopes --include-clasp-scopes
+
+# 4. 実行確認
+clasp run <function-name>
+```
+
+### GAS Editor 直接実行 (最短 fallback)
+
+1. `https://script.google.com/home/projects/<scriptId>/edit` を開く
+2. 上部ドロップダウンで対象関数を選択
+3. 「実行」ボタンをクリック
+4. 実行ログでエラーがないことを確認
+
+### Battle-Tested (clasp run fallback)
+
+| cmd | 状況 | 結果 |
+|-----|------|------|
+| cmd_707 | clasp run が OAuth scope 不足で失敗。GAS Editor 直接実行で回避 | PASS: Editor 経由で function 実行確認 |
