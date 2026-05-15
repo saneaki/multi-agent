@@ -4,7 +4,8 @@
 #
 # Usage:
 #   shc deploy [formation_name]   Deploy a formation (default: hybrid)
-#   shc status                    Show current agent CLI/model status
+#   shc status                    Show pane meta / settings.yaml / dashboard.yaml diff (3-way)
+#   shc sync-meta                 Sync pane meta to dashboard.yaml formation_status (safe keys only)
 #   shc restore                   Restore all ashigaru to all-sonnet
 #   shc list                      List available formation presets
 #
@@ -17,6 +18,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 SETTINGS_FILE="${PROJECT_ROOT}/config/settings.yaml"
+DASHBOARD_FILE="${PROJECT_ROOT}/dashboard.yaml"
 PYTHON="${PROJECT_ROOT}/.venv/bin/python3"
 
 # ─── Colors ───
@@ -33,7 +35,8 @@ usage() {
     echo ""
     echo "Usage:"
     echo "  shc deploy [formation_name]   Deploy a formation (default: hybrid)"
-    echo "  shc status                    Show current agent CLI/model status"
+    echo "  shc status                    Show pane meta / settings.yaml / dashboard.yaml diff (3-way)"
+    echo "  shc sync-meta                 Sync pane meta to dashboard.yaml formation_status (safe keys only)"
     echo "  shc restore                   Restore all ashigaru to all-sonnet"
     echo "  shc list                      List available formation presets"
     echo ""
@@ -41,11 +44,15 @@ usage() {
     echo "  shc deploy hybrid    # Apply hybrid formation"
     echo "  shc deploy           # Apply default (hybrid) formation"
     echo "  shc restore          # Reset all to all-sonnet"
+    echo "  shc status           # 3-way diff: pane meta / settings.yaml / dashboard.yaml"
+    echo "  shc sync-meta        # Write pane state to dashboard.yaml formation_status"
     exit 0
 }
 
 # ─── Validate prerequisites ───
 check_prerequisites() {
+    local require_tmux="${1:-true}"
+
     if [[ ! -f "$SETTINGS_FILE" ]]; then
         echo -e "${RED}ERROR:${NC} settings.yaml not found at ${SETTINGS_FILE}" >&2
         exit 1
@@ -54,7 +61,7 @@ check_prerequisites() {
         echo -e "${RED}ERROR:${NC} Python not found at ${PYTHON}" >&2
         exit 1
     fi
-    if ! tmux info &>/dev/null 2>&1; then
+    if [[ "$require_tmux" == "true" ]] && ! tmux info &>/dev/null 2>&1; then
         echo -e "${RED}ERROR:${NC} tmux is not running" >&2
         exit 1
     fi
@@ -200,11 +207,17 @@ verify_formation_deploy() {
     $has_error && return 1 || return 0
 }
 
-# ─── Status ───
+# ─── Status (3-way: pane meta / settings.yaml / dashboard.yaml) ───
 cmd_status() {
     check_prerequisites
 
-    echo -e "${BOLD}Agent Status:${NC}"
+    local tmp_pane
+    tmp_pane=$(mktemp /tmp/shc_pane_XXXXXX)
+    # shellcheck disable=SC2064
+    trap "rm -f '${tmp_pane}'" RETURN
+
+    # ── [1] Pane Meta ──
+    echo -e "${BOLD}[1] Pane Meta${NC}"
     echo ""
     printf "  ${BOLD}%-6s %-12s %-8s %-25s %-6s${NC}\n" "pane" "agent_id" "cli" "model" "effort"
     printf "  %-6s %-12s %-8s %-25s %-6s\n" "------" "------------" "--------" "-------------------------" "------"
@@ -213,26 +226,219 @@ cmd_status() {
     pane_count=$(tmux list-panes -t "multiagent:agents" 2>/dev/null | wc -l)
     if [[ "$pane_count" -eq 0 ]]; then
         echo -e "  ${YELLOW}(no panes found in multiagent:agents)${NC}"
+    else
+        for i in $(seq 0 $((pane_count - 1))); do
+            local pane_target="multiagent:agents.$i"
+            local agent_id cli_type model_name effort
+
+            agent_id=$(tmux display-message -t "$pane_target" -p '#{@agent_id}' 2>/dev/null || echo "")
+            cli_type=$(tmux display-message -t "$pane_target" -p '#{@agent_cli}' 2>/dev/null || echo "")
+            model_name=$(tmux display-message -t "$pane_target" -p '#{@model_name}' 2>/dev/null || echo "")
+            effort=$(tmux display-message -t "$pane_target" -p '#{@effort}' 2>/dev/null || echo "")
+
+            [[ -z "$agent_id" ]] && agent_id="?"
+            [[ -z "$cli_type" ]] && cli_type="?"
+            [[ -z "$model_name" ]] && model_name="?"
+            [[ -z "$effort" ]] && effort="?"
+
+            printf "  %-6s %-12s %-8s %-25s %-6s\n" "0.$i" "$agent_id" "$cli_type" "$model_name" "$effort"
+            printf '%s|%s|%s|%s\n' "$agent_id" "$cli_type" "$model_name" "$effort" >> "$tmp_pane"
+        done
+    fi
+
+    echo ""
+
+    # ── [2] settings.yaml baseline vs pane diff ──
+    echo -e "${BOLD}[2] settings.yaml baseline vs pane diff${NC}"
+    echo ""
+
+    "$PYTHON" - "${tmp_pane}" "${SETTINGS_FILE}" <<'PYEOF' || echo -e "  ${YELLOW}WARN: diff comparison failed${NC}"
+import yaml, sys
+
+pane_path, settings_path = sys.argv[1], sys.argv[2]
+
+pane_map = {}
+try:
+    with open(pane_path) as f:
+        for line in f:
+            parts = line.rstrip('\n').split('|')
+            if len(parts) >= 3 and parts[0] not in ('', '?'):
+                pane_map[parts[0]] = {'cli': parts[1], 'model': parts[2]}
+except Exception:
+    pass
+
+try:
+    with open(settings_path) as f:
+        data = yaml.safe_load(f) or {}
+except Exception as e:
+    print(f'  WARN: Cannot read settings.yaml: {e}')
+    sys.exit(0)
+
+cli_agents = data.get('cli', {}).get('agents', {})
+if not cli_agents:
+    print('  (no cli.agents in settings.yaml)')
+    sys.exit(0)
+
+GREEN  = '\033[0;32m'
+YELLOW = '\033[0;33m'
+RED    = '\033[0;31m'
+NC     = '\033[0m'
+
+print(f"  {'agent':<12} {'s.yaml-cli':<10} {'s.yaml-model':<26} pane-diff")
+print(f"  {'------------':<12} {'----------':<10} {'--------------------------':<26} ----------")
+
+for aid in sorted(cli_agents.keys()):
+    cfg = cli_agents[aid]
+    if isinstance(cfg, dict):
+        scli  = cfg.get('cli_type', 'claude')
+        smodel = cfg.get('model', 'claude-sonnet-4-6')
+    else:
+        scli  = 'claude'
+        smodel = 'claude-sonnet-4-6'
+
+    if aid not in pane_map:
+        diff = f'{YELLOW}NO_PANE{NC}'
+    elif pane_map[aid]['cli'] == scli:
+        diff = f'{GREEN}OK{NC}'
+    else:
+        diff = f'{RED}MISMATCH{NC}(pane={pane_map[aid]["cli"]})'
+
+    print(f"  {aid:<12} {scli:<10} {smodel:<26} {diff}")
+PYEOF
+
+    echo ""
+
+    # ── [3] dashboard.yaml status ──
+    echo -e "${BOLD}[3] dashboard.yaml status${NC}"
+    echo ""
+
+    if [[ ! -f "${DASHBOARD_FILE}" ]]; then
+        echo -e "  ${YELLOW}dashboard.yaml not found${NC}"
         return 0
     fi
 
-    for i in $(seq 0 $((pane_count - 1))); do
-        local pane_target="multiagent:agents.$i"
-        local agent_id cli_type model_name effort
+    "$PYTHON" - "${DASHBOARD_FILE}" <<'PYEOF' || echo -e "  ${YELLOW}WARN: Failed to parse dashboard.yaml${NC}"
+import yaml, sys
 
-        agent_id=$(tmux display-message -t "$pane_target" -p '#{@agent_id}' 2>/dev/null || echo "?")
-        cli_type=$(tmux display-message -t "$pane_target" -p '#{@agent_cli}' 2>/dev/null || echo "?")
-        model_name=$(tmux display-message -t "$pane_target" -p '#{@model_name}' 2>/dev/null || echo "?")
-        effort=$(tmux display-message -t "$pane_target" -p '#{@effort}' 2>/dev/null || echo "?")
+with open(sys.argv[1]) as f:
+    d = yaml.safe_load(f) or {}
 
-        # Clean up empty values
-        [[ -z "$agent_id" ]] && agent_id="?"
-        [[ -z "$cli_type" ]] && cli_type="?"
-        [[ -z "$model_name" ]] && model_name="?"
-        [[ -z "$effort" ]] && effort="?"
+meta = d.get('metadata', {})
+print(f'  last_updated : {meta.get("last_updated", "(none)")}')
+print(f'  streak       : {meta.get("streak", "(none)")}')
 
-        printf "  %-6s %-12s %-8s %-25s %-6s\n" "0.$i" "$agent_id" "$cli_type" "$model_name" "$effort"
-    done
+in_prog = d.get('in_progress', [])
+print()
+if in_prog:
+    print('  in_progress:')
+    for e in in_prog:
+        print(f'    [{e.get("cmd","?")}] {e.get("assignee","?")} — {e.get("status","?")}')
+else:
+    print('  in_progress  : (none)')
+
+fs = d.get('formation_status')
+print()
+if fs:
+    print(f'  formation_status.last_sync : {fs.get("last_sync","(none)")}')
+    for aid, info in (fs.get('agents') or {}).items():
+        print(f'    [{aid}] cli={info.get("cli","?")} model={info.get("model","?")}')
+else:
+    print('  formation_status : (not yet synced — run "shc sync-meta" to populate)')
+PYEOF
+}
+
+# ─── Sync pane meta → dashboard.yaml formation_status (safe keys only) ───
+# DELTA-A3/A4: Only writes to formation_status key.
+# NEVER touches: action_required, action_required_archive, achievements,
+#   in_progress, gate_registry, observation_queue, observation_queue_archive,
+#   skill_candidates, metrics, documentation_rules, frog, idle_members, metadata
+cmd_sync_meta() {
+    check_prerequisites
+
+    echo -e "${BOLD}Syncing pane meta → dashboard.yaml formation_status${NC}"
+    echo ""
+
+    if [[ ! -f "${DASHBOARD_FILE}" ]]; then
+        echo -e "${RED}ERROR:${NC} dashboard.yaml not found at ${DASHBOARD_FILE}" >&2
+        exit 1
+    fi
+
+    local tmp_pane
+    tmp_pane=$(mktemp /tmp/shc_pane_XXXXXX)
+    # shellcheck disable=SC2064
+    trap "rm -f '${tmp_pane}'" RETURN
+
+    local pane_count
+    pane_count=$(tmux list-panes -t "multiagent:agents" 2>/dev/null | wc -l)
+    if [[ "$pane_count" -eq 0 ]]; then
+        echo -e "  ${YELLOW}WARN:${NC} No panes in multiagent:agents — writing empty agents map"
+    else
+        for i in $(seq 0 $((pane_count - 1))); do
+            local pane_target="multiagent:agents.$i"
+            local agent_id cli_type model_name
+
+            agent_id=$(tmux display-message -t "$pane_target" -p '#{@agent_id}' 2>/dev/null || echo "")
+            cli_type=$(tmux display-message -t "$pane_target" -p '#{@agent_cli}' 2>/dev/null || echo "")
+            model_name=$(tmux display-message -t "$pane_target" -p '#{@model_name}' 2>/dev/null || echo "")
+
+            [[ -n "$agent_id" && "$agent_id" != "?" ]] && \
+                printf '%s|%s|%s\n' "$agent_id" "${cli_type:-?}" "${model_name:-?}" >> "$tmp_pane"
+        done
+    fi
+
+    "$PYTHON" - "${tmp_pane}" "${DASHBOARD_FILE}" <<'PYEOF' || { echo -e "  ${RED}ERROR: sync failed${NC}" >&2; exit 1; }
+import yaml, sys
+from datetime import datetime, timezone, timedelta
+
+pane_path, dashboard_path = sys.argv[1], sys.argv[2]
+
+# Keys that this command is NEVER allowed to modify
+FORBIDDEN_KEYS = {
+    'action_required', 'action_required_archive', 'achievements',
+    'in_progress', 'gate_registry', 'observation_queue',
+    'observation_queue_archive', 'skill_candidates', 'metrics',
+    'documentation_rules', 'frog', 'idle_members', 'metadata',
+}
+
+agents = {}
+try:
+    with open(pane_path) as f:
+        for line in f:
+            parts = line.rstrip('\n').split('|')
+            if len(parts) >= 3 and parts[0] not in ('', '?'):
+                agents[parts[0]] = {'cli': parts[1], 'model': parts[2]}
+except Exception:
+    pass
+
+with open(dashboard_path) as f:
+    d = yaml.safe_load(f) or {}
+
+# Snapshot forbidden keys before write
+forbidden_before = {k: d.get(k) for k in FORBIDDEN_KEYS if k in d}
+
+JST = timezone(timedelta(hours=9))
+now_jst = datetime.now(JST).strftime('%Y-%m-%dT%H:%M:%S+09:00')
+
+# Write ONLY to formation_status
+d['formation_status'] = {
+    'last_sync': now_jst,
+    'agents': agents,
+}
+
+# Verify forbidden keys are unchanged
+for k, before_val in forbidden_before.items():
+    if d.get(k) != before_val:
+        print(f'ABORT: forbidden key "{k}" was modified — refusing to write', file=sys.stderr)
+        sys.exit(1)
+
+with open(dashboard_path, 'w') as f:
+    yaml.dump(d, f, allow_unicode=True, default_flow_style=False, sort_keys=True)
+
+print(f'  last_sync : {now_jst}')
+print(f'  agents    : {sorted(agents.keys())}')
+PYEOF
+
+    echo -e "${GREEN}Done.${NC} Run 'shc status' to verify."
 }
 
 # ─── Deploy ───
@@ -249,7 +455,16 @@ cmd_deploy() {
         shift
     done
 
-    check_prerequisites
+    if $settings_only; then
+        # DEPRECATED (cmd_730β): shu/shk/shx no longer call --settings-only.
+        # This flag is retained for safety but will be removed in a future release.
+        echo -e "${YELLOW}DEPRECATED:${NC} --settings-only was removed from shu/shk/shx in cmd_730β."
+        echo -e "  Use runtime overlay (shutsujin_departure.sh) instead."
+        echo ""
+        check_prerequisites false
+    else
+        check_prerequisites true
+    fi
 
     echo -e "${BOLD}Deploying formation:${NC} ${CYAN}${formation_name}${NC}"
     echo ""
@@ -434,6 +649,9 @@ case "$SUBCOMMAND" in
         ;;
     status)
         cmd_status
+        ;;
+    sync-meta)
+        cmd_sync_meta
         ;;
     restore)
         cmd_restore
