@@ -16,6 +16,10 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 MIN_CMD_NUM=700
 QUIET=0
 
+_VENV_PYTHON="$REPO_ROOT/.venv/bin/python3"
+PYTHON="${_VENV_PYTHON}"
+[[ -x "$PYTHON" ]] || PYTHON="python3"
+
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --repo-root) REPO_ROOT="$2"; shift 2 ;;
@@ -35,7 +39,7 @@ if [[ ! -f "$SHOGUN_TO_KARO" ]]; then
     exit 0
 fi
 
-python3 - "$SHOGUN_TO_KARO" "$SHOGUN_INBOX" "$MIN_CMD_NUM" "$QUIET" <<'PYEOF'
+"$PYTHON" - "$SHOGUN_TO_KARO" "$SHOGUN_INBOX" "$MIN_CMD_NUM" "$QUIET" <<'PYEOF'
 import sys, re, os
 
 try:
