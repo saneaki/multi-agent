@@ -1,0 +1,1131 @@
+pending_tasks:
+- task_id: subtask_716f_phase_c_p6_event_ledger
+  parent_cmd: cmd_716
+  project: shogun
+  status: done
+  priority: high
+  blocked_by: []
+  assigned_to: ashigaru5
+  assigned_at: '2026-05-15T15:24:30+09:00'
+  completed_at: '2026-05-15T15:38:41+09:00'
+  commit: 8997301
+  preferred_assignee: ashigaru5
+  reason: cmd_716 Phase C。P6 event ledger + PoC gate 検出率 >=95%。Phase A/B 完了により配備。ashigaru6
+    は cmd_728c 出力欠落再確認中のため ashigaru5 へ代替配備。
+  next_action: 完了。event_ledger=PASS / detection=100% / tests=64/64 PASS SKIP=0 / commit=8997301。
+  timestamp: '2026-05-15T15:04:30+09:00'
+- task_id: subtask_716g_phase_d_resolution_zombie_log
+  parent_cmd: cmd_716
+  project: shogun
+  status: done
+  priority: high
+  blocked_by: []
+  assigned_to: ashigaru2
+  assigned_at: '2026-05-15T15:40:30+09:00'
+  completed_at: '2026-05-15T15:54:13+09:00'
+  commit: 0a7c12c
+  preferred_assignee: ashigaru2
+  reason: cmd_716 Phase D。resolution + zombie 7日 + judgement_log append-only。Phase
+    C 完了により配備。ashigaru7 は cmd_729β に回すため ashigaru2 へ代替配備。
+  next_action: 完了。resolution=PASS / judgement_log=PASS / zombie=PASS / tests=85/85
+    PASS SKIP=0 / commit=0a7c12c。
+  timestamp: '2026-05-15T15:04:30+09:00'
+- task_id: subtask_716h_phase_e_followup_pr
+  parent_cmd: cmd_716
+  project: shogun
+  status: done
+  priority: medium
+  blocked_by: []
+  assigned_to: ashigaru5
+  assigned_at: '2026-05-15T15:56:38+09:00'
+  completed_at: '2026-05-15T16:12:53+09:00'
+  commit: f60bb15
+  preferred_assignee: ashigaru5
+  reason: 'cmd_716 Phase E。後続 PR: F6/F7/F8。Phase D 完了後に配備。'
+  next_action: 完了。auto_register=PASS / digest=PASS / liveness=PASS / tests=116/116
+    PASS SKIP=0 / commit=f60bb15。
+  timestamp: '2026-05-15T15:04:30+09:00'
+- task_id: subtask_716i_phase_f_regression
+  parent_cmd: cmd_716
+  project: shogun
+  status: done
+  priority: high
+  blocked_by: []
+  assigned_to: ashigaru2
+  assigned_at: '2026-05-15T16:13:26+09:00'
+  preferred_assignee: gunshi
+  secondary_assignee: ashigaru2
+  reason: cmd_716 Phase F regression。Phase E 完了後に軍師または足軽へ配備。
+  next_action: 完了。cross_phase=PASS / never_suppress=PASS / tests=123/123 PASS SKIP=0
+    / P_DIGEST_SENDER_DOWN cron登録+実送信でliveness初期化 / commit 22863b5 push済み。GHA run
+    25908566860 in_progress。
+  timestamp: '2026-05-15T15:04:30+09:00'
+  alert_followup:
+    alert: P_DIGEST_SENDER_DOWN
+    received_at: '2026-05-15T17:02:10+09:00'
+    root_cause_hypothesis: cmd_716h daily_digest.py の8:00 JST cron/systemd未登録。suggestions_digest.sh
+      cronとは別物。
+    routed_to: subtask_716i_phase_f_regression
+  completed_at: '2026-05-15T17:38:35+09:00'
+  commit: 22863b5
+  output: output/cmd_716i_phase_f_regression.md
+  additional_outputs:
+  - output/cmd_716i_p_digest_sender_down_repair.md
+- task_id: subtask_727b_gunshi_inbox_watcher_silent_failure_qc
+  parent_cmd: cmd_727
+  project: shogun
+  status: done
+  priority: medium
+  blocked_by: []
+  assigned_to: gunshi
+  assigned_at: '2026-05-15T14:58:30+09:00'
+  completed_at: '2026-05-15T15:05:05+09:00'
+  preferred_assignee: gunshi
+  reason: cmd_727 軍師QC。cmd_717b audit fixture/出力と inbox_watcher.sh 修正の整合、normal/failure
+    smoke、cmd_726 silent-failure-audit-pattern との用語整合を確認する。
+  next_action: 完了。verdict=go、unit/e2e PASS、commit 7e0a03c push済み。
+  timestamp: '2026-05-15T14:46:28+09:00'
+- task_id: subtask_727c_status_fixture_gunshi_report_repair
+  parent_cmd: cmd_727
+  project: shogun
+  status: done
+  priority: medium
+  blocked_by: []
+  assigned_to: ashigaru3
+  assigned_at: '2026-05-15T15:18:30+09:00'
+  completed_at: '2026-05-15T15:32:12+09:00'
+  commit: 441b9c8
+  preferred_assignee: ashigaru3
+  reason: implementation-verifier PARTIAL_PASS 補修。cmd_727 status done 化、cmd_717b audit
+    fixture resolved 31/remaining 11、gunshi_report subtask_727b 復元、dashboard evidence
+    再反映を単独実施する。
+  next_action: 完了。status=PASS / audit_remaining=11 / gunshi_report=PASS / dashboard=PASS
+    / commit=441b9c8。
+  timestamp: '2026-05-15T15:18:30+09:00'
+- task_id: subtask_729a_gunshi_report_write_path_audit
+  parent_cmd: cmd_729
+  project: shogun
+  status: done
+  priority: high
+  blocked_by: []
+  assigned_to: ashigaru4
+  assigned_at: '2026-05-15T15:18:35+09:00'
+  completed_at: '2026-05-15T15:38:41+09:00'
+  preferred_assignee: ashigaru4
+  reason: cmd_729 α。gunshi_report.yaml の overwrite/append 書込みパスを scripts/agents/tasks/inbox
+    系から全特定する。RACE-001 回避のため本段では gunshi_report.yaml 本体を編集しない。
+  next_action: 完了。paths=2 / overwrite_suspects=2 / append_paths=0 / report-reality
+    drift分析済み。
+  timestamp: '2026-05-15T15:18:35+09:00'
+- task_id: subtask_729b_append_only_restore
+  parent_cmd: cmd_729
+  project: shogun
+  status: done
+  priority: high
+  blocked_by: []
+  assigned_to: ashigaru7
+  assigned_at: '2026-05-15T15:40:30+09:00'
+  completed_at: '2026-05-15T15:53:48+09:00'
+  commit: 4a5bea2
+  preferred_assignee: ashigaru7
+  reason: cmd_729 β。αの特定結果をもとに overwrite パスを append-only 化し、cmd_725b/subtask_727b/subtask_726f
+    の消失QC entryを復元する。cmd_727c は完了済み。
+  next_action: 完了。schema=PASS / restored=3 / append_helper=PASS / tests=3/3 PASS SKIP=0
+    / commit=4a5bea2。
+  timestamp: '2026-05-15T15:18:35+09:00'
+- task_id: subtask_729c_report_append_smoke_test
+  parent_cmd: cmd_729
+  project: shogun
+  status: done
+  priority: high
+  blocked_by: []
+  assigned_to: ashigaru6
+  assigned_at: '2026-05-15T15:56:38+09:00'
+  completed_at: '2026-05-15T16:08:49+09:00'
+  commit: 36fdbe7
+  additional_commits:
+  - 269c4fb
+  pushed_at: '2026-05-15T16:10:16+09:00'
+  preferred_assignee: ashigaru6
+  reason: cmd_729 γ。後続QC書込み時に先行 entries が保持される smoke test を新設する。βで確定した append-only
+    実装後に実施。
+  next_action: 完了。history_keep=PASS / latest=PASS / drift_assert=PASS / tests=4/4
+    PASS SKIP=0 / C-8 GHA red 修復 PASS。commits 269c4fb+36fdbe7 push済み、新 GHA run 25905364431
+    in_progress。
+  timestamp: '2026-05-15T15:18:35+09:00'
+- task_id: subtask_729d_skill_pattern_qc
+  parent_cmd: cmd_729
+  project: shogun
+  status: done
+  priority: high
+  blocked_by: []
+  assigned_to: gunshi
+  assigned_at: '2026-05-15T16:09:44+09:00'
+  preferred_assignee: gunshi
+  reason: cmd_729 δ。shogun-silent-failure-audit-pattern への incident pattern 追記と復元完全性/回帰テスト網羅性の軍師QC。βは完了済み、γ完了後に配備する。
+  next_action: 完了。skill/restoration/local regression は PASS、GHA macOS 4件 failure のため
+    subtask_729e を配備。
+  timestamp: '2026-05-15T15:18:35+09:00'
+  completed_at: '2026-05-15T16:20:07+09:00'
+  qc_verdict: conditional_go
+  output: output/cmd_729d_skill_pattern_qc.md
+- task_id: subtask_728b_lord_approval_skill_draft
+  parent_cmd: cmd_728
+  project: shogun
+  status: done
+  priority: high
+  blocked_by: []
+  assigned_to: ashigaru5
+  assigned_at: '2026-05-15T15:04:30+09:00'
+  completed_at: '2026-05-15T15:18:31+09:00'
+  preferred_assignee: ashigaru5
+  secondary_candidate: ashigaru6
+  reason: cmd_728 β。α調査と discord_notify.py 長文対応を踏まえ、skills/shogun-lord-approval-request-pattern/SKILL.md
+    新設または既存 skill 統合を行う。cmd_726 の4並列と競合しない空き足軽へ後段配備する。
+  next_action: 完了。skill=PASS / line_count=283 / output=output/cmd_728b_lord_approval_skill_draft.md。γ
+    instructions 改訂へ進む。
+  timestamp: '2026-05-15T14:46:28+09:00'
+- task_id: subtask_728e_discord_notify_long_message_support
+  parent_cmd: cmd_728
+  project: shogun
+  status: done
+  priority: high
+  blocked_by: []
+  assigned_to: ashigaru7
+  assigned_at: '2026-05-15T14:54:00+09:00'
+  completed_at: '2026-05-15T15:02:33+09:00'
+  preferred_assignee: ashigaru6
+  secondary_candidate: ashigaru7
+  reason: cmd_728 追補。α調査完了により配備。殿承認依頼は4-8KB規模になり得るため、scripts/discord_notify.py の2000字truncateを恒久解消する。推奨は
+    --chunked 自動分割 (Part N/M prefix、約1800字/chunk)。
+  next_action: 完了。chunked=PASS / tests=PASS。β skill 起草へ反映する。軍師 autonomous QC verdict=go。
+  qc_verdict: go
+  qc_completed_at: '2026-05-15T15:08:33+09:00'
+  qc_note: py_compile + bash -n + unittest 3/3 + bats 5/5 PASS。8KB dry-run 5parts、後方互換確認。
+  timestamp: '2026-05-15T14:51:30+09:00'
+- task_id: subtask_728c_lord_approval_instruction_update
+  parent_cmd: cmd_728
+  project: shogun
+  status: done
+  priority: high
+  blocked_by: []
+  assigned_to: ashigaru6
+  assigned_at: '2026-05-15T15:18:35+09:00'
+  completed_at: '2026-05-15T15:27:34+09:00'
+  preferred_assignee: ashigaru6
+  secondary_candidate: ashigaru7
+  reason: cmd_728 γ。βで確定した skill path/template と discord_notify.py 長文対応 usage を instructions/shogun.md
+    と instructions/karo.md の Lord Approval Request section へ反映する。
+  next_action: 完了。shogun_instr=PASS / karo_instr=PASS / chunked_usage=PASS。output=output/cmd_728c_lord_approval_instruction_update.md。
+  timestamp: '2026-05-15T14:46:28+09:00'
+- task_id: subtask_728d_gunshi_lord_approval_qc
+  parent_cmd: cmd_728
+  project: shogun
+  status: done
+  priority: high
+  blocked_by: []
+  assigned_to: gunshi
+  assigned_at: '2026-05-15T15:56:38+09:00'
+  completed_at: '2026-05-15T16:04:52+09:00'
+  qc_verdict: go
+  preferred_assignee: gunshi
+  reason: cmd_728 軍師QC。β/γ/728e は完了済みだが、gunshi_report.yaml 復元・append-only 化と編集競合するため、cmd_727c/729b
+    後に配備する。
+  next_action: '完了。verdict=go / skill=PASS / instructions=PASS / discord=PASS / report_append=PASS。残:
+    3源同期を subtask_728f へ配備。'
+  timestamp: '2026-05-15T14:46:28+09:00'
+- task_id: subtask_728f_lord_approval_3source_sync
+  parent_cmd: cmd_728
+  project: shogun
+  status: done
+  priority: high
+  blocked_by: []
+  assigned_to: ashigaru7
+  assigned_at: '2026-05-15T16:07:28+09:00'
+  completed_at: '2026-05-15T16:14:51+09:00'
+  commit: 1957ab2
+  preferred_assignee: ashigaru7
+  reason: cmd_728 final follow-up。軍師QC go 後の c1 concern 対応として、shogun-lord-approval-request-pattern
+    skill を queue/skill_candidates.yaml / memory/skill_history.md / dashboard.md(yaml)
+    の3源へ同期し、cmd_728 完遂可能状態にする。
+  next_action: 完了。skill_history=PASS / candidates=PASS / dashboard=PASS / .gitignore
+    whitelist=PASS / commit=1957ab2 push済み。
+  timestamp: '2026-05-15T16:07:28+09:00'
+- task_id: subtask_726e_skill_shared_sync_push
+  parent_cmd: cmd_726
+  project: shogun
+  status: done
+  priority: medium
+  blocked_by: []
+  assigned_to: ashigaru6
+  assigned_at: '2026-05-15T14:58:30+09:00'
+  completed_at: '2026-05-15T15:09:54+09:00'
+  preferred_assignee: ashigaru6
+  secondary_candidate: ashigaru7
+  reason: cmd_726 4並列の出力を集約し、RACE-001を避けて queue/skill_candidates.yaml + memory/skill_history.md
+    + dashboard.md の3 source同期、markdownlint/line check、commit/pushを直列で行う。
+  next_action: 完了。created=10 / merged=2 / rejected=0 / deferred=0、commit 8dd6b34 push済み。
+  timestamp: '2026-05-15T14:40:30+09:00'
+- task_id: subtask_726f_gunshi_skill_quality_gate
+  parent_cmd: cmd_726
+  project: shogun
+  status: done
+  priority: medium
+  blocked_by: []
+  assigned_to: gunshi
+  assigned_at: '2026-05-15T15:10:30+09:00'
+  completed_at: '2026-05-15T15:17:14+09:00'
+  qc_verdict: go
+  preferred_assignee: gunshi
+  reason: skill-creation-workflow §6 quality gate。description 品質、trigger test、既存統合妥当性、3
+    source同期、git pushを全件確認する。
+  next_action: 完了。verdict=go、Q-1〜Q-6 PASS (Q-2/Q-5 PASS_WITH_NOTE)、created=10/merged=2。
+  timestamp: '2026-05-15T14:40:30+09:00'
+- task_id: subtask_721c_pattern_b_poc_report
+  parent_cmd: cmd_721
+  project: shogun
+  status: done
+  priority: high
+  blocked_by: []
+  completed_dependencies:
+  - subtask_721a_pattern_b_core_ocr_pdf
+  - subtask_721b_pattern_b_watchdog_runbook
+  - cmd_721_lord_sample_pdf_gate
+  - cmd_724_legal_pdf_ocr_v1_0_1_patch
+  assigned_to: lord/karo
+  completed_at: '2026-05-13T17:58:08+09:00'
+  preferred_assignee: ashigaru6
+  secondary_candidate: ashigaru7
+  reason: 殿 Japanese Windows 実機で単発モード ocr_pdf.py による sample PDF OCR と Acrobat 等での検索ヒット確認済み。cmd_724
+    v1.0.1 patch で setup path + cp932 UTF-8 修正も upstream 済み。
+  next_action: '完了。積み残しは GitHub Issue #54/#55/#56/#57 へ移行済み。Pattern B runtime は https://github.com/saneaki/legal-pdf-ocr
+    release v1.0.1 を参照。'
+  output_paths:
+  - output/cmd_721_poc_results.md
+  - output/cmd_721_ocr_pattern_b_implementation.md
+  timestamp: '2026-05-13T13:32:39+09:00'
+  updated_at: '2026-05-13T17:58:08+09:00'
+- task_id: subtask_721d_gunshi_pattern_b_qc
+  parent_cmd: cmd_721
+  project: shogun
+  status: done
+  priority: high
+  blocked_by: []
+  assigned_to: gunshi/karo
+  completed_at: '2026-05-13T17:58:08+09:00'
+  preferred_assignee: gunshi
+  reason: SO-17 outcome evidence は殿 Japanese Windows 実機検証。cmd_724 で final-runtime
+    evidence 規律も明文化済み。
+  next_action: 完了。cmd_721 final verdict=go。
+  timestamp: '2026-05-13T13:32:39+09:00'
+- task_id: subtask_720c_gunshi_ndl_ocr_lite_qc
+  parent_cmd: cmd_720
+  project: shogun
+  status: done
+  priority: high
+  blocked_by: []
+  completed_dependencies:
+  - subtask_720a_ndl_ocr_lite_research
+  - subtask_720b_fine_reader_price_appendix
+  assigned_to: gunshi
+  assigned_at: '2026-05-13T11:45:00+09:00'
+  completed_at: '2026-05-13T11:50:00+09:00'
+  preferred_assignee: gunshi
+  reason: cmd_720 α(NDL OCR Lite調査) と β(FineReader価格帯+cmd_719補遺追記) が完了。軍師QC verdict=go
+    / ndl_outcome=conditional。
+  next_action: Karo が cmd_720 完了処理・dashboard戦果反映・artifact登録確認を実施済み。
+  timestamp: '2026-05-13T11:31:55+09:00'
+  updated_at: '2026-05-13T11:50:37+09:00'
+- task_id: subtask_712e_phase_a_secondary_review
+  parent_cmd: cmd_712
+  project: gas-mail-manager
+  status: pending_blocked
+  priority: high
+  blocked_by:
+  - cmd_712_phase_a_manual_verify
+  preferred_assignee: ashigaru6
+  reason: ashigaru3 primary と軍師QCは完了。verdict=conditional_go / race001=allow_with_note。ashigaru6
+    の cmd_709g は完了したが、殿 manual deploy/ping gate 未完了のため secondary review は pending
+    に保持。
+  next_action: 殿 MV-A3〜A5 完了後、cmd_712 Phase A skeleton+ping のHMAC前 gate reviewをashigaru6へ配備する。
+  gunshi_qc_result: 'subtask_712f done: Q-1〜Q-6 PASS、MANUAL_REQUIRED、8c475cbのcmd_709
+    docs混入はredo不要・GS-1〜GS-3必須'
+  timestamp: '2026-05-12T00:34:33+09:00'
+- task_id: subtask_713e_phase0a_word_fidelity_verify
+  parent_cmd: cmd_713
+  project: shogun
+  status: pending_blocked
+  priority: medium
+  blocked_by:
+  - cmd_713_source_hasan1_2_20190701_pdf
+  - cmd_713_word_manual_verification_environment
+  preferred_assignee: ashigaru6
+  secondary_candidate: ashigaru3
+  reason: cmd_713d はPoC設計・検証script・demo docx作成まで完了したが、24P原本 hasan1-2_20190701.pdf
+    がVPS不在のため fidelity 比較は未実施。Microsoft Word実機確認もVPS不可。
+  next_action: hasan1-2_20190701.pdf を projects/cmd_713_bankruptcy/templates/ に配置後、output/cmd_713d/verify_word_fidelity.py
+    を実行し PASS/PARTIAL/FAIL を確定する。
+  output_ready:
+  - /home/ubuntu/shogun/output/cmd_713d_phase0a_word_fidelity_poc.md
+  - /home/ubuntu/shogun/output/cmd_713d/verify_word_fidelity.py
+  - /home/ubuntu/shogun/output/cmd_713d/demo_minimal.docx
+  timestamp: '2026-05-12T01:16:49+09:00'
+- task_id: subtask_717c_gunshi_shx_silent_failure_qc
+  parent_cmd: cmd_717
+  project: shogun
+  status: done
+  priority: highest
+  blocked_by: []
+  assigned_to: gunshi
+  assigned_at: '2026-05-13T08:24:22+09:00'
+  completed_at: '2026-05-13T08:33:19+09:00'
+  preferred_assignee: gunshi
+  reason: cmd_717 α/β が完了。α=b8ac913 push済み / β=7cc0b1b push済み。AC-7隔離E2E、AC-9完遂レビュー§0、SO-17拡張、Issue#53、git
+    preflightを軍師QCへ配備済み。
+  next_action: 'gunshi QC verdict=go。Karo が cmd_717 完了処理、Issue #53 close、dashboard戦果反映を実施。'
+  issue: https://github.com/saneaki/multi-agent/issues/53
+  timestamp: '2026-05-13T08:06:17+09:00'
+- task_id: subtask_718c_gunshi_preset_immutability_qc
+  parent_cmd: cmd_718
+  project: shogun
+  status: done
+  priority: highest
+  blocked_by: []
+  assigned_to: gunshi
+  assigned_at: '2026-05-13T10:07:29+09:00'
+  completed_at: '2026-05-13T10:17:04+09:00'
+  preferred_assignee: gunshi
+  reason: cmd_718 α(settings revert + 隔離E2E) は c6d32c4 push済み / e2e=PASS。β(docs+instructions+corrective
+    note) は 22dcd1a push済み / docs=PASS / instructions=PASS / corrective_note=PASS。SO-17
+    outcome evidence に基づき preset immutability が構造保証されたか軍師QCへ配備済み。
+  next_action: gunshi QC verdict=go。Karo が cmd_718 完了処理を実施し、cmd_719c を軍師へ配備する。
+  issue: https://github.com/saneaki/multi-agent/issues/53
+  timestamp: '2026-05-13T09:50:08+09:00'
+- task_id: subtask_719c_gunshi_ocr_methodology_consolidation
+  parent_cmd: cmd_719
+  project: shogun
+  status: done
+  priority: high
+  blocked_by: []
+  assigned_to: gunshi
+  assigned_at: '2026-05-13T10:17:04+09:00'
+  completed_at: '2026-05-13T10:26:34+09:00'
+  preferred_assignee: gunshi
+  reason: cmd_719 α(既存製品系) 完了(products=14/numeric_sources=7/code変更0)、β(OSS自作系) 完了(engines=7/numeric_sources=20/code変更0)。cmd_718c
+    QC完了で軍師が空いたため統合配備。
+  next_action: gunshi統合 verdict=conditional_go。成果物は完成、artifact_register対象。cmd_719は殿の文献種類回答(action-6)とPoC発令承認(cmd_719-poc-launch)待ちとして保持。
+  timestamp: '2026-05-13T09:55:08+09:00'
+- task_id: subtask_729e_macos_gha_fix
+  parent_cmd: cmd_729
+  project: shogun
+  status: done
+  priority: high
+  blocked_by: []
+  assigned_to: ashigaru6
+  assigned_at: '2026-05-15T16:24:01+09:00'
+  preferred_assignee: ashigaru6
+  reason: cmd_729 ε。GHA run 25905364431 macOS Unit Tests 4件 failure の根因調査と補修。γ担当者が継続するのが最短。
+  next_action: 完了。commits eb0e020+591a76a push済み、GHA run 25906271635 全job PASS。cmd_729完遂可能。
+  timestamp: '2026-05-15T16:24:01+09:00'
+  completed_at: '2026-05-15T16:33:43+09:00'
+  commit: 591a76a
+  additional_commits:
+  - eb0e020
+  pushed_at: '2026-05-15T16:34:34+09:00'
+  output: output/cmd_729e_macos_gha_fix.md
+  gha_run: 25906271635
+  gha_status: PASS
+  gha_verified_at: '2026-05-15T17:15:22+09:00'
+- task_id: subtask_729f_partial_pass_repair
+  parent_cmd: cmd_729
+  project: shogun
+  status: done
+  priority: medium
+  blocked_by: []
+  assigned_to: ashigaru7
+  assigned_at: '2026-05-15T17:20:18+09:00'
+  reason: cmd_729 verifier PARTIAL_PASS L4補修。.gitignore-drift family pattern追記 + 4a5bea2
+    shutsujin_departure.sh scope経緯証跡化。
+  next_action: 完了。.gitignore drift family追記 PASS、4a5bea2 shutsujin_departure scope
+    doc PASS、local tests PASS。commit 5b5e394 push済み。GHA run 25908073538 in_progress。
+  timestamp: '2026-05-15T17:20:18+09:00'
+  completed_at: '2026-05-15T17:25:19+09:00'
+  commit: 5b5e394
+  pushed_at: '2026-05-15T17:26:18+09:00'
+  output: output/cmd_729f_partial_pass_repair.md
+- task_id: subtask_suggestions_triage_batch1
+  parent_cmd: shogun_ops
+  project: shogun
+  status: done
+  priority: high
+  blocked_by: []
+  assigned_to: ashigaru3
+  assigned_at: '2026-05-15T18:06:01+09:00'
+  reason: suggestions_digest pending=211件。Batch protocolに従い最大30件のbatch1棚卸しを実施。
+  next_action: Karo reflected batch1 result; cmd_683 Phase3 deletion is gated by Destructive
+    Safety approval before execution.
+  timestamp: '2026-05-15T18:06:01+09:00'
+  completed_at: '2026-05-15T18:28:42+09:00'
+  result:
+    processed: 30
+    resolved: 20
+    deferred: 9
+    accepted: 1
+    pending_high_impact: 0
+    remaining_pending_total: 181
+    output_path: output/subtask_suggestions_triage_batch1.md
+    qc_gate: PASS
+    accepted_action: cmd_683 Phase3 ntfy server-side deletion requires Karo dispatch
+      / Lord approval gate because deletion target count is >=10
+- task_id: subtask_683_phase3_ntfy_deletion
+  parent_cmd: cmd_683
+  project: shogun
+  status: done
+  priority: medium
+  blocked_by: []
+  assigned_to: ashigaru5
+  assigned_at: '2026-05-15T21:36:02+09:00'
+  preferred_assignee: ashigaru5
+  reason: cmd_683 Phase3 ntfy server-side deletion. Lord approved action-8; Destructive
+    Safety Tier2 approval satisfied. Single-worker dispatch for RACE-001/destructive
+    safety.
+  next_action: 削除対象14件残存0。ただし shutsujin_departure.sh に削除済 ntfy_listener.sh 起動残存が見つかったため
+    subtask_683b_ntfy_launcher_residual_remove を配備。
+  timestamp: '2026-05-15T21:36:02+09:00'
+  approval_log:
+    approved_at: '2026-05-15T17:00:00+09:00'
+    approved_by: lord
+    approval_channel: discord
+    approved_items:
+    - action-8 [cmd_683-phase3-delete-approval]
+    - cmd_683 Phase3 ntfy server-side deletion target list, 14 entries
+    decision_path:
+    - dashboard action-8 created from suggestions triage batch1
+    - lord approved action-8 on Discord
+    - karo dispatched subtask_683_phase3_ntfy_deletion to ashigaru5
+  completed_at: '2026-05-15T21:46:46+09:00'
+  commit: aa90a24
+  output: output/cmd_683_phase3_ntfy_deletion.md
+  result:
+    deleted_this_task: 5
+    target_residual: 0
+    tests: PASS 5/5 SKIP=0
+    commit: aa90a24
+    followup_required: shutsujin_departure.sh ntfy_listener startup residual
+- task_id: subtask_683b_ntfy_launcher_residual_remove
+  parent_cmd: cmd_683
+  project: shogun
+  status: done
+  priority: medium
+  blocked_by: []
+  assigned_to: ashigaru5
+  assigned_at: '2026-05-15T21:47:36+09:00'
+  reason: cmd_683 Phase3 deletion found executable residual startup reference to deleted
+    ntfy_listener.sh in shutsujin_departure.sh plus ntfy_topic config.
+  next_action: launcher/config残存は除去済み。ただし inbox_write.sh の cmd_complete/cmd_milestone
+    通知gateが ntfy_topic 廃止で常時falseとなるため subtask_683c を配備。
+  timestamp: '2026-05-15T21:47:36+09:00'
+  completed_at: '2026-05-15T21:57:10+09:00'
+  commit: 39f1e0f
+  output: output/cmd_683b_ntfy_launcher_residual_remove.md
+  result:
+    launcher: PASS
+    config: PASS
+    scan: PASS
+    tests: PASS 5/5 SKIP=0
+    commit: 39f1e0f
+    followup_required: inbox_write.sh notify gate no longer depends on retired ntfy_topic
+- task_id: subtask_683c_inbox_write_notify_gate_fix
+  parent_cmd: cmd_683
+  project: shogun
+  status: done
+  priority: medium
+  blocked_by: []
+  assigned_to: ashigaru5
+  assigned_at: '2026-05-15T21:58:10+09:00'
+  reason: cmd_683b removed ntfy_topic; inbox_write.sh cmd_complete/cmd_milestone notification
+    gate now always false though notify.sh uses Discord backend.
+  next_action: 完了。通知gate=PASS / ntfy_retired=PASS / tests=11/11 PASS SKIP=0 / commit
+    12d3903。cmd_683完了。
+  timestamp: '2026-05-15T21:58:10+09:00'
+  completed_at: '2026-05-15T22:08:31+09:00'
+  commit: 12d3903
+  output: output/cmd_683c_inbox_write_notify_gate_fix.md
+  result:
+    gate: PASS
+    ntfy_retired: PASS
+    tests: PASS 11/11 SKIP=0
+    commit: 12d3903
+- task_id: subtask_683d_start_discord_bot_dead_ref_fix
+  parent_cmd: cmd_683
+  project: shogun
+  status: done
+  priority: low
+  blocked_by: []
+  assigned_to: ashigaru5
+  assigned_at: '2026-05-15T22:15:20+09:00'
+  reason: implementation-verifier L3 found scripts/start_discord_bot.sh references
+    deleted scripts/discord_to_ntfy.py after cmd_683 Phase3 deletion.
+  next_action: start_discord_bot.sh本体は補修済み。ただし検収で shogun-discord.service.template
+    / install script に discord_to_ntfy 実行系参照が残ったため subtask_683e を配備。
+  timestamp: '2026-05-15T22:15:20+09:00'
+  completed_at: '2026-05-15T22:24:44+09:00'
+  commit: c9bdb3c
+  output: output/cmd_683d_start_discord_bot_dead_ref_fix.md
+  result:
+    dead_ref: PARTIAL_PASS
+    syntax: PASS
+    scan: FAIL追加実行系参照あり
+    commit: c9bdb3c
+    followup_required: service template and install script discord_to_ntfy references
+- task_id: subtask_683e_discord_service_template_dead_ref_fix
+  parent_cmd: cmd_683
+  project: shogun
+  status: done
+  priority: low
+  blocked_by: []
+  assigned_to: ashigaru5
+  assigned_at: '2026-05-15T22:25:28+09:00'
+  reason: 683d verification found service template ExecStart and install script process
+    checks still reference deleted discord_to_ntfy.py/name.
+  next_action: 完了。service=PASS / installer=PASS / scan=PASS / commit dbb9e3e。cmd_683再完了。
+  timestamp: '2026-05-15T22:25:28+09:00'
+  completed_at: '2026-05-15T22:39:34+09:00'
+  commit: dbb9e3e
+  output: output/cmd_683e_discord_service_template_dead_ref_fix.md
+  result:
+    service: PASS
+    installer: PASS
+    scan: PASS
+    commit: dbb9e3e
+- task_id: subtask_730c_gunshi_root_cause_consolidation
+  parent_cmd: cmd_730
+  project: shogun
+  status: done
+  priority: high
+  blocked_by: []
+  preferred_assignee: gunshi
+  reason: cmd_730 dual-review の軍師統合。Opus/Codex 両レビューを集約し、1つの根因仮説・修正方針・後段β/γタスク分解へ落とす。
+  next_action: 完了。verdict=conditional_go / output=output/cmd_730a_root_cause_dual_review.md。LORD_JUDGMENT_GATE_1
+    待ちのため、殿御裁可まで β/γ/δ 実装 subtask は発令禁止。
+  timestamp: '2026-05-16T00:43:55+09:00'
+  expected_outputs:
+  - output/cmd_730a_root_cause_dual_review.md
+  depends_on_outputs:
+  - output/cmd_730a_opus_root_cause_review.md
+  - output/cmd_730b_codex_root_cause_review.md
+  codex_review:
+    task_id: subtask_730b_codex_root_cause_review
+    status: done
+    completed_at: '2026-05-16T01:06:32+09:00'
+    verdict: WARN
+    output: output/cmd_730b_codex_root_cause_review.md
+    summary: karo codex起動は設計通り。pane meta @model_name stale と settings.yaml dirty変更/switch_cli
+      metadata silent fail or direct edit bypass が主因候補。
+  assigned_to: gunshi
+  assigned_at: '2026-05-16T03:25:31+09:00'
+  completed_at: '2026-05-16T03:37:15+09:00'
+  verdict: conditional_go
+  output: output/cmd_730a_root_cause_dual_review.md
+  opus_review:
+    task_id: subtask_730a_opus_root_cause_review
+    status: done
+    completed_at: '2026-05-16T03:25:02+09:00'
+    verdict: BLOCK
+    output: output/cmd_730a_opus_root_cause_review.md
+    summary: shp永続汚染、shu all-sonnet上書き、kessen @agent_cli未override、shx --settings-only汚染を根因として指摘。
+- task_id: subtask_730e_beta_runtime_overlay
+  parent_cmd: cmd_730
+  project: shogun
+  status: done
+  priority: high
+  blocked_by: []
+  assigned_to: ashigaru4
+  assigned_at: '2026-05-16T05:56:42+09:00'
+  preferred_assignee: ashigaru4
+  reason: cmd_730 β。LORD_JUDGMENT_GATE_1 passed。settings.yaml baseline と shutsujin_departure.sh
+    runtime overlay 化を単独占有で実装する。
+  completed_at: '2026-05-16T06:09:46+09:00'
+  commit: fd75c67
+  output: output/cmd_730e_beta_runtime_overlay.md
+  result:
+    baseline: PASS
+    overlay: PASS
+    settings_invariant: PASS
+    tests: PASS
+  next_action: 完了。γ (scripts/shp.sh transient default 化) を ashigaru7 へ配備。
+  timestamp: '2026-05-16T05:56:42+09:00'
+  editable_files:
+  - config/settings.yaml
+  - shutsujin_departure.sh
+  expected_outputs:
+  - output/cmd_730e_beta_runtime_overlay.md
+  gate:
+    gate_id: LORD_JUDGMENT_GATE_1
+    status: passed
+    approved_at: '2026-05-16T05:53:00+09:00'
+    approval_text: わかった、推奨で
+- task_id: subtask_730f_gamma_shp_transient
+  parent_cmd: cmd_730
+  project: shogun
+  status: done
+  priority: high
+  blocked_by: []
+  assigned_to: ashigaru7
+  assigned_at: '2026-05-16T06:10:32+09:00'
+  preferred_assignee: ashigaru7
+  secondary_assignee: ashigaru6
+  reason: cmd_730 γ。β完了後、scripts/shp.sh のデフォルト transient 化と --persist guard を単独占有で実装する。
+  completed_at: '2026-05-16T06:22:56+09:00'
+  commit: 88d1324
+  output: output/cmd_730f_gamma_shp_transient.md
+  result:
+    transient: PASS
+    persist_guard: PASS
+    cross_cli: PASS
+    tests: PASS
+  next_action: 完了。δ-A (shc status/dashboard yaml hook) と δ-B (launcher smoke) を並列配備。
+  timestamp: '2026-05-16T06:10:32+09:00'
+  editable_files:
+  - scripts/shp.sh
+  expected_outputs:
+  - output/cmd_730f_gamma_shp_transient.md
+- task_id: subtask_730g_delta_shc_dashboard_sync
+  parent_cmd: cmd_730
+  project: shogun
+  status: done
+  priority: high
+  blocked_by: []
+  assigned_to: ashigaru1
+  assigned_at: '2026-05-16T06:23:10+09:00'
+  completed_at: '2026-05-16T06:40:29+09:00'
+  preferred_assignee: ashigaru1
+  reason: cmd_730 δ-A。shc status + dashboard.yaml限定hook を scripts/shc.sh 単独占有で実装する。
+  first_reported_at: '2026-05-16T06:36:09+09:00'
+  commit: 17f3d59
+  initial_commit: e6b6601
+  redo_result: tests=PASS / SKIP=0。T1 bash-n、T2 YAML parse、T3 shc status、T4 sync-meta
+    temp-copy 全PASS。
+  next_action: 完了。δ-A blocker解除済み。
+  timestamp: '2026-05-16T06:23:10+09:00'
+  editable_files:
+  - scripts/shc.sh
+  expected_outputs:
+  - output/cmd_730g_delta_shc_dashboard_sync.md
+- task_id: subtask_730h_delta_smoke_tests
+  parent_cmd: cmd_730
+  project: shogun
+  status: done
+  priority: high
+  blocked_by: []
+  assigned_to: ashigaru2
+  assigned_at: '2026-05-16T06:23:10+09:00'
+  completed_at: '2026-05-16T06:59:11+09:00'
+  preferred_assignee: ashigaru2
+  reason: cmd_730 δ-B。launcher spec consistency smoke と bats wrapper を新設する。
+  commit: 6829501
+  initial_commit: 6c77e11
+  result: smoke=PASS(PASS=34 FAIL=0 SKIP=0) / bats=PASS(23/23) / t8=PASS
+  next_action: 完了。ε completion verification blocker解除済み。
+  timestamp: '2026-05-16T06:23:10+09:00'
+  editable_files:
+  - tests/smoke/launcher_spec_consistency.sh
+  - tests/unit/test_launcher_spec.bats
+  expected_outputs:
+  - output/cmd_730h_delta_smoke_tests.md
+- task_id: subtask_730z_codex_completion_verification
+  parent_cmd: cmd_730
+  project: shogun
+  status: done
+  priority: high
+  blocked_by: []
+  assigned_to: ashigaru7
+  assigned_at: '2026-05-16T07:00:30+09:00'
+  completed_at: '2026-05-16T07:16:41+09:00'
+  preferred_assignee: ashigaru7
+  secondary_assignee: ashigaru6
+  reason: cmd_730 ε補強。完成時 dual-verification 規律として、将軍 implementation-verifier と並行して
+    Codex 足軽が独立4-Layer検証を行う。
+  verdict: PARTIAL_PASS
+  next_action: 完了。ただし report hygiene / Codex CLI flag 互換修復が必要なため ζ修復3本を配備。
+  timestamp: '2026-05-16T05:59:32+09:00'
+  expected_outputs:
+  - output/cmd_730z_codex_completion_verification.md
+  verification_scope:
+    L1: ファイル存在
+    L2: AC全件
+    L3: 副作用回帰なし
+    L4: commit+push完了
+- task_id: subtask_730y_codex_flag_compat
+  parent_cmd: cmd_730
+  project: shogun
+  status: done
+  priority: high
+  blocked_by: []
+  assigned_to: ashigaru6
+  assigned_at: '2026-05-16T07:18:30+09:00'
+  completed_at: '2026-05-16T07:52:47+09:00'
+  commit: 8004aa3
+  reason: 現行 Codex CLI が --reasoning-effort を拒否。shx/shp のCodex起動flagを model_reasoning_effort
+    config overrideへ修復する。
+  next_action: 完了。Codex flag互換修復、smoke PASS=34 SKIP=0、bats 23/23 SKIP=0。
+  expected_outputs:
+  - output/cmd_730y_codex_flag_compat.md
+- task_id: subtask_730x_beta_report_hygiene
+  parent_cmd: cmd_730
+  project: shogun
+  status: done
+  priority: high
+  blocked_by: []
+  assigned_to: ashigaru4
+  assigned_at: '2026-05-16T07:18:30+09:00'
+  completed_at: '2026-05-16T07:28:30+09:00'
+  commit: 979aac4
+  reason: ε検証でβ reportにcmd_729a body drift検出。subtask_730e専用reportへ修復する。
+  next_action: 完了。report_hygiene=PASS / output_dirty=PASS。
+  expected_outputs:
+  - queue/reports/ashigaru4_report.yaml
+- task_id: subtask_730w_delta_report_status_normalize
+  parent_cmd: cmd_730
+  project: shogun
+  status: done
+  priority: high
+  blocked_by: []
+  assigned_to: ashigaru1
+  assigned_at: '2026-05-16T07:18:30+09:00'
+  completed_at: '2026-05-16T07:48:24+09:00'
+  commit: e6c16aa
+  reason: ε検証でδ-A report status=completed が標準外としてWARN。doneへ正規化する。
+  next_action: 完了。report status=done 正規化、実装ファイル変更なし。
+  expected_outputs:
+  - queue/reports/ashigaru1_report.yaml
+- task_id: subtask_730zz_codex_reverification
+  parent_cmd: cmd_730
+  project: shogun
+  status: done
+  priority: high
+  blocked_by: []
+  assigned_to: ashigaru7
+  assigned_at: '2026-05-16T07:53:00+09:00'
+  completed_at: '2026-05-16T07:59:58+09:00'
+  verdict: PASS
+  tests: PASS
+  skip_count: 0
+  reason: ζ補修3件完了後のCodex arm再検証。前回PARTIAL_PASS指摘が全解消したか確認する。
+  next_action: 完了。η Codex再検証 verdict=PASS、smoke/bats SKIP=0。
+  expected_outputs:
+  - output/cmd_730zz_codex_reverification.md
+- task_id: subtask_731a_check_ash_done_pending_root_cause
+  parent_cmd: cmd_731
+  project: shogun
+  status: done
+  priority: high
+  blocked_by: []
+  assigned_to: ashigaru1
+  assigned_at: '2026-05-16T09:58:10+09:00'
+  completed_at: '2026-05-16T10:10:55+09:00'
+  beta_patch: READY
+  preferred_assignee: ashigaru1
+  reason: cmd_731 Phase α-1。shogun_reality_check.sh + status_check_rules.py を読み check_ash_done_pending
+    漏れの file:line 根因を調査する。
+  next_action: 完了。6hチェック間隔内の done→re-assign 窓と mtime-based 検知リセットが主因。β案READY。
+  expected_outputs:
+  - output/cmd_731a_check_ash_done_pending_root_cause.md
+- task_id: subtask_731b_metrics_violation_update_path_audit
+  parent_cmd: cmd_731
+  project: shogun
+  status: done
+  priority: high
+  blocked_by: []
+  assigned_to: ashigaru4
+  assigned_at: '2026-05-16T09:58:10+09:00'
+  completed_at: '2026-05-16T10:50:00+09:00'
+  beta_patch: READY
+  preferred_assignee: ashigaru4
+  reason: cmd_731 Phase α-2。違反検出/運用指標の更新経路と長期固着・5/14停止原因を調査する。
+  next_action: 完了。L019/Step1.5未実装、L020 partial+ISO bug、metrics partial+TOCTOU raceを特定。β案READY。
+  expected_outputs:
+  - output/cmd_731b_metrics_violation_update_path_audit.md
+- task_id: subtask_731c_shogun_pane_duplicate_structure_audit
+  parent_cmd: cmd_731
+  project: shogun
+  status: done
+  priority: high
+  blocked_by: []
+  assigned_to: ashigaru5
+  assigned_at: '2026-05-16T09:58:10+09:00'
+  completed_at: '2026-05-16T10:13:22+09:00'
+  duplicate: 'NO'
+  beta_patch: READY
+  preferred_assignee: ashigaru5
+  reason: cmd_731 Phase α-3。shogun:main と本セッションの関係を tmux + watcher_supervisor で構造解明する。
+  next_action: 完了。shogun process重複なし、notifier log()二重書き込みが痕跡原因。β案READY。
+  expected_outputs:
+  - output/cmd_731c_shogun_pane_duplicate_structure_audit.md
+- task_id: subtask_731d_gunshi_alpha_consolidation
+  parent_cmd: cmd_731
+  project: shogun
+  status: done
+  priority: high
+  blocked_by: []
+  assigned_to: gunshi
+  assigned_at: '2026-05-16T10:54:08+09:00'
+  completed_at: '2026-05-16T11:02:09+09:00'
+  verdict: conditional_go
+  beta_plan: READY
+  race001: PASS
+  preferred_assignee: gunshi
+  reason: cmd_731 Phase α-4。3並列調査完了後にAC-1〜AC-9修復方針とRACE-001を統合する。blocked解除まで配備しない。
+  next_action: 完了。verdict=conditional_go / beta_plan=READY / race001=PASS。β-1/2/4/5を並列配備、β-3はβ-1完了待ち。
+  expected_outputs:
+  - output/cmd_731d_alpha_consolidation.md
+- task_id: subtask_731e_beta1_reality_check_rules
+  parent_cmd: cmd_731
+  project: shogun
+  status: done
+  priority: high
+  blocked_by: []
+  assigned_to: ashigaru4
+  assigned_at: '2026-05-16T11:06:19+09:00'
+  completed_at: '2026-05-16T11:18:32+09:00'
+  commit: 11a4b9e
+  tests: PASS
+  skip_count: 0
+  preferred_assignee: ashigaru4
+  reason: cmd_731 Phase β-1。status_check_rules.py と shogun_reality_check.sh を統合修復し
+    AC-1/2/3/4 を満たす。
+  next_action: 完了。AC-1/2/3/4 PASS、tests 23 PASS SKIP=0。β-3を解除しashigaru6へ配備。
+  expected_outputs:
+  - output/cmd_731e_beta1_reality_check_rules.md
+- task_id: subtask_731f_beta2_dashboard_metrics_sync
+  parent_cmd: cmd_731
+  project: shogun
+  status: done
+  priority: high
+  blocked_by: []
+  assigned_to: ashigaru5
+  assigned_at: '2026-05-16T11:06:19+09:00'
+  completed_at: '2026-05-16T11:51:22+09:00'
+  commit: 0a6bd35
+  tests: PASS
+  skip_count: 0
+  preferred_assignee: ashigaru5
+  reason: cmd_731 Phase β-2。dashboard違反検出/運用指標同期を修復し AC-7/8 を満たす。dashboard.md 専有窓10分。
+  next_action: 完了。AC-7/8 PASS、dashboard marker PASS、pytest 24 PASS SKIP=0、commit 0a6bd35。
+  expected_outputs:
+  - output/cmd_731f_beta2_dashboard_metrics_sync.md
+- task_id: subtask_731g_beta3_karo_ashigaru_cmd_complete_audit
+  parent_cmd: cmd_731
+  project: shogun
+  status: done
+  priority: high
+  blocked_by: []
+  assigned_to: ashigaru6
+  assigned_at: '2026-05-16T11:19:01+09:00'
+  completed_at: '2026-05-16T12:30:44+09:00'
+  commit: b4d02d3
+  primary_commit: 43ee727
+  tests: PASS
+  skip_count: 0
+  preferred_assignee: ashigaru6
+  reason: cmd_731 Phase β-3。instructions/karo.md + instructions/ashigaru.md + karo_cmd_complete_audit.sh
+    で AC-4 Patch A + AC-5 を満たす。β-1完了後に配備。
+  next_action: 完了。AC-5 PASS、audit PASS、bats 4/4 PASS SKIP=0、commit 43ee727+b4d02d3。
+  expected_outputs:
+  - output/cmd_731g_beta3_karo_ashigaru_cmd_complete_audit.md
+- task_id: subtask_731h_beta4_shogun_dual_verification_hook
+  parent_cmd: cmd_731
+  project: shogun
+  status: done
+  priority: high
+  blocked_by: []
+  assigned_to: ashigaru7
+  assigned_at: '2026-05-16T11:06:19+09:00'
+  completed_at: '2026-05-16T11:19:03+09:00'
+  commit: a01a749
+  tests: PASS
+  skip_count: 0
+  preferred_assignee: ashigaru7
+  reason: cmd_731 Phase β-4。instructions/shogun.md と shogun_completion_hook.sh を強化し
+    AC-6 を満たす。
+  next_action: 完了。AC-6 PASS、bats 5/5 PASS SKIP=0。runtime wiring は後続統合判断。
+  expected_outputs:
+  - output/cmd_731h_beta4_shogun_dual_verification_hook.md
+- task_id: subtask_731i_beta5_shogun_notifier_log_fix
+  parent_cmd: cmd_731
+  project: shogun
+  status: done
+  priority: high
+  blocked_by: []
+  assigned_to: ashigaru1
+  assigned_at: '2026-05-16T11:06:19+09:00'
+  completed_at: '2026-05-16T11:21:21+09:00'
+  commit: 753875d
+  tests: PASS
+  skip_count: 0
+  preferred_assignee: ashigaru1
+  reason: cmd_731 Phase β-5。shogun_inbox_notifier.sh の二重ログartifactを解消し AC-9 を満たす。
+  next_action: 完了。AC-9 PASS、bats 6/6 PASS SKIP=0、commit 753875d。
+  expected_outputs:
+  - output/cmd_731i_beta5_shogun_notifier_log_fix.md
+- task_id: subtask_731j_beta5_macos_flock_skip_repair
+  parent_cmd: cmd_731
+  project: shogun
+  status: done
+  priority: high
+  blocked_by: []
+  assigned_to: ashigaru2
+  assigned_at: '2026-05-16T11:32:58+09:00'
+  completed_at: '2026-05-16T12:13:40+09:00'
+  commit: 2dee36e
+  tests: PASS
+  skip_count: 0
+  preferred_assignee: ashigaru2
+  reason: cmd_731 β-5 GHA macOS補修。run 25950319231 Unit Tests (macos-latest) が T-SIN-004/T-SIN-004b
+    の unexpected SKIP (flock not available) で失敗。SKIP whitelistではなくportable lock fallback実装を優先する。
+  next_action: 完了。GHA SKIP補修 PASS、bats 6/6 PASS SKIP=0、commit 2dee36e。
+  expected_outputs:
+  - output/cmd_731j_beta5_macos_flock_skip_repair.md
+- task_id: subtask_731k_gamma_gunshi_qc
+  parent_cmd: cmd_731
+  project: shogun
+  status: done
+  priority: high
+  blocked_by: []
+  assigned_to: gunshi
+  assigned_at: '2026-05-16T12:30:44+09:00'
+  completed_at: '2026-05-16T12:43:50+09:00'
+  verdict: conditional_go
+  ac: PASS
+  skip_count: 0
+  gha: PENDING
+  preferred_assignee: gunshi
+  reason: cmd_731 Phase γ-1。β実装6件+macOS補修を統合QCし、AC-1〜AC-10の充足、RACE-001、SKIP=0、GHA
+    macOS補修、残るγ-2当日次サイクル証跡計画を判定する。
+  next_action: 完了。verdict=conditional_go。β-3 push済み、flaky fixture補修とnotifier fallback
+    dirty解消後にγ-2へ進む。
+  expected_outputs:
+  - output/cmd_731k_gamma_gunshi_qc.md
+- task_id: subtask_731l_beta1_metrics_flaky_fixture_fix
+  parent_cmd: cmd_731
+  project: shogun
+  status: done
+  priority: high
+  blocked_by: []
+  assigned_to: ashigaru4
+  assigned_at: '2026-05-16T12:43:50+09:00'
+  completed_at: '2026-05-16T12:51:49+09:00'
+  commit: 9a5ae39
+  tests: PASS
+  skip_count: 0
+  preferred_assignee: ashigaru4
+  reason: γ-1 QC concern c731k_2。tests/unit/test_status_check_rules.py::test_ok_when_recent_within_36h
+    がJST 12:00以降にflaky FAILする。fixtureを時刻精度保持または日付固定へ修正する。
+  next_action: 完了。pytest 23 PASS SKIP=0、commit 9a5ae39。
+  expected_outputs:
+  - output/cmd_731l_beta1_metrics_flaky_fixture_fix.md
+- task_id: subtask_731m_beta5_notifier_fallback_dirty_resolve
+  parent_cmd: cmd_731
+  project: shogun
+  status: done
+  priority: high
+  blocked_by: []
+  assigned_to: ashigaru2
+  assigned_at: '2026-05-16T12:43:50+09:00'
+  completed_at: '2026-05-16T13:18:31+09:00'
+  commit: 36a2ac1
+  primary_commit: 643a8ba
+  tests: PASS
+  skip_count: 0
+  preferred_assignee: ashigaru2
+  reason: γ-1 QC concern c731k_4/c731k_5。scripts/shogun_inbox_notifier.sh のuncommitted
+    mkdir fallbackを正式commitするか不要なら撤収し、cmd_731j outputのdoc-vs-reality driftを修正する。
+  next_action: 完了。doc=PASS / dirty=resolved / bats 6/6 PASS SKIP=0 / commit 643a8ba+36a2ac1。
+  expected_outputs:
+  - output/cmd_731m_beta5_notifier_fallback_dirty_resolve.md
+- task_id: subtask_731n_karo_audit_macos_gha_fix
+  parent_cmd: cmd_731
+  project: shogun
+  status: done
+  priority: high
+  blocked_by: []
+  assigned_to: ashigaru6
+  assigned_at: '2026-05-16T13:02:24+09:00'
+  completed_at: '2026-05-16T13:42:52+09:00'
+  commit: b387288
+  primary_commit: ea59c9c
+  tests: PASS
+  skip_count: 0
+  gha: PASS
+  preferred_assignee: ashigaru6
+  reason: GHA再失敗 run 25952026417。AC-5の tests/unit/test_karo_cmd_complete_audit.bats
+    T-KCA-002/003/004 がmacOSでstatus code mismatch。python/PyYAML環境差等を補修する。
+  next_action: 完了。macOS PyYAML mismatch補修、bats 4/4 PASS SKIP=0、GHA 25952329686/25952443099/25952495399
+    SUCCESS。
+  expected_outputs:
+  - output/cmd_731n_karo_audit_macos_gha_fix.md
+- task_id: subtask_731o_gamma2_one_cycle_evidence
+  parent_cmd: cmd_731
+  assignee: ashigaru3
+  status: done
+  assigned_at: '2026-05-16T13:45:25+09:00'
+  completed_at: '2026-05-16T14:10:05+09:00'
+  bloom_level: L4
+  preferred_assignee: ashigaru3
+  reason: Phase γ-2。AC-10の手動9検知実行・5/15 backfill/partial dashboard生成・cron後続条件を証跡化する。
+  tests: PASS
+  skip_count: 0
+  manual_reality: PASS
+  dashboard_cycle: PASS
+  cron_pending: true
+  next_action: 完了。手動9項目・5/15 dashboard cycleはPASS。18:00/21:00 JST cron未到達のためAC-10総合はPARTIAL。
+  expected_outputs:
+  - output/cmd_731o_gamma2_one_cycle_evidence.md
+- task_id: subtask_731p_gamma2_cron_cycle_evidence
+  parent_cmd: cmd_731
+  assignee: ashigaru3
+  status: assigned
+  bloom_level: L4
+  preferred_assignee: ashigaru3
+  reason: AC-10残件。18:00 JST cmd_kpi_observer cron と 21:00 JST reality_check cron の当日自動1サイクル証跡が時刻未到達。
+  next_action: 2026-05-16 21:05 JST以降に配備し、logs/kpi_observer.log / logs/reality_check.log
+    / dashboard.yaml / queue/inbox/shogun.yaml を検証する。polling禁止。
+  expected_outputs:
+  - output/cmd_731p_gamma2_cron_cycle_evidence.md
+  assigned_at: '2026-05-16T18:16:00+09:00'
+  dispatch_note: dispatch_731p.sh cron (5 12 16 5 *) を設定済み。21:05 JST 自動発火予定。
+- task_id: subtask_731ε_codex_completion_verification
+  parent_cmd: cmd_731
+  assignee: ashigaru7
+  status: done
+  assigned_at: '2026-05-16T16:01:43+09:00'
+  completed_at: '2026-05-16T16:19:28+09:00'
+  bloom_level: L5
+  model_requirement: codex effort=xhigh
+  preferred_assignee: ashigaru7
+  reason: 将軍がimplementation-verifierをbackground起動済。AC-11遵守のCodex並行armとして4-Layer/AC-1〜AC-11検証を行う。
+  verdict: conditional_go
+  ac: PARTIAL
+  tests: PASS
+  skip_count: 0
+  next_action: 完了。conditional_go。AC-10 cron pending、AC-5/AC-6 runtime配線未確認、21:00 JST
+    cron不整合を残リスクとして後続補修へ回す。
+  expected_outputs:
+  - output/cmd_731ε_codex_completion_verification.md
+- task_id: subtask_731q_runtime_wiring_repair
+  parent_cmd: cmd_731
+  assignee: ashigaru6
+  status: done
+  assigned_at: '2026-05-16T16:19:28+09:00'
+  completed_at: '2026-05-16T16:24:59+09:00'
+  bloom_level: L4
+  preferred_assignee: ashigaru6
+  reason: ε Codex検証でAC-5/AC-6 runtime配線未確認と21:00 JST cron不整合を検出。棚置き化を防ぐ。
+  ac5: PASS
+  ac6: PASS
+  cron21: PASS
+  tests: PASS
+  skip_count: 0
+  next_action: 完了。cmd_731 managed crontab 3行追加済み。残件はsubtask_731pの実cron発火証跡のみ。
+  expected_outputs:
+  - output/cmd_731q_runtime_wiring_repair.md
