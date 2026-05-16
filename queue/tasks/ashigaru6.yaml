@@ -1,75 +1,65 @@
 task:
-  acceptance_criteria:
-  - check: instructions/karo.md に cmd 完遂時の shogun cmd_complete 送付を MUST USE として明文化し、未送付を完了不可条件にする
-    id: B3-1
-  - check: instructions/ashigaru.md に completed_pending_karo / done 遷移と report送付後の家老検収待ち規律を追記し、β-1のdone漏れ修正と矛盾しない
-    id: B3-2
-  - check: scripts/karo_cmd_complete_audit.sh を新設し、done cmd または全subtask done なのに shogun
-      inbox に cmd_complete が無い状態を検出して非0終了する
-    id: B3-3
-  - check: tests/unit/test_karo_cmd_complete_audit.bats を追加し、missing/sent/not_done
-      の3系統をSKIP=0でPASSさせる
-    id: B3-4
-  - check: bash -n scripts/karo_cmd_complete_audit.sh と bats test をPASSさせ、commit messageに
-      Refs cmd_731 AC-4/5 を含める
-    id: B3-5
-  assigned_to: ashigaru6
-  blocked_by: []
+  task_id: subtask_731n_karo_audit_macos_gha_fix
+  parent_cmd: cmd_731
+  title: 'cmd_731n: karo audit macOS GHA補修'
   bloom_level: L4
-  correction_required:
-    issued_at: '2026-05-16T12:23:36+09:00'
-    reason: "Karo検収差戻し: implementation/testsはPASS。ただし report YAML が旧subtask_730yのまま、かつ commit 43ee727 に editable_files外の .gitignore が含まれ、skills行の改行差分も混入。"
-    required_actions:
-      - "queue/reports/ashigaru6_report.yaml のtop-levelを subtask_731g_beta3_karo_ashigaru_cmd_complete_audit に更新し、AC/commit/tests/outputを記録する"
-      - ".gitignore 差分を確認し、必要最小限の !scripts/karo_cmd_complete_audit.sh 追加だけに整える。不要な改行差分があれば追加commitで修復する"
-      - "output/cmd_731g_beta3_karo_ashigaru_cmd_complete_audit.md に .gitignore scope exception / whitelist理由と修復commitを追記する"
-      - "bash -n scripts/karo_cmd_complete_audit.sh と bats tests/unit/test_karo_cmd_complete_audit.bats を再実行し、SKIP=0を報告する"
+  assigned_to: ashigaru6
+  report_to: karo
+  status: work
+  timestamp: '2026-05-16T13:02:24+09:00'
+  priority: high
+  project: shogun
+  target_path: /home/ubuntu/shogun
+  context_policy: preserve_across_stages
+  blocked_by: []
   context_files:
   - queue/shogun_to_karo.yaml
-  - output/cmd_731a_check_ash_done_pending_root_cause.md
-  - output/cmd_731d_alpha_consolidation.md
-  - output/cmd_731e_beta1_reality_check_rules.md
-  - instructions/karo.md
-  - instructions/ashigaru.md
-  - scripts/lib/status_check_rules.py
-  context_policy: preserve_across_stages
-  description: "cmd_731 Phase β-3。家老 cmd_complete 送付漏れ防止と、ashigaru完了遷移規律を担当する。\n\n\
-    【目的】\nAC-5を実装し、cmd完遂済みなのに将軍inboxへcmd_completeが届かない状態を機械的に検出する。\nβ-1で修復済みの check_ash_done_pending\
-    \ と整合するよう、completed_pending_karo / done 運用も明文化する。\n\n【厳守】\n- status_check_rules.py\
-    \ / shogun_reality_check.sh はβ-1完了成果として参照のみ。編集禁止。\n- dashboard.md はβ-2専有中につき編集禁止。\n\
-    - shogun instruction/hook、notifier系は他β担当領域のため編集禁止。\n- hookは検出・alert用。cmd_completeを勝手に送る自動補完はしない。\n\
-    - SKIP=1以上は未完。実行不能ならFAILとして根拠を記録する。\n\n【完了報告】\nbash /home/ubuntu/shogun/scripts/inbox_write.sh\
-    \ karo \\\n  \"【subtask_731g_beta3_karo_ashigaru_cmd_complete_audit 完了】cmd_731\
-    \ β-3完了。ac5=<PASS|FAIL> audit=<PASS|FAIL> tests=<PASS|FAIL> skip=<0|N> commit=<sha>\
-    \ output=output/cmd_731g_beta3_karo_ashigaru_cmd_complete_audit.md。report確認されたし。\"\
-    \ \\\n  task_completed ashigaru6\n"
-  editable_files:
-  - instructions/karo.md
-  - instructions/ashigaru.md
+  - output/cmd_731g_beta3_karo_ashigaru_cmd_complete_audit.md
+  - output/cmd_731k_gamma_gunshi_qc.md
   - scripts/karo_cmd_complete_audit.sh
   - tests/unit/test_karo_cmd_complete_audit.bats
-  - output/cmd_731g_beta3_karo_ashigaru_cmd_complete_audit.md
+  editable_files:
+  - scripts/karo_cmd_complete_audit.sh
+  - tests/unit/test_karo_cmd_complete_audit.bats
+  - output/cmd_731n_karo_audit_macos_gha_fix.md
   - queue/reports/ashigaru6_report.yaml
   - queue/tasks/ashigaru6.yaml
   - queue/inbox/ashigaru6.yaml
   forbidden_files:
+  - instructions/karo.md
+  - instructions/ashigaru.md
   - scripts/lib/status_check_rules.py
   - scripts/shogun_reality_check.sh
   - scripts/generate_dashboard_md.py
   - scripts/cmd_kpi_observer.sh
-  - instructions/shogun.md
   - scripts/shogun_completion_hook.sh
   - scripts/shogun_inbox_notifier.sh
   - dashboard.md
   - dashboard.yaml
   - queue/shogun_to_karo.yaml
   - queue/tasks/pending.yaml
-  parent_cmd: cmd_731
-  priority: high
-  project: shogun
-  report_to: karo
-  status: completed_pending_karo
-  target_path: /home/ubuntu/shogun
-  task_id: subtask_731g_beta3_karo_ashigaru_cmd_complete_audit
-  timestamp: '2026-05-16T11:19:01+09:00'
-  title: 'cmd_731g: cmd_complete漏れ監査hook'
+  acceptance_criteria:
+  - id: N-1
+    check: GHA run 25952026417 のT-KCA-002/003/004 status code mismatch根因をoutputに記録する
+  - id: N-2
+    check: scripts/karo_cmd_complete_audit.sh をmacOS/GHA互換に修正する。cmd_729e同型の system
+      python3 / PyYAML mismatch が原因なら repo .venv python を優先する等で安定化する
+  - id: N-3
+    check: tests/unit/test_karo_cmd_complete_audit.bats がLinux/macOS双方で期待exit codeを正しく検証できるようにする
+  - id: N-4
+    check: bash -n scripts/karo_cmd_complete_audit.sh と bats tests/unit/test_karo_cmd_complete_audit.bats
+      をSKIP=0でPASSさせる
+  - id: N-5
+    check: commit message に Refs cmd_731 AC-5 と GHA run 25952026417 を含め、編集対象だけcommit/pushする
+  description: "cmd_731 GHA再失敗補修。run 25952026417 (commit 9a5ae39) で flock 問題は解消したが、\n\
+    AC-5の `tests/unit/test_karo_cmd_complete_audit.bats` がmacOSで失敗した。\n\n【失敗内容】\n\
+    - T-KCA-002 line 53: expected exit 1, actual mismatch\n- T-KCA-003 line 77: expected\
+    \ exit 0, actual mismatch\n- T-KCA-004 line 97: expected exit 0, actual mismatch\n\
+    - いずれも status code mismatch。cmd_729e同型の `.venv PyYAML / system python3 mismatch`\
+    \ 可能性あり。\n\n【方針】\n`scripts/karo_cmd_complete_audit.sh` のPython実行系とテストfixtureをmacOSでも安定させる。\n\
+    例: repo `.venv/bin/python3` が存在すれば優先、なければ system `python3` fallback。\nただし実装は調査結果に従い、最小修正とする。\n\
+    \n【厳守】\n- instructions類は編集禁止。β-3実装範囲のscript/testのみ。\n- SKIP=1以上は未完。\n- GHA failure補修なのでcommit/pushまで行う。\n\
+    \n【完了報告】\nbash /home/ubuntu/shogun/scripts/inbox_write.sh karo \\\n  \"【subtask_731n_karo_audit_macos_gha_fix\
+    \ 完了】cmd_731 AC-5 macOS補修完了。gha=<PASS|PENDING|FAIL> tests=<PASS|FAIL> skip=<0|N>\
+    \ commit=<sha> output=output/cmd_731n_karo_audit_macos_gha_fix.md。report確認されたし。\"\
+    \ \\\n  task_completed ashigaru6\n"

@@ -1,33 +1,27 @@
 worker_id: ashigaru6
-task_id: subtask_731g_beta3_karo_ashigaru_cmd_complete_audit
+task_id: subtask_731n_karo_audit_macos_gha_fix
 parent_cmd: cmd_731
 status: done
-timestamp: "2026-05-16T12:28:28+09:00"
+timestamp: "2026-05-16T13:40:58+09:00"
 report_to: karo
 skill_candidate:
   found: false
   notes: ""
 result:
   verdict: pass
-  output_path: /home/ubuntu/shogun/output/cmd_731g_beta3_karo_ashigaru_cmd_complete_audit.md
+  output_path: /home/ubuntu/shogun/output/cmd_731n_karo_audit_macos_gha_fix.md
   summary: |
-    cmd_731 β-3 完了。karo cmd_complete 送付漏れ防止 + ashigaru 完了遷移規律明文化を実装。
-    instructions/karo.md Step 11.7 step 6 を MUST USE (未送付=完了不可条件違反) に拡張。
-    instructions/ashigaru.md step 6: value done → completed_pending_karo + karo検収待ち規律追記。
-    scripts/karo_cmd_complete_audit.sh 新設 (done cmd に cmd_complete なし → exit 1)。
-    tests/unit/test_karo_cmd_complete_audit.bats: 4/4 PASS SKIP=0。
-    修正commit: .gitignore スキルセクション CRLF→LF 余剰差分を除去、report YAML top-level 更新。
+    cmd_731 GHA macOS補修完了。
+    根因: karo_cmd_complete_audit.sh が bare python3 を呼び macOS GHA system python3 に PyYAML なし → exit 2。
+    修正: ea59c9c で .venv/bin/python3 優先 fallback 実装済み。
+    GHA run 25952329686(ea59c9c) SUCCESS / 25952443099 / 25952495399 も全 SUCCESS 確認。
+    bats 4/4 PASS SKIP=0 (ローカル検証)。
+    テストファイル (test_karo_cmd_complete_audit.bats) 変更不要 — script 側修正のみで macOS 互換達成。
   changed_files:
-    - path: instructions/karo.md
-      change: "Step 11.7 step 6 を MUST USE cmd_complete 規律に拡張（未送付は完了不可条件違反）"
-    - path: instructions/ashigaru.md
-      change: "step 6: value done → completed_pending_karo + karo検収待ち規律 + self-clear禁止注記"
     - path: scripts/karo_cmd_complete_audit.sh
-      change: "新設 (AC-5 監査スクリプト: done cmd に cmd_complete なし → exit 1)"
-    - path: tests/unit/test_karo_cmd_complete_audit.bats
-      change: "新設 (4テスト: missing/sent/not_done 3系統 4/4 PASS SKIP=0)"
-    - path: output/cmd_731g_beta3_karo_ashigaru_cmd_complete_audit.md
-      change: "本タスク成果物（新規 + .gitignore修復追記）"
+      change: "ea59c9c: bare python3 → .venv/bin/python3 優先 fallback (macOS PyYAML 対応)"
+    - path: output/cmd_731n_karo_audit_macos_gha_fix.md
+      change: "本タスク成果物 (根因分析 + GHA PASS 確認)"
     - path: queue/reports/ashigaru6_report.yaml
       change: "top-level を subtask_731g_beta3 に更新"
     - path: .gitignore
