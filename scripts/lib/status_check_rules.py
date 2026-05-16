@@ -14,13 +14,17 @@ try:
 except ImportError:
     _GATE_SUPPRESSION_AVAILABLE = False
 
-DONE_MAX_AGE_MIN = 6 * 60
+JST = timezone(timedelta(hours=9))
+
 ACTIVE_HOOK_LOGS = [
     "logs/cmd_complete_notifier.log",
     "logs/compact_observer.log",
     "logs/shogun_inbox_notifier.log",
     "logs/discord_bot_health.log",
 ]
+
+def _jst_now() -> datetime:
+    return datetime.now(JST)
 
 def _load_yaml(path: str):
     with open(path, "r", encoding="utf-8") as f:
@@ -56,12 +60,8 @@ def check_ash_done_pending(root: str) -> str:
         if status not in ("done", "completed_pending_karo"):
             continue
         age_min = (datetime.now().timestamp() - os.path.getmtime(task_file)) / 60
-        if status == "done":
-            if not (30 <= age_min < DONE_MAX_AGE_MIN):
-                continue
-        else:
-            if age_min < 30:
-                continue
+        if age_min < 30:
+            continue
         agent = os.path.basename(task_file).replace(".yaml", "")
         task_id = task.get("task_id", "?")
         pending.append("{agent}:{tid}({m:.0f}min)".format(agent=agent, tid=task_id, m=age_min))
@@ -135,6 +135,49 @@ def check_hook_liveness(root: str) -> str:
         return "HOOK_DEAD: 最新hookログ {h:.1f}h 途絶 ({log})".format(h=min_age_h, log=freshest[0])
     return "ok"
 
+def check_dashboard_senka_empty(root: str) -> str:
+    data = _load_yaml(os.path.join(root, "dashboard.yaml"))
+    today_val = data.get("achievements", {}).get("today", [])
+    if isinstance(today_val, dict):
+        items = today_val.get("items", [])
+    else:
+        items = today_val if isinstance(today_val, list) else []
+    if items:
+        return "ok"
+    now_jst = _jst_now()
+    if now_jst.hour < 12:
+        return "ok"
+    hours_empty = now_jst.hour - 12 + now_jst.minute / 60
+    return "PENDING: dashboard 戦果が当日 {h:.0f}時間空".format(h=hours_empty)
+
+def check_frog_unset(root: str) -> str:
+    data = _load_yaml(os.path.join(root, "dashboard.yaml"))
+    frog_today = data.get("frog", {}).get("today")
+    if frog_today is not None:
+        return "ok"
+    now_jst = _jst_now()
+    if now_jst.hour < 18:
+        return "ok"
+    return "PENDING: frog 未設定"
+
+def check_metrics_stale(root: str) -> str:
+    data = _load_yaml(os.path.join(root, "dashboard.yaml"))
+    metrics = data.get("metrics", [])
+    if not metrics:
+        return "ok"
+    last_metric = metrics[-1]
+    date_str = str(last_metric.get("date_jst") or last_metric.get("date", ""))
+    if not date_str:
+        return "ok"
+    try:
+        last_date = datetime.strptime(date_str[:10], "%Y-%m-%d").replace(tzinfo=JST)
+    except ValueError:
+        return "ok"
+    age_h = (_jst_now() - last_date).total_seconds() / 3600
+    if age_h >= 36:
+        return "PENDING: 運用指標 stale ({h:.0f}h)".format(h=age_h)
+    return "ok"
+
 def check_git_uncommitted(root: str) -> str:
     result = subprocess.run(["git", "-C", root, "status", "--porcelain"], capture_output=True, text=True, timeout=10, check=False)
     if not result.stdout.strip():
@@ -162,6 +205,9 @@ CHECKS = {
     "check_action_required_stale": check_action_required_stale,
     "check_hook_liveness": check_hook_liveness,
     "check_git_uncommitted": check_git_uncommitted,
+    "check_dashboard_senka_empty": check_dashboard_senka_empty,
+    "check_frog_unset": check_frog_unset,
+    "check_metrics_stale": check_metrics_stale,
 }
 
 def main() -> int:

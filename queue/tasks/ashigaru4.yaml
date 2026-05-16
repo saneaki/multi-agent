@@ -1,50 +1,65 @@
 task:
-  task_id: subtask_730x_beta_report_hygiene
-  parent_cmd: cmd_730
-  title: 'cmd_730x: β report hygiene修復'
-  bloom_level: L3
+  task_id: subtask_731e_beta1_reality_check_rules
+  parent_cmd: cmd_731
+  title: "cmd_731e: reality_check 3検知+done漏れ修復"
+  bloom_level: L4
   assigned_to: ashigaru4
   report_to: karo
-  status: assigned
-  timestamp: '2026-05-16T07:18:30+09:00'
+  status: done
+  timestamp: '2026-05-16T11:02:39+09:00'
   priority: high
   project: shogun
   target_path: /home/ubuntu/shogun
   context_policy: preserve_across_stages
   blocked_by: []
   context_files:
-    - output/cmd_730z_codex_completion_verification.md
-    - output/cmd_730e_beta_runtime_overlay.md
-    - queue/reports/ashigaru4_report.yaml
-    - queue/tasks/ashigaru4.yaml
+    - queue/shogun_to_karo.yaml
+    - output/cmd_731a_check_ash_done_pending_root_cause.md
+    - output/cmd_731d_alpha_consolidation.md
+    - scripts/lib/status_check_rules.py
+    - scripts/shogun_reality_check.sh
   editable_files:
+    - scripts/lib/status_check_rules.py
+    - scripts/shogun_reality_check.sh
+    - tests/unit/test_status_check_rules.py
+    - output/cmd_731e_beta1_reality_check_rules.md
     - queue/reports/ashigaru4_report.yaml
-    - output/cmd_730e_beta_runtime_overlay.md
     - queue/tasks/ashigaru4.yaml
     - queue/inbox/ashigaru4.yaml
   forbidden_files:
-    - config/settings.yaml
-    - shutsujin_departure.sh
-    - scripts/shp.sh
-    - scripts/shc.sh
-    - tests/smoke/launcher_spec_consistency.sh
-    - tests/unit/test_launcher_spec.bats
+    - scripts/generate_dashboard_md.py
+    - scripts/cmd_kpi_observer.sh
     - dashboard.md
     - dashboard.yaml
+    - instructions/karo.md
+    - instructions/ashigaru.md
+    - instructions/shogun.md
+    - scripts/shogun_inbox_notifier.sh
+    - queue/shogun_to_karo.yaml
+    - queue/tasks/pending.yaml
   acceptance_criteria:
-    - id: X4-1
-      check: queue/reports/ashigaru4_report.yaml から cmd_729a / gunshi_report audit 由来の body drift を除去し、subtask_730e_beta_runtime_overlay 専用reportに整える
-    - id: X4-2
-      check: files_modified/output_path/acceptance_criteria を BETA-1〜BETA-14 と output/cmd_730e_beta_runtime_overlay.md に一致させる
-    - id: X4-3
-      check: output/cmd_730e_beta_runtime_overlay.md の commit SHA note dirty を必要に応じてcommitし、未コミット差分を残さない
-    - id: X4-4
-      check: 実装ファイルには触らず、report/output/task/inboxのみをcommit/pushする。commit message に Refs cmd_730 を含める
+    - id: B1-1
+      check: "status_check_rules.py に check_dashboard_senka_empty / check_frog_unset / check_metrics_stale を追加し、CHECKSに登録する"
+    - id: B1-2
+      check: "check_ash_done_pending の DONE_MAX_AGE_MIN上限を撤廃し、done>=30min と completed_pending_karo>=30min を検知する"
+    - id: B1-3
+      check: "shogun_reality_check.sh が新3検知を実行し、全検知の戻り値を ok または PENDING/UNCOMMITTED 形式で扱える"
+    - id: B1-4
+      check: "tests/unit/test_status_check_rules.py を追加し、AC-1/2/3/4の正常/異常fixtureをSKIP=0でPASSさせる"
+    - id: B1-5
+      check: "bash -n scripts/shogun_reality_check.sh と python3 tests/unit/test_status_check_rules.py をPASSさせ、commit messageに Refs cmd_731 AC-1/2/3/4 を含める"
   description: |
-    cmd_730 ε Codex検証で β report hygiene drift が検出された。
-    現在のreportは cmd_730e summary の後に cmd_729a の files_modified/output_path/AC body が混入しており、親cmd完遂証跡が PARTIAL になっている。
+    cmd_731 Phase β-1。reality_check 3検知追加と check_ash_done_pending 漏れ修復を担当する。
+
+    【目的】
+    AC-1/2/3/4を実装し、戦果空・Frog未設定・metrics stale・done→reassign死角を機械検出できる状態にする。
+
+    【厳守】
+    - 本β-1は scripts/lib/status_check_rules.py / scripts/shogun_reality_check.sh / tests/unit/test_status_check_rules.py の単独占有。
+    - dashboard.md、generate_dashboard_md.py、instructions類、notifier系は編集禁止。他β担当と混線しない。
+    - SKIP=1以上は未完。実行不能ならFAILとして根拠を記録する。
 
     【完了報告】
     bash /home/ubuntu/shogun/scripts/inbox_write.sh karo \
-      "【subtask_730x_beta_report_hygiene 完了】cmd_730 β report修復完了。report_hygiene=<PASS|FAIL> output_dirty=<PASS|FAIL> commit=<sha|none>。report確認されたし。" \
+      "【subtask_731e_beta1_reality_check_rules 完了】cmd_731 β-1完了。ac1_4=<PASS|FAIL> tests=<PASS|FAIL> skip=<0|N> commit=<sha> output=output/cmd_731e_beta1_reality_check_rules.md。report確認されたし。" \
       task_completed ashigaru4

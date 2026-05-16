@@ -114,8 +114,17 @@ handle_check_result "5" "${RESULT5}" "no"
 RESULT6=$(run_rule_check check_git_uncommitted)
 handle_check_result "6" "${RESULT6}" "no"
 
+RESULT7=$(run_rule_check check_dashboard_senka_empty)
+handle_check_result "7" "${RESULT7}" "yes"
+
+RESULT8=$(run_rule_check check_frog_unset)
+handle_check_result "8" "${RESULT8}" "no"
+
+RESULT9=$(run_rule_check check_metrics_stale)
+handle_check_result "9" "${RESULT9}" "no"
+
 if [ "${ALERTS_FOUND}" -eq 0 ]; then
-    echo "${JST_NOW} [reality_check] 全6項目異常なし"
+    echo "${JST_NOW} [reality_check] 全9項目異常なし"
 else
     echo "${JST_NOW} [reality_check] ${ALERTS_FOUND}件のアラートを将軍 inbox に送信"
 fi

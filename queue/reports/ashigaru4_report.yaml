@@ -1,81 +1,62 @@
 worker_id: ashigaru4
-task_id: subtask_730e_beta_runtime_overlay
-parent_cmd: cmd_730
-timestamp: '2026-05-16T06:09:05+09:00'
+task_id: subtask_731e_beta1_reality_check_rules
+parent_cmd: cmd_731
+timestamp: '2026-05-16T11:16:36+09:00'
 status: done
 report_to: karo
 result:
   summary: |
-    cmd_730 β subtask_730e runtime overlay 化完了。
-    BETA-1: karo → claude/claude-sonnet-4-6 (canonical baseline修正)
-    BETA-2: ash6-7 → claude/claude-sonnet-4-6 (canonical baseline修正)
-    BETA-3: ash4-5 → claude-opus-4-7 復元 (settings.yaml canonical維持)
-    BETA-4: shc.sh deploy --settings-only 3経路削除 (0件確認済)
-    BETA-5: shx ash6-7 runtime overlay = codex/gpt-5.5/xhigh (settings.yaml不変)
-    BETA-6: shk 全員 claude/opus+T overlay + karo @agent_cli/@model_name 同期
-    BETA-7: SHOGUN_NO_THINKING = MAX_THINKING_TOKENS=0 prefix化 (settings.yaml書込み排除)
-    BETA-8: ashigaru全pane @model_name 書込み追加
-    BETA-9: grep確認 scripts/shc.sh deploy.*--settings-only = 0件
-    BETA-10: reverse-validate (起動後 hash比較 + @agent_cli整合チェック、非0終了)
-    BETA-11: 静的検証完了 (yaml.safe_dump/open 'w'が0件、起動前後hash比較ロジック実装)
-    BETA-12: bash -n SYNTAX OK + YAML parse OK
-    BETA-13: atomic commit fd75c67 (config/settings.yaml + shutsujin_departure.sh + output)
-    BETA-14: output/cmd_730e_beta_runtime_overlay.md 作成済
-  files_modified:
-    - config/settings.yaml
-    - shutsujin_departure.sh
-    - output/cmd_730e_beta_runtime_overlay.md
-  output_path: output/cmd_730e_beta_runtime_overlay.md
+    cmd_731 β-1 reality_check 3検知追加 + check_ash_done_pending 修正完了。
+    B1-1: check_dashboard_senka_empty / check_frog_unset / check_metrics_stale を追加しCHECKS登録。
+    B1-2: DONE_MAX_AGE_MIN上限撤廃。done/completed_pending_karo共に>=30min で無期限PENDING。
+    B1-3: shogun_reality_check.sh に RESULT7/8/9 + 全9項目メッセージ追加。bash -n PASS。
+    B1-4: tests/unit/test_status_check_rules.py 新設。23 PASS SKIP=0。
+    B1-5: bash -n PASS + pytest 23 PASS SKIP=0。
+  output_path: output/cmd_731e_beta1_reality_check_rules.md
   acceptance_criteria:
-    - id: BETA-1
+    - id: B1-1
       status: PASS
-      note: "karo → claude/claude-sonnet-4-6 canonical baseline修正"
-    - id: BETA-2
+      note: "check_dashboard_senka_empty/check_frog_unset/check_metrics_stale 新設。CHECKS dict登録済"
+    - id: B1-2
       status: PASS
-      note: "ash6-7 → claude/claude-sonnet-4-6 canonical baseline修正"
-    - id: BETA-3
+      note: "DONE_MAX_AGE_MIN定数削除。check_ash_done_pending: age_min<30のみを除外(上限なし)"
+    - id: B1-3
       status: PASS
-      note: "ash4-5 → claude-opus-4-7 復元 (settings.yaml canonical維持)"
-    - id: BETA-4
+      note: "RESULT7/8/9追加。bash -n SYNTAX_OK。全9項目メッセージに更新"
+    - id: B1-4
       status: PASS
-      note: "shc.sh deploy --settings-only 3経路削除 (0件確認済)"
-    - id: BETA-5
+      note: "tests/unit/test_status_check_rules.py 23テスト。SKIP=0 全PASS"
+    - id: B1-5
       status: PASS
-      note: "shx ash6-7 runtime overlay = codex/gpt-5.5/xhigh (settings.yaml不変)"
-    - id: BETA-6
-      status: PASS
-      note: "shk 全員 claude/opus+T overlay + karo @agent_cli/@model_name 同期"
-    - id: BETA-7
-      status: PASS
-      note: "SHOGUN_NO_THINKING = MAX_THINKING_TOKENS=0 prefix化 (settings.yaml書込み排除)"
-    - id: BETA-8
-      status: PASS
-      note: "ashigaru全pane @model_name 書込み追加"
-    - id: BETA-9
-      status: PASS
-      note: "grep確認 scripts/shc.sh deploy.*--settings-only = 0件"
-    - id: BETA-10
-      status: PASS
-      note: "reverse-validate (起動後 hash比較 + @agent_cli整合チェック、非0終了)"
-    - id: BETA-11
-      status: PASS
-      note: "静的検証完了 (yaml.safe_dump/open 'w'が0件、起動前後hash比較ロジック実装)"
-    - id: BETA-12
-      status: PASS
-      note: "bash -n SYNTAX OK + YAML parse OK"
-    - id: BETA-13
-      status: PASS
-      note: "atomic commit fd75c67 (config/settings.yaml + shutsujin_departure.sh + output)"
-    - id: BETA-14
-      status: PASS
-      note: "output/cmd_730e_beta_runtime_overlay.md 作成済"
+      note: "bash -n PASS + .venv/bin/pytest 23 passed 0 skipped"
 agent_tool_used: false
 skill_candidate:
   found: false
-  reason: "β runtime overlay 化は実装パターン。後続 cmd で skill 化候補として観察継続。"
+  reason: "監視ルール実装。shogun-silent-failure-audit-pattern に統合候補。"
 
 # ===== 履歴 (新しい順 → 古い順 / append-only) =====
 history:
+  - task_id: subtask_731b_metrics_violation_update_path_audit
+    parent_cmd: cmd_731
+    timestamp: '2026-05-16T10:50:00+09:00'
+    status: done
+    summary: |
+      cmd_731 α-2 違反検出/運用指標 更新経路調査完了。
+      A2-1〜A2-4 PASS。beta_patch=READY。
+    output_path: output/cmd_731b_metrics_violation_update_path_audit.md
+    skill_candidate:
+      found: false
+  - task_id: subtask_730e_beta_runtime_overlay
+    parent_cmd: cmd_730
+    timestamp: '2026-05-16T06:09:05+09:00'
+    status: done
+    summary: |
+      cmd_730 β subtask_730e runtime overlay 化完了。
+      karo/ash6-7=claude-sonnet-4-6、ash4-5=opus-4-7、shx ash6-7=codex/xhigh overlay、
+      shk全員 claude/opus+T overlay。atomic commit fd75c67 push済み。
+    output_path: output/cmd_730e_beta_runtime_overlay.md
+    skill_candidate:
+      found: false
   - task_id: subtask_730a_opus_root_cause_review
     parent_cmd: cmd_730
     timestamp: '2026-05-16T03:22:43+09:00'
