@@ -82,7 +82,7 @@ PASS=6 FAIL=0 SKIP=0
 
 ## M-4: commit 情報
 
-commit SHA: (次行で記録)
+commit SHA: 643a8ba
 含有ファイル:
 - `scripts/shogun_inbox_notifier.sh` (mkdir fallback 正式追加)
 - `output/cmd_731j_beta5_macos_flock_skip_repair.md` (J-2 訂正注記)

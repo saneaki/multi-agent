@@ -11,7 +11,7 @@ result:
     M-3: bash -n PASS、bats 6/6 PASS SKIP=0。
     M-4: commit message に Refs cmd_731 AC-9 含む。
   output: output/cmd_731m_beta5_notifier_fallback_dirty_resolve.md
-  commit: "(本 commit SHA)"
+  commit: "643a8ba"
   doc: PASS
   dirty: resolved
   tests: PASS
