@@ -37,6 +37,6 @@ dashboard_events:
   first_seen_at: '2026-05-16T10:00:05+09:00'
   resolved_at: '2026-05-16T13:46:57+09:00'
 digest_liveness:
-  last_attempt_at: '2026-05-16T08:00:05+09:00'
-  last_success_at: '2026-05-16T08:00:05+09:00'
+  last_attempt_at: '2026-05-17T08:00:03+09:00'
+  last_success_at: '2026-05-17T08:00:03+09:00'
   consecutive_failures: 0

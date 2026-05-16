@@ -335,3 +335,14 @@ inbox:
   user_id: '495636202943152139'
   username: akisame4842
   received_at: '2026-05-16T03:03:51+09:00'
+- id: '1505349044707524649'
+  message: "[GAS_WEBAPP_URL: secured to /tmp/.gas_webapp_url]"
+  timestamp: '2026-05-17T08:19:40+09:00'
+  status: processed
+  discord_message_id: '1505349044707524649'
+  channel_id: '1491959535768703097'
+  user_id: '495636202943152139'
+  username: akisame4842
+  received_at: '2026-05-17T08:19:40+09:00'
+  processed_at: '2026-05-17T08:27:00+09:00'
+  action: cmd_712 Phase A URL → /tmp/.gas_webapp_url 保存済み / ashigaru3 通知済み

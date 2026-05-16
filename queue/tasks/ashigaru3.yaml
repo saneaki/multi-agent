@@ -1,2 +1,57 @@
 task:
-  status: idle
+  task_id: subtask_712a_phase_a_ping_test
+  parent_cmd: cmd_712
+  assigned_to: ashigaru3
+  report_to: gunshi
+  bloom_level: L3
+  status: done
+  timestamp: "2026-05-17T08:22:53+09:00"
+  title: "cmd_712 Phase A Web App 2段curl試験 (ping + INVALID_CMD)"
+  editable_files: []
+  description: |
+    cmd_712 Phase A Web App の 2段 curl 試験を実施せよ。
+
+    【URL 読み込み】
+    Web App URL は /tmp/.gas_webapp_url に保存済み (chmod 600)。
+    URL=$(cat /tmp/.gas_webapp_url)
+    URL は task YAML / report YAML に直接記載禁止 (git tracked のため)。
+
+    【試験 (1) ping】
+    curl -sS -X POST \
+      -H 'Content-Type: application/json' \
+      --data '{"cmd":"ping","args":{}}' \
+      "$URL"
+    期待レスポンス: ok=true / cmd=ping / phase=A / message=pong / sideEffects=false
+
+    【試験 (2) INVALID_CMD】
+    curl -sS -X POST \
+      -H 'Content-Type: application/json' \
+      --data '{"cmd":"triggerProcessAllCustomers","args":{}}' \
+      "$URL"
+    期待レスポンス: ok=false / error.code=INVALID_CMD / sideEffects=false
+
+    【報告ルール】
+    - report YAML には sanitized 構造のみ記録:
+      ok / cmd / phase / message / sideEffects / error.code 等の field 値
+    - URL 文字列・deployment ID は report YAML に記録禁止
+    - secret 漏洩テスト: git diff / git status で URL 文字列が混入していないか確認
+      (URL が混入している場合は commit 禁止)
+
+    【後処理】
+    試験完遂後、/tmp/.gas_webapp_url を削除せよ:
+      rm /tmp/.gas_webapp_url
+    これが ash3 の最後の動作となる。
+
+    【完了報告】
+    両試験の結果(PASS/FAIL)と sanitized response を report YAML に記録し、
+    karo inbox へ task_completed 送付せよ。
+
+  acceptance_criteria:
+    - id: AC1
+      check: "ping 試験: HTTP 200 / ok=true / cmd=ping / phase=A / message=pong / sideEffects=false"
+    - id: AC2
+      check: "INVALID_CMD 試験: ok=false / error.code=INVALID_CMD / sideEffects=false"
+    - id: AC3
+      check: "report YAML に URL 文字列が含まれていない (git diff 確認)"
+    - id: AC4
+      check: "/tmp/.gas_webapp_url が削除済み"
