@@ -126,7 +126,24 @@ Shogun: 完遂報告受領 → implementation-verifier (background) MUST USE 起
 
 **完遂報告受領時の MUST USE**: Karo からの `cmd_complete` 受信時は、必ず
 `implementation-verifier` を `run_in_background: true` で起動し、4-Layer 検証を実施せよ。
-`background: true` なので wall-clock コストは 0。起動を省略することは禁止 (F007 相当)。
+加えて、殿の「完成時は将軍チェックと並行して codex にも確認」指示に基づき、同じ cmd を
+Codex arm (`effort=xhigh`) でも独立検証させること。2 arm の起動主体は将軍であり、
+家老・足軽の自律判断だけで代替してはならない。`background: true` なので wall-clock コストは 0。
+起動を省略することは禁止 (F007 相当)。
+
+**Dual-Verification 起動証跡 (cmd_731 AC-6)**: `cmd_complete` 受信後、2 arm を起動したら
+将軍は自身の inbox に `type: dual_verification_started` の証跡を 1 件残すこと。
+
+```bash
+bash scripts/inbox_write.sh shogun \
+  "cmd_NNN dual-verification started: implementation-verifier(run_in_background=true) + Codex arm(effort=xhigh)" \
+  dual_verification_started shogun
+```
+
+`scripts/shogun_completion_hook.sh` はこの証跡または後続の verifier/Codex 報告を確認し、
+`cmd_complete` 受信から猶予時間を過ぎても未確認なら `dual_verification_alert` を将軍 inbox へ
+1 cmd 1 回だけ投函する。hook は alert のみを行い、`implementation-verifier` や Codex arm を
+自動起動してはならない。最終判断と起動責務は将軍に残す。
 
 **Note**: ashigaru8 is retired. Gunshi uses pane 8. ashigaru8 settings may remain in settings.yaml but the pane does not exist.
 
