@@ -137,11 +137,14 @@ class TestCheckMetricsStale:
         assert check_metrics_stale(root) == "ok"
 
     def test_ok_when_recent_within_36h(self, tmp_path):
-        now_jst = datetime.now(JST)
-        # 20h ago (well within 36h)
-        recent_date = (now_jst - timedelta(hours=20)).strftime("%Y-%m-%d")
+        # Patch _jst_now to 09:00 JST to avoid the noon boundary flakiness.
+        # At 09:00, "20h ago" is yesterday 13:00 → date = yesterday.
+        # Implementation parses yesterday 00:00 → age = 33h < 36h → ok.
+        mock_now = datetime(2026, 5, 16, 9, 0, 0, tzinfo=JST)
+        recent_date = (mock_now - timedelta(hours=20)).strftime("%Y-%m-%d")
         root = _make_root(tmp_path, {"metrics": [{"date": recent_date, "success": 5}]})
-        result = check_metrics_stale(root)
+        with patch("status_check_rules._jst_now", return_value=mock_now):
+            result = check_metrics_stale(root)
         assert result == "ok"
 
     def test_pending_when_stale_over_36h(self, tmp_path):
