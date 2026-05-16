@@ -29981,7 +29981,8 @@
 
   project: shogun
   priority: high
-  status: in_progress
+  status: completed
+  completed_at: '2026-05-16T23:18:00+09:00'
   dispatched_at: '2026-05-16T00:43:55+09:00'
   assigned_to:
     - ashigaru4
@@ -29997,7 +29998,7 @@
     - subtask_730zz_codex_reverification
   pending_task_ids:
     - subtask_730c_gunshi_root_cause_consolidation
-  phase_status: gunshi_qc_pass_manual_gate_required
+  phase_status: lord_clearance_all_complete
   completion_verification_status: codex_reverification_and_gunshi_qc_pass
   lord_gate_status:
     gate_id: LORD_JUDGMENT_GATE_1

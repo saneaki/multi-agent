@@ -10,6 +10,15 @@ skill_candidate:
 result:
   verdict: pass
   output_path: output/cmd_731q_runtime_wiring_repair.md
+  verification_refreshed_at: "2026-05-16T23:18:42+09:00"
+  verification_refresh:
+    crontab: "PASS: cmd_731 managed AC-5/AC-6/AC-10 lines present; cmd_603 existing reality_check line preserved"
+    karo_cmd_complete_audit_exit: 1
+    karo_cmd_complete_audit_note: "expected detection path: existing done cmds without cmd_complete are reported, so exit 1 confirms monitor fires"
+    shogun_completion_hook_dry_run_exit: 0
+    shogun_completion_hook_note: "dedup skip for existing alerts and no alerts due"
+    yaml_parse: "PASS: queue/reports/ashigaru6_report.yaml and queue/tasks/ashigaru6.yaml"
+    skip_count: 0
   summary: |
     cmd_731 AC-5/AC-6 runtime配線補修完了。
     - AC-5: karo_cmd_complete_audit.sh を */10 cron 登録 (ログ: logs/karo_cmd_complete_audit.log)。手動実行 exit 1 = MISSING 24件検出（正常動作）。
