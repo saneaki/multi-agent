@@ -1,307 +1,131 @@
 worker_id: gunshi
 latest:
   worker_id: gunshi
-  task_id: subtask_731k_gamma_gunshi_qc
+  task_id: gunshi_qc_731q
   parent_cmd: cmd_731
-  timestamp: '2026-05-16T12:42:00+09:00'
+  timestamp: '2026-05-16T18:09:47+09:00'
   status: done
-  report_to: karo
   result:
     type: quality_check
-    verdict: conditional_go
-    ac_summary: '9 AC: 6 PASS / 1 PASS_WITH_NOTE / 2 PARTIAL (β-3 push 待ち)'
-    skip_count: 0
-    fail_count: 1
-    gha_status: PENDING
-    next_phase: gamma2
-    summary: 'cmd_731 γ-1 軍師QC 完了。β-1〜β-5 + β-5 macOS 補修の 6 件を横断検証。
-
-      9 AC 中 6 PASS + 1 PASS_WITH_NOTE (AC-3 flaky) + 2 PARTIAL (AC-4/AC-5: β-3 commits
-      43ee727+b4d02d3 が origin/main 未到達)。
-
-      62 tests / 1 FAIL (flaky fixture 起因、実装妥当) / SKIP=0。
-
-      GHA run 25951313064 (origin/main 最新 2dee36e) ALL PASS 確認。
-
-      β-3 push + flaky fixture 補修完了で gamma2 着手可。
-
-      '
-    output_path: output/cmd_731k_gamma_gunshi_qc.md
-    ac_review:
-    - id: AC-1
-      ac: check_dashboard_senka_empty
-      beta: β-1 (ash4)
-      commit: 11a4b9e
-      origin_main: true
-      verdict: PASS
-    - id: AC-2
-      ac: check_frog_unset
-      beta: β-1 (ash4)
-      commit: 11a4b9e
-      origin_main: true
-      verdict: PASS
-    - id: AC-3
-      ac: check_metrics_stale
-      beta: β-1 (ash4)
-      commit: 11a4b9e
-      origin_main: true
-      verdict: PASS_WITH_NOTE
-      note: test_ok_when_recent_within_36h fixture が 24h rolling boundary issue (fixture
-        が timedelta(hours=20) を strftime('%Y-%m-%d') で日付化 → 時刻精度消失) で flaky。実装は妥当。
-    - id: AC-4
-      ac: check_ash_done_pending 修正 + Patch A (ashigaru.md completed_pending_karo)
-      beta: β-1 + β-3
-      commit: 11a4b9e + 43ee727
-      origin_main: false
-      verdict: PARTIAL
-      note: β-1 origin/main 到達。β-3 (43ee727) 未到達 → Patch A docs 反映待ち。
-    - id: AC-5
-      ac: karo cmd_complete 監査
-      beta: β-3 (ash6)
-      commit: 43ee727 + b4d02d3
-      origin_main: false
-      verdict: PARTIAL
-      note: 未 push。push 後に audit script cron 配備確認必要。
-    - id: AC-6
-      ac: 将軍 dual-verification hook
-      beta: β-4 (ash7)
-      commit: a01a749
-      origin_main: true
-      verdict: PASS
-      note: hook 配線 (cron/inbox_watcher wiring) は follow-up cmd で実施。script 自体は完成、bats
-        5/5 PASS。
-    - id: AC-7
-      ac: 違反検出 自動化
-      beta: β-2 (ash5)
-      commit: 0a6bd35
-      origin_main: true
-      verdict: PASS
-    - id: AC-8
-      ac: 運用指標 日次更新
-      beta: β-2 (ash5)
-      commit: 0a6bd35
-      origin_main: true
-      verdict: PASS
-      note: 5/15 metrics backfill は手動実行待ち (cmd_kpi_observer.sh --date=2026-05-15)。
-    - id: AC-9
-      ac: shogun pane 重複構造 (= log bug 修復)
-      beta: β-5 (ash1) + β-5 macOS (ash2)
-      commit: 753875d + 2dee36e
-      origin_main: true
-      verdict: PASS
-      note: GHA run 25951313064 macOS Unit Tests T-SIN-004/004b PASS 確認。
-    test_summary:
-      test_files: 5
-      total_tests: 62
-      passed: 61
-      failed: 1
-      skipped: 0
-      fail_detail: 'tests/unit/test_status_check_rules.py::TestCheckMetricsStale::test_ok_when_recent_within_36h
-
-        FAIL: assert ''PENDING: 運用指標 stale (37h)'' == ''ok''
-
-        根因: fixture が strftime(''%Y-%m-%d'') で日付化 → 当日 JST 12:00+ 実行時に 24h rolling
-        boundary 越え。実装は妥当。
-
-        '
-    race001_check: PASS
-    boundary_violations: none
-    forbidden_files_dirty_check:
-      note: 'gunshi η forbidden_files 11件 (config/settings.yaml, scripts/*, instructions/*,
-        dashboard.*, queue/shogun_to_karo.yaml) 確認:
-
-        scripts/shogun_inbox_notifier.sh のみ dirty (mkdir fallback uncommitted addition)。
-
-        ash2 J-2 doc claim「753875d 既に portable fallback 完成済み」は factually incorrect
-        (753875d は flock-only)。
-
-        GHA macOS PASS 実証より dirty fallback は防御的改善であり CI gate ではない。家老 commit 判断要。
-
-        '
-    doc_reality_drift:
-      cmd: cmd_731j (ash2 macOS 補修)
-      drift_point: output/cmd_731j_beta5_macos_flock_skip_repair.md §J-2 が `753875d
-        で fallback 完成済み` と記載。実コミットは flock-only。
-      impact: low (CI は実環境で動作、防御的改善が dirty で残存)
-      suggested_fix: doc 訂正 or script fallback を commit
-    gha_verification:
-      latest_run: 25951313064
-      status: success
-      jobs:
-      - 'Unit Tests (ubuntu-latest): success'
-      - 'Unit Tests (macos-latest): success'
-      - 'Build Instructions Check: success'
-      - 'Shell Script Linting: success'
-      - 'Integration Tests (Claude only): success'
-      - 'E2E Tests (Mock CLI): success'
-      macos_t_sin_004: ok (41ms)
-      macos_t_sin_004b: ok (32ms)
-      next_gha_required: true
-      next_gha_reason: β-3 push (43ee727+b4d02d3) 後の再走で audit script + instructions
-        の linting/bats を確認
-    ac10_plan:
-      immediate_steps:
-      - git push origin main (43ee727+b4d02d3)
-      - bash scripts/cmd_kpi_observer.sh --date=2026-05-15 (5/15 backfill)
-      - python3 scripts/generate_dashboard_md.py --mode partial (marker 反映確認)
-      - bash scripts/shogun_reality_check.sh (9 検知手動実行)
-      cron_wait_steps:
-      - 18:00 JST cmd_kpi_observer cron → dashboard.yaml + dashboard.md 当日 metrics
-        自動反映
-      - 21:00 JST shogun_reality_check cron → 9 検知発火 + violation section partial 更新
-      gamma2_owner: 家老指名 ashigaru (ash1 or ash7 Sonnet 推奨)
-      gamma2_output: output/cmd_731_one_cycle_evidence.md (log + dashboard diff 集約)
+    ashigaru_task_id: subtask_731q_runtime_wiring_repair
+    ashigaru_worker_id: ashigaru6
+    qa_decision: pass
+    issues_found: []
+    deliverables_verified: true
+    tests_status: all_pass
+    build_status: not_applicable
+    scope_match: complete
+    skill_candidate_inherited:
+      found: false
+      notes: ash6 申告通り shogun-systemd-user-cron-healthcheck-pattern (skills/) で既出。candidate
+        走査済 + 該当なし。
+    acceptance_criteria_verification:
+    - id: Q-1
+      status: PASS
+      evidence: /tmp/crontab_backup_20260516_162240.txt 4471B 実在。crontab -r 未使用、cmd_731
+        managed 3行のみ追加。
+    - id: Q-2
+      status: PASS
+      evidence: crontab に */10 * * * * karo_cmd_complete_audit.sh --quiet 登録確認。--quiet
+        で log 0B は仕様通り (script L36)。手動実行 exit 1 + 24 MISSING 検出は ends 動作実証。
+    - id: Q-3
+      status: PASS
+      evidence: crontab に */10 * * * * shogun_completion_hook.sh 登録確認。logs/shogun_completion_hook.log
+        2133B、18:00 JST まで継続発火 (dedup skip + no alerts due ログあり)。ends 実証済み。
+    - id: Q-4
+      status: PASS (means) / DEFERRED (ends)
+      evidence: crontab に `0 12 * * *` (UTC 12:00 = JST 21:00) 登録確認。既存 cmd_603 行は不変。ends
+        は subtask_731p γ-2 cron cycle evidence 担当 (21:05 JST 待ち)。
+    - id: Q-5
+      status: PASS
+      evidence: crontab -l grep で karo_cmd_complete_audit / shogun_completion_hook
+        / 0 12 reality_check 全3行確認。
+    - id: Q-6
+      status: PASS
+      evidence: python yaml.safe_load で ashigaru6_report.yaml / ashigaru6.yaml 両者
+        parse PASS。SKIP=0。
     means_ends_classification:
       schema_version: '1.0'
       ac_classification:
-      - id: K-1
-        type: ends
-        rationale: β 全 6 件の完成度を最終判定 (目的到達)
-        corresponding_ends_ac: null
-      - id: K-2
+      - id: Q-1
         type: means
-        rationale: 整合性チェック (手段)
-        corresponding_ends_ac: K-1
-      - id: K-3
+        rationale: crontab backup と破壊回避は機構的安全手段 — 後続検証の前提
+        corresponding_ends_ac: null
+      - id: Q-2
         type: means
-        rationale: γ-2 への引き継ぎ計画 (手段)
-        corresponding_ends_ac: K-1
-      - id: K-4
+        rationale: AC-5 cron 登録自体は means。ends は cron 実発火 + MISSING 検出継続
+        corresponding_ends_ac: Q-5
+      - id: Q-3
         type: ends
-        rationale: 過去 CI 失敗の解消確認 (目的到達)
+        rationale: shogun_completion_hook の cron 実発火が log で確認済 = AC-6 ends 達成
         corresponding_ends_ac: null
-      - id: K-5
+      - id: Q-4
+        type: means
+        rationale: 21:00 JST cron 登録は means。ends は subtask_731p で 21:05 JST 実発火後に確定
+        corresponding_ends_ac: Q-5
+      - id: Q-5
         type: ends
-        rationale: 戦略整合性判定 (目的到達)
+        rationale: crontab -l 確認 = 登録 means の確実性証跡。但し実発火 ends は別 task (731p) で補完
         corresponding_ends_ac: null
+      - id: Q-6
+        type: means
+        rationale: YAML parse / SKIP=0 は基盤整合 means
+        corresponding_ends_ac: null
+      ends_coverage_note: AC-5 ends (karo_cmd_complete_audit 実発火) は --quiet 仕様で log
+        静黙。Stage 4 確認は手動 exec で代替 (24 MISSING 検出証跡)。AC-10 21:00 JST ends は subtask_731p
+        担当で deferred。
       both_systems_verified: true
-      verdict: 'means 系 2/2 PASS (K-2/K-3)。ends 系 3/3: K-1 PARTIAL (β-3 push 待ち) /
-        K-4 PASS / K-5 aligned。'
+      verdict: means 系 6/6 PASS。ends 系 2/2 確認 (AC-6 cron 実発火 + AC-5 手動 ends)。AC-10
+        21:00 JST 実発火 ends は γ-2 (subtask_731p) に正規委譲。
     north_star_alignment:
       status: aligned
-      reason: 'AC-1〜9 実装で監視死角 4 系統 (戦果空/Frog/metrics/done 死角) + 通知漏れ (karo cmd_complete)
-        +
-
-        検出漏れ (将軍 dual-verification) + 表示固着 (L019/L020/Step1.5 + metrics partial mode)
-        +
-
-        log 二重書込み artifact を機械検出に転換。設計面で silent silence 構造除去が達成。
-
-        '
+      reason: 監視層 silent silence 構造解消の最後の 1 ピース = runtime 配線。Q では AC-5/AC-6 hook が確実に
+        periodic 起動する仕組を確立し、cmd_complete 漏れ・dual-verification 漏れの能動検知を継続稼働状態にした。
       risks_to_north_star:
-      - β-3 未 push のため AC-4 Patch A + AC-5 が本番反映されない (push で解消)
-      - β-4 hook 配線が follow-up であり alert 自動発火しない
-      - β-1 flaky test が CI で intermittent FAIL を生む可能性
-      - AC-5 audit script が cron に配備されていない場合、家老の手動定期実行に依存
+      - AC-10 21:00 JST cron 実発火 ends 未取得。subtask_731p で 21:05 JST 以降に取得しないと γ-2 evidence
+        不成立。
+      - karo_cmd_complete_audit --quiet は静黙仕様だが、cron 実発火そのものが log 0B では検出困難。必要なら別途
+        stderr/exec 痕跡 (e.g. logger -t cron) を追加検討。
     north_star_outcome_evidence:
       status: pass
       evidence_type: e2e
-      command_or_artifact: 'pytest tests/unit/test_status_check_rules.py tests/unit/test_generate_dashboard_md.py
-        → 46/47 PASS;
-
-        bats tests/unit/test_karo_cmd_complete_audit.bats tests/unit/test_shogun_completion_hook.bats
-        tests/unit/test_shogun_inbox_notifier.bats → 15/15 PASS;
-
-        bash -n 全 7 script PASS;
-
-        GHA run 25951313064 (origin/main 最新) ALL PASS;
-
-        git branch -r --contains 11a4b9e 0a6bd35 a01a749 753875d 2dee36e → all origin/main
-
-        '
-      reason: 'β-1/2/4/5/5-macOS の 5 系統 commit は origin/main 到達 + GHA PASS。
-
-        β-3 (2 commits) は local-only で 1 サイクル E2E (γ-2) と本番動作 (実機 ε) は push 後に確定。
-
-        実装 ends は means PASS + GHA PASS で確認、push 後の 1 サイクル証跡で完遂。
-
-        '
+      command_or_artifact: crontab -l + logs/shogun_completion_hook.log (実発火) + 手動
+        exec exit 1 (karo_cmd_complete_audit 24 MISSING 検出)。AC-10 ends は subtask_731p
+        担当のため当 QC では deferred。
+      reason: AC-5/AC-6 の runtime 配線は cron 登録 + 実発火 log で実証。AC-10 21:00 JST 実発火は γ-2
+        で取得予定。
+    deploy_verify_cycle_check:
+      stage1_commit_or_placement: pass
+      stage2_artifact_placement: pass
+      stage3_registration_check: pass
+      stage3_evidence: crontab -l で cmd_731 managed comment 付き 3 行確認
+      stage4_execution_log: partial_pass
+      stage4_evidence: 'shogun_completion_hook.log: ✅ 実発火 log 確認 (18:00 JST まで継続)。karo_cmd_complete_audit.log:
+        0B (--quiet 仕様)、manual exec 代替。reality_check 21:00 JST: 未発火 (deferred to subtask_731p)。'
+      dashboard_reflection: pass
+      dashboard_reflection_evidence: dashboard.md 🔄進行中 に `cmd_731 ... γ-2 cron実発火証跡待ち(21:05
+        JST)` 反映済
+    qc_skip_reason: ''
+    suggestions:
+    - id: sug_cmd_731q_001
+      priority: medium
+      content: karo_cmd_complete_audit --quiet は log 0B 静黙仕様。cron 実発火そのものが log で見えず
+        Stage 4 ends 検証が困難。logger -t cron / wrapper script でタイムスタンプだけでも残す改修を検討。
+    - id: sug_cmd_731q_002
+      priority: low
+      content: AC-10 21:00 JST 実発火 ends は subtask_731p で γ-2 cron cycle evidence 取得待ち。21:05
+        JST 以降 reality_check.log に新 entry 追加を確認し、subtask_731p 完遂 → 軍師 QC 終結 → cmd_731
+        全 AC PASS 宣言の段取り。
     concerns_flagged:
-    - id: c731k_1
-      severity: high
-      title: β-3 commits 43ee727+b4d02d3 未 push (ahead 2)
-      detail: AC-4 Patch A + AC-5 が本番反映されない。家老 push 必須。
-    - id: c731k_2
-      severity: medium
-      title: β-1 flaky test (test_ok_when_recent_within_36h)
-      detail: fixture が 24h rolling boundary issue。実装妥当。fixture 補修 follow-up 要。
-    - id: c731k_3
-      severity: medium
-      title: β-4 hook 配線 (cron/inbox_watcher) 未完
-      detail: shogun_completion_hook.sh は完成 + bats PASS。但し runtime wiring が後続 cmd
-        必要。
-    - id: c731k_4
-      severity: low
-      title: ash2 J-2 doc-vs-reality drift
-      detail: cmd_731j output が `753875d portable fallback 完成済み` と記載するが実 commit は
-        flock-only。GHA は PASS で実害なし。
-    - id: c731k_5
-      severity: low
-      title: scripts/shogun_inbox_notifier.sh dirty mkdir fallback
-      detail: 防御的改善 + uncommitted。家老 commit or revert 判断要。
-    action_required_candidates:
-    - issue_id: 731k_push_beta3
-      severity: HIGH
-      summary: '[情報] cmd_731 β-3 (43ee727+b4d02d3) を origin/main に push。
-
-        AC-4 Patch A + AC-5 の本番反映に必須。push 後 GHA で audit script + instructions の linting/bats
-        再走確認。
-
-        '
-      parent_cmd: cmd_731
-    - issue_id: 731k_flaky_fixture_fixup
-      severity: MEDIUM
-      summary: '[情報] tests/unit/test_status_check_rules.py::test_ok_when_recent_within_36h
-        の fixture を補修。
-
-        timedelta(hours=20) を date 化せず full timestamp で渡す or 日付固定計算へ変更。ash4 follow-up
-        dispatch 推奨。
-
-        '
-      parent_cmd: cmd_731
-    - issue_id: 731k_hook_wiring_followup
-      severity: MEDIUM
-      summary: '[情報] scripts/shogun_completion_hook.sh の cron/inbox_watcher wiring
-        が未完。follow-up cmd で配線追加。
-
-        本 cmd_731 完遂宣言時は residual_risks として明記必要。
-
-        '
-      parent_cmd: cmd_731
-    files_modified:
-    - output/cmd_731k_gamma_gunshi_qc.md
-    - queue/reports/gunshi_report.yaml
-  suggestions:
-  - id: s731k_001
-    type: push_required
-    detail: 家老が `git push origin main` を即実施 (43ee727+b4d02d3)。push 完了確認後に γ-2 dispatch
-  - id: s731k_002
-    type: test_fixup
-    detail: test_ok_when_recent_within_36h fixture を full timestamp 化。ash4 follow-up
-      subtask 配備
-  - id: s731k_003
-    type: hook_wiring_followup
-    detail: shogun_completion_hook.sh の cron/inbox_watcher wiring を follow-up cmd
-      で実装
-  - id: s731k_004
-    type: doc_reality_drift_skill
-    detail: ash2 cmd_731j J-2 doc-vs-reality drift を契機に skill `shogun-doc-vs-reality-drift-prevention`
-      候補化検討
-  - id: s731k_005
-    type: cron_audit_check
-    detail: AC-5 karo_cmd_complete_audit.sh の cron 配備確認。未配備なら β-3 追補で配備
+    - 'SO-06 qc_auto_check warn: report_to=karo (期待 gunshi)。但し ashigaru 報告先慣行 (karo
+      が next 意思決定者) に従う長期パターンであり、即時違反扱いせず別 cmd で慣行 vs auto-check 整合性を再評価推奨。'
+    action_required_candidates: []
+  files_modified:
+  - queue/reports/gunshi_report.yaml
+  - queue/suggestions.yaml
   skill_candidate:
     found: false
-    candidates: []
-    reason: '本 QC は cmd_731 β 実装の統合裁定であり、新規 reusable pattern なし。
-
-      ash2 J-2 doc-vs-reality drift を契機とした skill 候補 (shogun-doc-vs-reality-drift-prevention)
-      は
-
-      suggestions に記録、別 cmd で skill 化判断。
-
-      '
-  blockers: []
+    notes: ash6 申告通り既存 skill 網羅。新規候補なし。
 history:
 - worker_id: gunshi
   task_id: subtask_723_gunshi_ac11_completion_qc_reconstructed
@@ -2311,6 +2135,308 @@ history:
       多経路 (cron + hook + inotify + cmd_complete inbox) で同型 silent silence が再発しやすく、
 
       skill 化して標準検査リストを残す価値あり。既存の shogun-silent-failure-audit-pattern と相補的。
+
+      '
+  blockers: []
+- worker_id: gunshi
+  task_id: subtask_731k_gamma_gunshi_qc
+  parent_cmd: cmd_731
+  timestamp: '2026-05-16T12:42:00+09:00'
+  status: done
+  report_to: karo
+  result:
+    type: quality_check
+    verdict: conditional_go
+    ac_summary: '9 AC: 6 PASS / 1 PASS_WITH_NOTE / 2 PARTIAL (β-3 push 待ち)'
+    skip_count: 0
+    fail_count: 1
+    gha_status: PENDING
+    next_phase: gamma2
+    summary: 'cmd_731 γ-1 軍師QC 完了。β-1〜β-5 + β-5 macOS 補修の 6 件を横断検証。
+
+      9 AC 中 6 PASS + 1 PASS_WITH_NOTE (AC-3 flaky) + 2 PARTIAL (AC-4/AC-5: β-3 commits
+      43ee727+b4d02d3 が origin/main 未到達)。
+
+      62 tests / 1 FAIL (flaky fixture 起因、実装妥当) / SKIP=0。
+
+      GHA run 25951313064 (origin/main 最新 2dee36e) ALL PASS 確認。
+
+      β-3 push + flaky fixture 補修完了で gamma2 着手可。
+
+      '
+    output_path: output/cmd_731k_gamma_gunshi_qc.md
+    ac_review:
+    - id: AC-1
+      ac: check_dashboard_senka_empty
+      beta: β-1 (ash4)
+      commit: 11a4b9e
+      origin_main: true
+      verdict: PASS
+    - id: AC-2
+      ac: check_frog_unset
+      beta: β-1 (ash4)
+      commit: 11a4b9e
+      origin_main: true
+      verdict: PASS
+    - id: AC-3
+      ac: check_metrics_stale
+      beta: β-1 (ash4)
+      commit: 11a4b9e
+      origin_main: true
+      verdict: PASS_WITH_NOTE
+      note: test_ok_when_recent_within_36h fixture が 24h rolling boundary issue (fixture
+        が timedelta(hours=20) を strftime('%Y-%m-%d') で日付化 → 時刻精度消失) で flaky。実装は妥当。
+    - id: AC-4
+      ac: check_ash_done_pending 修正 + Patch A (ashigaru.md completed_pending_karo)
+      beta: β-1 + β-3
+      commit: 11a4b9e + 43ee727
+      origin_main: false
+      verdict: PARTIAL
+      note: β-1 origin/main 到達。β-3 (43ee727) 未到達 → Patch A docs 反映待ち。
+    - id: AC-5
+      ac: karo cmd_complete 監査
+      beta: β-3 (ash6)
+      commit: 43ee727 + b4d02d3
+      origin_main: false
+      verdict: PARTIAL
+      note: 未 push。push 後に audit script cron 配備確認必要。
+    - id: AC-6
+      ac: 将軍 dual-verification hook
+      beta: β-4 (ash7)
+      commit: a01a749
+      origin_main: true
+      verdict: PASS
+      note: hook 配線 (cron/inbox_watcher wiring) は follow-up cmd で実施。script 自体は完成、bats
+        5/5 PASS。
+    - id: AC-7
+      ac: 違反検出 自動化
+      beta: β-2 (ash5)
+      commit: 0a6bd35
+      origin_main: true
+      verdict: PASS
+    - id: AC-8
+      ac: 運用指標 日次更新
+      beta: β-2 (ash5)
+      commit: 0a6bd35
+      origin_main: true
+      verdict: PASS
+      note: 5/15 metrics backfill は手動実行待ち (cmd_kpi_observer.sh --date=2026-05-15)。
+    - id: AC-9
+      ac: shogun pane 重複構造 (= log bug 修復)
+      beta: β-5 (ash1) + β-5 macOS (ash2)
+      commit: 753875d + 2dee36e
+      origin_main: true
+      verdict: PASS
+      note: GHA run 25951313064 macOS Unit Tests T-SIN-004/004b PASS 確認。
+    test_summary:
+      test_files: 5
+      total_tests: 62
+      passed: 61
+      failed: 1
+      skipped: 0
+      fail_detail: 'tests/unit/test_status_check_rules.py::TestCheckMetricsStale::test_ok_when_recent_within_36h
+
+        FAIL: assert ''PENDING: 運用指標 stale (37h)'' == ''ok''
+
+        根因: fixture が strftime(''%Y-%m-%d'') で日付化 → 当日 JST 12:00+ 実行時に 24h rolling
+        boundary 越え。実装は妥当。
+
+        '
+    race001_check: PASS
+    boundary_violations: none
+    forbidden_files_dirty_check:
+      note: 'gunshi η forbidden_files 11件 (config/settings.yaml, scripts/*, instructions/*,
+        dashboard.*, queue/shogun_to_karo.yaml) 確認:
+
+        scripts/shogun_inbox_notifier.sh のみ dirty (mkdir fallback uncommitted addition)。
+
+        ash2 J-2 doc claim「753875d 既に portable fallback 完成済み」は factually incorrect
+        (753875d は flock-only)。
+
+        GHA macOS PASS 実証より dirty fallback は防御的改善であり CI gate ではない。家老 commit 判断要。
+
+        '
+    doc_reality_drift:
+      cmd: cmd_731j (ash2 macOS 補修)
+      drift_point: output/cmd_731j_beta5_macos_flock_skip_repair.md §J-2 が `753875d
+        で fallback 完成済み` と記載。実コミットは flock-only。
+      impact: low (CI は実環境で動作、防御的改善が dirty で残存)
+      suggested_fix: doc 訂正 or script fallback を commit
+    gha_verification:
+      latest_run: 25951313064
+      status: success
+      jobs:
+      - 'Unit Tests (ubuntu-latest): success'
+      - 'Unit Tests (macos-latest): success'
+      - 'Build Instructions Check: success'
+      - 'Shell Script Linting: success'
+      - 'Integration Tests (Claude only): success'
+      - 'E2E Tests (Mock CLI): success'
+      macos_t_sin_004: ok (41ms)
+      macos_t_sin_004b: ok (32ms)
+      next_gha_required: true
+      next_gha_reason: β-3 push (43ee727+b4d02d3) 後の再走で audit script + instructions
+        の linting/bats を確認
+    ac10_plan:
+      immediate_steps:
+      - git push origin main (43ee727+b4d02d3)
+      - bash scripts/cmd_kpi_observer.sh --date=2026-05-15 (5/15 backfill)
+      - python3 scripts/generate_dashboard_md.py --mode partial (marker 反映確認)
+      - bash scripts/shogun_reality_check.sh (9 検知手動実行)
+      cron_wait_steps:
+      - 18:00 JST cmd_kpi_observer cron → dashboard.yaml + dashboard.md 当日 metrics
+        自動反映
+      - 21:00 JST shogun_reality_check cron → 9 検知発火 + violation section partial 更新
+      gamma2_owner: 家老指名 ashigaru (ash1 or ash7 Sonnet 推奨)
+      gamma2_output: output/cmd_731_one_cycle_evidence.md (log + dashboard diff 集約)
+    means_ends_classification:
+      schema_version: '1.0'
+      ac_classification:
+      - id: K-1
+        type: ends
+        rationale: β 全 6 件の完成度を最終判定 (目的到達)
+        corresponding_ends_ac: null
+      - id: K-2
+        type: means
+        rationale: 整合性チェック (手段)
+        corresponding_ends_ac: K-1
+      - id: K-3
+        type: means
+        rationale: γ-2 への引き継ぎ計画 (手段)
+        corresponding_ends_ac: K-1
+      - id: K-4
+        type: ends
+        rationale: 過去 CI 失敗の解消確認 (目的到達)
+        corresponding_ends_ac: null
+      - id: K-5
+        type: ends
+        rationale: 戦略整合性判定 (目的到達)
+        corresponding_ends_ac: null
+      both_systems_verified: true
+      verdict: 'means 系 2/2 PASS (K-2/K-3)。ends 系 3/3: K-1 PARTIAL (β-3 push 待ち) /
+        K-4 PASS / K-5 aligned。'
+    north_star_alignment:
+      status: aligned
+      reason: 'AC-1〜9 実装で監視死角 4 系統 (戦果空/Frog/metrics/done 死角) + 通知漏れ (karo cmd_complete)
+        +
+
+        検出漏れ (将軍 dual-verification) + 表示固着 (L019/L020/Step1.5 + metrics partial mode)
+        +
+
+        log 二重書込み artifact を機械検出に転換。設計面で silent silence 構造除去が達成。
+
+        '
+      risks_to_north_star:
+      - β-3 未 push のため AC-4 Patch A + AC-5 が本番反映されない (push で解消)
+      - β-4 hook 配線が follow-up であり alert 自動発火しない
+      - β-1 flaky test が CI で intermittent FAIL を生む可能性
+      - AC-5 audit script が cron に配備されていない場合、家老の手動定期実行に依存
+    north_star_outcome_evidence:
+      status: pass
+      evidence_type: e2e
+      command_or_artifact: 'pytest tests/unit/test_status_check_rules.py tests/unit/test_generate_dashboard_md.py
+        → 46/47 PASS;
+
+        bats tests/unit/test_karo_cmd_complete_audit.bats tests/unit/test_shogun_completion_hook.bats
+        tests/unit/test_shogun_inbox_notifier.bats → 15/15 PASS;
+
+        bash -n 全 7 script PASS;
+
+        GHA run 25951313064 (origin/main 最新) ALL PASS;
+
+        git branch -r --contains 11a4b9e 0a6bd35 a01a749 753875d 2dee36e → all origin/main
+
+        '
+      reason: 'β-1/2/4/5/5-macOS の 5 系統 commit は origin/main 到達 + GHA PASS。
+
+        β-3 (2 commits) は local-only で 1 サイクル E2E (γ-2) と本番動作 (実機 ε) は push 後に確定。
+
+        実装 ends は means PASS + GHA PASS で確認、push 後の 1 サイクル証跡で完遂。
+
+        '
+    concerns_flagged:
+    - id: c731k_1
+      severity: high
+      title: β-3 commits 43ee727+b4d02d3 未 push (ahead 2)
+      detail: AC-4 Patch A + AC-5 が本番反映されない。家老 push 必須。
+    - id: c731k_2
+      severity: medium
+      title: β-1 flaky test (test_ok_when_recent_within_36h)
+      detail: fixture が 24h rolling boundary issue。実装妥当。fixture 補修 follow-up 要。
+    - id: c731k_3
+      severity: medium
+      title: β-4 hook 配線 (cron/inbox_watcher) 未完
+      detail: shogun_completion_hook.sh は完成 + bats PASS。但し runtime wiring が後続 cmd
+        必要。
+    - id: c731k_4
+      severity: low
+      title: ash2 J-2 doc-vs-reality drift
+      detail: cmd_731j output が `753875d portable fallback 完成済み` と記載するが実 commit は
+        flock-only。GHA は PASS で実害なし。
+    - id: c731k_5
+      severity: low
+      title: scripts/shogun_inbox_notifier.sh dirty mkdir fallback
+      detail: 防御的改善 + uncommitted。家老 commit or revert 判断要。
+    action_required_candidates:
+    - issue_id: 731k_push_beta3
+      severity: HIGH
+      summary: '[情報] cmd_731 β-3 (43ee727+b4d02d3) を origin/main に push。
+
+        AC-4 Patch A + AC-5 の本番反映に必須。push 後 GHA で audit script + instructions の linting/bats
+        再走確認。
+
+        '
+      parent_cmd: cmd_731
+    - issue_id: 731k_flaky_fixture_fixup
+      severity: MEDIUM
+      summary: '[情報] tests/unit/test_status_check_rules.py::test_ok_when_recent_within_36h
+        の fixture を補修。
+
+        timedelta(hours=20) を date 化せず full timestamp で渡す or 日付固定計算へ変更。ash4 follow-up
+        dispatch 推奨。
+
+        '
+      parent_cmd: cmd_731
+    - issue_id: 731k_hook_wiring_followup
+      severity: MEDIUM
+      summary: '[情報] scripts/shogun_completion_hook.sh の cron/inbox_watcher wiring
+        が未完。follow-up cmd で配線追加。
+
+        本 cmd_731 完遂宣言時は residual_risks として明記必要。
+
+        '
+      parent_cmd: cmd_731
+    files_modified:
+    - output/cmd_731k_gamma_gunshi_qc.md
+    - queue/reports/gunshi_report.yaml
+  suggestions:
+  - id: s731k_001
+    type: push_required
+    detail: 家老が `git push origin main` を即実施 (43ee727+b4d02d3)。push 完了確認後に γ-2 dispatch
+  - id: s731k_002
+    type: test_fixup
+    detail: test_ok_when_recent_within_36h fixture を full timestamp 化。ash4 follow-up
+      subtask 配備
+  - id: s731k_003
+    type: hook_wiring_followup
+    detail: shogun_completion_hook.sh の cron/inbox_watcher wiring を follow-up cmd
+      で実装
+  - id: s731k_004
+    type: doc_reality_drift_skill
+    detail: ash2 cmd_731j J-2 doc-vs-reality drift を契機に skill `shogun-doc-vs-reality-drift-prevention`
+      候補化検討
+  - id: s731k_005
+    type: cron_audit_check
+    detail: AC-5 karo_cmd_complete_audit.sh の cron 配備確認。未配備なら β-3 追補で配備
+  skill_candidate:
+    found: false
+    candidates: []
+    reason: '本 QC は cmd_731 β 実装の統合裁定であり、新規 reusable pattern なし。
+
+      ash2 J-2 doc-vs-reality drift を契機とした skill 候補 (shogun-doc-vs-reality-drift-prevention)
+      は
+
+      suggestions に記録、別 cmd で skill 化判断。
 
       '
   blockers: []
