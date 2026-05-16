@@ -15954,3 +15954,40 @@ suggestions:
     AC-5 karo_cmd_complete_audit.sh の cron 配備確認。
     `crontab -l` で配備有無を確認、未配備なら β-3 追補で配備。家老の手動定期実行依存は SoT 規律違反。
   action_needed: "β-3 push 後 crontab 確認、未配備なら追補 dispatch"
+- id: sug_cmd_731q_001
+  from: gunshi
+  cmd_ref: cmd_731
+  task_ref: subtask_731q_runtime_wiring_repair
+  created_at: "2026-05-16T18:09:47+09:00"
+  status: pending
+  priority: medium
+  content: |
+    karo_cmd_complete_audit.sh は cron で --quiet 起動するため、実発火しても log は 0B のまま。
+    Stage 4 ends evidence (実発火の継続性) が log で検出困難となり、shelf-ware 化リスクが残る。
+    logger -t cron / 軽量 timestamp-only wrapper / dedicated _heartbeat.log への 1行 echo 等で
+    実発火痕跡だけは恒久的に残す改修を検討。本 cmd_731q 自体は PASS 判定だが将来 silent failure 種となる。
+  action_needed: "subtask_731p の γ-2 cron cycle evidence 取得完了後、別 cmd で karo_cmd_complete_audit 実発火痕跡保持 (--heartbeat-only mode 等) を検討"
+- id: sug_cmd_731q_002
+  from: gunshi
+  cmd_ref: cmd_731
+  task_ref: subtask_731q_runtime_wiring_repair
+  created_at: "2026-05-16T18:09:47+09:00"
+  status: pending
+  priority: low
+  content: |
+    AC-10 21:00 JST 実発火 ends は subtask_731p で取得待ち。21:05 JST 以降 reality_check.log に
+    新 entry (`2026-05-16 21:00 JST [reality_check] ...`) 追加を確認したら subtask_731p 完遂判定。
+    その後 軍師 QC で cmd_731 全 AC PASS 宣言可能になる。
+  action_needed: "21:05 JST 以降 subtask_731p 完遂 → cron cycle evidence 採取 → cmd_731 cmd_complete 段取り"
+- id: sug_cmd_731q_003
+  from: gunshi
+  cmd_ref: cmd_731
+  task_ref: subtask_731q_runtime_wiring_repair
+  created_at: "2026-05-16T18:09:47+09:00"
+  status: pending
+  priority: low
+  content: |
+    qc_auto_check SO-06 warn: ashigaru6_report.yaml report_to=karo (期待 gunshi)。
+    但し ashigaru 報告先慣行 (karo が next 意思決定者) に従う長期パターンであり、
+    即時違反扱いせず慣行 vs auto-check 整合性を別 cmd で再評価することを推奨。
+  action_needed: "qc_auto_check SO-06 ルール / ashigaru report_to 規約のいずれを正規とするか家老が裁定し、整合化"

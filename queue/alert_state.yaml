@@ -2,6 +2,21 @@ gates: {}
 notifications: {}
 dashboard_events:
 - event_kind: task_status_change
+  source_id: queue/tasks/ashigaru3.yaml
+  source_mtime: '2026-05-16T18:14:39+09:00'
+  first_seen_at: '2026-05-16T19:00:04+09:00'
+  resolved_at: null
+- event_kind: task_status_change
+  source_id: queue/tasks/pending.yaml
+  source_mtime: '2026-05-16T18:15:41+09:00'
+  first_seen_at: '2026-05-16T19:00:04+09:00'
+  resolved_at: null
+- event_kind: qc_completed
+  source_id: queue/reports/gunshi_report.yaml
+  source_mtime: '2026-05-16T18:10:42+09:00'
+  first_seen_at: '2026-05-16T19:00:04+09:00'
+  resolved_at: null
+- event_kind: task_status_change
   source_id: queue/tasks/ashigaru4.yaml
   source_mtime: '2026-05-16T09:59:48+09:00'
   first_seen_at: '2026-05-16T10:00:05+09:00'
@@ -21,11 +36,6 @@ dashboard_events:
   source_mtime: '2026-05-16T09:57:39+09:00'
   first_seen_at: '2026-05-16T10:00:05+09:00'
   resolved_at: '2026-05-16T13:46:57+09:00'
-- event_kind: task_status_change
-  source_id: queue/tasks/ashigaru3.yaml
-  source_mtime: '2026-05-15T15:32:07+09:00'
-  first_seen_at: '2026-05-15T15:32:27+09:00'
-  resolved_at: '2026-05-15T18:35:33+09:00'
 digest_liveness:
   last_attempt_at: '2026-05-16T08:00:05+09:00'
   last_success_at: '2026-05-16T08:00:05+09:00'

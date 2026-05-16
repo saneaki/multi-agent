@@ -5,7 +5,7 @@ task:
   bloom_level: L4
   assigned_to: ashigaru3
   report_to: karo
-  status: assigned
+  status: done
   timestamp: '2026-05-16T18:16:00+09:00'
   priority: high
   project: shogun
