@@ -1,0 +1,76 @@
+task:
+  acceptance_criteria:
+  - check: 検証対象commits 11a4b9e/0a6bd35/a01a749/753875d/9a5ae39/ea59c9c/b4d02d3/b387288
+      の存在・対象ファイル・cmd_731関連性を確認し、origin/main到達を検証する
+    id: Z-1
+  - check: AC-1〜AC-11 を1件ずつ PASS / PARTIAL / FAIL / N/A で独立判定し、根拠ファイル・行・コマンドを記録する
+      (前回ε検証とは独立した判定)
+    id: Z-2
+  - check: 'AC-10 γ-2 cron証跡を独立検証: logs/kpi_observer.log (2026-05-16T09:00 UTC行) +
+      logs/reality_check.log (2026-05-16 21:00 JST行) + subtask_731p output を直接確認する'
+    id: Z-3
+  - check: 'cron登録を独立検証: crontab -l で karo_cmd_complete_audit.sh */10 + shogun_completion_hook.sh
+      */10 + reality_check 0 12 UTC の3行存在を確認する'
+    id: Z-4
+  - check: '4-Layer検証: L1=commit完全性 / L2=実装内容 / L3=テスト/GHA / L4=運用証跡 を実施し、残リスク・懸念を明記する'
+    id: Z-5
+  - check: '総合verdict: go / conditional_go / no_go のいずれかで判定し、根拠を明記する'
+    id: Z-6
+  - check: YAML parse (queue/reports/ashigaru7_report.yaml / queue/tasks/ashigaru7.yaml)
+      をPASSさせ、SKIP=0で報告する
+    id: Z-7
+  assigned_to: ashigaru7
+  blocked_by: []
+  bloom_level: L5
+  completed_at: '2026-05-16T21:20:15+09:00'
+  context_files:
+  - queue/shogun_to_karo.yaml
+  - output/cmd_731e_beta1_reality_check_rules.md
+  - output/cmd_731f_beta2_dashboard_metrics_sync.md
+  - output/cmd_731g_beta3_karo_ashigaru_cmd_complete_audit.md
+  - output/cmd_731h_beta4_shogun_dual_verification_hook.md
+  - output/cmd_731i_beta5_shogun_notifier_log_fix.md
+  - output/cmd_731k_gamma_gunshi_qc.md
+  - output/cmd_731l_beta1_metrics_flaky_fixture_fix.md
+  - output/cmd_731n_karo_audit_macos_gha_fix.md
+  - output/cmd_731q_runtime_wiring_repair.md
+  - output/cmd_731p_gamma2_cron_cycle_evidence.md
+  - output/cmd_731ε_codex_completion_verification.md
+  - logs/kpi_observer.log
+  - logs/reality_check.log
+  context_policy: preserve_across_stages
+  description: "cmd_731 Codex dual-verification (将軍指示 AC-6規律)。\n家老 cmd_complete報告後の独立検証\
+    \ arm。\n\n【検証対象 commits】\n11a4b9e (β-1 reality_check) / 0a6bd35 (β-2 dashboard)\
+    \ / a01a749 (β-4 hook)\n753875d (β-5 notifier) / 9a5ae39 (fixture補修) / ea59c9c\
+    \ (macOS GHA)\nb4d02d3 (β-3 audit) / b387288 (ash6 report)\n\n【重要】\n- 実装ファイルは編集しない\
+    \ (検証のみ)\n- SKIP=0 必須\n- output YAML: 単一文書であること (yaml.safe_load PASS)\n- 前回ε検証\
+    \ (output/cmd_731ε_codex_completion_verification.md) を参照可だが、独立判定すること\n\n【完了報告】\n\
+    bash /home/ubuntu/shogun/scripts/inbox_write.sh karo \\\n  \"【subtask_731zz_codex_final_verification\
+    \ 完了】cmd_731 Codex最終検証完了。verdict=<go|conditional_go|no_go> ac=<PASS|PARTIAL> tests=PASS\
+    \ skip=0 output=output/cmd_731zz_codex_verification.md。report確認されたし。\" \\\n  task_completed\
+    \ ashigaru7\n"
+  editable_files:
+  - output/cmd_731zz_codex_verification.md
+  - queue/reports/ashigaru7_report.yaml
+  - queue/tasks/ashigaru7.yaml
+  - queue/inbox/ashigaru7.yaml
+  forbidden_files:
+  - instructions/karo.md
+  - instructions/ashigaru.md
+  - instructions/shogun.md
+  - scripts/lib/status_check_rules.py
+  - scripts/shogun_reality_check.sh
+  - scripts/generate_dashboard_md.py
+  - scripts/cmd_kpi_observer.sh
+  - queue/shogun_to_karo.yaml
+  - queue/tasks/pending.yaml
+  model_requirement: codex effort=xhigh
+  parent_cmd: cmd_731
+  priority: high
+  project: shogun
+  report_to: karo
+  status: done
+  target_path: /home/ubuntu/shogun
+  task_id: subtask_731zz_codex_final_verification
+  timestamp: '2026-05-16T21:12:00+09:00'
+  title: 'cmd_731zz: Codex最終完遂独立検証'
