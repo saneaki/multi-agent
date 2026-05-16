@@ -1,40 +1,38 @@
 worker_id: ashigaru2
-task_id: subtask_730h_delta_smoke_tests
-parent_cmd: cmd_730
+task_id: subtask_731m_beta5_notifier_fallback_dirty_resolve
+parent_cmd: cmd_731
 status: done
-timestamp: "2026-05-16T06:55:00+09:00"
+timestamp: "2026-05-16T13:09:26+09:00"
 result:
   summary: |
-    cmd_730 δ-B 完了。launcher spec consistency smoke 新設。
-    T6/T7 を SKIP から静的解析代替に置換し、PASS=34 FAIL=0 SKIP=0 達成。
-    bats 23/23 PASS (SKIP=0)。commit 6c77e11 Refs cmd_730。
-  output: output/cmd_730h_delta_smoke_tests.md
-  commit: "6c77e11"
-  smoke: PASS
-  bats: PASS
-  t8: PASS
-  bats_total: 23
-  bats_pass: 23
+    cmd_731 γ-1 notifier fallback dirty 解消完了。
+    M-1: output/cmd_731j J-2 の「753875dでportable fallback完成済み」誤記を訂正注記。
+    M-2: uncommitted mkdir fallback を正式 commit (防御的改善・bats 前提を満たすため)。
+    M-3: bash -n PASS、bats 6/6 PASS SKIP=0。
+    M-4: commit message に Refs cmd_731 AC-9 含む。
+  output: output/cmd_731m_beta5_notifier_fallback_dirty_resolve.md
+  commit: "(本 commit SHA)"
+  doc: PASS
+  dirty: resolved
+  tests: PASS
+  skip: 0
+  bats_total: 6
+  bats_pass: 6
   bats_skip: 0
-  smoke_pass: 34
-  smoke_fail: 0
-  smoke_skip: 0
   acceptance_criteria:
-    DELTA-B1: PASS
-    DELTA-B2: PASS
-    DELTA-B3: PASS
-    DELTA-B4: PASS
-    DELTA-B5: PASS
-    DELTA-B6: PASS
-    DELTA-B7: PASS
-    DELTA-B8: PASS
-  t6_static: "update_dashboard_formation() 定義+呼出+sed コマンド確認"
-  t7_static: "@agent_cli/@model_name 全ペイン tmux set-option 確認"
-  files_created:
-    - tests/smoke/launcher_spec_consistency.sh
-    - tests/unit/test_launcher_spec.bats
-    - output/cmd_730h_delta_smoke_tests.md
+    M-1: PASS
+    M-2: PASS
+    M-3: PASS
+    M-4: PASS
+  root_cause: "753875d は flock-only。ash2 cmd_731j が doc に『portable fallback完成済み』と誤記。mkdir fallback は working tree のみに存在し未 commit だった。"
+  fix: "doc 訂正注記追加 + mkdir fallback を正式 commit。"
   files_modified:
+    - scripts/shogun_inbox_notifier.sh
+    - output/cmd_731j_beta5_macos_flock_skip_repair.md
+    - output/cmd_731m_beta5_notifier_fallback_dirty_resolve.md
+    - queue/reports/ashigaru2_report.yaml
     - queue/tasks/ashigaru2.yaml
     - queue/inbox/ashigaru2.yaml
     - queue/reports/ashigaru2_report.yaml
+  files_created:
+    - output/cmd_731j_beta5_macos_flock_skip_repair.md

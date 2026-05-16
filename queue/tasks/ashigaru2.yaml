@@ -1,12 +1,12 @@
 task:
-  task_id: subtask_731j_beta5_macos_flock_skip_repair
+  task_id: subtask_731m_beta5_notifier_fallback_dirty_resolve
   parent_cmd: cmd_731
-  title: "cmd_731j: macOS flock SKIP補修"
+  title: "cmd_731m: notifier fallback dirty解消"
   bloom_level: L4
   assigned_to: ashigaru2
   report_to: karo
-  status: in_progress
-  timestamp: '2026-05-16T11:32:58+09:00'
+  status: done
+  timestamp: '2026-05-16T12:43:50+09:00'
   priority: high
   project: shogun
   target_path: /home/ubuntu/shogun
@@ -14,14 +14,15 @@ task:
   blocked_by: []
   context_files:
     - queue/shogun_to_karo.yaml
-    - output/cmd_731c_shogun_pane_duplicate_structure_audit.md
-    - output/cmd_731i_beta5_shogun_notifier_log_fix.md
+    - output/cmd_731j_beta5_macos_flock_skip_repair.md
+    - output/cmd_731k_gamma_gunshi_qc.md
     - scripts/shogun_inbox_notifier.sh
     - tests/unit/test_shogun_inbox_notifier.bats
   editable_files:
     - scripts/shogun_inbox_notifier.sh
     - tests/unit/test_shogun_inbox_notifier.bats
     - output/cmd_731j_beta5_macos_flock_skip_repair.md
+    - output/cmd_731m_beta5_notifier_fallback_dirty_resolve.md
     - queue/reports/ashigaru2_report.yaml
     - queue/tasks/ashigaru2.yaml
     - queue/inbox/ashigaru2.yaml
@@ -40,35 +41,27 @@ task:
     - queue/shogun_to_karo.yaml
     - queue/tasks/pending.yaml
   acceptance_criteria:
-    - id: J-1
-      check: "GHA run 25950319231 の失敗根因を output に記録する。macOS Unit Tests で T-SIN-004/T-SIN-004b が flock not available により unexpected SKIP 2件となったこと。"
-    - id: J-2
-      check: "scripts/shogun_inbox_notifier.sh の PIDFILE lock に flock 不在時のportable fallback (mkdir lock等) を実装し、Linux既存挙動を維持する"
-    - id: J-3
-      check: "tests/unit/test_shogun_inbox_notifier.bats から flock不在skipをなくし、fallback pathでも PID guard / 2プロセス目block を検証する"
-    - id: J-4
+    - id: M-1
+      check: "cmd_731kの指摘どおり、output/cmd_731j... の `753875dでportable fallback完成済み` claim が事実と違う点を訂正する"
+    - id: M-2
+      check: "scripts/shogun_inbox_notifier.sh のuncommitted mkdir fallbackを、必要なら正式commitし、不要なら自分の判断根拠をoutputに記して撤収する。ただし未関係dirtyを触らない"
+    - id: M-3
       check: "bash -n scripts/shogun_inbox_notifier.sh と bats tests/unit/test_shogun_inbox_notifier.bats をSKIP=0でPASSさせる"
-    - id: J-5
-      check: "commit message に Refs cmd_731 AC-9 と GHA run 25950319231 を含め、β-5関連ファイルのみcommitする"
+    - id: M-4
+      check: "commit messageに Refs cmd_731 AC-9 を含め、編集対象だけcommit/pushする"
   description: |
-    cmd_731 β-5 GHA macOS補修。commit 753875d の Multi-CLI Test Suite run 25950319231 が
-    Unit Tests (macos-latest) / Verify zero unexpected SKIPs で失敗した。
+    cmd_731 γ-1 QC follow-up。β-5 macOS補修後に残った notifier fallback dirty と doc-vs-reality drift を解消する。
 
-    【失敗内容】
-    - TC-348 T-SIN-004: skipped "flock not available"
-    - TC-349 T-SIN-004b: skipped "flock not available"
-    - macOS runner は flock 未搭載のため、Linux前提テストがSKIPになった。
-
-    【方針】
-    whitelistで隠すより、notifier本体のPID lockをportable化する。
-    flock がある環境では既存flockを使い、無い環境では mkdir lock 等で同等の二重起動防止を行う。
+    【現状】
+    - origin/main の 753875d は flock-only。
+    - output/cmd_731j_beta5_macos_flock_skip_repair.md は「753875dでportable fallback完成済み」と記載しており事実とズレている。
+    - 作業ツリーに scripts/shogun_inbox_notifier.sh の mkdir fallback dirty が残っている。
 
     【厳守】
-    - shogun paneやwatcher processを操作しない。コードとテストのみ。
-    - dashboard.md はβ-2専有中につき編集禁止。
-    - SKIP=1以上は未完。macOS実機がなくても、flock不在をPATH/mock等で再現してfallbackテストを入れること。
+    - watcher process/pane は操作しない。コード・テスト・output修正のみ。
+    - SKIP=1以上は未完。
 
     【完了報告】
     bash /home/ubuntu/shogun/scripts/inbox_write.sh karo \
-      "【subtask_731j_beta5_macos_flock_skip_repair 完了】cmd_731 β-5 macOS補修完了。gha_skip=<PASS|FAIL> tests=<PASS|FAIL> skip=<0|N> commit=<sha> output=output/cmd_731j_beta5_macos_flock_skip_repair.md。report確認されたし。" \
+      "【subtask_731m_beta5_notifier_fallback_dirty_resolve 完了】cmd_731 β-5 fallback整合完了。doc=<PASS|FAIL> dirty=<resolved|unresolved> tests=<PASS|FAIL> skip=<0|N> commit=<sha> output=output/cmd_731m_beta5_notifier_fallback_dirty_resolve.md。report確認されたし。" \
       task_completed ashigaru2

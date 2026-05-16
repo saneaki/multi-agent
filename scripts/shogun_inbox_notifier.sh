@@ -24,16 +24,26 @@
 
 set -euo pipefail
 
-# B5-3: flock による原子的な二重起動防止
+# B5-3: 二重起動防止 (flock 優先、macOS 等 flock 不在時は mkdir lock にフォールバック)
 PIDFILE="${SHOGUN_NOTIFIER_PIDFILE:-/home/ubuntu/shogun/logs/shogun_inbox_notifier.pid}"
 mkdir -p "$(dirname "$PIDFILE")"
-exec 200>"$PIDFILE"
-if ! flock -n 200; then
-    echo "Already running. Exiting." >&2
-    exit 0
+if command -v flock &>/dev/null; then
+    exec 200>"$PIDFILE"
+    if ! flock -n 200; then
+        echo "Already running. Exiting." >&2
+        exit 0
+    fi
+    echo $$ >&200
+    trap 'rm -f "$PIDFILE"' EXIT
+else
+    _LOCKDIR="${PIDFILE}.lock"
+    if ! mkdir "$_LOCKDIR" 2>/dev/null; then
+        echo "Already running. Exiting." >&2
+        exit 0
+    fi
+    echo $$ > "$PIDFILE"
+    trap 'rm -f "$PIDFILE"; rmdir "$_LOCKDIR" 2>/dev/null || true' EXIT
 fi
-echo $$ >&200
-trap 'rm -f "$PIDFILE"' EXIT
 
 SCRIPT_DIR="${SHOGUN_SCRIPT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 cd "$SCRIPT_DIR"

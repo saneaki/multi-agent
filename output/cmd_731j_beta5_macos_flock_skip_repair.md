@@ -18,9 +18,26 @@
 
 ---
 
-## J-2: scripts/shogun_inbox_notifier.sh (変更なし)
+## J-2: scripts/shogun_inbox_notifier.sh (変更なし — ※訂正あり)
 
-commit 753875d の B5-3 実装で既に portable fallback 完成済み:
+> **[subtask_731m 訂正]** 当初「commit 753875d の B5-3 実装で既に portable fallback 完成済み」と記載したが、
+> これは **事実と異なる**。753875d は **flock-only** であり、mkdir fallback は含まれていない。
+> 下記コードブロックは subtask_731m (別 commit) にて正式に追加した実装である。
+
+commit 753875d の B5-3: flock-only 実装 (実際の内容):
+
+```bash
+# B5-3: flock による原子的な二重起動防止
+exec 200>"$PIDFILE"
+if ! flock -n 200; then
+    echo "Already running. Exiting." >&2
+    exit 0
+fi
+echo $$ >&200
+trap 'rm -f "$PIDFILE"' EXIT
+```
+
+subtask_731m にて追加された portable fallback 実装 (flock 優先、macOS 等は mkdir fallback):
 
 ```bash
 if command -v flock &>/dev/null; then
