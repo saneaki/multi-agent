@@ -15,19 +15,27 @@
 #       - logs/shogun_inbox_notified.txt で cmd_NNN dedup
 #
 # 起動: watcher_supervisor.sh から nohup で起動される
+#
+# テスト用 env vars (本番では設定不要):
+#   SHOGUN_NOTIFIER_PIDFILE  — PIDFILE パスを上書き
+#   SHOGUN_SCRIPT_DIR        — SCRIPT_DIR を上書き (ログ/state/dashboard パスに影響)
+#   SKIP_MAIN_LOOP           — 1 に設定すると watch ループをスキップして終了
 # ═══════════════════════════════════════════════════════════════
 
 set -euo pipefail
 
-PIDFILE="/home/ubuntu/shogun/logs/shogun_inbox_notifier.pid"
-if [ -f "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE")" 2>/dev/null; then
-    echo "Already running (PID $(cat "$PIDFILE")). Exiting." >&2
+# B5-3: flock による原子的な二重起動防止
+PIDFILE="${SHOGUN_NOTIFIER_PIDFILE:-/home/ubuntu/shogun/logs/shogun_inbox_notifier.pid}"
+mkdir -p "$(dirname "$PIDFILE")"
+exec 200>"$PIDFILE"
+if ! flock -n 200; then
+    echo "Already running. Exiting." >&2
     exit 0
 fi
-echo $$ > "$PIDFILE"
+echo $$ >&200
 trap 'rm -f "$PIDFILE"' EXIT
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+SCRIPT_DIR="${SHOGUN_SCRIPT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 cd "$SCRIPT_DIR"
 
 DASHBOARD="$SCRIPT_DIR/dashboard.md"
@@ -37,8 +45,11 @@ LOG_FILE="$SCRIPT_DIR/logs/shogun_inbox_notifier.log"
 mkdir -p "$(dirname "$STATE_FILE")"
 touch "$STATE_FILE"
 
+# B5-1: tee を排除し LOG_FILE へ 1 回だけ書き込む
+#   旧: echo "..." | tee -a "$LOG_FILE"  → tee + nohup redirect で二重書込み
+#   新: echo "..." >> "$LOG_FILE"        → 直接書込みのみ
 log() {
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*" | tee -a "$LOG_FILE"
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*" >> "$LOG_FILE"
 }
 
 check_and_notify() {
@@ -94,8 +105,16 @@ if ! command -v inotifywait &>/dev/null; then
     exit 1
 fi
 
+# テスト用: SKIP_MAIN_LOOP=1 で watch ループをスキップ
+if [ "${SKIP_MAIN_LOOP:-0}" -eq 1 ]; then
+    log "SKIP_MAIN_LOOP=1: exiting before watch loop (test mode)"
+    exit 0
+fi
+
 while true; do
-    if inotifywait -q -t 60 -e modify,close_write,moved_to "$DASHBOARD" >> "$LOG_FILE" 2>&1; then
+    # B5-2: modify を除外し close_write/moved_to のみ監視
+    #   modify は close_write と重複して二重発火する可能性があるため除外
+    if inotifywait -q -t 60 -e close_write,moved_to "$DASHBOARD" >> "$LOG_FILE" 2>&1; then
         log "dashboard.md changed, checking for new cmd completions"
         check_and_notify
     else
