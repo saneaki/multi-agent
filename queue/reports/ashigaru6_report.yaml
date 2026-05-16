@@ -1,63 +1,60 @@
 worker_id: ashigaru6
-task_id: subtask_730y_codex_flag_compat
-parent_cmd: cmd_730
+task_id: subtask_731g_beta3_karo_ashigaru_cmd_complete_audit
+parent_cmd: cmd_731
 status: done
-timestamp: "2026-05-16T07:49:37+09:00"
+timestamp: "2026-05-16T12:28:28+09:00"
 report_to: karo
 skill_candidate:
   found: false
   notes: ""
 result:
   verdict: pass
-  output_path: /home/ubuntu/shogun/output/cmd_730y_codex_flag_compat.md
+  output_path: /home/ubuntu/shogun/output/cmd_731g_beta3_karo_ashigaru_cmd_complete_audit.md
   summary: |
-    Codex CLI v0.130.0 で --reasoning-effort が廃止され、
-    -c model_reasoning_effort="xhigh" への移行が必要だった。
-    shutsujin_departure.sh (shx path, line 860) と scripts/shp.sh (num_cli_cmd, line 114) を
-    シングルクォート化してリテラル一致を保証。
-    smoke PASS=34 SKIP=0、bats 23/23 PASS SKIP=0 を確認。
-    cmd_730f SHA note (88d1324) をコミットで解消。
+    cmd_731 β-3 完了。karo cmd_complete 送付漏れ防止 + ashigaru 完了遷移規律明文化を実装。
+    instructions/karo.md Step 11.7 step 6 を MUST USE (未送付=完了不可条件違反) に拡張。
+    instructions/ashigaru.md step 6: value done → completed_pending_karo + karo検収待ち規律追記。
+    scripts/karo_cmd_complete_audit.sh 新設 (done cmd に cmd_complete なし → exit 1)。
+    tests/unit/test_karo_cmd_complete_audit.bats: 4/4 PASS SKIP=0。
+    修正commit: .gitignore スキルセクション CRLF→LF 余剰差分を除去、report YAML top-level 更新。
   changed_files:
-    - path: shutsujin_departure.sh
-      change: "line 860: _ashi_cmd をシングルクォート化（model_reasoning_effort=\"xhigh\" → 'model_reasoning_effort=\"xhigh\"'）"
-    - path: scripts/shp.sh
-      change: "line 114: echo をシングルクォート化（同上）"
-    - path: output/cmd_730f_gamma_shp_transient.md
-      change: "num_cli_cmd説明に-c model_reasoning_effort=\"xhigh\"フラグ形式と廃止注記を追加、SHA note確定"
-    - path: output/cmd_730y_codex_flag_compat.md
-      change: "本タスク成果物（新規）"
+    - path: instructions/karo.md
+      change: "Step 11.7 step 6 を MUST USE cmd_complete 規律に拡張（未送付は完了不可条件違反）"
+    - path: instructions/ashigaru.md
+      change: "step 6: value done → completed_pending_karo + karo検収待ち規律 + self-clear禁止注記"
+    - path: scripts/karo_cmd_complete_audit.sh
+      change: "新設 (AC-5 監査スクリプト: done cmd に cmd_complete なし → exit 1)"
+    - path: tests/unit/test_karo_cmd_complete_audit.bats
+      change: "新設 (4テスト: missing/sent/not_done 3系統 4/4 PASS SKIP=0)"
+    - path: output/cmd_731g_beta3_karo_ashigaru_cmd_complete_audit.md
+      change: "本タスク成果物（新規 + .gitignore修復追記）"
+    - path: queue/reports/ashigaru6_report.yaml
+      change: "top-level を subtask_731g_beta3 に更新"
+    - path: .gitignore
+      change: "karo_cmd_complete_audit.sh ホワイトリスト追加 + CRLF余剰差分修復"
   acceptance_criteria:
-    - id: Y-1
+    - id: B3-1
       status: PASS
-      evidence: "codex --help に --reasoning-effort は存在せず。output/cmd_730y_codex_flag_compat.md Section 2 に記録。"
-    - id: Y-2
+      evidence: "instructions/karo.md Step 11.7 step 6 に cmd_complete 送付 MUST USE + 未送付=完了不可条件違反 を明文化。"
+    - id: B3-2
       status: PASS
-      evidence: "shutsujin_departure.sh line 860 / scripts/shp.sh line 114 をシングルクォート化。config/settings.yaml 変更なし。"
-    - id: Y-3
+      evidence: "instructions/ashigaru.md step 6 value: done → completed_pending_karo。karo検収待ち規律・自己done禁止を追記。"
+    - id: B3-3
       status: PASS
-      evidence: "smoke T3-2 / bats T3-hybrid-codex はともに model_reasoning_effort=\"xhigh\" grep PASS。旧 --reasoning-effort 期待値なし。"
-    - id: Y-4
+      evidence: "scripts/karo_cmd_complete_audit.sh 新設。done cmd かつ cmd_complete なし → exit 1。"
+    - id: B3-4
       status: PASS
-      evidence: "bash -n shutsujin_departure.sh scripts/shp.sh tests/smoke/launcher_spec_consistency.sh → ALL PASS"
-    - id: Y-5
+      evidence: "tests/unit/test_karo_cmd_complete_audit.bats: missing/sent/not_done 3系統 4/4 PASS SKIP=0。"
+    - id: B3-5
       status: PASS
-      evidence: "smoke PASS=34 FAIL=0 SKIP=0。bats 23/23 PASS SKIP=0。"
-    - id: Y-6
-      status: PASS
-      evidence: "cmd_730f num_cli_cmd説明にフラグ形式明記。SHA 88d1324 note を本コミットで解消。"
-    - id: Y-7
-      status: PASS
-      evidence: "commit SHA: (本コミット後確定)。Refs cmd_730 含む。"
+      evidence: "bash -n SYNTAX_OK + bats 4/4 PASS。commit に Refs cmd_731 AC-4/5 含む。"
   verification:
-    - command: "bash -n shutsujin_departure.sh scripts/shp.sh tests/smoke/launcher_spec_consistency.sh"
+    - command: "bash -n scripts/karo_cmd_complete_audit.sh"
       result: PASS
-      stdout: "ALL PASS"
-    - command: "bash tests/smoke/launcher_spec_consistency.sh"
+      stdout: "SYNTAX_OK"
+    - command: "bats tests/unit/test_karo_cmd_complete_audit.bats"
       result: PASS
-      stdout: "PASS=34 FAIL=0 SKIP=0"
-    - command: "bats tests/unit/test_launcher_spec.bats"
+      stdout: "4/4 PASS SKIP=0"
+    - command: "git diff HEAD~1 -- .gitignore"
       result: PASS
-      stdout: "23/23 PASS SKIP=0"
-    - command: "grep -q 'model_reasoning_effort=\"xhigh\"' shutsujin_departure.sh"
-      result: PASS
-      stdout: ""
+      stdout: "+!scripts/karo_cmd_complete_audit.sh のみ（スキルCRLF差分除去確認済み）"
