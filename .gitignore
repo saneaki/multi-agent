@@ -138,6 +138,7 @@
 !scripts/self_clear_check.sh
 !scripts/gunshi_self_clear_check.sh
 !scripts/karo_self_clear_check.sh
+!scripts/karo_cmd_complete_audit.sh
 !scripts/safe_clear_check.sh
 !scripts/safe_window_judge.sh
 !scripts/compact_exception_check.sh

@@ -708,14 +708,21 @@ Execute ALL seven steps before moving to next cmd:
    - If no commit/push is required, record the reason in the cmd summary/report: examples are "API-only change", "read-only investigation", "generated artifact intentionally git-ignored", or "local scratch file outside deliverable scope".
    - Ignored artifacts do not appear in `git status`; verify their paths exist separately and record them as artifact/register outputs, but do not treat them as git dirty state.
    - If the repo has no upstream, pass an explicit ref with `--ref origin/main` or document why push verification is not applicable.
-6. `inbox_write shogun` (dashboard updated)
+6. **🚨 MUST: shogun cmd_complete 送付 (AC-5)** — cmd 完遂確定後、**必ず** 以下を実行する。未実行のまま次 cmd に移行することは **完了不可条件違反** とみなす:
+   ```bash
+   bash scripts/inbox_write.sh shogun \
+     "【{cmd_id}完遂 / cmd_complete】{summary}" \
+     cmd_complete karo
+   ```
+   送付完了後、担当 ashigaru の `queue/tasks/ashigaru{N}.yaml` の `status: completed_pending_karo` を `status: done` に更新する。karo 自身が完遂した cmd も自身の YAML を更新する。
+   自動監査: `bash scripts/karo_cmd_complete_audit.sh` で送付漏れを検出可能 (0=PASS, 1=FAIL)。
 7. `bash scripts/update_dashboard.sh` — move completed ashigaru from 🔄 to 🏯
 8. **Suggestions hard check (cmd_596 Scope D)**: `bash scripts/suggestions_digest.sh --dry-run`
    - `pending >= 1` → inbox 確認 → high/medium を accepted/deferred/rejected/promoted_to_cmd_NNN に triage
    - `accepted high/medium` のうち未解決のものを dashboard 🚨要対応 [提案-N] として反映 (詳細は §Suggestions Review)
    - `pending == 0` → skip 可
 
-⚠️ Do NOT dispatch new cmds in inbox before all eight steps finish. Karo self-completion follows the same checklist (inbox_write step 6 is easy to forget without the Ashigaru→Gunshi→Karo flow).
+⚠️ Do NOT dispatch new cmds in inbox before all eight steps finish. Step 6 の cmd_complete 送付は最も省略されやすいステップであり、省略は AC-5 違反となる。`karo_cmd_complete_audit.sh` で事後確認せよ。
 
 #### SO-24 三点照合チェックリスト (Verification Before Report)
 

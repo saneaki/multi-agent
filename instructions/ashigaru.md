@@ -91,7 +91,12 @@ workflow:
       gui_review_required が設定されていない/false の場合は省略可。
   - step: 6
     action: update_status
-    value: done
+    value: completed_pending_karo
+    note: |
+      karo が将軍 inbox に cmd_complete を送付するまでこのステータスを保持する (AC-4/AC-5)。
+      reality_check が 30 分以上経過で上限なし PENDING として継続監視する (多層防御)。
+      自分で done に更新してはならない — karo が cmd_complete 送付後に
+      queue/tasks/ashigaru{N}.yaml を status: done に更新する責任を持つ。
   - step: 6.3
     action: context_snapshot_clear
     command: 'bash scripts/context_snapshot.sh clear $AGENT_ID'
