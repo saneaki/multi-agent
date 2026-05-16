@@ -5,7 +5,7 @@
 #   T-SIN-001: bash -n 構文チェック
 #   T-SIN-002: log() が LOG_FILE に1回のみ書き込む (tee 二重書込みなし)
 #   T-SIN-003: STATE_FILE dedup — 登録済み cmd_id は check_and_notify でスキップ
-#   T-SIN-004: PIDFILE guard — flock 取得済みの場合は即時終了する
+#   T-SIN-004: PIDFILE guard — flock/mkdir lock 取得済みの場合は即時終了する (macOS fallback対応)
 
 setup_file() {
     export PROJECT_ROOT="$(cd "$(dirname "$BATS_TEST_FILENAME")/../.." && pwd)"
@@ -122,59 +122,65 @@ MOCK_EOF
 }
 
 # ────────────────────────────────────────────────────────────
-# T-SIN-004: PIDFILE flock guard
+# T-SIN-004: PIDFILE guard (flock/mkdir fallback 両対応)
+#   flock が使えれば flock パス、なければ mkdir fallback パスをテスト
+#   macOS (flock 不在) でも SKIP なし
 # ────────────────────────────────────────────────────────────
-@test "T-SIN-004: PIDFILE guard — flock 取得済みなら即時終了して 'Already running' を出力" {
-    # flock が使えるか確認
-    command -v flock || skip "flock not available"
+@test "T-SIN-004: PIDFILE guard — lock取得済みなら即時終了して 'Already running' を出力" {
+    local lockdir="${TEST_PIDFILE}.lock"
 
-    # テスト側で PIDFILE の flock を先に取得 (別プロセスが起動中をシミュレート)
-    local lock_pid_file="$TEST_TMPDIR/held.pid"
-    exec 201>"$TEST_PIDFILE"
-    flock -n 201 || skip "Could not acquire test lock"
+    if command -v flock &>/dev/null; then
+        # flock 利用可能: flock でロックを先取り (プロセス1をシミュレート)
+        exec 201>"$TEST_PIDFILE"
+        flock -n 201
 
-    # スクリプトを実行 → flock 取得失敗で即時終了するはず
-    run timeout 5 bash "$SCRIPT" 2>&1 <<< "" \
-        SHOGUN_NOTIFIER_PIDFILE="$TEST_PIDFILE"
-    # Note: 環境変数は env 経由で渡す
-    true  # run の exit status は関係なく、出力を確認
+        run timeout 5 env \
+            SHOGUN_NOTIFIER_PIDFILE="$TEST_PIDFILE" \
+            SHOGUN_SCRIPT_DIR="$TEST_TMPDIR" \
+            bash "$SCRIPT" 2>&1
 
-    exec 201>&-  # lock 解放
+        exec 201>&-
+    else
+        # flock 不在 (macOS 等): mkdir fallback — lockdir を先取り
+        mkdir "$lockdir"
 
-    # 環境変数を正しく渡して再実行
-    run timeout 5 env \
-        SHOGUN_NOTIFIER_PIDFILE="$TEST_PIDFILE" \
-        SHOGUN_SCRIPT_DIR="$TEST_TMPDIR" \
-        bash -c '
-            exec 201>"$SHOGUN_NOTIFIER_PIDFILE"
-            flock -n 201 || { echo "Already running. Exiting." >&2; exit 0; }
-            exec 201>&-
-        ' 2>&1
-    # flock が確保されていないので取得できる → この exec は成功する
-    [ "$status" -eq 0 ]
+        run timeout 5 env \
+            SHOGUN_NOTIFIER_PIDFILE="$TEST_PIDFILE" \
+            SHOGUN_SCRIPT_DIR="$TEST_TMPDIR" \
+            bash "$SCRIPT" 2>&1
+
+        rmdir "$lockdir" 2>/dev/null || true
+    fi
+
+    # "Already running" が出力されていること
+    [[ "$output" == *"Already running"* ]]
 }
 
-@test "T-SIN-004b: 同一 PIDFILE を共有する 2 プロセス目は起動をブロックされる" {
-    command -v flock || skip "flock not available"
+@test "T-SIN-004b: 同一 PIDFILE の 2 プロセス目はブロックされる (flock/mkdir fallback 両対応)" {
+    local lockdir="${TEST_PIDFILE}.lock"
+    local bg_pid=""
 
-    # ダミーの dashboard を作成 (inotifywait 到達前に終了するためエラー回避)
-    touch "$TEST_DASHBOARD"
+    if command -v flock &>/dev/null; then
+        # flock パス: バックグラウンドプロセスでロック保持
+        (
+            exec 202>"$TEST_PIDFILE"
+            flock -n 202
+            echo "HELD" > "$TEST_TMPDIR/held_flag"
+            sleep 5
+        ) &
+        bg_pid=$!
 
-    # プロセス 1: PIDFILE flock を取得してバックグラウンド待機
-    (
-        exec 202>"$TEST_PIDFILE"
-        flock -n 202
-        echo "HELD" > "$TEST_TMPDIR/held_flag"
-        sleep 5
-    ) &
-    local bg_pid=$!
-
-    # flock が取得されるまで少し待つ
-    local i
-    for i in $(seq 1 10); do
-        [ -f "$TEST_TMPDIR/held_flag" ] && break
-        sleep 0.1
-    done
+        # ロックが確保されるまで待機
+        local i
+        for i in $(seq 1 10); do
+            [ -f "$TEST_TMPDIR/held_flag" ] && break
+            sleep 0.1
+        done
+    else
+        # flock 不在 (macOS 等): mkdir lockdir を手動作成 (プロセス1をシミュレート)
+        mkdir "$lockdir"
+        echo "99999" > "$TEST_PIDFILE"
+    fi
 
     # プロセス 2: 同じ PIDFILE で起動 → Already running で終了するはず
     run timeout 5 env \
@@ -183,8 +189,12 @@ MOCK_EOF
         SKIP_MAIN_LOOP=1 \
         bash "$SCRIPT" 2>&1
 
-    kill "$bg_pid" 2>/dev/null || true
-    wait "$bg_pid" 2>/dev/null || true
+    # クリーンアップ
+    if [ -n "$bg_pid" ]; then
+        kill "$bg_pid" 2>/dev/null || true
+        wait "$bg_pid" 2>/dev/null || true
+    fi
+    rmdir "$lockdir" 2>/dev/null || true
 
     # "Already running" が出力されていること
     [[ "$output" == *"Already running"* ]]

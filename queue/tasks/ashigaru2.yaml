@@ -1,82 +1,74 @@
 task:
-  task_id: subtask_716i_phase_f_regression
-  parent_cmd: cmd_716
-  title: 'cmd_716i: Phase F regression hardening'
+  task_id: subtask_731j_beta5_macos_flock_skip_repair
+  parent_cmd: cmd_731
+  title: "cmd_731j: macOS flock SKIP補修"
   bloom_level: L4
   assigned_to: ashigaru2
   report_to: karo
-  status: done
-  timestamp: '2026-05-15T16:13:26+09:00'
+  status: in_progress
+  timestamp: '2026-05-16T11:32:58+09:00'
   priority: high
   project: shogun
   target_path: /home/ubuntu/shogun
   context_policy: preserve_across_stages
   blocked_by: []
   context_files:
-  - queue/shogun_to_karo.yaml
-  - output/cmd_716c_gunshi_gate_alert_consolidation.md
-  - output/cmd_716d_phase_a_schema_coexist.md
-  - output/cmd_716e_phase_b_alert_classification.md
-  - output/cmd_716f_phase_c_p6_event_ledger.md
-  - output/cmd_716g_phase_d_resolution_zombie_log.md
-  - output/cmd_716h_phase_e_followup_pr.md
-  - dashboard.yaml
-  - queue/alert_state.yaml
-  - queue/judgement_log.yaml
-  - scripts/lib/gate_suppression.py
-  - scripts/lib/daily_digest.py
-  - scripts/shogun_to_karo_parser.py
-  - scripts/shogun_in_progress_monitor.sh
-  - tests/unit/test_gate_suppression.py
-  - tests/unit/test_daily_digest.py
-  - scripts/suggestions_digest.sh
-  - logs/suggestions_digest.log
+    - queue/shogun_to_karo.yaml
+    - output/cmd_731c_shogun_pane_duplicate_structure_audit.md
+    - output/cmd_731i_beta5_shogun_notifier_log_fix.md
+    - scripts/shogun_inbox_notifier.sh
+    - tests/unit/test_shogun_inbox_notifier.bats
   editable_files:
-  - scripts/lib/gate_suppression.py
-  - scripts/lib/daily_digest.py
-  - scripts/shogun_to_karo_parser.py
-  - scripts/shogun_in_progress_monitor.sh
-  - tests/unit/test_gate_suppression.py
-  - tests/unit/test_daily_digest.py
-  - output/cmd_716i_phase_f_regression.md
-  - queue/reports/ashigaru2_report.yaml
-  - queue/tasks/ashigaru2.yaml
-  - queue/inbox/ashigaru2.yaml
-  - output/cmd_716i_p_digest_sender_down_repair.md
+    - scripts/shogun_inbox_notifier.sh
+    - tests/unit/test_shogun_inbox_notifier.bats
+    - output/cmd_731j_beta5_macos_flock_skip_repair.md
+    - queue/reports/ashigaru2_report.yaml
+    - queue/tasks/ashigaru2.yaml
+    - queue/inbox/ashigaru2.yaml
+  forbidden_files:
+    - scripts/watcher_supervisor.sh
+    - scripts/inbox_watcher.sh
+    - scripts/lib/status_check_rules.py
+    - scripts/shogun_reality_check.sh
+    - scripts/generate_dashboard_md.py
+    - scripts/cmd_kpi_observer.sh
+    - instructions/karo.md
+    - instructions/ashigaru.md
+    - instructions/shogun.md
+    - dashboard.md
+    - dashboard.yaml
+    - queue/shogun_to_karo.yaml
+    - queue/tasks/pending.yaml
   acceptance_criteria:
-  - id: F-1
-    check: Phase A-E の主要 unit tests を一括実行し、SKIP=0 で regression がないことを記録する
-  - id: F-2
-    check: judgement gate suppress / system_alert never suppress / zombie / digest sender down / gate auto-register candidate
-      境界の cross-phase regression tests を追加または既存 tests で明確に証明する
-  - id: F-3
-    check: Phase E 残 (cron/systemd schedule、candidate→action_required昇格手順、promoted_at補正) を実装対象か明確な残件かに分類し、scope外なら output
-      に理由付きで残す
-  - id: F-4
-    check: GHA run 25904789492 incident が cmd_716 本体 regression ではなかったことを regression evidence として記録し、cmd_716 system_alert
-      never suppress 方針との整合を確認する
-  - id: F-5
-    check: shogun_in_progress_monitor.sh --dry-run または代替 fixture で P7/P_GATE_ZOMBIE/P_DIGEST_SENDER_DOWN の never-suppress
-      境界を確認する
-  - id: F-6
-    check: cmd_704 git preflight を記録し、commit/push する場合は cmd_716 を含め、他者の未関係変更を巻き込まない
-  - id: F-7
-    check: P_DIGEST_SENDER_DOWN system_alert を緊急追補として調査する。daily_digest sender 実体、cron/systemd登録有無、suggestions_digestとの混同有無、直近cmd_716h残件との関係を
-      output に記録する
-  - id: F-8
-    check: 軽微な cron 未登録が根因なら、安全な idempotent crontab 追記手順で 8:00 JST daily_digest.py 起動を登録、または登録不能なら exact command と理由を report
-      する。既存 crontab は必ず crontab -l 退避後に保持する
-  - id: F-9
-    check: 修復後に python3 scripts/lib/daily_digest.py --dry-run と、可能なら本送信 dry-run/代替検証で digest_liveness が更新される経路を確認する。実送信する場合は重複通知リスクを
-      output に明記する
-  description: "cmd_716 Phase F regression。Phase A-E が完了したため、judgement gate / system alert / event ledger / judgement_log\
-    \ / zombie / auto-register / digest liveness の横断回帰を固める。\ngunshi は cmd_729d 対応中のため、Phase B/D を担当した ashigaru2 へ配備する。\n\n\
-    【完了報告】\nbash /home/ubuntu/shogun/scripts/inbox_write.sh karo \\\n  \"【subtask_716i_phase_f_regression 完了】cmd_716 Phase\
-    \ F完了。cross_phase=<PASS|FAIL> never_suppress=<PASS|FAIL> tests=<PASS|FAIL> commit=<sha|none> output=output/cmd_716i_phase_f_regression.md。report確認されたし。\"\
-    \ \\\n  task_completed ashigaru2\n\n\n【緊急追補 2026-05-15 17:02 JST】\nshogun_in_progress_monitor が P_DIGEST_SENDER_DOWN を検出。家老調査では\
-    \ suggestions_digest.sh の cron (5 9 * * *) は存在する一方、cmd_716h Phase E で実装された daily_digest.py の 8:00 JST cron/systemd 登録は\
-    \ crontab に見当たらない。output/cmd_716h_phase_e_followup_pr.md §6-1 でも cron/systemd schedule は Phase F 残作業として明記済み。\n\n本 subtask_716i\
-    \ の Phase F 範囲に含め、以下を優先確認せよ:\n1. daily_digest sender の実体は scripts/lib/daily_digest.py でよいか。\n2. cron/systemd 登録漏れが根因か。suggestions_digest.sh\
-    \ とは別物として扱うこと。\n3. 安全に修復可能なら 8:00 JST 起動を登録する。既存 crontab を破壊しないよう、crontab -l を退避し、重複行を避ける idempotent 手順にすること。\n4. alert_state.yaml.digest_liveness\
-    \ の last_success_at 更新経路を確認する。実送信が不要/危険なら dry-run と設計上の根拠を残す。\n5. 追加出力として output/cmd_716i_p_digest_sender_down_repair.md\
-    \ を作成し、root cause / repair / verification を記録すること。\n"
+    - id: J-1
+      check: "GHA run 25950319231 の失敗根因を output に記録する。macOS Unit Tests で T-SIN-004/T-SIN-004b が flock not available により unexpected SKIP 2件となったこと。"
+    - id: J-2
+      check: "scripts/shogun_inbox_notifier.sh の PIDFILE lock に flock 不在時のportable fallback (mkdir lock等) を実装し、Linux既存挙動を維持する"
+    - id: J-3
+      check: "tests/unit/test_shogun_inbox_notifier.bats から flock不在skipをなくし、fallback pathでも PID guard / 2プロセス目block を検証する"
+    - id: J-4
+      check: "bash -n scripts/shogun_inbox_notifier.sh と bats tests/unit/test_shogun_inbox_notifier.bats をSKIP=0でPASSさせる"
+    - id: J-5
+      check: "commit message に Refs cmd_731 AC-9 と GHA run 25950319231 を含め、β-5関連ファイルのみcommitする"
+  description: |
+    cmd_731 β-5 GHA macOS補修。commit 753875d の Multi-CLI Test Suite run 25950319231 が
+    Unit Tests (macos-latest) / Verify zero unexpected SKIPs で失敗した。
+
+    【失敗内容】
+    - TC-348 T-SIN-004: skipped "flock not available"
+    - TC-349 T-SIN-004b: skipped "flock not available"
+    - macOS runner は flock 未搭載のため、Linux前提テストがSKIPになった。
+
+    【方針】
+    whitelistで隠すより、notifier本体のPID lockをportable化する。
+    flock がある環境では既存flockを使い、無い環境では mkdir lock 等で同等の二重起動防止を行う。
+
+    【厳守】
+    - shogun paneやwatcher processを操作しない。コードとテストのみ。
+    - dashboard.md はβ-2専有中につき編集禁止。
+    - SKIP=1以上は未完。macOS実機がなくても、flock不在をPATH/mock等で再現してfallbackテストを入れること。
+
+    【完了報告】
+    bash /home/ubuntu/shogun/scripts/inbox_write.sh karo \
+      "【subtask_731j_beta5_macos_flock_skip_repair 完了】cmd_731 β-5 macOS補修完了。gha_skip=<PASS|FAIL> tests=<PASS|FAIL> skip=<0|N> commit=<sha> output=output/cmd_731j_beta5_macos_flock_skip_repair.md。report確認されたし。" \
+      task_completed ashigaru2
