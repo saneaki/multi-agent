@@ -25,6 +25,8 @@ from __future__ import annotations
 import argparse
 import datetime
 import os
+import re
+import subprocess
 import sys
 import tempfile
 from pathlib import Path
@@ -43,6 +45,10 @@ ACTION_REQUIRED_START = "<!-- ACTION_REQUIRED:START -->"
 ACTION_REQUIRED_END = "<!-- ACTION_REQUIRED:END -->"
 OBSERVATION_QUEUE_START = "<!-- OBSERVATION_QUEUE:START -->"
 OBSERVATION_QUEUE_END = "<!-- OBSERVATION_QUEUE:END -->"
+VIOLATION_START = "<!-- VIOLATION:START -->"
+VIOLATION_END = "<!-- VIOLATION:END -->"
+METRICS_START = "<!-- METRICS:START -->"
+METRICS_END = "<!-- METRICS:END -->"
 
 # Severity ordering (R5)
 SEVERITY_ORDER = {"P0": 0, "HIGH": 1, "MEDIUM": 2, "INFO": 3}
@@ -175,19 +181,33 @@ def collect_violations(base_dir: Path, last_updated: str) -> list[tuple[str, str
     """Collect violation rows: (tag, count, last_seen, recommended_action)."""
     rows: list[tuple[str, str, str, str]] = []
 
-    # L019-skip: count shogun replies without cross-source check — static 0 (git-log analysis not yet automated)
-    rows.append(("L019-skip", "0", "—", "—"))
+    # L019-skip: count commits to shogun inbox in last 24h (git log approximation)
+    l019_count = "?"
+    try:
+        result = subprocess.run(
+            ["git", "-C", str(base_dir), "log", "--since=24 hours ago",
+             "--format=%s", "--", "queue/inbox/shogun.yaml"],
+            capture_output=True, text=True, timeout=5,
+        )
+        if result.returncode == 0:
+            commits = [ln for ln in result.stdout.splitlines() if ln.strip()]
+            l019_count = str(len(commits))
+    except Exception:
+        l019_count = "?"
+    rows.append(("L019-skip", l019_count, "—", "—"))
 
-    # L020-stale: dashboard staleness violation — stale if last_updated > 4h ago
+    # L020-stale: supports ISO (2026-05-16T10:01:56+09:00) and JST (2026-05-16 10:01 JST) formats
     stale_last_seen = "—"
     stale_action = "—"
     try:
-        date_part = last_updated.split()[0]  # "YYYY-MM-DD"
-        time_part = last_updated.split()[1] if len(last_updated.split()) > 1 else "00:00"
-        lu_dt = datetime.datetime.strptime(f"{date_part} {time_part}", "%Y-%m-%d %H:%M")
-        elapsed_min = (datetime.datetime.now() - lu_dt).total_seconds() / 60
+        ts_str = re.sub(r'\+09:00$|JST$', '', last_updated.strip()).strip()
+        ts_str = ts_str.replace('T', ' ')[:16]  # normalize to "YYYY-MM-DD HH:MM"
+        lu_dt = datetime.datetime.strptime(ts_str, "%Y-%m-%d %H:%M")
+        # Server is UTC; add 9h to get JST-equivalent now for comparison
+        now_jst = datetime.datetime.now() + datetime.timedelta(hours=9)
+        elapsed_min = (now_jst - lu_dt).total_seconds() / 60
         if elapsed_min > 240:
-            stale_last_seen = f"{date_part} {time_part}"
+            stale_last_seen = ts_str
             stale_action = "dashboard 再生成"
             rows.append(("L020-stale", "1", stale_last_seen, stale_action))
         else:
@@ -195,14 +215,24 @@ def collect_violations(base_dir: Path, last_updated: str) -> list[tuple[str, str
     except Exception:
         rows.append(("L020-stale", "—", "—", "—"))
 
-    # Step1.5-skip: shogun_session_start.sh 未実行検出 — not yet automated
-    rows.append(("Step1.5-skip", "—", "—", "shogun_session_start.sh 実行"))
+    # Step1.5-skip: check logs/session_start.log for today's JST entry
+    step_count = "?"
+    try:
+        today_jst = (datetime.datetime.now() + datetime.timedelta(hours=9)).strftime("%Y-%m-%d")
+        session_log = base_dir / "logs" / "session_start.log"
+        if session_log.exists():
+            content = session_log.read_text(encoding="utf-8", errors="replace")
+            step_count = "0" if today_jst in content else "1"
+        # else: log absent — "?" (unknown)
+    except Exception:
+        step_count = "?"
+    rows.append(("Step1.5-skip", step_count, "—", "shogun_session_start.sh 実行"))
 
     return rows
 
 
-def violation_section(last_updated: str) -> list[str]:
-    """Generate the '⚠️ 違反検出 (last 24h)' section."""
+def render_violation_section(last_updated: str) -> str:
+    """Generate violation section markdown as string (for boundary replacement)."""
     lines = ["## ⚠️ 違反検出 (last 24h)", ""]
     rows = collect_violations(Path("."), last_updated)
     lines.extend(render_table(
@@ -210,7 +240,46 @@ def violation_section(last_updated: str) -> list[str]:
         list(rows),
     ))
     lines.append("")
-    return lines
+    return "\n".join(lines)
+
+
+def render_metrics_section(metrics: list[dict[str, Any]]) -> str:
+    """Generate metrics section markdown as string (for boundary replacement)."""
+    lines = ["## 📊 運用指標", ""]
+    metrics_rows = [
+        [
+            r.get("date", ""),
+            r.get("success", ""),
+            r.get("failure", ""),
+            r.get("karo_compact", ""),
+            r.get("gunshi_compact", ""),
+            r.get("safe_window", ""),
+            r.get("karo_self_clear", ""),
+            r.get("gunshi_self_clear", ""),
+            r.get("karo_self_compact", ""),
+            r.get("gunshi_self_compact", ""),
+        ]
+        for r in metrics
+    ]
+    lines.extend(
+        render_table(
+            [
+                "日付(JST)",
+                "成功",
+                "失敗(cron)",
+                "karo auto-compact",
+                "gunshi auto-compact",
+                "safe_window発動",
+                "karo self_clear",
+                "gunshi self_clear",
+                "karo self_compact",
+                "gunshi self_compact",
+            ],
+            metrics_rows,
+        )
+    )
+    lines.append("")
+    return "\n".join(lines)
 
 
 def _action_required_sort_key(entry: dict[str, Any]) -> tuple[int, str]:
@@ -527,42 +596,14 @@ def generate_markdown(data: dict[str, Any]) -> str:
     lines.append(OBSERVATION_QUEUE_END)
     lines.append("")
 
-    lines.extend(violation_section(last_updated))
-
-    lines.append("## 📊 運用指標")
+    lines.append(VIOLATION_START)
+    lines.append(render_violation_section(last_updated))
+    lines.append(VIOLATION_END)
     lines.append("")
-    metrics_rows = [
-        [
-            r.get("date", ""),
-            r.get("success", ""),
-            r.get("failure", ""),
-            r.get("karo_compact", ""),
-            r.get("gunshi_compact", ""),
-            r.get("safe_window", ""),
-            r.get("karo_self_clear", ""),
-            r.get("gunshi_self_clear", ""),
-            r.get("karo_self_compact", ""),
-            r.get("gunshi_self_compact", ""),
-        ]
-        for r in data.get("metrics", [])
-    ]
-    lines.extend(
-        render_table(
-            [
-                "日付(JST)",
-                "成功",
-                "失敗(cron)",
-                "karo auto-compact",
-                "gunshi auto-compact",
-                "safe_window発動",
-                "karo self_clear",
-                "gunshi self_clear",
-                "karo self_compact",
-                "gunshi self_compact",
-            ],
-            metrics_rows,
-        )
-    )
+
+    lines.append(METRICS_START)
+    lines.append(render_metrics_section(data.get("metrics") or []))
+    lines.append(METRICS_END)
     lines.append("")
 
     return "\n".join(lines)
@@ -675,6 +716,23 @@ def main() -> None:
                 file=sys.stderr,
             )
             sys.exit(3)
+
+        # Update violation section if markers present
+        meta = data.get("metadata", {})
+        last_updated_val = meta.get("last_updated", "") if isinstance(meta, dict) else ""
+        violation_md = render_violation_section(last_updated_val)
+        if VIOLATION_START in new_md and VIOLATION_END in new_md:
+            updated = partial_replace(new_md, VIOLATION_START, VIOLATION_END, violation_md)
+            if updated is not None:
+                new_md = updated
+
+        # Update metrics section if markers present
+        metrics_md = render_metrics_section(data.get("metrics") or [])
+        if METRICS_START in new_md and METRICS_END in new_md:
+            updated = partial_replace(new_md, METRICS_START, METRICS_END, metrics_md)
+            if updated is not None:
+                new_md = updated
+
         # Idempotent: skip write if unchanged
         if new_md == existing_md:
             print(

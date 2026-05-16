@@ -215,7 +215,7 @@ python3 - "$DASHBOARD_YAML" "$TODAY" \
     "$PUB_US_SUCCESS" "$CRON_FAILURE_COUNT" \
     "$KARO_COMPACT" "$GUNSHI_COMPACT" "$SAFE_WINDOW_COUNT" \
     "$KARO_SELF_CLEAR" "$GUNSHI_SELF_CLEAR" "$KARO_SELF_COMPACT" "$GUNSHI_SELF_COMPACT" <<'PYEOF'
-import yaml, sys, subprocess
+import os, tempfile, yaml, sys, subprocess
 from pathlib import Path
 
 dashboard_yaml, today = sys.argv[1], sys.argv[2]
@@ -258,8 +258,19 @@ frog = d.get('frog') or {}
 frog['completed_today'] = len(today_items)
 d['frog'] = frog
 
-with open(dashboard_yaml, 'w') as f:
-    yaml.dump(d, f, allow_unicode=True, default_flow_style=False)
+# Atomic write: tempfile + os.replace to prevent TOCTOU race (AC-8)
+dir_path = os.path.dirname(os.path.abspath(dashboard_yaml))
+fd, tmp_path = tempfile.mkstemp(dir=dir_path, suffix='.tmp')
+try:
+    with os.fdopen(fd, 'w') as f:
+        yaml.dump(d, f, allow_unicode=True, default_flow_style=False)
+    os.replace(tmp_path, dashboard_yaml)
+except Exception:
+    try:
+        os.unlink(tmp_path)
+    except Exception:
+        pass
+    raise
 
 subprocess.run(['python3', 'scripts/generate_dashboard_md.py'], check=True,
                cwd=str(Path(dashboard_yaml).parent))

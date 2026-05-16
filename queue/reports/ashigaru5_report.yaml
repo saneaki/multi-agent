@@ -1,11 +1,61 @@
 worker_id: ashigaru5
-task_id: subtask_683e_discord_service_template_dead_ref_fix
-parent_cmd: cmd_683
-timestamp: "2026-05-15T22:35:00+09:00"
+task_id: subtask_731f_beta2_dashboard_metrics_sync
+parent_cmd: cmd_731
+timestamp: "2026-05-16T11:43:03+09:00"
 status: done
 report_to: karo
-type: dead_reference_fix
-model: opus+t
+type: implementation
+model: sonnet
+
+result_731f:
+  ac7_8: PASS
+  dashboard_marker: PASS
+  tests: PASS
+  skip: 0
+  output: output/cmd_731f_beta2_dashboard_metrics_sync.md
+  summary: |
+    cmd_731 β-2完了。
+    B2-1: L019(git log実測値)/L020(ISO/JST両形式strptime修正)/Step1.5(session log実測値)
+    B2-2: VIOLATION/METRICS marker bootstrap + partial mode更新対応
+    B2-3: cmd_kpi_observer.sh atomic write修正 + 5/15 backfill手順記録
+    B2-4: test_generate_dashboard_md.py 24 passed / 0 skipped
+    B2-5: dashboard.yaml未編集
+
+  ac_results:
+    B2-1: "PASS - L020 ISO/JST両形式対応, L019 git log実測値, Step1.5 session log実測値"
+    B2-2: "PASS - VIOLATION/METRICS marker bootstrap完了, partial mode で両セクション更新確認"
+    B2-3: "PASS - tempfile+os.replace atomic write適用, 5/15 backfill手順記録"
+    B2-4: "PASS - 24 passed, 0 skipped, 0 failed"
+    B2-5: "PASS - dashboard.yaml未編集"
+
+# previous report
+prev_task_id: subtask_731c_shogun_pane_duplicate_structure_audit
+prev_parent_cmd: cmd_731
+
+result_731c:
+  duplicate: "NO"
+  beta_patch: "READY"
+  output: "output/cmd_731c_shogun_pane_duplicate_structure_audit.md"
+  summary: |
+    shogun pane 重複構造調査完了。
+    Claude process 重複なし (PID=4002642 の1プロセスのみ)。
+    07:07 JST 痕跡の正体: shogun_inbox_notifier.sh の log() 関数が
+    tee -a + nohup stdout redirect の二重書き込みバグにより全ログが×2表示。
+    実際の inbox 重複送信は STATE_FILE dedup により発生していない。
+    β修復案4件提示 (log/inotify/pane_target/pidfile)。
+
+  ac_results:
+    A3-1: "PASS - shogun:main.0 に1プロセスのみ確認"
+    A3-2: "PASS - watcher_supervisor/inbox_watcher/notifier の shogun pane 扱い調査完了"
+    A3-3: "PASS - 07:07 JST = log() tee bug による log artifact と判定"
+    A3-4: "PASS - 修復案4件提示、実装ファイル編集なし"
+
+# previous report
+prev_task_id: subtask_683e_discord_service_template_dead_ref_fix
+prev_parent_cmd: cmd_683
+prev_timestamp: "2026-05-15T22:35:00+09:00"
+prev_type: dead_reference_fix
+prev_model: opus+t
 
 result_683e:
   summary: |

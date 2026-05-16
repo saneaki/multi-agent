@@ -1,52 +1,71 @@
 task:
-  task_id: subtask_683e_discord_service_template_dead_ref_fix
-  parent_cmd: cmd_683
-  title: cmd_683e Discord service template dead ref補修
-  bloom_level: L3
+  task_id: subtask_731f_beta2_dashboard_metrics_sync
+  parent_cmd: cmd_731
+  title: "cmd_731f: dashboard違反検出/運用指標同期"
+  bloom_level: L4
   assigned_to: ashigaru5
   report_to: karo
   status: done
-  timestamp: '2026-05-15T22:35:00+09:00'
-  priority: low
+  timestamp: '2026-05-16T11:02:39+09:00'
+  priority: high
   project: shogun
   target_path: /home/ubuntu/shogun
-  context_policy: clear_between
+  context_policy: preserve_across_stages
   blocked_by: []
+  dashboard_exclusive_window:
+    active: true
+    starts_at: '2026-05-16T11:02:39+09:00'
+    note: "β-2が dashboard.md marker bootstrap を行うため、完了報告までkaro/gunshiはdashboard.md通常更新を控える。"
   context_files:
-  - scripts/shogun-discord.service.template
-  - scripts/install-shogun-discord-service.sh
-  - scripts/discord_gateway.py
-  - output/cmd_683d_start_discord_bot_dead_ref_fix.md
-  - queue/shogun_to_karo.yaml
+    - queue/shogun_to_karo.yaml
+    - output/cmd_731b_metrics_violation_update_path_audit.md
+    - output/cmd_731d_alpha_consolidation.md
+    - scripts/generate_dashboard_md.py
+    - scripts/cmd_kpi_observer.sh
+    - dashboard.md
+    - dashboard.yaml
   editable_files:
-  - scripts/shogun-discord.service.template
-  - scripts/install-shogun-discord-service.sh
-  - output/cmd_683e_discord_service_template_dead_ref_fix.md
-  - queue/reports/ashigaru5_report.yaml
-  - queue/tasks/ashigaru5.yaml
-  - queue/inbox/ashigaru5.yaml
+    - scripts/generate_dashboard_md.py
+    - scripts/cmd_kpi_observer.sh
+    - dashboard.md
+    - tests/unit/test_generate_dashboard_md.py
+    - output/cmd_731f_beta2_dashboard_metrics_sync.md
+    - queue/reports/ashigaru5_report.yaml
+    - queue/tasks/ashigaru5.yaml
+    - queue/inbox/ashigaru5.yaml
+  forbidden_files:
+    - scripts/lib/status_check_rules.py
+    - scripts/shogun_reality_check.sh
+    - instructions/karo.md
+    - instructions/ashigaru.md
+    - instructions/shogun.md
+    - scripts/shogun_inbox_notifier.sh
+    - dashboard.yaml
+    - queue/shogun_to_karo.yaml
+    - queue/tasks/pending.yaml
   acceptance_criteria:
-  - id: E-1
-    check: scripts/shogun-discord.service.template ExecStart が削除済 scripts/discord_to_ntfy.py ではなく現行 scripts/discord_gateway.py を指すこと
-  - id: E-2
-    check: scripts/install-shogun-discord-service.sh の pkill/pgrep/process check が discord_to_ntfy ではなく現行 discord_gateway.py / shogun-discord.service
-      に整合すること
-  - id: E-3
-    check: grep/scanで scripts 配下の discord_to_ntfy.py 実行系参照が0件であること。履歴コメント/docstringは可、service ExecStartやpython実行やprocess checkは不可
-  - id: E-4
-    check: systemd-analyze verify --user または代替の静的検証が可能なら実施し、不可なら理由をoutputに記録する。bash -n install script は必須
-  - id: E-5
-    check: commit message に cmd_683 を含めて origin/main へpushする。未関係dirtyを巻き込まない
-  - id: E-6
-    check: output に683d検収で追加漏れを発見した経緯、対応範囲、skill候補(dead-reference after deletion)の扱いを記録する
-  description: '683d検収で追加の実行系dead referenceを発見。scripts/shogun-discord.service.template ExecStart が削除済 scripts/discord_to_ntfy.py を参照し、install-shogun-discord-service.sh
-    も discord_to_ntfy process名で停止/確認している。cmd_683内のpost-complete cleanupとして、現行 scripts/discord_gateway.py / shogun-discord.service に整合させる。
+    - id: B2-1
+      check: "generate_dashboard_md.py の L019/L020/Step1.5 を実測値生成へ修正し、L020はISO/JST両形式のlast_updatedを扱える"
+    - id: B2-2
+      check: "dashboard.md に VIOLATION/METRICS markerを追加し、partial modeでも違反検出/運用指標セクションが更新される"
+    - id: B2-3
+      check: "cmd_kpi_observer.sh の dashboard.yaml 書込を atomic write に修正し、5/15 backfill手順をoutputに記録する"
+    - id: B2-4
+      check: "tests/unit/test_generate_dashboard_md.py を追加し、partial更新・L020 ISO/JST・metrics renderingをSKIP=0でPASSさせる"
+    - id: B2-5
+      check: "dashboard.md以外のdashboard.yamlは編集しない。commit messageに Refs cmd_731 AC-7/8 を含める"
+  description: |
+    cmd_731 Phase β-2。dashboard違反検出/運用指標の同期修復を担当する。
 
+    【目的】
+    AC-7/8を実装し、partial modeでも違反検出と運用指標が実態反映されるようにする。
 
-    完了報告:
+    【厳守】
+    - dashboard.md は本タスク専有窓。必要最小限の marker bootstrap と生成結果だけを編集する。
+    - dashboard.yaml は編集禁止。backfillは手順をoutputに記録し、実行が必要ならKaroへ申し送る。
+    - 他β担当ファイルを触らない。
 
-    bash /home/ubuntu/shogun/scripts/inbox_write.sh karo "【subtask_683e_discord_service_template_dead_ref_fix 完了】cmd_683e完了。service=<PASS|FAIL>
-    installer=<PASS|FAIL> scan=<PASS|FAIL> commit=<sha> output=output/cmd_683e_discord_service_template_dead_ref_fix.md。report確認されたし。" task_completed
-    ashigaru5
-
-    '
+    【完了報告】
+    bash /home/ubuntu/shogun/scripts/inbox_write.sh karo \
+      "【subtask_731f_beta2_dashboard_metrics_sync 完了】cmd_731 β-2完了。ac7_8=<PASS|FAIL> dashboard_marker=<PASS|FAIL> tests=<PASS|FAIL> skip=<0|N> commit=<sha> output=output/cmd_731f_beta2_dashboard_metrics_sync.md。report確認されたし。" \
+      task_completed ashigaru5
