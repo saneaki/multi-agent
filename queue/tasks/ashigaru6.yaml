@@ -1,65 +1,79 @@
 task:
-  task_id: subtask_731n_karo_audit_macos_gha_fix
-  parent_cmd: cmd_731
-  title: 'cmd_731n: karo audit macOS GHA補修'
-  bloom_level: L4
+  acceptance_criteria:
+  - check: crontab preflight backupを output に記録し、既存cronを破壊せず cmd_731 managed lines
+      のみ追加/更新する
+    id: Q-1
+  - check: 'AC-5: scripts/karo_cmd_complete_audit.sh が定期実行される crontab 登録を追加し、ログパスと
+      dry-run/手動実行 exit code を証跡化する'
+    id: Q-2
+  - check: 'AC-6: scripts/shogun_completion_hook.sh が定期実行される crontab 登録を追加し、ログパスと
+      --dry-run/必要なら --cmd-id 実行結果を証跡化する'
+    id: Q-3
+  - check: 'AC-10: 21:00 JST待ち不整合を解消する。現実の登録が18:00 JSTなら pending/task側に修正提案を output
+      に明記し、必要なら reality_check cronに21:00 JST(12:00 UTC)を追加する'
+    id: Q-4
+  - check: crontab -l で karo_cmd_complete_audit / shogun_completion_hook / shogun_reality_check
+      の登録が確認できる
+    id: Q-5
+  - check: YAML parse (queue/reports/ashigaru6_report.yaml / queue/tasks/ashigaru6.yaml)
+      をPASSさせ、SKIP=0で報告する
+    id: Q-6
   assigned_to: ashigaru6
-  report_to: karo
-  status: work
-  timestamp: '2026-05-16T13:02:24+09:00'
-  priority: high
-  project: shogun
-  target_path: /home/ubuntu/shogun
-  context_policy: preserve_across_stages
   blocked_by: []
+  bloom_level: L4
+  completed_at: '2026-05-16T16:24:25+09:00'
   context_files:
   - queue/shogun_to_karo.yaml
-  - output/cmd_731g_beta3_karo_ashigaru_cmd_complete_audit.md
-  - output/cmd_731k_gamma_gunshi_qc.md
+  - queue/tasks/pending.yaml
+  - output/cmd_731ε_codex_completion_verification.md
   - scripts/karo_cmd_complete_audit.sh
-  - tests/unit/test_karo_cmd_complete_audit.bats
+  - scripts/shogun_completion_hook.sh
+  - scripts/shogun_reality_check.sh
+  - instructions/karo.md
+  - instructions/shogun.md
+  context_policy: preserve_across_stages
+  description: "cmd_731 ε Codex検証で、実装・テストは通過したものの AC-5/AC-6 の runtime 自動配線が未確認、かつ\
+    \ AC-10 の 21:00 JST reality_check 待ち条件が現 crontab (06/12/18 JST) と不整合であると判定された。\n\
+    \n【方針】\n- 実装script本体は編集しない。既存 script を crontab に登録し、棚置き化を防ぐ。\n- crontab は必ずバックアップを取り、cmd_731\
+    \ managed comment付き行だけ追加/更新すること。\n- 破壊的な `crontab -r` は禁止。\n- cron 時刻は JST/UTC\
+    \ を明記すること。\n\n【推奨登録案】\n- `*/10 * * * * bash /home/ubuntu/shogun/scripts/karo_cmd_complete_audit.sh\
+    \ --quiet >> /home/ubuntu/shogun/logs/karo_cmd_complete_audit.log 2>&1`\n- `*/10\
+    \ * * * * bash /home/ubuntu/shogun/scripts/shogun_completion_hook.sh >> /home/ubuntu/shogun/logs/shogun_completion_hook.log\
+    \ 2>&1`\n- reality_check の 21:00 JST 待ちが必要なら `0 12 * * * bash /home/ubuntu/shogun/scripts/shogun_reality_check.sh\
+    \ >> /home/ubuntu/shogun/logs/reality_check.log 2>&1` を追加。ただし既存の 06/12/18 JST\
+    \ 登録との重複・意図を output で説明する。\n\n【完了報告】\nbash /home/ubuntu/shogun/scripts/inbox_write.sh\
+    \ karo \\\n  \"【subtask_731q_runtime_wiring_repair 完了】cmd_731 runtime配線補修完了。ac5=<PASS|FAIL>\
+    \ ac6=<PASS|FAIL> cron21=<PASS|N/A|FAIL> tests=<PASS|FAIL> skip=0 output=output/cmd_731q_runtime_wiring_repair.md。report確認されたし。\"\
+    \ \\\n  task_completed ashigaru6\n"
   editable_files:
-  - scripts/karo_cmd_complete_audit.sh
-  - tests/unit/test_karo_cmd_complete_audit.bats
-  - output/cmd_731n_karo_audit_macos_gha_fix.md
+  - output/cmd_731q_runtime_wiring_repair.md
   - queue/reports/ashigaru6_report.yaml
   - queue/tasks/ashigaru6.yaml
   - queue/inbox/ashigaru6.yaml
   forbidden_files:
-  - instructions/karo.md
-  - instructions/ashigaru.md
-  - scripts/lib/status_check_rules.py
-  - scripts/shogun_reality_check.sh
-  - scripts/generate_dashboard_md.py
-  - scripts/cmd_kpi_observer.sh
+  - scripts/karo_cmd_complete_audit.sh
   - scripts/shogun_completion_hook.sh
-  - scripts/shogun_inbox_notifier.sh
-  - dashboard.md
+  - scripts/shogun_reality_check.sh
+  - scripts/cmd_kpi_observer.sh
+  - scripts/generate_dashboard_md.py
+  - instructions/karo.md
+  - instructions/shogun.md
+  - instructions/ashigaru.md
   - dashboard.yaml
+  - dashboard.md
   - queue/shogun_to_karo.yaml
   - queue/tasks/pending.yaml
-  acceptance_criteria:
-  - id: N-1
-    check: GHA run 25952026417 のT-KCA-002/003/004 status code mismatch根因をoutputに記録する
-  - id: N-2
-    check: scripts/karo_cmd_complete_audit.sh をmacOS/GHA互換に修正する。cmd_729e同型の system
-      python3 / PyYAML mismatch が原因なら repo .venv python を優先する等で安定化する
-  - id: N-3
-    check: tests/unit/test_karo_cmd_complete_audit.bats がLinux/macOS双方で期待exit codeを正しく検証できるようにする
-  - id: N-4
-    check: bash -n scripts/karo_cmd_complete_audit.sh と bats tests/unit/test_karo_cmd_complete_audit.bats
-      をSKIP=0でPASSさせる
-  - id: N-5
-    check: commit message に Refs cmd_731 AC-5 と GHA run 25952026417 を含め、編集対象だけcommit/pushする
-  description: "cmd_731 GHA再失敗補修。run 25952026417 (commit 9a5ae39) で flock 問題は解消したが、\n\
-    AC-5の `tests/unit/test_karo_cmd_complete_audit.bats` がmacOSで失敗した。\n\n【失敗内容】\n\
-    - T-KCA-002 line 53: expected exit 1, actual mismatch\n- T-KCA-003 line 77: expected\
-    \ exit 0, actual mismatch\n- T-KCA-004 line 97: expected exit 0, actual mismatch\n\
-    - いずれも status code mismatch。cmd_729e同型の `.venv PyYAML / system python3 mismatch`\
-    \ 可能性あり。\n\n【方針】\n`scripts/karo_cmd_complete_audit.sh` のPython実行系とテストfixtureをmacOSでも安定させる。\n\
-    例: repo `.venv/bin/python3` が存在すれば優先、なければ system `python3` fallback。\nただし実装は調査結果に従い、最小修正とする。\n\
-    \n【厳守】\n- instructions類は編集禁止。β-3実装範囲のscript/testのみ。\n- SKIP=1以上は未完。\n- GHA failure補修なのでcommit/pushまで行う。\n\
-    \n【完了報告】\nbash /home/ubuntu/shogun/scripts/inbox_write.sh karo \\\n  \"【subtask_731n_karo_audit_macos_gha_fix\
-    \ 完了】cmd_731 AC-5 macOS補修完了。gha=<PASS|PENDING|FAIL> tests=<PASS|FAIL> skip=<0|N>\
-    \ commit=<sha> output=output/cmd_731n_karo_audit_macos_gha_fix.md。report確認されたし。\"\
-    \ \\\n  task_completed ashigaru6\n"
+  operational_writes_allowed:
+  - user crontab (add/update cmd_731 managed lines only)
+  - logs/karo_cmd_complete_audit.log
+  - logs/shogun_completion_hook.log
+  - logs/reality_check.log
+  parent_cmd: cmd_731
+  priority: high
+  project: shogun
+  report_to: karo
+  status: done
+  target_path: /home/ubuntu/shogun
+  task_id: subtask_731q_runtime_wiring_repair
+  timestamp: '2026-05-16T16:19:28+09:00'
+  title: 'cmd_731q: AC-5/6 runtime配線補修'

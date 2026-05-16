@@ -26,16 +26,7 @@
     },
     "documentation_rules": {
       "type": "array",
-      "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": ["category", "rule_summary", "rationale"],
-        "properties": {
-          "category": { "type": "string", "minLength": 1 },
-          "rule_summary": { "type": "string", "minLength": 1 },
-          "rationale": { "type": "string", "minLength": 1 }
-        }
-      }
+      "items": { "$ref": "#/definitions/documentation_rule" }
     },
     "frog": {
       "type": "object",
@@ -49,9 +40,7 @@
         "vf_remaining"
       ],
       "properties": {
-        "today": {
-          "type": ["string", "null"]
-        },
+        "today": { "type": ["string", "null"] },
         "status": { "type": "string", "minLength": 1 },
         "streak_days": { "type": "integer", "minimum": 0 },
         "streak_max": { "type": "integer", "minimum": 0 },
@@ -61,61 +50,25 @@
     },
     "action_required": {
       "type": "array",
+      "items": { "$ref": "#/definitions/action_required_item" }
+    },
+    "action_required_archive": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/archive_item" }
+    },
+    "gate_registry": {
+      "type": "array",
+      "description": "cmd_716 Phase A dogfooding registry. Coexists with legacy issue_id action_required entries.",
       "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": ["tag", "title", "detail", "created_at"],
-        "properties": {
-          "tag": { "type": "string", "minLength": 1 },
-          "title": { "type": "string", "minLength": 1 },
-          "detail": { "type": "string", "minLength": 1 },
-          "created_at": {
-            "type": "string",
-            "description": "ISO 8601 timestamp when the item was created (JST)"
-          }
-        }
+        "anyOf": [
+          { "$ref": "#/definitions/gate_registry_item" },
+          { "$ref": "#/definitions/registry_legacy_issue_item" }
+        ]
       }
     },
     "metrics": {
       "type": "array",
-      "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": [
-          "date",
-          "success",
-          "failure",
-          "karo_compact",
-          "gunshi_compact",
-          "safe_window"
-        ],
-        "properties": {
-          "date": {
-            "type": "string",
-            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
-          },
-          "success": { "type": "integer", "minimum": 0 },
-          "failure": { "type": "integer", "minimum": 0 },
-          "karo_compact": {
-            "oneOf": [
-              { "type": "integer", "minimum": 0 },
-              { "type": "string", "enum": ["-"] }
-            ]
-          },
-          "gunshi_compact": {
-            "oneOf": [
-              { "type": "integer", "minimum": 0 },
-              { "type": "string", "enum": ["-"] }
-            ]
-          },
-          "safe_window": {
-            "oneOf": [
-              { "type": "integer", "minimum": 0 },
-              { "type": "string", "enum": ["-"] }
-            ]
-          }
-        }
-      }
+      "items": { "$ref": "#/definitions/metric_item" }
     },
     "in_progress": {
       "type": "array",
@@ -139,7 +92,7 @@
         "required": ["name", "model", "status", "last_task"],
         "properties": {
           "name": { "type": "string", "minLength": 1 },
-          "model": { "type": "string", "minLength": 1 },
+          "model": { "type": "string" },
           "status": { "type": "string", "minLength": 1 },
           "last_task": { "type": "string", "minLength": 1 }
         }
@@ -152,35 +105,19 @@
       "properties": {
         "today": {
           "type": "array",
-          "items": {
-            "$ref": "#/definitions/achievement_item"
-          }
+          "items": { "$ref": "#/definitions/achievement_item" }
         },
-        "yesterday": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": ["header", "items"],
-          "properties": {
-            "header": { "type": "string", "minLength": 1 },
-            "items": {
-              "type": "array",
-              "items": { "$ref": "#/definitions/achievement_item" }
-            }
-          }
-        },
-        "day_before": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": ["header", "items"],
-          "properties": {
-            "header": { "type": "string", "minLength": 1 },
-            "items": {
-              "type": "array",
-              "items": { "$ref": "#/definitions/achievement_item" }
-            }
-          }
-        }
+        "yesterday": { "$ref": "#/definitions/achievement_bucket" },
+        "day_before": { "$ref": "#/definitions/achievement_bucket" }
       }
+    },
+    "observation_queue": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/observation_item" }
+    },
+    "observation_queue_archive": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/archive_item" }
     },
     "skill_candidates": {
       "type": "array",
@@ -198,19 +135,202 @@
     }
   },
   "definitions": {
+    "documentation_rule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["category", "rule_summary", "rationale"],
+      "properties": {
+        "category": { "type": "string", "minLength": 1 },
+        "rule_summary": { "type": "string", "minLength": 1 },
+        "rationale": { "type": "string", "minLength": 1 }
+      }
+    },
+    "action_required_item": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tag", "title", "detail", "created_at"],
+      "properties": {
+        "tag": { "type": "string", "minLength": 1 },
+        "title": { "type": "string", "minLength": 1 },
+        "detail": { "type": "string", "minLength": 1 },
+        "created_at": { "type": "string", "minLength": 1 },
+        "issue_id": { "type": "string", "minLength": 1 },
+        "parent_cmd": { "type": "string", "minLength": 1 },
+        "severity": { "$ref": "#/definitions/severity" },
+        "needs_lord_decision": { "type": "boolean" },
+        "source_report_ts": { "type": "string", "minLength": 1 },
+        "status": { "type": "string", "minLength": 1 },
+        "gate_id": { "type": "string", "minLength": 1 },
+        "gate_state": { "type": "string", "minLength": 1 },
+        "state": { "type": "string", "minLength": 1 },
+        "cmd_id": { "type": "string", "minLength": 1 },
+        "expected_action": { "type": "string", "minLength": 1 },
+        "registered_at": { "type": "string", "minLength": 1 },
+        "registered_by": { "type": "string", "minLength": 1 },
+        "notified_at": { "type": ["string", "null"] },
+        "resolved_at": { "type": ["string", "null"] },
+        "resolved_by": { "type": ["string", "null"] },
+        "approval_channel": { "type": "string", "minLength": 1 },
+        "approved_by": { "type": "string", "minLength": 1 },
+        "notes": { "type": "string" },
+        "notification_count": { "type": "integer", "minimum": 0 },
+        "background": { "type": "string" },
+        "next_phase": { "type": "string" },
+        "references": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "resolution_log": {
+          "type": "array",
+          "items": { "type": "object" }
+        },
+        "suppression": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    },
+    "gate_registry_item": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["gate_id", "state", "expected_action", "registered_at"],
+      "properties": {
+        "gate_id": { "type": "string", "minLength": 1 },
+        "state": { "type": "string", "minLength": 1 },
+        "gate_state": { "type": "string", "minLength": 1 },
+        "cmd_id": { "type": "string", "minLength": 1 },
+        "expected_action": { "type": "string", "minLength": 1 },
+        "registered_at": { "type": "string", "minLength": 1 },
+        "registered_by": { "type": "string", "minLength": 1 },
+        "notified_at": { "type": ["string", "null"] },
+        "resolved_at": { "type": ["string", "null"] },
+        "approval_channel": { "type": "string", "minLength": 1 },
+        "approved_by": { "type": "string", "minLength": 1 },
+        "notes": { "type": "string" }
+      }
+    },
+    "registry_legacy_issue_item": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["issue_id", "tag", "title", "detail"],
+      "properties": {
+        "issue_id": { "type": "string", "minLength": 1 },
+        "tag": { "type": "string", "minLength": 1 },
+        "title": { "type": "string", "minLength": 1 },
+        "detail": { "type": "string", "minLength": 1 },
+        "parent_cmd": { "type": "string", "minLength": 1 },
+        "severity": { "$ref": "#/definitions/severity" },
+        "needs_lord_decision": { "type": "boolean" },
+        "source_report_ts": { "type": "string", "minLength": 1 },
+        "status": { "type": "string", "minLength": 1 }
+      }
+    },
+    "metric_item": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "date",
+        "success",
+        "failure",
+        "karo_compact",
+        "gunshi_compact",
+        "safe_window"
+      ],
+      "properties": {
+        "date": {
+          "type": "string",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+        },
+        "success": { "type": "integer", "minimum": 0 },
+        "failure": { "type": "integer", "minimum": 0 },
+        "karo_compact": { "$ref": "#/definitions/count_or_dash" },
+        "gunshi_compact": { "$ref": "#/definitions/count_or_dash" },
+        "safe_window": { "$ref": "#/definitions/count_or_dash" },
+        "karo_self_clear": { "$ref": "#/definitions/count_or_dash" },
+        "karo_self_compact": { "$ref": "#/definitions/count_or_dash" },
+        "gunshi_self_clear": { "$ref": "#/definitions/count_or_dash" },
+        "gunshi_self_compact": { "$ref": "#/definitions/count_or_dash" }
+      }
+    },
+    "achievement_bucket": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["header", "items"],
+      "properties": {
+        "header": { "type": "string", "minLength": 1 },
+        "items": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/achievement_item" }
+        }
+      }
+    },
     "achievement_item": {
       "type": "object",
       "additionalProperties": false,
       "required": ["time", "battlefield", "task", "result"],
       "properties": {
         "time": {
-          "type": "string",
-          "pattern": "^([0-1][0-9]|2[0-3]):[0-5][0-9]$"
+          "oneOf": [
+            {
+              "type": "string",
+              "pattern": "^([0-1][0-9]|2[0-3]):[0-5][0-9]$"
+            },
+            { "type": "integer" }
+          ]
         },
         "battlefield": { "type": "string", "minLength": 1 },
         "task": { "type": "string", "minLength": 1 },
         "result": { "type": "string", "minLength": 1 }
       }
+    },
+    "observation_item": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tag", "title", "detail"],
+      "properties": {
+        "tag": { "type": "string", "minLength": 1 },
+        "title": { "type": "string", "minLength": 1 },
+        "detail": { "type": "string", "minLength": 1 },
+        "issue_id": { "type": "string", "minLength": 1 },
+        "parent_cmd": { "type": "string", "minLength": 1 },
+        "severity": { "$ref": "#/definitions/severity" },
+        "needs_lord_decision": { "type": "boolean" },
+        "source_report_ts": { "type": "string", "minLength": 1 },
+        "status": { "type": "string", "minLength": 1 },
+        "closed_at": { "type": "string", "minLength": 1 },
+        "close_type": { "type": "string", "minLength": 1 },
+        "close_reason": { "type": "string", "minLength": 1 },
+        "observation_actions": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/observation_action" }
+        }
+      }
+    },
+    "observation_action": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["phase", "status", "task_id", "title"],
+      "properties": {
+        "phase": { "type": "string", "minLength": 1 },
+        "status": { "type": "string", "minLength": 1 },
+        "task_id": { "type": "string", "minLength": 1 },
+        "title": { "type": "string", "minLength": 1 },
+        "assigned_to": { "type": "string", "minLength": 1 }
+      }
+    },
+    "archive_item": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "severity": {
+      "type": "string",
+      "enum": ["P0", "HIGH", "MEDIUM", "INFO"]
+    },
+    "count_or_dash": {
+      "oneOf": [
+        { "type": "integer", "minimum": 0 },
+        { "type": "string", "enum": ["-"] }
+      ]
     }
   }
 }

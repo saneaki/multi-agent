@@ -15758,3 +15758,199 @@ suggestions:
   content: GHA run 25906271635 PASS時に Node.js 20 actions deprecation warning を確認。actions/checkout@v4 / actions/upload-artifact@v4 が対象。2026-06-02 Node.js 24 default化、2026-09-16 Node.js 20 removal 前に workflow
     対応要否を検討する。
   action_needed: GitHub Actions workflow の action versions / FORCE_JAVASCRIPT_ACTIONS_TO_NODE24 / ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION 方針確認を別cmdで起案検討。
+
+- id: sug_cmd_730c_001
+  from: gunshi
+  cmd_ref: cmd_730
+  task_ref: subtask_730c_gunshi_root_cause_consolidation
+  created_at: "2026-05-16T03:36:00+09:00"
+  status: pending
+  priority: high
+  content: |
+    β 着手前に `grep -rn 'settings\.yaml\|settings_path' scripts/ lib/` で未発見の永続書込み経路を網羅 audit。
+    真因 A (shp)/D (shx)/E (SHOGUN_NO_THINKING) 以外に潜在経路がないかを確認。
+  action_needed: "家老が β 配備時 pre-implementation step として grep audit を AC に組込み"
+- id: sug_cmd_730c_002
+  from: gunshi
+  cmd_ref: cmd_730
+  task_ref: subtask_730c_gunshi_root_cause_consolidation
+  created_at: "2026-05-16T03:36:00+09:00"
+  status: pending
+  priority: medium
+  content: |
+    switch_cli.sh:345-346 の `2>/dev/null || true` silent fail を β 並走で除去。
+    `shogun-shc-switch-silent-failure` skill 適用候補。pane meta 書込み失敗の検出不能化を解消する。
+  action_needed: "家老が β editable_files に scripts/switch_cli.sh を追加するか、別 subtask として γ 並列で配備"
+- id: sug_cmd_730c_003
+  from: gunshi
+  cmd_ref: cmd_730
+  task_ref: subtask_730c_gunshi_root_cause_consolidation
+  created_at: "2026-05-16T03:36:00+09:00"
+  status: pending
+  priority: high
+  content: |
+    δ-B smoke (T1-T7) PASS を ε (殿 hand-verify) 前 必須 gate に。
+    家老 dispatch_note に "smoke FAIL のまま ε 発令禁止" を明記する。
+  action_needed: "家老が δ-B 完了時の cmd_complete 判定条件に smoke PASS gate を組込み"
+- id: sug_cmd_730c_004
+  from: gunshi
+  cmd_ref: cmd_730
+  task_ref: subtask_730c_gunshi_root_cause_consolidation
+  created_at: "2026-05-16T03:36:00+09:00"
+  status: pending
+  priority: medium
+  content: |
+    β 着手前に `claude --help` で `--no-thinking` 相当フラグの存在を確認。
+    不在時は env `CLAUDE_THINKING=0` 等の代替経路を γ で検討する判断が必要。
+  action_needed: "家老が β-6 (SHOGUN_NO_THINKING 永続書込み廃止 AC) の事前 check として組込み"
+
+- id: sug_cmd_730zz_001
+  from: gunshi
+  cmd_ref: cmd_730
+  task_ref: subtask_730zz_codex_reverification_qc
+  created_at: "2026-05-16T08:05:00+09:00"
+  status: pending
+  priority: low
+  content: |
+    scripts/so24_verify.sh の inbox-check が `type: task_completed` を漏れ検出する症状。
+    msg_20260516_080142_0be260c2 (from: ashigaru7, type: task_completed) が karo inbox 実在にもかかわらず
+    "no task_completed from ashigaru7 in karo inbox" を返す。
+  action_needed: "script の検索ロジック確認 + テスト fixture 追加"
+- id: sug_cmd_730zz_002
+  from: gunshi
+  cmd_ref: cmd_730
+  task_ref: subtask_730zz_codex_reverification_qc
+  created_at: "2026-05-16T08:05:00+09:00"
+  status: pending
+  priority: low
+  content: |
+    scripts/qc_auto_check.sh の引数形式不整合。
+    `qc_auto_check.sh 7 <task_id>` で `7_report.yaml` を探して失敗。`ashigaru7` フル ID 必須。
+  action_needed: "usage warn 表示 or 数字→ashigaruN 自動 alias 実装"
+- id: sug_cmd_730zz_003
+  from: gunshi
+  cmd_ref: cmd_730
+  task_ref: subtask_730zz_codex_reverification_qc
+  created_at: "2026-05-16T08:05:00+09:00"
+  status: pending
+  priority: medium
+  content: |
+    Reverification 系 task YAML の report_to 表記規約を明文化。
+    現状 `report_to: karo` だが実フローは ash → gunshi (QC) → karo。
+    qc_auto_check.sh SO-06 が "expected gunshi" で fail を返す原因。
+  action_needed: "instructions/common/ または config/qc_checklist.yaml に二層表記を明文化 (一次=gunshi、final=karo)"
+
+- id: sug_cmd_731d_001
+  from: gunshi
+  cmd_ref: cmd_731
+  task_ref: subtask_731d_gunshi_alpha_consolidation
+  created_at: "2026-05-16T11:00:00+09:00"
+  status: pending
+  priority: high
+  content: |
+    β-3 (instructions/karo.md + instructions/ashigaru.md + karo_cmd_complete_audit.sh) は
+    β-1 (status_check_rules.py DONE_MAX_AGE_MIN 撤廃 + check_ash_done_pending 修正) 完了 +
+    origin/main reachable 確認後に着手すること。順序逆転で一時的「done 永続表示」期間発生。
+  action_needed: "家老が β-3 dispatch_note に依存関係明記、β-1 完了 PR merge 後 dispatch"
+- id: sug_cmd_731d_002
+  from: gunshi
+  cmd_ref: cmd_731
+  task_ref: subtask_731d_gunshi_alpha_consolidation
+  created_at: "2026-05-16T11:00:00+09:00"
+  status: pending
+  priority: medium
+  content: |
+    β-2 配備時に dashboard.md 専有窓 (約 10 分) を家老が予約し、karo/gunshi の通常 dashboard 更新を一時 halt。
+    VIOLATION/METRICS marker bootstrap 1 行 commit のみで短時間完了。
+  action_needed: "家老が β-2 dispatch_note に「dashboard.md write window 予約」明記"
+- id: sug_cmd_731d_003
+  from: gunshi
+  cmd_ref: cmd_731
+  task_ref: subtask_731d_gunshi_alpha_consolidation
+  created_at: "2026-05-16T11:00:00+09:00"
+  status: pending
+  priority: medium
+  content: |
+    AC-5 karo_cmd_complete_audit.sh は dedup + cooldown (5min 同 cmd_id 抑制) 必須。
+    家老 inbox 汚染防止のため誤検知時の repeat alert を防ぐ。
+  action_needed: "β-3 AC に audit script dedup/cooldown 要件追加"
+- id: sug_cmd_731d_004
+  from: gunshi
+  cmd_ref: cmd_731
+  task_ref: subtask_731d_gunshi_alpha_consolidation
+  created_at: "2026-05-16T11:00:00+09:00"
+  status: pending
+  priority: low
+  content: |
+    AC-6 shogun_completion_hook.sh は 1 cmd につき 1 nudge に限定。
+    将軍 inbox spam 防止のため STATE_FILE で notified_cmd を記録。
+  action_needed: "β-4 AC に hook dedup 要件追加"
+- id: sug_cmd_731d_005
+  from: gunshi
+  cmd_ref: cmd_731
+  task_ref: subtask_731d_gunshi_alpha_consolidation
+  created_at: "2026-05-16T11:00:00+09:00"
+  status: pending
+  priority: low
+  content: |
+    AC-1 check_dashboard_senka_empty の閾値「当日 09:00 以降」を config/settings.yaml.monitoring.senka_empty_after_jst で外部化
+    (default 12:00 JST)。朝会パターン変化への適応性確保。
+  action_needed: "β-1 AC に閾値外部化要件追加"
+
+- id: sug_cmd_731k_001
+  from: gunshi
+  cmd_ref: cmd_731
+  task_ref: subtask_731k_gamma_gunshi_qc
+  created_at: "2026-05-16T12:42:00+09:00"
+  status: pending
+  priority: high
+  content: |
+    cmd_731 β-3 commits 43ee727 + b4d02d3 を origin/main に push。AC-4 Patch A + AC-5 の本番反映に必須。
+    push 後 GHA で audit script + instructions の linting/bats 再走確認。
+  action_needed: "家老が即 git push origin main、push 完了確認後に γ-2 dispatch"
+- id: sug_cmd_731k_002
+  from: gunshi
+  cmd_ref: cmd_731
+  task_ref: subtask_731k_gamma_gunshi_qc
+  created_at: "2026-05-16T12:42:00+09:00"
+  status: pending
+  priority: medium
+  content: |
+    tests/unit/test_status_check_rules.py::test_ok_when_recent_within_36h の fixture を補修。
+    timedelta(hours=20) を strftime('%Y-%m-%d') で date 化すると JST 12:00+ 実行で 24h rolling boundary 越え。
+    fixture を full timestamp で渡す or 日付固定計算へ変更。実装は妥当。
+  action_needed: "ash4 fixture 補修 follow-up subtask 配備"
+- id: sug_cmd_731k_003
+  from: gunshi
+  cmd_ref: cmd_731
+  task_ref: subtask_731k_gamma_gunshi_qc
+  created_at: "2026-05-16T12:42:00+09:00"
+  status: pending
+  priority: medium
+  content: |
+    scripts/shogun_completion_hook.sh の cron/inbox_watcher wiring が未完。
+    follow-up cmd で配線追加。本 cmd_731 完遂宣言時は residual_risks として明記必要。
+  action_needed: "別 cmd で hook wiring 配備 (cron or inbox_watcher post-action hook)"
+- id: sug_cmd_731k_004
+  from: gunshi
+  cmd_ref: cmd_731
+  task_ref: subtask_731k_gamma_gunshi_qc
+  created_at: "2026-05-16T12:42:00+09:00"
+  status: pending
+  priority: low
+  content: |
+    ash2 cmd_731j J-2 doc-vs-reality drift: output が `753875d で portable fallback 完成済み` と記載するが
+    実 commit は flock-only。GHA は実環境で PASS だが doc の根拠が間違っている。
+    skill 候補 `shogun-doc-vs-reality-drift-prevention` 化検討。
+  action_needed: "別 cmd で skill 化判断 + cmd_731j output 訂正 or script fallback commit"
+- id: sug_cmd_731k_005
+  from: gunshi
+  cmd_ref: cmd_731
+  task_ref: subtask_731k_gamma_gunshi_qc
+  created_at: "2026-05-16T12:42:00+09:00"
+  status: pending
+  priority: medium
+  content: |
+    AC-5 karo_cmd_complete_audit.sh の cron 配備確認。
+    `crontab -l` で配備有無を確認、未配備なら β-3 追補で配備。家老の手動定期実行依存は SoT 規律違反。
+  action_needed: "β-3 push 後 crontab 確認、未配備なら追補 dispatch"

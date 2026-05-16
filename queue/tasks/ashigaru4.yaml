@@ -1,65 +1,57 @@
 task:
-  task_id: subtask_731e_beta1_reality_check_rules
-  parent_cmd: cmd_731
-  title: "cmd_731e: reality_check 3検知+done漏れ修復"
-  bloom_level: L4
+  acceptance_criteria:
+  - check: tests/unit/test_status_check_rules.py::test_ok_when_recent_within_36h のJST
+      12:00以降flaky原因をoutputに記録する
+    id: L-1
+  - check: fixtureを時刻精度保持または日付固定に修正し、24h rolling boundaryでFAILしないようにする
+    id: L-2
+  - check: python3 -m pytest tests/unit/test_status_check_rules.py をSKIP=0で全PASSさせる
+    id: L-3
+  - check: commit messageに Refs cmd_731 AC-3 を含め、編集対象だけcommit/pushする
+    id: L-4
   assigned_to: ashigaru4
-  report_to: karo
-  status: done
-  timestamp: '2026-05-16T11:02:39+09:00'
+  blocked_by: []
+  bloom_level: L4
+  completed_at: '2026-05-16T12:51:23+09:00'
+  context_files:
+  - queue/shogun_to_karo.yaml
+  - output/cmd_731e_beta1_reality_check_rules.md
+  - output/cmd_731k_gamma_gunshi_qc.md
+  - scripts/lib/status_check_rules.py
+  - tests/unit/test_status_check_rules.py
+  context_policy: preserve_across_stages
+  description: "cmd_731 γ-1 QC follow-up。β-1 test_status_check_rules.py の flaky fixture\
+    \ 補修。\n\n【根因】\n`test_ok_when_recent_within_36h` が `now_jst - timedelta(hours=20)`\
+    \ を `%Y-%m-%d` に潰すため、\nJST 12:00以降に実行すると実装側が前日00:00扱いし、36h+ stale判定になる。\n\n【厳守】\n\
+    - 実装ファイル scripts/lib/status_check_rules.py は編集禁止。今回はfixture補修のみ。\n- SKIP=1以上は未完。\n\
+    \n【完了報告】\nbash /home/ubuntu/shogun/scripts/inbox_write.sh karo \\\n  \"【subtask_731l_beta1_metrics_flaky_fixture_fix\
+    \ 完了】cmd_731 β-1 flaky補修完了。tests=<PASS|FAIL> skip=<0|N> commit=<sha> output=output/cmd_731l_beta1_metrics_flaky_fixture_fix.md。report確認されたし。\"\
+    \ \\\n  task_completed ashigaru4\n"
+  editable_files:
+  - tests/unit/test_status_check_rules.py
+  - output/cmd_731l_beta1_metrics_flaky_fixture_fix.md
+  - queue/reports/ashigaru4_report.yaml
+  - queue/tasks/ashigaru4.yaml
+  - queue/inbox/ashigaru4.yaml
+  forbidden_files:
+  - scripts/lib/status_check_rules.py
+  - scripts/shogun_reality_check.sh
+  - scripts/generate_dashboard_md.py
+  - scripts/cmd_kpi_observer.sh
+  - dashboard.md
+  - dashboard.yaml
+  - instructions/karo.md
+  - instructions/ashigaru.md
+  - instructions/shogun.md
+  - scripts/shogun_inbox_notifier.sh
+  - queue/shogun_to_karo.yaml
+  - queue/tasks/pending.yaml
+  parent_cmd: cmd_731
   priority: high
   project: shogun
+  report_to: karo
+  status: done
   target_path: /home/ubuntu/shogun
-  context_policy: preserve_across_stages
-  blocked_by: []
-  context_files:
-    - queue/shogun_to_karo.yaml
-    - output/cmd_731a_check_ash_done_pending_root_cause.md
-    - output/cmd_731d_alpha_consolidation.md
-    - scripts/lib/status_check_rules.py
-    - scripts/shogun_reality_check.sh
-  editable_files:
-    - scripts/lib/status_check_rules.py
-    - scripts/shogun_reality_check.sh
-    - tests/unit/test_status_check_rules.py
-    - output/cmd_731e_beta1_reality_check_rules.md
-    - queue/reports/ashigaru4_report.yaml
-    - queue/tasks/ashigaru4.yaml
-    - queue/inbox/ashigaru4.yaml
-  forbidden_files:
-    - scripts/generate_dashboard_md.py
-    - scripts/cmd_kpi_observer.sh
-    - dashboard.md
-    - dashboard.yaml
-    - instructions/karo.md
-    - instructions/ashigaru.md
-    - instructions/shogun.md
-    - scripts/shogun_inbox_notifier.sh
-    - queue/shogun_to_karo.yaml
-    - queue/tasks/pending.yaml
-  acceptance_criteria:
-    - id: B1-1
-      check: "status_check_rules.py に check_dashboard_senka_empty / check_frog_unset / check_metrics_stale を追加し、CHECKSに登録する"
-    - id: B1-2
-      check: "check_ash_done_pending の DONE_MAX_AGE_MIN上限を撤廃し、done>=30min と completed_pending_karo>=30min を検知する"
-    - id: B1-3
-      check: "shogun_reality_check.sh が新3検知を実行し、全検知の戻り値を ok または PENDING/UNCOMMITTED 形式で扱える"
-    - id: B1-4
-      check: "tests/unit/test_status_check_rules.py を追加し、AC-1/2/3/4の正常/異常fixtureをSKIP=0でPASSさせる"
-    - id: B1-5
-      check: "bash -n scripts/shogun_reality_check.sh と python3 tests/unit/test_status_check_rules.py をPASSさせ、commit messageに Refs cmd_731 AC-1/2/3/4 を含める"
-  description: |
-    cmd_731 Phase β-1。reality_check 3検知追加と check_ash_done_pending 漏れ修復を担当する。
-
-    【目的】
-    AC-1/2/3/4を実装し、戦果空・Frog未設定・metrics stale・done→reassign死角を機械検出できる状態にする。
-
-    【厳守】
-    - 本β-1は scripts/lib/status_check_rules.py / scripts/shogun_reality_check.sh / tests/unit/test_status_check_rules.py の単独占有。
-    - dashboard.md、generate_dashboard_md.py、instructions類、notifier系は編集禁止。他β担当と混線しない。
-    - SKIP=1以上は未完。実行不能ならFAILとして根拠を記録する。
-
-    【完了報告】
-    bash /home/ubuntu/shogun/scripts/inbox_write.sh karo \
-      "【subtask_731e_beta1_reality_check_rules 完了】cmd_731 β-1完了。ac1_4=<PASS|FAIL> tests=<PASS|FAIL> skip=<0|N> commit=<sha> output=output/cmd_731e_beta1_reality_check_rules.md。report確認されたし。" \
-      task_completed ashigaru4
+  task_id: subtask_731l_beta1_metrics_flaky_fixture_fix
+  timestamp: '2026-05-16T12:50:19+09:00'
+  title: 'cmd_731l: metrics stale flaky fixture補修'

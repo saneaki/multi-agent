@@ -1,41 +1,47 @@
 worker_id: ashigaru4
-task_id: subtask_731e_beta1_reality_check_rules
+task_id: subtask_731l_beta1_metrics_flaky_fixture_fix
 parent_cmd: cmd_731
-timestamp: '2026-05-16T11:16:36+09:00'
+timestamp: '2026-05-16T12:50:19+09:00'
 status: done
 report_to: karo
 result:
   summary: |
-    cmd_731 β-1 reality_check 3検知追加 + check_ash_done_pending 修正完了。
-    B1-1: check_dashboard_senka_empty / check_frog_unset / check_metrics_stale を追加しCHECKS登録。
-    B1-2: DONE_MAX_AGE_MIN上限撤廃。done/completed_pending_karo共に>=30min で無期限PENDING。
-    B1-3: shogun_reality_check.sh に RESULT7/8/9 + 全9項目メッセージ追加。bash -n PASS。
-    B1-4: tests/unit/test_status_check_rules.py 新設。23 PASS SKIP=0。
-    B1-5: bash -n PASS + pytest 23 PASS SKIP=0。
-  output_path: output/cmd_731e_beta1_reality_check_rules.md
+    cmd_731 γ-1 flaky fixture補修完了。
+    L-1: test_ok_when_recent_within_36h がJST 12:00以降に失敗する根因を特定・記録。
+    L-2: _jst_now patch + 固定09:00 JST で boundary依存を除去。
+    L-3: pytest 23 PASS SKIP=0。
+    L-4: commit 9a5ae39 (Refs cmd_731 AC-3) push済み。
+  output_path: output/cmd_731l_beta1_metrics_flaky_fixture_fix.md
   acceptance_criteria:
-    - id: B1-1
+    - id: L-1
       status: PASS
-      note: "check_dashboard_senka_empty/check_frog_unset/check_metrics_stale 新設。CHECKS dict登録済"
-    - id: B1-2
+      note: "flaky根因: date truncation→昨日00:00扱い→age 36h+ をoutputに記録"
+    - id: L-2
       status: PASS
-      note: "DONE_MAX_AGE_MIN定数削除。check_ash_done_pending: age_min<30のみを除外(上限なし)"
-    - id: B1-3
+      note: "patch _jst_now=09:00 JST固定。recent_date同一mock生成。boundary依存除去"
+    - id: L-3
       status: PASS
-      note: "RESULT7/8/9追加。bash -n SYNTAX_OK。全9項目メッセージに更新"
-    - id: B1-4
+      note: "23 passed 0 skipped"
+    - id: L-4
       status: PASS
-      note: "tests/unit/test_status_check_rules.py 23テスト。SKIP=0 全PASS"
-    - id: B1-5
-      status: PASS
-      note: "bash -n PASS + .venv/bin/pytest 23 passed 0 skipped"
+      note: "commit 9a5ae39 Refs cmd_731 AC-3 origin/main push済"
 agent_tool_used: false
 skill_candidate:
   found: false
-  reason: "監視ルール実装。shogun-silent-failure-audit-pattern に統合候補。"
+  reason: "fixture patch手法はtest.md既存パターン範囲内"
 
 # ===== 履歴 (新しい順 → 古い順 / append-only) =====
 history:
+  - task_id: subtask_731e_beta1_reality_check_rules
+    parent_cmd: cmd_731
+    timestamp: '2026-05-16T11:16:36+09:00'
+    status: done
+    summary: |
+      cmd_731 β-1 reality_check 3検知追加 + check_ash_done_pending 修正完了。
+      B1-1〜B1-5 全PASS。23 PASS SKIP=0。
+    output_path: output/cmd_731e_beta1_reality_check_rules.md
+    skill_candidate:
+      found: false
   - task_id: subtask_731b_metrics_violation_update_path_audit
     parent_cmd: cmd_731
     timestamp: '2026-05-16T10:50:00+09:00'
