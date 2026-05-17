@@ -347,7 +347,7 @@ inbox:
   processed_at: '2026-05-17T08:27:00+09:00'
   action: cmd_712 Phase A URL → /tmp/.gas_webapp_url 保存済み / ashigaru3 通知済み
 - id: '1505388474331697172'
-  message: https://script.google.com/macros/s/AKfycbx3X1tHRDzKruCJNDjRvLZShz5jiDyBxJv8FE8CbAsIF4iKn1oZuNuJB5vGoNyHaeXs/exec
+  message: https://script.google.com/macros/s/[REDACTED_DEPLOYMENT_ID]/exec
   timestamp: '2026-05-17T10:56:21+09:00'
   status: pending
   discord_message_id: '1505388474331697172'
@@ -355,3 +355,22 @@ inbox:
   user_id: '495636202943152139'
   username: akisame4842
   received_at: '2026-05-17T10:56:21+09:00'
+- id: '1505410505542729858'
+  message: "HMAC_SECRET_ACTIVE=[REDACTED_SECRET]\n\
+    \  HMAC_KID=v1"
+  timestamp: '2026-05-17T12:23:53+09:00'
+  status: pending
+  discord_message_id: '1505410505542729858'
+  channel_id: '1491959535768703097'
+  user_id: '495636202943152139'
+  username: akisame4842
+  received_at: '2026-05-17T12:23:53+09:00'
+- id: '1505410763576311848'
+  message: https://script.google.com/macros/s/[REDACTED_DEPLOYMENT_ID]/exec
+  timestamp: '2026-05-17T12:24:55+09:00'
+  status: pending
+  discord_message_id: '1505410763576311848'
+  channel_id: '1491959535768703097'
+  user_id: '495636202943152139'
+  username: akisame4842
+  received_at: '2026-05-17T12:24:55+09:00'
