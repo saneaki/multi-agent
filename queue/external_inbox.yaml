@@ -356,8 +356,7 @@ inbox:
   username: akisame4842
   received_at: '2026-05-17T10:56:21+09:00'
 - id: '1505410505542729858'
-  message: "HMAC_SECRET_ACTIVE=[REDACTED_SECRET]\n\
-    \  HMAC_KID=v1"
+  message: "HMAC_SECRET_ACTIVE=[REDACTED_SECRET]\n  HMAC_KID=v1"
   timestamp: '2026-05-17T12:23:53+09:00'
   status: pending
   discord_message_id: '1505410505542729858'
@@ -374,3 +373,12 @@ inbox:
   user_id: '495636202943152139'
   username: akisame4842
   received_at: '2026-05-17T12:24:55+09:00'
+- id: '1505425953063567360'
+  message: 一気通貫で処理して
+  timestamp: '2026-05-17T13:25:16+09:00'
+  status: pending
+  discord_message_id: '1505425953063567360'
+  channel_id: '1491959535768703097'
+  user_id: '495636202943152139'
+  username: akisame4842
+  received_at: '2026-05-17T13:25:16+09:00'

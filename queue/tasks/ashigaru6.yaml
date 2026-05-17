@@ -1,2 +1,125 @@
 task:
-  status: idle
+  task_id: subtask_709p1_schema_migration_dry_run_setup
+  parent_cmd: cmd_709
+  bloom_level: L4
+  assigned_to: ashigaru6
+  report_to: gunshi
+  title: "cmd_709 Phase2-1: migration.gs確認+webapp whitelist追加+clasp push+dry run試験"
+  status: in_progress
+  timestamp: '2026-05-17T13:28:53+09:00'
+  project: gas-mail-manager
+  issue: https://github.com/saneaki/gas-mail-manager/issues/7
+  manual_verification_required: true
+  context_policy: clear_between
+
+  description: |
+    【目的】
+    cmd_709 Phase 2 の最初のブロッカー AC-S1 (schema migration dry run) を実施し、
+    後続実装 (AC-S2〜S5) のアンロック条件を整える。
+
+    【前提・既完了事項】
+    - commit 1a22eac: ash6 が src/migration.gs 実装済み (git push PASS)
+    - clasp push: NOT_PERFORMED (殿 Gate 1 前は実データ適用禁止だったため)
+    - Stage 1 backup: cmd_712 Phase E backupMasterSheet で完了済み
+      (backupFileId=1tNoywbqCo..., backupName=20260517_125347_元帳_cmd709_backup)
+    - 殿 Gate 1: 2026-05-11 22:35 JST 承諾済み (「進めてよし」)
+    - 新スキーマ: H=RUN_FLAG checkbox, I=旧H担当弁護士, J=旧I担当事務
+
+    【repo パス】
+    /home/ubuntu/gas-mail-manager (注意: /home/ubuntu/projects/ ではない)
+
+    【手順】
+
+    Step 1: migration.gs 確認
+    - Read /home/ubuntu/gas-mail-manager/src/migration.gs
+    - 関数一覧を把握: dryRunMigrationToH8RunFlag, applyMigrationToH8RunFlag など
+    - スキーマ定義が H=RUN_FLAG, I=旧H担当弁護士, J=旧I担当事務 と一致するか確認
+    - 不一致なら修正
+
+    Step 2: webapp.gs に dryRunMigrationToH8RunFlag を whitelist 追加
+    - Read /home/ubuntu/gas-mail-manager/src/webapp.gs
+    - WEBAPP_ALLOWED_PHASE_B_COMMANDS に 'dryRunMigrationToH8RunFlag' を追加
+    - dispatcher 関数に handleDryRunMigration_ ハンドラを追加
+      - dryRunMigrationToH8RunFlag() を呼び出す
+      - sideEffects: false で返却 (dry run は実データ変更なし)
+      - 返却 JSON: { ok: true, result: { status: 'dry_run_complete', rowCount: N, preview: [...] } }
+
+    Step 3: L022 clasp push
+    - cd /home/ubuntu/gas-mail-manager
+    - clasp push --force
+    - 出力に "Pushed N files." の N >= 2 かつ src/migration.gs + src/webapp.gs が含まれること確認
+    - "Skipping push." が出たら即 FAIL (L022 規律)
+
+    Step 4: auto deploy (新 version で既存 deployment を更新)
+    - source /home/ubuntu/gas-mail-manager/env/gas_secret.env で GAS_DEPLOYMENT_ID 取得
+    - clasp version を実行して version 番号を取得
+    - clasp deploy -i $GAS_DEPLOYMENT_ID -V <version番号>
+    - deploy 成功を確認
+
+    Step 5: Python urllib で dryRunMigrationToH8RunFlag 試験
+    - scripts/gas_invoke.py を参考に HMAC POST: cmd=dryRunMigrationToH8RunFlag
+    - 期待: ok=true / phase=B / sideEffects=false / result.status=dry_run_complete
+    - rowCount と preview (最初の 3 行程度) を report YAML に記録
+    - FAIL の場合: エラー詳細 (error.code + message) を記録
+
+    Step 6: container-bound 化手順書作成
+    - output/cmd_709_container_bound_procedure.md を新規作成 (output/ ディレクトリ確認)
+    - 殿が元帳スプレッドシートに GAS script を attach するクリック単位の手順を記述
+    - 注意事項: container-bound 化後の script ID 変更と clasp 設定変更が必要な点を明記
+
+    Step 7: GitHub Issue #7 progress comment
+    - gh issue comment 7 --repo saneaki/gas-mail-manager
+    - 内容: Phase 2-1 AC-S1 dry run setup 完了 / dry run 結果概要 / container-bound 手順書作成
+
+    Step 8: git commit + push
+    - git add src/webapp.gs output/cmd_709_container_bound_procedure.md
+    - commit: "feat(cmd_709): webapp whitelist に dryRunMigrationToH8RunFlag 追加 (Phase2 AC-S1)"
+    - git push origin main
+    - git status で clean 確認
+
+    【完了条件 (AC)】
+    - AC-S1-1: migration.gs スキーマ確認 PASS (H=RUN_FLAG, I=旧H, J=旧I と一致)
+    - AC-S1-2: webapp.gs whitelist に dryRunMigrationToH8RunFlag 追加 + dispatcher ハンドラ実装
+    - AC-S1-3: clasp push --force "Pushed N files." (N>=2) — L022
+    - AC-S1-4: auto deploy (clasp version + clasp deploy -i -V) PASS
+    - AC-S1-5: Python urllib dryRunMigrationToH8RunFlag: ok=true / sideEffects=false
+    - AC-S1-6: dry run 結果 (rowCount + preview) を report YAML に記録
+    - AC-S1-7: output/cmd_709_container_bound_procedure.md 作成
+    - AC-S1-8: GitHub Issue #7 progress comment 追加
+    - AC-S1-9: git commit + push PASS (ahead=0, clean)
+
+    【絶対禁止】
+    - applyMigrationToH8RunFlag を実行しないこと (殿 Gate 2 必須)
+    - HMAC secret / Web App URL を report YAML や git commit に含めないこと
+
+  acceptance_criteria:
+    - id: AC-S1-1
+      check: "migration.gs スキーマ確認: H=RUN_FLAG, I=旧H担当弁護士, J=旧I担当事務"
+    - id: AC-S1-2
+      check: "webapp.gs whitelist に dryRunMigrationToH8RunFlag 追加 + dispatcher ハンドラ実装"
+    - id: AC-S1-3
+      check: "clasp push --force Pushed N files (N>=2, migration.gs + webapp.gs 含) — L022"
+    - id: AC-S1-4
+      check: "auto deploy: clasp version + clasp deploy -i -V PASS"
+    - id: AC-S1-5
+      check: "Python urllib dryRunMigrationToH8RunFlag: ok=true / phase=B / sideEffects=false"
+    - id: AC-S1-6
+      check: "dry run 結果 (rowCount + preview) report YAML 記録"
+    - id: AC-S1-7
+      check: "output/cmd_709_container_bound_procedure.md 作成"
+    - id: AC-S1-8
+      check: "GitHub Issue #7 progress comment 追加"
+    - id: AC-S1-9
+      check: "git commit + push PASS / git status clean (ahead=0)"
+
+  editable_files:
+    - /home/ubuntu/gas-mail-manager/src/webapp.gs
+    - /home/ubuntu/gas-mail-manager/src/migration.gs
+    - /home/ubuntu/gas-mail-manager/output/cmd_709_container_bound_procedure.md
+
+  notes: |
+    L022 適用 (clasp push --force "Pushed N files." 必須。"Skipping push." = FAIL)
+    secret: source /home/ubuntu/gas-mail-manager/env/gas_secret.env で GAS_WEBAPP_URL + GAS_DEPLOYMENT_ID 取得
+    gas_invoke.py: /home/ubuntu/gas-mail-manager/scripts/gas_invoke.py 参照
+    Issue #7: https://github.com/saneaki/gas-mail-manager/issues/7
+    RACE-001: 軍師 (cmd_733) は scripts/ + docs/ + karo.md を編集中。src/ は触らないため競合なし

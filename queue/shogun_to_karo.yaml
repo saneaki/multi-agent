@@ -30745,7 +30745,8 @@
     L022 適用 (reality verification 必須)。全 AC 完遂後 cmd_complete を将軍 inbox へ。
   project: gas-mail-manager
   priority: medium
-  status: pending
+  status: in_progress
+  dispatched_at: '2026-05-17T13:29:00+09:00'
   decomposition_hint:
     parallel: 1
     gunshi_task: true
@@ -30754,3 +30755,4 @@
   source_suggestions:
     - sug_cmd_712_004
     - sug_cmd_712_005
+  ac8_note: "sug_security_001 統合 vs 別 cmd_734 は軍師 AC-8 判断。家老暫定: 別 cmd_734 推奨。"
