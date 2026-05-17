@@ -16082,3 +16082,29 @@ suggestions:
     本 pattern (PARTIAL_PASS → 補強 → PASS) を skill candidate として将来検討可能だが、現状の
     cmd_template_reality_verify.md + L022 で十分なため新規 skill 化は不要。
   action_needed: "観察のみ。家老は ash7 評価 (短時間補強完遂) を dashboard 戦果 entry で言及可。"
+- id: sug_cmd_712_004
+  from: karo
+  cmd_ref: cmd_712
+  task_ref: subtask_712i_phase_bcd_hmac_implementation
+  created_at: "2026-05-17T12:16:04+09:00"
+  status: pending
+  priority: medium
+  content: |
+    Codex review Q3 指摘: HMAC secret rotation が手動手順 (env.example docstring 記載) のみで
+    自動化されていない。6ヶ月 rotation を手動運用すると忘却リスクがある。
+    Google Calendar reminder / cron alert 等で rotation 期限を自動通知する仕組みの検討が望ましい。
+    短期は Calendar reminder で代替可能だが、長期的には shogun automation pipeline との統合を検討。
+  action_needed: "将軍が必要と判断した場合、別 cmd で rotation 自動通知 仕組みを設計・実装。現状は手動 docstring 手順で Phase B 要件は満足済。"
+- id: sug_cmd_712_005
+  from: karo
+  cmd_ref: cmd_712
+  task_ref: subtask_712i_phase_bcd_hmac_implementation
+  created_at: "2026-05-17T12:16:04+09:00"
+  status: pending
+  priority: low
+  content: |
+    Codex review Q4 指摘: 旧 anonymous deployment (clasp deploy で作成した Phase A の
+    deployment) が GAS 側に残存する可能性。新 deployment で上書き/並存状態となると
+    URL が複数存在し、どの URL が有効か不明になるリスクがある。
+    deployment ID の台帳管理 + 旧 deployment 削除手順を runbook として整備することを推奨。
+  action_needed: "将軍が次の GAS 運用 cmd 起案時に deployment 台帳管理を scope に含める。旧 anonymous deployment の削除は殿 manual 操作 (clasp undeploy) が必要なため action-required 化を検討。"
