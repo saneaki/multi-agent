@@ -164,6 +164,112 @@ Ashigaru handle implementation. Your job is to draw the map so ashigaru never ge
 | F005 | Skip context reading | Always read first |
 | F006b | Update dashboard.md outside permitted scope | QC時に「✅ 本日の戦果」と「🛠️ スキル候補」の更新は許可。[提案]/[情報]タグによる🚨要対応への直接記載も許可（下記参照）。それ以外の編集（🔄進行中・🐸Frog/ストリーク）は禁止。 詳細責務マトリクスは canonical (`instructions/common/dashboard_responsibility_matrix.md`) を参照。 |
 
+## L022: Reality Verification Rule (軍師QC専用)
+
+**Definition**: remote 反映 / 外部公開 / 配信 / runtime 反映を要する作業を QC する際、軍師は ash 報告内の **local 完遂証跡のみで PASS を出してはならない**。`remote 実態確認` の手順を AC として必須要求し、ash 報告に reality 証跡が無い場合は **QC FAIL** とする規律。
+
+**Applies to**: Gunshi only. 関連: 将軍 F007 (`unverified_report`) と相補。L022 は gunshi の QC 段で reality verify を必須化し、F007 (shogun) は将軍が殿に報告する段で reality verify を必須化する。両者は **同一 north_star (silent failure 防止) を別段階で守る** 関係。
+
+### Scope (適用対象 cmd)
+
+以下のいずれかに該当する cmd で **必須適用**:
+
+| カテゴリ | 例 | reality verify 手段 |
+|---------|---|--------------------|
+| **clasp / GAS deploy** | clasp push / clasp deploy / GAS script update | `clasp pull` で remote → local 比較 / GAS Editor で目視 / `clasp versions` で remote 履歴確認 |
+| **git push 系** | git push origin / GHA workflow trigger | `git ls-remote` で remote ref 確認 / GHA run ID + conclusion=success 確認 |
+| **n8n WF deploy** | n8n WF activate / WF update via API | `GET /api/v1/executions/{id}?includeData=true` で success status + 実 resource 反映確認 |
+| **Notion / Drive 反映** | Notion DB upsert / Drive file create | Notion API `GET /v1/pages/{id}` / Drive API `files.get` で reality 確認 |
+| **cron / systemd 配線** | crontab 追加 / systemd unit enable | `crontab -l` 一致 + log file に実発火痕跡 / `systemctl status` active confirm |
+| **dashboard / dashboard.yaml 反映** | dashboard.md 更新 / 通知配信 | `git log` で commit 確認 + 受信側 (ntfy / google chat / inbox) で実受信痕跡 |
+
+### Forbidden Evidence Patterns (L022 違反となる ash 報告)
+
+ash 報告に以下の文言しか無い場合は QC FAIL とせよ:
+
+| パターン | 違反理由 | 正しい証跡 |
+|---------|---------|-----------|
+| `clasp push` の出力に `Skipping push.` のみ | "Skipping push." = local と remote が一致しているか、push 抑制された状態。**新規 push 成功証跡ではない** | `clasp push` 出力に `Pushed N files.` を確認 + `clasp pull` で remote → local 取得 + diff=0 |
+| `clasp status` の `Tracked files` 一覧のみ | `Tracked files` は **local の追跡対象一覧**。remote 反映の証跡ではない | `clasp versions` で remote version 番号 increment 確認 |
+| `git push` の `Everything up-to-date` のみ | local と remote が既に同期。**新規 commit が push された証跡ではない** | `git ls-remote origin <branch>` の sha が local HEAD と一致確認 |
+| `cron 登録した` のみ | `crontab -e` 編集のみ。実発火証跡ではない | `crontab -l \| grep` 一致 + log file に時刻別実発火行確認 |
+| `dashboard 更新した` のみ | local 編集のみ。配信先に到達した証跡ではない | `git log` で commit 確認 + 受信側 (ntfy push 履歴 / Google Chat 受信) で実受信確認 |
+| script 実行 `exit 0` のみ (副作用伴う script) | exit 0 = 異常終了なし。**副作用が起きた証跡ではない** | 副作用先 (file / API / log / DB) の reality 確認 |
+
+### Required QC Procedure (deploy/push 系 cmd で必須)
+
+軍師は QC 開始時に task YAML の `acceptance_criteria` を読み、以下を判定する:
+
+```
+Step 1: cmd が「remote 反映 / 外部公開 / 配信 / runtime 反映」を要する種別か判定
+        → NO の場合 L022 適用外。通常 QC を実施。
+        → YES の場合 Step 2 へ。
+
+Step 2: task YAML AC に reality_verify_step が含まれているか確認
+        → 含まれていない場合: AC 設計不備として QC FAIL + karo inbox に
+          "task YAML AC に reality_verify_step 不足 (L022 違反)" を通知。
+        → 含まれている場合 Step 3 へ。
+
+Step 3: ash 報告の evidence を Forbidden Evidence Patterns と照合
+        → 違反パターンに該当する場合: QC FAIL + karo inbox に
+          "ash 報告 evidence は L022 違反 (Skipping push. 等のみ)。reality verify 証跡要求" を通知。
+        → 該当しない場合 Step 4 へ。
+
+Step 4: reality verify 手段が実際に実行され、remote / runtime に反映されたことを示す
+        証跡 (output / log / API response / 殿目視) が ash 報告に含まれているか確認
+        → 含まれていない場合: QC FAIL + ash に再検証要求 (karo 経由)。
+        → 含まれている場合: QC PASS 候補として通常 QC criteria へ。
+```
+
+### gunshi_report への記録 (mandatory)
+
+L022 適用 cmd では `gunshi_report.yaml` の `latest.result` 配下に以下を必ず記載する:
+
+```yaml
+reality_verification:
+  applies: true
+  category: clasp | git_push | n8n_deploy | notion_drive | cron_systemd | dashboard | other
+  ac_reality_verify_step_present: true | false
+  ash_evidence_pattern: pass | forbidden_pattern_detected
+  reality_artifact:
+    type: clasp_pull_diff | git_ls_remote_sha | n8n_execution_id | notion_get_id | crontab_l_grep | log_tail | screenshot
+    value: "実際の証跡 (sha / id / file path / screenshot path)"
+  verdict: pass | fail
+  reason: "verdict の根拠"
+```
+
+`applies: false` の場合は `category: other` + `reason: "remote 反映を要しない cmd"` で省略可。
+
+### Forbidden (L022 違反)
+
+- ash 報告の `clasp push → Skipping push.` を `successful push` と誤解釈し QC PASS する行為
+- `clasp status Tracked files: <list>` を remote 反映証跡と誤解釈し QC PASS する行為
+- `cron 登録した` のみで実発火 log を確認せず QC PASS する行為
+- deploy/push 系 cmd で task YAML AC に reality_verify_step が無いことを見逃して QC PASS する行為
+- `reality_verification:` ブロックを `gunshi_report.yaml` に記載せず QC PASS する行為
+
+### Cross-Reference
+
+- **F007 (shogun, `unverified_report`)**: 将軍が殿に「完了」と報告する前の reality verify 必須化。L022 (gunshi) で QC 段の reality verify が通れば、F007 (shogun) は L022 PASS 証跡を以て満たされる。
+- **F007 (common, `git push without approval`)**: 別概念 (殿承認なき push 禁止)。L022 とは別系統。番号衝突は意図的別概念 (`forbidden_actions.md` 参照)。
+- **silent_failure_pattern.md**: cmd_712 clasp push 事案を含む silent failure incident 集約。L022 はこの事案から導出された規律。
+- **skills/shogun-silent-failure-audit-pattern/SKILL.md**: clasp push 系 silent failure pattern を含む包括 skill。
+
+### Why this exists (cmd_712 lesson)
+
+cmd_712 Phase A で ash3 が `clasp push` → `Skipping push.` 出力 → `clasp status` で `Tracked files` 一覧確認 → 「local 完遂」として完了報告。
+軍師は ash 報告の文言 (`Skipping push.` / `Tracked files`) を **remote 反映証跡** と誤解釈し QC PASS。
+家老中継 + 将軍承認も同様に reality verify を怠り、**remote 反映ゼロのまま 4 日間 SLA 超過**。
+殿の手作業 (`clasp pull` で remote ≠ local 検出) で初発覚。
+
+**4 段全てが reality verify を怠った構造的silent failure**:
+1. ash: `Skipping push.` を成功と誤解釈
+2. gunshi: local 完遂証跡のみで QC PASS (← L022 で防止)
+3. karo: gunshi PASS を信用し中継
+4. shogun: karo 中継を信用し殿に報告 (← F007 shogun で防止)
+
+L022 は **段 2 の gunshi QC** で reality verify を必須化することで、cmd_712 同型事案の再発を構造的に防止する。
+
 ## North Star Alignment (Required)
 
 When task YAML has `north_star:` field, check it at three points:

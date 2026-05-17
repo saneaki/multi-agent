@@ -15991,3 +15991,41 @@ suggestions:
     但し ashigaru 報告先慣行 (karo が next 意思決定者) に従う長期パターンであり、
     即時違反扱いせず慣行 vs auto-check 整合性を別 cmd で再評価することを推奨。
   action_needed: "qc_auto_check SO-06 ルール / ashigaru report_to 規約のいずれを正規とするか家老が裁定し、整合化"
+- id: sug_cmd_732_001
+  from: gunshi
+  cmd_ref: cmd_732
+  task_ref: gunshi_732_reality_verification_discipline
+  created_at: "2026-05-17T10:55:00+09:00"
+  status: pending
+  priority: medium
+  content: |
+    instructions/common/forbidden_actions.md の F007 (git push without approval) と
+    instructions/shogun.md の F007 (unverified_report) は番号衝突。cmd_732 では cross_reference
+    と意図的別概念注記で整合確保したが、長期的には common F007 を F010 等にリネーム検討推奨。
+    リネーム時は generated/*.md (全 12 file) も build_instructions.sh で再生成必要。
+  action_needed: "家老が将軍と相談し、F007 (common) の F010 リネーム可否を判断。リネームする場合は別 cmd で実施 (本 cmd scope 外)。"
+- id: sug_cmd_732_002
+  from: gunshi
+  cmd_ref: cmd_732
+  task_ref: gunshi_732_reality_verification_discipline
+  created_at: "2026-05-17T10:55:00+09:00"
+  status: pending
+  priority: high
+  content: |
+    L022 は gunshi QC 段で reality verify を必須化したが、ash 自身が報告時に
+    Forbidden Evidence Patterns (Skipping push. / Tracked files 等) を自己チェック
+    する規律が無い。ash 側にも reality verify 自己チェックを内蔵すれば段 1 で防止可能。
+    instructions/ashigaru.md に同様の規律を新設すべき。
+  action_needed: "家老が cmd を起案: instructions/ashigaru.md に L022-ash (ash 自己 reality verify) を新設。L022 (gunshi) と相補関係で設計。"
+- id: sug_cmd_732_003
+  from: gunshi
+  cmd_ref: cmd_732
+  task_ref: gunshi_732_reality_verification_discipline
+  created_at: "2026-05-17T10:55:00+09:00"
+  status: pending
+  priority: low
+  content: |
+    cmd_template_reality_verify.md §2 の標準テンプレートは clasp/git/n8n/cron/dashboard/Notion
+    6 category を網羅したが、Telegram bot 配信 / Slack webhook / GitHub Issue / Linear API
+    等の追加 category が将来必要になる可能性。incident 発生時に append 推奨。
+  action_needed: "新規 silent failure 事案が他 category で発生した場合、家老が cmd 起案して template に追記。"

@@ -30,6 +30,8 @@ forbidden_actions:
     description: "配信・反映を検証せずに殿に報告完了を伝える"
     example: "家老へのinbox_write後、実際の配信確認・成果物反映確認を行わずに殿に「完了」と報告"
     reason: "cmd_487発令時に確認怠慢で虚偽報告。殿の信頼を損なう"
+    note: "shogun-specific F007 (unverified_report)。common/forbidden_actions.md の F007 (git push without approval) とは意図的別概念。番号は衝突しているが scope が分離 (shogun 個別 vs all-agents 共通) しているため統合せず。詳細は instructions/common/silent_failure_pattern.md §Incident #001 参照。"
+    cross_reference: "L022 (gunshi reality verification rule) と相補。L022 が gunshi QC 段の reality verify を必須化し、F007 (shogun) は殿報告段の reality verify を必須化する。両者は同一 north_star (silent failure 防止) を別段階で守る。L022 PASS 証跡を以て F007 は満たされる。詳細: instructions/gunshi.md §L022。"
 
 stall_response_protocol:
   description: "足軽/軍師が停止した際の対応手順。/clearは最終手段。"

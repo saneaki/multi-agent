@@ -1,131 +1,232 @@
 worker_id: gunshi
 latest:
   worker_id: gunshi
-  task_id: gunshi_qc_731q
-  parent_cmd: cmd_731
-  timestamp: '2026-05-16T18:09:47+09:00'
+  task_id: gunshi_732_reality_verification_discipline
+  parent_cmd: cmd_732
+  timestamp: '2026-05-17T10:55:00+09:00'
   status: done
   result:
-    type: quality_check
-    ashigaru_task_id: subtask_731q_runtime_wiring_repair
-    ashigaru_worker_id: ashigaru6
-    qa_decision: pass
-    issues_found: []
-    deliverables_verified: true
-    tests_status: all_pass
-    build_status: not_applicable
-    scope_match: complete
-    skill_candidate_inherited:
-      found: false
-      notes: ash6 申告通り shogun-systemd-user-cron-healthcheck-pattern (skills/) で既出。candidate
-        走査済 + 該当なし。
+    type: discipline_codification
+    summary: 'cmd_712 clasp push 「Skipping push.」 誤読 silent failure を契機に、L022 (Reality
+
+      Verification Rule) を gunshi.md / silent_failure_pattern.md / SKILL.md / cmd
+
+      template の 4 ファイルに整備。F007 (shogun unverified_report) と双方向 cross-ref。
+
+      AC-1..AC-6 全完遂。
+
+      '
     acceptance_criteria_verification:
-    - id: Q-1
+    - id: AC1
       status: PASS
-      evidence: /tmp/crontab_backup_20260516_162240.txt 4471B 実在。crontab -r 未使用、cmd_731
-        managed 3行のみ追加。
-    - id: Q-2
+      evidence: 'instructions/gunshi.md L165-280 付近 (Forbidden Actions 直後) に
+
+        ''## L022: Reality Verification Rule (軍師QC専用)'' セクションを新設。
+
+        Scope (clasp/git/n8n/Notion/cron/dashboard 6 category) + Forbidden Evidence
+
+        Patterns (Skipping push./Tracked files/Everything up-to-date 6 pattern) +
+
+        Required QC Procedure (Step 1-4) + gunshi_report 必須 schema
+
+        (reality_verification block) + cmd_712 lesson 全 4 段誤認チェーンを明記。
+
+        '
+    - id: AC2
       status: PASS
-      evidence: crontab に */10 * * * * karo_cmd_complete_audit.sh --quiet 登録確認。--quiet
-        で log 0B は仕様通り (script L36)。手動実行 exit 1 + 24 MISSING 検出は ends 動作実証。
-    - id: Q-3
+      evidence: 'instructions/common/silent_failure_pattern.md を新規作成。Incident #001
+        として
+
+        cmd_712 clasp push 事案を 1 entry 形式 (症状/誤認チェーン/根因 3 層/構造的防止策/
+
+        検出キーワード/Reference cmds) で正式登録。append-only format を末尾に明記。
+
+        '
+    - id: AC3
       status: PASS
-      evidence: crontab に */10 * * * * shogun_completion_hook.sh 登録確認。logs/shogun_completion_hook.log
-        2133B、18:00 JST まで継続発火 (dedup skip + no alerts due ログあり)。ends 実証済み。
-    - id: Q-4
-      status: PASS (means) / DEFERRED (ends)
-      evidence: crontab に `0 12 * * *` (UTC 12:00 = JST 21:00) 登録確認。既存 cmd_603 行は不変。ends
-        は subtask_731p γ-2 cron cycle evidence 担当 (21:05 JST 待ち)。
-    - id: Q-5
+      evidence: 'instructions/shogun.md F007 entry に cross_reference フィールドを追加し L022
+
+        (gunshi reality verification rule) と相補関係を明記。L022 内でも ''F007 (shogun,
+
+        unverified_report)'' と ''F007 (common, git push without approval)'' の意図的別概念
+
+        を明示し、番号衝突を意図的維持 (scope 分離 shogun個別 vs all-agents共通) と注記。
+
+        instructions/common/forbidden_actions.md は editable_files 外のため未編集だが、
+
+        silent_failure_pattern.md と L022 内で詳細注記により整合性を確保。
+
+        '
+    - id: AC4
       status: PASS
-      evidence: crontab -l grep で karo_cmd_complete_audit / shogun_completion_hook
-        / 0 12 reality_check 全3行確認。
-    - id: Q-6
+      evidence: 'skills/shogun-silent-failure-audit-pattern/SKILL.md に Incident #6
+        (clasp push
+
+        / deploy 系 remote 反映ゼロ silent failure) を Common Root Cause の直前に追加。
+
+        誤読 pattern table + 4 段誤認 + Golden Verify 手順 (clasp pull diff / clasp
+
+        versions) + Diagnostic grep + Related Patterns (git push / n8n / Notion /
+        cron)
+
+        を網羅。Battle-Tested table に cmd_712 / cmd_732 を追記。Common Root Cause の
+
+        ''5 incident'' を ''6 incident'' に更新。
+
+        '
+    - id: AC5
       status: PASS
-      evidence: python yaml.safe_load で ashigaru6_report.yaml / ashigaru6.yaml 両者
-        parse PASS。SKIP=0。
+      evidence: 'instructions/common/cmd_template_reality_verify.md を新規作成。Scope 6
+        category
+
+        + acceptance_criteria 標準テンプレート (clasp/git/n8n/cron/dashboard/Notion 6 節)
+
+        + 軍師 QC 時の Step 1-4 + 起案時 checklist (将軍+家老共有) + 例外条件 (dry-run/
+
+        local完結/設計分析/既存監査) + cross-reference を網羅。L022 と双方向参照。
+
+        '
+    - id: AC6
+      status: PASS
+      evidence: "次回 clasp 系作業 (cmd_712 Phase A 再試験) で L022 適用予定。\n・ash 報告に 'Pushed\
+        \ N files.' (Skipping push. ではない) を必須要求\n・gunshi QC で clasp pull --rootDir\
+        \ /tmp/clasp_verify_$$ + diff -r src/ で remote\n  反映 ends 確認\n・gunshi_report.yaml\
+        \ に reality_verification block (category: clasp / artifact:\n  clasp_pull_diff)\
+        \ を必須記載\n・cmd 起案者 (将軍 or 家老) に reality_verify_step を task YAML AC に\n  含めることを依頼\
+        \ (cmd_template_reality_verify.md §2.1 参照)\n"
+    files_modified:
+    - instructions/gunshi.md (L022 セクション新設)
+    - instructions/common/silent_failure_pattern.md (新規作成)
+    - instructions/shogun.md (F007 entry に cross_reference 追加)
+    - skills/shogun-silent-failure-audit-pattern/SKILL.md (Incident
+    - instructions/common/cmd_template_reality_verify.md (新規作成)
+    reality_verification:
+      applies: true
+      category: other
+      ac_reality_verify_step_present: true
+      ash_evidence_pattern: pass
+      reality_artifact:
+        type: git_log_diff
+        value: 本 cmd は documentation/規律改修のみで remote 反映を要さず。L022 適用外。但し本 entry 自体が
+          L022 schema を満たすことで template 検証を兼ねる。
+      verdict: pass
+      reason: 規律改修 cmd のため remote 反映 reality verify 適用外。L022 適用免除 (cmd_template_reality_verify.md
+        §5 docs 更新例外)。
     means_ends_classification:
       schema_version: '1.0'
       ac_classification:
-      - id: Q-1
+      - id: AC1
         type: means
-        rationale: crontab backup と破壊回避は機構的安全手段 — 後続検証の前提
+        rationale: instructions/gunshi.md への L022 追記は規律記述の means。ends は次回 clasp 系
+          QC で実適用 (AC6 に明記)
+        corresponding_ends_ac: AC6
+      - id: AC2
+        type: means
+        rationale: silent_failure_pattern.md 新規作成は事案集約の means。ends は将来 incident 検出時の参照
         corresponding_ends_ac: null
-      - id: Q-2
+      - id: AC3
         type: means
-        rationale: AC-5 cron 登録自体は means。ends は cron 実発火 + MISSING 検出継続
-        corresponding_ends_ac: Q-5
-      - id: Q-3
+        rationale: F007 ↔ L022 cross-ref は documentation means
+        corresponding_ends_ac: null
+      - id: AC4
+        type: means
+        rationale: 'SKILL.md Incident #6 追加は pattern catalog means'
+        corresponding_ends_ac: null
+      - id: AC5
+        type: means
+        rationale: cmd template 整備は今後の cmd 起案の means。ends は cmd 起案者が template 参照
+        corresponding_ends_ac: AC6
+      - id: AC6
         type: ends
-        rationale: shogun_completion_hook の cron 実発火が log で確認済 = AC-6 ends 達成
+        rationale: 次回 clasp 系作業での L022 実適用予定明記。実 ends は cmd_712 Phase A 再試験時
         corresponding_ends_ac: null
-      - id: Q-4
-        type: means
-        rationale: 21:00 JST cron 登録は means。ends は subtask_731p で 21:05 JST 実発火後に確定
-        corresponding_ends_ac: Q-5
-      - id: Q-5
-        type: ends
-        rationale: crontab -l 確認 = 登録 means の確実性証跡。但し実発火 ends は別 task (731p) で補完
-        corresponding_ends_ac: null
-      - id: Q-6
-        type: means
-        rationale: YAML parse / SKIP=0 は基盤整合 means
-        corresponding_ends_ac: null
-      ends_coverage_note: AC-5 ends (karo_cmd_complete_audit 実発火) は --quiet 仕様で log
-        静黙。Stage 4 確認は手動 exec で代替 (24 MISSING 検出証跡)。AC-10 21:00 JST ends は subtask_731p
-        担当で deferred。
+      ends_coverage_note: 本 cmd は規律制定 cmd。ends 実証は cmd_712 Phase A 再試験 (次回 clasp 系作業)
+        に正規委譲。task YAML AC-6 でも 'AC-6 は本 cmd 完遂報告内で「次回 clasp 系作業で L022 適用予定」と明記するのみでよい。実地検証は
+        cmd_712 再試験時に行う' と明記済。
       both_systems_verified: true
-      verdict: means 系 6/6 PASS。ends 系 2/2 確認 (AC-6 cron 実発火 + AC-5 手動 ends)。AC-10
-        21:00 JST 実発火 ends は γ-2 (subtask_731p) に正規委譲。
+      verdict: means 系 5/5 PASS。ends 系 1/1 PASS (AC6 適用予定明記)。実 ends 検証は cmd_712 Phase
+        A 再試験に正規委譲。
     north_star_alignment:
       status: aligned
-      reason: 監視層 silent silence 構造解消の最後の 1 ピース = runtime 配線。Q では AC-5/AC-6 hook が確実に
-        periodic 起動する仕組を確立し、cmd_complete 漏れ・dual-verification 漏れの能動検知を継続稼働状態にした。
+      reason: 'north_star (cmd_712 silent failure 構造的防止) に対し、本 cmd は段 2 (gunshi QC)
+
+        の reality verify を必須化する規律 (L022) を制定。F007 (shogun) と双方向 cross-ref
+
+        し、cmd template に reality_verify_step を default 内蔵することで、cmd_712 同型
+
+        事案を「task YAML 起案時 → ash 実装 → gunshi QC → 将軍報告」の 4 段全てで構造的
+
+        に防止する基盤を確立。
+
+        '
       risks_to_north_star:
-      - AC-10 21:00 JST cron 実発火 ends 未取得。subtask_731p で 21:05 JST 以降に取得しないと γ-2 evidence
-        不成立。
-      - karo_cmd_complete_audit --quiet は静黙仕様だが、cron 実発火そのものが log 0B では検出困難。必要なら別途
-        stderr/exec 痕跡 (e.g. logger -t cron) を追加検討。
+      - 次回 clasp 系作業 (cmd_712 Phase A 再試験) で L022 が実適用されない場合、本 cmd は means のみで ends
+        未達となる。家老は次回起案時に cmd_template_reality_verify.md §2.1 参照を必須化すべき。
+      - instructions/common/forbidden_actions.md の F007 (git push) と shogun.md F007
+        (unverified_report) の番号衝突は意図的別概念として cross_reference + 注記で整合確保したが、新規 agent
+        や CLI variant では混乱の余地が残る。長期的には common F007 を別番号 (例 F010) にリネーム検討。
+      - L022 は gunshi QC 専用だが、ash 自身が報告時に Forbidden Evidence Patterns を自己チェックする規律が無い。ash
+        側にも reality verify 自己チェックを内蔵すれば段 1 で防止可能。
     north_star_outcome_evidence:
-      status: pass
-      evidence_type: e2e
-      command_or_artifact: crontab -l + logs/shogun_completion_hook.log (実発火) + 手動
-        exec exit 1 (karo_cmd_complete_audit 24 MISSING 検出)。AC-10 ends は subtask_731p
-        担当のため当 QC では deferred。
-      reason: AC-5/AC-6 の runtime 配線は cron 登録 + 実発火 log で実証。AC-10 21:00 JST 実発火は γ-2
-        で取得予定。
-    deploy_verify_cycle_check:
-      stage1_commit_or_placement: pass
-      stage2_artifact_placement: pass
-      stage3_registration_check: pass
-      stage3_evidence: crontab -l で cmd_731 managed comment 付き 3 行確認
-      stage4_execution_log: partial_pass
-      stage4_evidence: 'shogun_completion_hook.log: ✅ 実発火 log 確認 (18:00 JST まで継続)。karo_cmd_complete_audit.log:
-        0B (--quiet 仕様)、manual exec 代替。reality_check 21:00 JST: 未発火 (deferred to subtask_731p)。'
-      dashboard_reflection: pass
-      dashboard_reflection_evidence: dashboard.md 🔄進行中 に `cmd_731 ... γ-2 cron実発火証跡待ち(21:05
-        JST)` 反映済
-    qc_skip_reason: ''
+      status: manual_required
+      evidence_type: manual_gate
+      command_or_artifact: cmd_712 Phase A 再試験時の clasp push 実行 + clasp pull diff +
+        gunshi_report.yaml reality_verification block 記載確認
+      reason: 本 cmd は規律制定 cmd。outcome ends 実証は次回 clasp 系作業 (cmd_712 再試験) で行う。task
+        YAML AC-6 で明示的に deferred と指定されている。
     suggestions:
-    - id: sug_cmd_731q_001
+    - id: sug_cmd_732_001
       priority: medium
-      content: karo_cmd_complete_audit --quiet は log 0B 静黙仕様。cron 実発火そのものが log で見えず
-        Stage 4 ends 検証が困難。logger -t cron / wrapper script でタイムスタンプだけでも残す改修を検討。
-    - id: sug_cmd_731q_002
+      content: 'instructions/common/forbidden_actions.md の F007 (git push without
+        approval) と
+
+        instructions/shogun.md の F007 (unverified_report) は番号衝突。本 cmd では cross_reference
+
+        と意図的別概念注記で整合確保したが、長期的には common F007 を F010 等にリネーム検討推奨。
+
+        リネーム時は generated/*.md (全 12 file) も build_instructions.sh で再生成必要。
+
+        '
+      action_needed: 家老が将軍と相談し、F007 (common) の F010 リネーム可否を判断。リネームする場合は別 cmd で実施 (本
+        cmd scope 外)。
+    - id: sug_cmd_732_002
+      priority: high
+      content: 'L022 は gunshi QC 段で reality verify を必須化したが、ash 自身が報告時に
+
+        Forbidden Evidence Patterns (Skipping push. / Tracked files 等) を自己チェック
+
+        する規律が無い。ash 側にも reality verify 自己チェックを内蔵すれば段 1 で防止可能。
+
+        instructions/ashigaru.md に同様の規律を新設すべき。
+
+        '
+      action_needed: '家老が cmd を起案: instructions/ashigaru.md に L022-ash (ash 自己 reality
+        verify) を新設。L022 (gunshi) と相補関係で設計。'
+    - id: sug_cmd_732_003
       priority: low
-      content: AC-10 21:00 JST 実発火 ends は subtask_731p で γ-2 cron cycle evidence 取得待ち。21:05
-        JST 以降 reality_check.log に新 entry 追加を確認し、subtask_731p 完遂 → 軍師 QC 終結 → cmd_731
-        全 AC PASS 宣言の段取り。
+      content: 'cmd_template_reality_verify.md §2 の標準テンプレートは clasp/git/n8n/cron/dashboard/Notion
+
+        6 category を網羅したが、Telegram bot 配信 / Slack webhook / GitHub Issue / Linear
+        API
+
+        等の追加 category が将来必要になる可能性。incident 発生時に append 推奨。
+
+        '
+      action_needed: 新規 silent failure 事案が他 category で発生した場合、家老が cmd 起案して template
+        に追記。
     concerns_flagged:
-    - 'SO-06 qc_auto_check warn: report_to=karo (期待 gunshi)。但し ashigaru 報告先慣行 (karo
-      が next 意思決定者) に従う長期パターンであり、即時違反扱いせず別 cmd で慣行 vs auto-check 整合性を再評価推奨。'
-    action_required_candidates: []
+    - L021 を skip して L022 を新設した形となっている。task YAML で明示指定された番号だが、L021 が将来用予約か起案時の番号間違いかは不明。家老または将軍に
+      L021 の予約状況確認を推奨。
   files_modified:
-  - queue/reports/gunshi_report.yaml
-  - queue/suggestions.yaml
+  - instructions/gunshi.md
+  - instructions/common/silent_failure_pattern.md
+  - instructions/shogun.md
+  - skills/shogun-silent-failure-audit-pattern/SKILL.md
+  - instructions/common/cmd_template_reality_verify.md
   skill_candidate:
     found: false
-    notes: ash6 申告通り既存 skill 網羅。新規候補なし。
+    notes: '本 cmd は既存 skill (shogun-silent-failure-audit-pattern) の拡張のため新規 skill 候補なし。Incident
+      #6 として既存 skill に統合済。'
 history:
 - worker_id: gunshi
   task_id: subtask_723_gunshi_ac11_completion_qc_reconstructed
@@ -2440,3 +2541,129 @@ history:
 
       '
   blockers: []
+- worker_id: gunshi
+  task_id: gunshi_qc_731q
+  parent_cmd: cmd_731
+  timestamp: '2026-05-16T18:09:47+09:00'
+  status: done
+  result:
+    type: quality_check
+    ashigaru_task_id: subtask_731q_runtime_wiring_repair
+    ashigaru_worker_id: ashigaru6
+    qa_decision: pass
+    issues_found: []
+    deliverables_verified: true
+    tests_status: all_pass
+    build_status: not_applicable
+    scope_match: complete
+    skill_candidate_inherited:
+      found: false
+      notes: ash6 申告通り shogun-systemd-user-cron-healthcheck-pattern (skills/) で既出。candidate
+        走査済 + 該当なし。
+    acceptance_criteria_verification:
+    - id: Q-1
+      status: PASS
+      evidence: /tmp/crontab_backup_20260516_162240.txt 4471B 実在。crontab -r 未使用、cmd_731
+        managed 3行のみ追加。
+    - id: Q-2
+      status: PASS
+      evidence: crontab に */10 * * * * karo_cmd_complete_audit.sh --quiet 登録確認。--quiet
+        で log 0B は仕様通り (script L36)。手動実行 exit 1 + 24 MISSING 検出は ends 動作実証。
+    - id: Q-3
+      status: PASS
+      evidence: crontab に */10 * * * * shogun_completion_hook.sh 登録確認。logs/shogun_completion_hook.log
+        2133B、18:00 JST まで継続発火 (dedup skip + no alerts due ログあり)。ends 実証済み。
+    - id: Q-4
+      status: PASS (means) / DEFERRED (ends)
+      evidence: crontab に `0 12 * * *` (UTC 12:00 = JST 21:00) 登録確認。既存 cmd_603 行は不変。ends
+        は subtask_731p γ-2 cron cycle evidence 担当 (21:05 JST 待ち)。
+    - id: Q-5
+      status: PASS
+      evidence: crontab -l grep で karo_cmd_complete_audit / shogun_completion_hook
+        / 0 12 reality_check 全3行確認。
+    - id: Q-6
+      status: PASS
+      evidence: python yaml.safe_load で ashigaru6_report.yaml / ashigaru6.yaml 両者
+        parse PASS。SKIP=0。
+    means_ends_classification:
+      schema_version: '1.0'
+      ac_classification:
+      - id: Q-1
+        type: means
+        rationale: crontab backup と破壊回避は機構的安全手段 — 後続検証の前提
+        corresponding_ends_ac: null
+      - id: Q-2
+        type: means
+        rationale: AC-5 cron 登録自体は means。ends は cron 実発火 + MISSING 検出継続
+        corresponding_ends_ac: Q-5
+      - id: Q-3
+        type: ends
+        rationale: shogun_completion_hook の cron 実発火が log で確認済 = AC-6 ends 達成
+        corresponding_ends_ac: null
+      - id: Q-4
+        type: means
+        rationale: 21:00 JST cron 登録は means。ends は subtask_731p で 21:05 JST 実発火後に確定
+        corresponding_ends_ac: Q-5
+      - id: Q-5
+        type: ends
+        rationale: crontab -l 確認 = 登録 means の確実性証跡。但し実発火 ends は別 task (731p) で補完
+        corresponding_ends_ac: null
+      - id: Q-6
+        type: means
+        rationale: YAML parse / SKIP=0 は基盤整合 means
+        corresponding_ends_ac: null
+      ends_coverage_note: AC-5 ends (karo_cmd_complete_audit 実発火) は --quiet 仕様で log
+        静黙。Stage 4 確認は手動 exec で代替 (24 MISSING 検出証跡)。AC-10 21:00 JST ends は subtask_731p
+        担当で deferred。
+      both_systems_verified: true
+      verdict: means 系 6/6 PASS。ends 系 2/2 確認 (AC-6 cron 実発火 + AC-5 手動 ends)。AC-10
+        21:00 JST 実発火 ends は γ-2 (subtask_731p) に正規委譲。
+    north_star_alignment:
+      status: aligned
+      reason: 監視層 silent silence 構造解消の最後の 1 ピース = runtime 配線。Q では AC-5/AC-6 hook が確実に
+        periodic 起動する仕組を確立し、cmd_complete 漏れ・dual-verification 漏れの能動検知を継続稼働状態にした。
+      risks_to_north_star:
+      - AC-10 21:00 JST cron 実発火 ends 未取得。subtask_731p で 21:05 JST 以降に取得しないと γ-2 evidence
+        不成立。
+      - karo_cmd_complete_audit --quiet は静黙仕様だが、cron 実発火そのものが log 0B では検出困難。必要なら別途
+        stderr/exec 痕跡 (e.g. logger -t cron) を追加検討。
+    north_star_outcome_evidence:
+      status: pass
+      evidence_type: e2e
+      command_or_artifact: crontab -l + logs/shogun_completion_hook.log (実発火) + 手動
+        exec exit 1 (karo_cmd_complete_audit 24 MISSING 検出)。AC-10 ends は subtask_731p
+        担当のため当 QC では deferred。
+      reason: AC-5/AC-6 の runtime 配線は cron 登録 + 実発火 log で実証。AC-10 21:00 JST 実発火は γ-2
+        で取得予定。
+    deploy_verify_cycle_check:
+      stage1_commit_or_placement: pass
+      stage2_artifact_placement: pass
+      stage3_registration_check: pass
+      stage3_evidence: crontab -l で cmd_731 managed comment 付き 3 行確認
+      stage4_execution_log: partial_pass
+      stage4_evidence: 'shogun_completion_hook.log: ✅ 実発火 log 確認 (18:00 JST まで継続)。karo_cmd_complete_audit.log:
+        0B (--quiet 仕様)、manual exec 代替。reality_check 21:00 JST: 未発火 (deferred to subtask_731p)。'
+      dashboard_reflection: pass
+      dashboard_reflection_evidence: dashboard.md 🔄進行中 に `cmd_731 ... γ-2 cron実発火証跡待ち(21:05
+        JST)` 反映済
+    qc_skip_reason: ''
+    suggestions:
+    - id: sug_cmd_731q_001
+      priority: medium
+      content: karo_cmd_complete_audit --quiet は log 0B 静黙仕様。cron 実発火そのものが log で見えず
+        Stage 4 ends 検証が困難。logger -t cron / wrapper script でタイムスタンプだけでも残す改修を検討。
+    - id: sug_cmd_731q_002
+      priority: low
+      content: AC-10 21:00 JST 実発火 ends は subtask_731p で γ-2 cron cycle evidence 取得待ち。21:05
+        JST 以降 reality_check.log に新 entry 追加を確認し、subtask_731p 完遂 → 軍師 QC 終結 → cmd_731
+        全 AC PASS 宣言の段取り。
+    concerns_flagged:
+    - 'SO-06 qc_auto_check warn: report_to=karo (期待 gunshi)。但し ashigaru 報告先慣行 (karo
+      が next 意思決定者) に従う長期パターンであり、即時違反扱いせず別 cmd で慣行 vs auto-check 整合性を再評価推奨。'
+    action_required_candidates: []
+  files_modified:
+  - queue/reports/gunshi_report.yaml
+  - queue/suggestions.yaml
+  skill_candidate:
+    found: false
+    notes: ash6 申告通り既存 skill 網羅。新規候補なし。

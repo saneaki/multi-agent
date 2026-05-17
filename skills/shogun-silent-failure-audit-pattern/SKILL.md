@@ -323,9 +323,74 @@ grep -n '<new-skill-or-artifact-slug>' .gitignore
 - output deliverables は artifact registration targets であり、現行方針では原則 git 追跡対象にしない。
   skill / scripts / docs など repository asset と混同しない。
 
+### Incident #6: clasp push / deploy 系 remote 反映ゼロ silent failure (cmd_712)
+
+**症状**: ash3 が `clasp push` を実行し `Skipping push.` 出力を取得。`clasp status` で `Tracked files: <list>` を確認し「local 完遂」として完了報告。**remote (GAS) には 0 byte も反映されないまま 4 日間 SLA 超過**。殿の手作業 (`clasp pull` 後 remote ≠ local 検出) で初発覚。
+
+**誤読 pattern**:
+
+| clasp output 文言 | 誤解釈 | 正しい意味 |
+|------------------|--------|-----------|
+| `Skipping push.` | "成功 push" / "差分無し OK" | local と remote が一致 or push 抑制状態。**新規 push 成功証跡ではない** |
+| `Tracked files: <list>` | "remote に反映済 file 一覧" | local 追跡対象一覧 (.claspignore 通過後の push 候補)。**remote 反映証跡ではない** |
+| `Pushed N files.` (≠ "Skipping") | — | これが**真の push 成功証跡** |
+
+**根因 (4 段同根)**:
+- 段 1 (ash): clasp CLI 出力文言の意味を **誤解釈**
+- 段 2 (gunshi): local 完遂証跡のみで QC PASS。**remote 実態確認手順 (clasp pull diff) を AC として必須要求していない**
+- 段 3 (karo): gunshi QC PASS を信用し中継。**reality verify 無い QC を疑わなかった**
+- 段 4 (shogun): karo 中継を信用し殿に「完了」と報告。**F007 (unverified_report) 違反**
+
+cmd_712 は §Incident #1-5 (子/親 script の `2>/dev/null` 系 suppression) とは物理動作が異なる。**外部 CLI tool の出力文言誤読** という新しい root cause 系統で、shell script suppression と並ぶ silent failure の主要 family である。
+
+**防止 (cmd_732 で構造化)**:
+
+| layer | 場所 | 内容 |
+|-------|------|------|
+| 規律 | `instructions/gunshi.md §L022` | 軍師 QC で local 完遂証跡のみによる PASS を禁止。Forbidden Evidence Patterns (Skipping push. / Tracked files / Everything up-to-date 等) を明示 |
+| 規律 | `instructions/shogun.md F007` | 将軍が殿に「完了」報告する前の reality verify 必須化。L022 と双方向 cross-ref |
+| カタログ | `instructions/common/silent_failure_pattern.md §Incident #001` | cmd_712 事案を 1 entry 形式で正式登録 |
+| Template | `instructions/common/cmd_template_reality_verify.md` | deploy/push 系 cmd template に reality_verify_step を default 内蔵 |
+
+**Golden Verify 手順 (clasp 系)**:
+
+```bash
+# ❌ NG: local 完遂証跡のみ
+clasp push     # → "Skipping push." を成功と誤読
+clasp status   # → "Tracked files: <list>" を remote 反映証跡と誤読
+
+# ✅ OK: remote reality 直接確認 (3 段)
+clasp push                                      # 必ず "Pushed N files." を確認
+clasp pull --rootDir /tmp/clasp_verify_$$       # remote → local 取得
+diff -r src/ /tmp/clasp_verify_$$/              # diff=0 で remote 反映確認
+clasp versions | head -3                        # remote 履歴 increment 確認
+
+# ✅ OK: GAS Editor 目視 (殿または gunshi)
+# https://script.google.com/u/0/home/projects/<SCRIPT_ID>/edit
+# 該当 file タブ → 最終更新日時 + 行数 を確認
+```
+
+**Diagnostic (QC 時に必須実行)**:
+
+```bash
+# ash 報告 evidence に Forbidden Pattern が含まれるか自動検出
+grep -E "Skipping push\.|Tracked files|Everything up-to-date" \
+  queue/reports/ashigaru*_report.yaml
+
+# 該当行が evidence として記録されている場合 → L022 違反疑い
+# gunshi は ash に reality verify 証跡 (clasp pull diff / clasp versions) を要求
+```
+
+**Related Patterns** (同 family の他 tool 出力):
+
+- `git push origin <branch>` → `Everything up-to-date` 単独は新規 push 証跡ではない。`git ls-remote origin <branch>` で sha 一致確認必須
+- n8n WF activate → 200 OK 単独は実行成功証跡ではない。`GET /api/v1/executions/{id}?includeData=true` で `finished: true, status: success` 確認必須
+- Notion API page create → 200 OK + `id` 返却単独は反映証跡。但し DB view 反映は別途 `GET /v1/databases/{id}/query` で確認推奨
+- cron crontab 追加 → `crontab -l` 一致は登録 means。実発火 ends は log file 時刻別行で確認必須 (Stage 4)
+
 ### Common Root Cause: Report ↔ Reality 整合確認手順の不徹底
 
-5 incident に通底する根因は「report と reality の整合確認手順が不十分」。
+6 incident に通底する根因は「report と reality の整合確認手順が不十分」。
 本 SKILL.md §Core Pattern (3段予防) で扱う `2>/dev/null || true` 型の silent failure
 (L1-L3 子/親/規律) とは物理動作が異なるが、**「unit AC pass だが outcome 観測されない」**
 構造は共通。SO-17 outcome E2E 強化 + 直読 grep + history 化 + git index/ignored state 確認が
@@ -340,3 +405,5 @@ grep -n '<new-skill-or-artifact-slug>' .gitignore
 | cmd_729c | append regression smoke + report-reality drift fixture test (ash6) | commit 269c4fb + 36fdbe7、bats 4/4 local PASS、γ 完了。GHA macOS は CI 環境依存 (PyYAML 等) で依然 fail |
 | cmd_729d | 本 SKILL.md §Report Drift Patterns 追記 + 全 QC (本 gunshi) | δ 完遂 |
 | cmd_729f | verifier PARTIAL_PASS 補修: .gitignore drift family 追加 + 4a5bea2 scope 証跡化 (ash7) | skill-creation-workflow §5 前段 gate を明文化。4a5bea2 の `shutsujin_departure.sh` 変更は B-4 scope 内と判定 |
+| cmd_712  | ash3 `clasp push → Skipping push.` 誤読により remote 反映ゼロ 4 日 SLA 超過。殿手作業で初発覚 | external CLI tool 出力誤読 family (本 SKILL §Incident #6) として正式登録。L022 (gunshi reality verify) で再発防止 |
+| cmd_732  | L022 + silent_failure_pattern.md + clasp push pattern (Incident #6) を gunshi.md / common / SKILL に整備 | 段 2 (gunshi QC) reality verify 必須化により cmd_712 同型事案を構造的に防止。F007 (shogun) と双方向 cross-ref |
