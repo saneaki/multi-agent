@@ -28047,13 +28047,18 @@
     ash3 secondary → 軍師統合 → 実装担当決定。cmd_708 Continuation 統合必須。'
   project: gas-mail-manager
   priority: high
-  status: done
+  status: in_progress
   dispatched_at: '2026-05-10T22:51:22+09:00'
-  completed_at: '2026-05-17T12:53:50+09:00'
-  resolution_note: 'clasp run 経路は executionApi.access=MYSELF 制約で復旧不可と判明、cmd_712 Web App 拡張で
-    backupMasterSheet を HMAC POST 経由実行する代替経路を確立。Stage1 backup は将軍試験で実機 PASS
-    (backupFileId=1tNoywbqCoYn9i1bcLjejtgt-P7y4-cA8QV6vsmeZTPU / sourceRowCount=6 / 12:53:47 JST)。
-    北の星: 殿手作業なしの clasp version + clasp deploy -i -V 自動 deploy も確立。'
+  stage1_backup_completed_at: '2026-05-17T12:53:50+09:00'
+  phase_status: phase_2_ux_implementation_pending
+  reopen_reason: |
+    Stage1 backup (backupMasterSheet) のみ AC-S9 部分達成。本来 11 AC のうち AC-S1〜S8 + AC-T1 (元帳 UX 改善本体)
+    は未達成。将軍の 5/17 12:53 JST 「status=done」発令は scope 縮小視野で誤判定 (F007 系統)。
+    殿の 5/17 13:25 JST ご指摘で再オープン。Phase 2 として元帳 UX 実装に再着手する。
+    Stage1 backup は cmd_712 Phase E (Web App + HMAC) 経路で代替成立、本来の clasp run 復旧は
+    executionApi.access=MYSELF + scripts.run 設計除外で不可能と判明済み。
+    新規 issue: https://github.com/saneaki/gas-mail-manager/issues/7
+  reopen_at: '2026-05-17T13:30:00+09:00'
   phase: dual_review
   dual_review_status: complete
   design_confirmed:
