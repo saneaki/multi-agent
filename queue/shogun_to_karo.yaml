@@ -28302,10 +28302,11 @@
     後 separate PR。
   project: gas-mail-manager
   priority: high
-  status: done
+  status: in_progress
   dispatched_at: '2026-05-11T00:44:24+09:00'
-  phase_status: phase_a_manual_gate_passed
+  phase_status: phase_a_complete_starting_phase_bcd
   phase_a_completed_at: '2026-05-17T11:19:22+09:00'
+  phase_bcd_started_at: '2026-05-17T11:38:00+09:00'
   phase: dual_review
   dual_review_status: complete_pending_gunshi_consolidation
   gunshi_consolidation_status: done
@@ -28327,9 +28328,11 @@
   assigned_to:
   - ashigaru3
   - ashigaru6
+  - ashigaru7
   task_ids:
   - subtask_712a_codex_webapp_endpoint_review
   - subtask_712b_opus_webapp_endpoint_review
+  - subtask_712i_phase_bcd_hmac_implementation
   output:
   - output/cmd_712a_codex_webapp_endpoint_review.md
   - output/cmd_712b_opus_webapp_endpoint_review.md
