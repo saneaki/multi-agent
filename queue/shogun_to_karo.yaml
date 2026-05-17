@@ -28302,14 +28302,14 @@
     後 separate PR。
   project: gas-mail-manager
   priority: high
-  status: done
+  status: in_progress
   dispatched_at: '2026-05-11T00:44:24+09:00'
-  completed_at: '2026-05-17T12:26:30+09:00'
-  phase_status: phase_bcd_lord_gate_passed
+  phase_status: phase_e_backupmaster_whitelist_pending
   phase_a_completed_at: '2026-05-17T11:19:22+09:00'
   phase_bcd_started_at: '2026-05-17T11:38:00+09:00'
   phase_bcd_code_completed_at: '2026-05-17T12:06:25+09:00'
   phase_bcd_completed_at: '2026-05-17T12:26:30+09:00'
+  phase_e_started_at: '2026-05-17T12:37:28+09:00'
   phase: dual_review
   dual_review_status: complete_pending_gunshi_consolidation
   gunshi_consolidation_status: done
@@ -28336,6 +28336,7 @@
   - subtask_712a_codex_webapp_endpoint_review
   - subtask_712b_opus_webapp_endpoint_review
   - subtask_712i_phase_bcd_hmac_implementation
+  - subtask_712j_phase_e_backupmaster_whitelist
   output:
   - output/cmd_712a_codex_webapp_endpoint_review.md
   - output/cmd_712b_opus_webapp_endpoint_review.md
@@ -30706,3 +30707,33 @@
     gunshi_task: true
     note: "instructions+skill 同時編集は race risk ゆえ直列。軍師が主導し、ash は補助的に skill 更新を担う構成。"
   context_policy: preserve_across_stages
+- id: cmd_733
+  timestamp: '2026-05-17T12:37:28+09:00'
+  north_star: |
+    cmd_712 Codex review (af7b29ba, Q3+Q4) で指摘された運用課題を構造的に解消。
+    secret rotation の手動運用破綻リスク + 旧 anonymous deployment 並存の穴を絶つ。
+    Web App 経路の本番運用耐性を高め、6ヶ月後の rotation を安全に自動化できる状態にする。
+  purpose: |
+    rotation 自動化 (sug_004) + 旧 deployment archive 運用 (sug_005) を整備し、
+    Web App 経路の本番運用耐性を高める。
+  acceptance_criteria:
+    - "AC-1: scripts/rotate_hmac_secret.py (or shell) — 殿のローカルで secret 生成 + GAS Script Properties 更新 + VPS env file 更新を一括化 (手作業 5 step → 1 command)"
+    - "AC-2: docs/RUNBOOK_ja.md に rotation 自動化手順 + 6ヶ月 trigger の cron 案を記載"
+    - "AC-3: scripts/archive_old_deployments.sh — 旧 anonymous (Phase A 時代) deployment を一括 archive する"
+    - "AC-4: 旧 deployment archive 後の reality verification (urllib で 404/Page not found 化確認)"
+    - "AC-5: instructions/karo.md or runbook に '本番 deploy 更新時の rotation + archive チェックリスト' を追記"
+  command: |
+    軍師主体で設計・実装。rotation script と archive script の両方を gas-mail-manager repo に追加。
+    RUNBOOK_ja.md に手順を集約し、karo.md にチェックリストを追記。
+    L022 適用 (reality verification 必須)。全 AC 完遂後 cmd_complete を将軍 inbox へ。
+  project: gas-mail-manager
+  priority: medium
+  status: pending
+  decomposition_hint:
+    parallel: 1
+    gunshi_task: true
+    note: "軍師主導が望ましい。rotation script と archive script は独立ゆえ並列可能。L022適用でclaspデプロイ系は必ずreality verify。"
+  context_policy: clear_between
+  source_suggestions:
+    - sug_cmd_712_004
+    - sug_cmd_712_005

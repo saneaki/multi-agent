@@ -1,124 +1,92 @@
 task:
-  acceptance_criteria:
-  - check: doPost() が verifyHmacRequest_() を先頭で呼ぶ。HMAC不一致 → INVALID_SIGNATURE返却
-    id: AC-B1
-  - check: '|request.timestamp - Date.now()/1000| > 300 → STALE_TIMESTAMP返却'
-    id: AC-B2
-  - check: nonce重複 (CacheService 600s TTL) → REPLAY返却
-    id: AC-B3
-  - check: HMAC計算で (byte+256)%256 unsigned化を使用。GAS Utilities.computeHmacSha256Signature結果を正しく処理
-    id: AC-B4
-  - check: Script Properties からHMAC_SECRET_ACTIVE/HMAC_KID_ACTIVE/HMAC_SECRET_PREVIOUS/HMAC_KID_PREVIOUSを読み込み、kid
-      2世代でverify
-    id: AC-B5
-  - check: error codesがD-2裁定命名規則に準拠 (INVALID_SIGNATURE/STALE_TIMESTAMP/REPLAY/INVALID_CMD/LOCK_BUSY/RUNTIME_ERROR等)
-    id: AC-B6
-  - check: customer-data routeでLockService.getScriptLock()を使用。タイムアウト → LOCK_BUSY返却
-    id: AC-C1
-  - check: doPost 4分 soft cap 実装 (DOPOST_SOFT_CAP_MS定数)
-    id: AC-C2
-  - check: WEBAPP_PHASE='B'。cmd whitelist に triggerProcessAllCustomers/processCustomerBackfill/dryRunCmd676/verifyCmd676A5
-      追加
-    id: AC-D1
-  - check: ping cmd は引き続き機能 (regression)。HMAC検証後にpingが通ること
-    id: AC-D2
-  - check: scripts/gas_invoke.py 新規作成。Python urllib + hmac + hashlib。envファイルからsecret読込
-    id: AC-V1
-  - check: env/gas_secret.env.example 作成 (git-tracked)。テンプレート形式、実値なし
-    id: AC-V2
-  - check: env/gas_secret.env が .gitignore で除外されていること (追記または確認)
-    id: AC-V3
-  - check: clasp push で "Pushed N files." (N >= 1, src/webapp.gs含む)。"Skipping push."
-      = FAIL (L022)
-    id: AC-Q1
-    note: RAPT無効の場合はFAILと記録し殿に再認証を要請。clasp push自体はスキップ不可。
-  - check: git diff/status でHMAC secret文字列が含まれないことを確認
-    id: AC-Q2
-  - check: 実装コードのコードレビュー証跡 (HMAC計算・constant-time比較・nonce TTL等の正確性を自己確認)
-    id: AC-Q3
-  - check: kid 2世代切替の実動作試験手順を report に記載 (previous kidでverify成功 / active kidでsign)
-    id: AC-R1
-  - check: runbook に access policy 変更時の再検証手順を記載 (env/gas_secret.env.example or docs/)
-    id: AC-R2
-  - check: LockService競合制御 (AC-C1) がPhase C設計範囲内であることを確認し report に明記
-    id: AC-R3
-  assigned_to: ashigaru7
-  background: 'cmd_712 Phase A (GAS Web App skeleton + ping endpoint) は殿 manual gate
-    PASS (11:19 JST)。
-
-    Phase B+C+D として HMAC-SHA256 三重防御を webapp.gs に追加する。
-
-    設計根拠: output/cmd_712c_gunshi_webapp_endpoint_consolidation.md (軍師裁定 verdict=conditional_go)
-
-    '
-  completed_at: '2026-05-17T12:01:08+09:00'
-  context_policy: preserve_across_stages
-  editable_files:
-  - src/webapp.gs
-  - scripts/gas_invoke.py
-  - env/gas_secret.env.example
-  - .gitignore
-  instructions: "1. /home/ubuntu/gas-mail-manager/src/webapp.gs を読んでPhase A実装を把握せよ\n\
-    2. /home/ubuntu/shogun/output/cmd_712c_gunshi_webapp_endpoint_consolidation.md\
-    \ を読んで設計裁定を確認せよ\n3. webapp.gs にHMAC三重防御を実装 (AC-B1〜B6、C1〜C2、D1〜D2)\n   - WEBAPP_PHASE\
-    \ = 'B'\n   - verifyHmacRequest_() 関数追加\n   - HmacKey_ ヘルパー (Script Properties読み込み)\n\
-    \   - getNonce_() / storeNonce_() (CacheService)\n   - doPost() 先頭で verifyHmacRequest_()\
-    \ 呼び出し\n   - 4分 soft cap 定数追加\n   - cmd whitelist拡張\n4. scripts/gas_invoke.py\
-    \ を新規作成 (AC-V1)\n   - Python urllib.request でPOST\n   - hmac + hashlib でHMAC-SHA256署名\n\
-    \   - timestamp + nonce生成\n   - envファイルから WEBAPP_URL + HMAC_SECRET + HMAC_KID\
-    \ 読み込み\n5. env/gas_secret.env.example を新規作成 (AC-V2)\n   WEBAPP_URL=https://script.google.com/macros/s/REPLACE_ME/exec\n\
-    \   HMAC_KID=v1\n   HMAC_SECRET=REPLACE_WITH_32_BYTE_HEX_SECRET\n6. .gitignore\
-    \ に env/gas_secret.env が記載されているか確認・追記 (AC-V3)\n7. git add src/webapp.gs scripts/gas_invoke.py\
-    \ env/gas_secret.env.example .gitignore\n8. git diff で secret漏洩チェック (AC-Q2)\n\
-    9. clasp push 実行:\n   - \"Pushed N files.\" かつ webapp.gs含む → AC-Q1 PASS\n   -\
-    \ \"Skipping push.\" → AC-Q1 FAIL\n   - RAPT無効 → AC-Q1 FAIL、殿への再認証要請をreportに明記\n\
-    10. git commit -m \"feat(cmd_712): Phase B+C+D HMAC三重防御 + gas_invoke.py\"\n11.\
-    \ git push origin main (secret漏洩チェック後のみ)\n12. karo inbox へ task_completed 報告\n"
-  key_design_decisions:
-    d1_dopost_timeout: doPost 4分 soft cap (DOPOST_SOFT_CAP_MS = 4 * 60 * 1000)
-    d2_error_codes: BAD_JSON / INVALID_SIGNATURE / STALE_TIMESTAMP / REPLAY / INVALID_CMD
-      / BAD_REQUEST / LOCK_BUSY / RUNTIME_ERROR
-    d3_secret_rotation: kid 2世代 (active/previous)。両方で verify、signはactiveのみ
-    d9_hmac_unsigned: (byte + 256) % 256 で signed byte → unsigned hex 化必須
-    webapp_phase: WEBAPP_PHASE を A → B に更新
+  task_id: subtask_712j_phase_e_backupmaster_whitelist
+  title: 'cmd_712 Phase E: backupMasterSheet → Web App whitelist追加 + 殿 manual gate'
   parent_cmd: cmd_712
+  assigned_to: ashigaru7
+  timestamp: '2026-05-17T12:37:28+09:00'
+  status: assigned
   priority: high
   project: gas-mail-manager
+  target_path: /home/ubuntu/gas-mail-manager
+  context_policy: preserve_across_stages
+
+  background: |
+    cmd_712 Phase B+C+D 完遂 (12:26 JST PASS)。殿 reality check により、cmd_709 の
+    clasp run backupMasterSheet が 'permission' エラーで失敗する根因は executionApi.access=MYSELF
+    設計 (cmd_712c で意図的除外) であり、clasp run 経路は復旧不可能と判明。
+    cmd_712 Web App 経由で backupMasterSheet を呼ぶのが正道。
+    本 subtask で WEBAPP_ALLOWED_PHASE_B_COMMANDS に backupMasterSheet を追加し、
+    cmd_709 action-2 の根本解決を図る。
+
+  editable_files:
+    - src/webapp.gs
+    - scripts/gas_invoke.py
+
+  acceptance_criteria:
+    - id: AC-E1
+      check: >
+        src/webapp.gs の WEBAPP_ALLOWED_PHASE_B_COMMANDS に 'backupMasterSheet' を追加。
+        whitelist 5件 → 6件。(triggerProcessAllCustomers / processCustomerBackfill /
+        dryRunCmd676 / verifyCmd676A5 / ping → + backupMasterSheet)
+    - id: AC-E2
+      check: >
+        dispatcher が backupMasterSheet を呼び出し、返却 JSON に backupFileId / backupUrl
+        (または相当フィールド) を含む。エラー時は RUNTIME_ERROR を返す。
+    - id: AC-E3
+      check: >
+        scripts/gas_invoke.py で cmd=backupMasterSheet が HMAC署名付きで叩けること。
+        (実試験は殿 manual gate で実施)
+    - id: AC-Q1
+      check: >
+        clasp push 実行 → "Pushed N files." (N >= 1, src/webapp.gs含む) が PASS条件。
+        "Skipping push." → FAIL (L022適用: reality verification必須)
+      note: RAPT無効の場合はFAILと記録し殿に再認証を要請。clasp push自体はスキップ不可。
+    - id: AC-Q2
+      check: git diff/status でHMAC secret文字列 + Web App URL が含まれないことを確認
+    - id: AC-Q3
+      check: 実装コードのコードレビュー証跡 (whitelist追加・dispatcher・返却JSON正確性を自己確認)
+    - id: AC-R1
+      check: >
+        report に 'cmd_709 action-2 解消条件: 殿が新 deploy + HMAC POST backupMasterSheet 試験
+        PASS 後に action-2 削除' と明記
+
+  instructions: |
+    1. /home/ubuntu/gas-mail-manager/src/webapp.gs を読んで Phase B 実装を把握せよ
+       (WEBAPP_PHASE='B', WEBAPP_ALLOWED_PHASE_B_COMMANDS を確認)
+    2. WEBAPP_ALLOWED_PHASE_B_COMMANDS に 'backupMasterSheet' を追加
+    3. dispatcher の switch/if 文に backupMasterSheet ケースを追加:
+       - backupMasterSheet 関数を呼び出し
+       - 返却値 (backupFileId + backupUrl 等) を JSON に含める
+       - エラー時は RUNTIME_ERROR を返す
+    4. scripts/gas_invoke.py が cmd=backupMasterSheet に対応していることを確認
+       (既存の汎用 cmd/args 構造で対応可能なはず)
+    5. git diff で secret/URL 漏洩チェック (AC-Q2)
+    6. git add src/webapp.gs (scripts/gas_invoke.py に変更があれば追加)
+    7. clasp push 実行 → "Pushed N files." を確認 (AC-Q1 L022適用)
+    8. git commit -m "feat(cmd_712): Phase E backupMasterSheet whitelist追加"
+    9. git push origin main (secret漏洩チェック後のみ)
+    10. karo inbox へ task_completed 報告
+
+  key_design_decisions:
+    e1_whitelist: WEBAPP_ALLOWED_PHASE_B_COMMANDS に backupMasterSheet 追加
+    e2_dispatcher: backupMasterSheet dispatcher で実関数呼出 + backupFileId/backupUrl返却
+    e3_rapt_bypass: Web App HMAC経由により clasp run RAPT問題を根本回避
+
+  secret_policy:
+    gas_side: GAS Script Propertiesに設定済 (殿 manual操作完了)
+    vps_side: /home/ubuntu/gas-mail-manager/env/gas_secret.env (chmod 600、git-ignored)
+    never_in: task YAML / report YAML / git commit / Discord public
+
+  report_format:
+    command: bash /home/ubuntu/shogun/scripts/inbox_write.sh karo "[報告内容]" task_completed ashigaru7
+    must_include:
+      - 各AC PASS/FAILと証跡 (コード断片・行番号)
+      - clasp push結果 (Pushed N files or FAIL理由)
+      - secret_leak_check結果 (git diff出力)
+      - 殿へのmanual gate依頼事項 (新 deploy + HMAC POST backupMasterSheet 試験手順)
+    to: karo inbox
+  report_to: karo
+
   race001:
     conflict_risk: cmd_709 owns src/sheets.gs + src/migration.gs。重複なし
     owner: cmd_712 owns src/webapp.gs exclusively
-  report_format:
-    command: bash /home/ubuntu/shogun/scripts/inbox_write.sh karo "[報告内容]" task_completed
-      ashigaru7
-    must_include:
-    - 各AC PASS/FAILと証跡 (コード断片・行番号)
-    - clasp push結果 (Pushed N files or FAIL理由)
-    - secret_leak_check結果 (git diff出力)
-    - 殿へのmanual gate依頼事項 (Script Properties設定手順)
-    to: karo inbox
-  report_to: karo
-  scope_1PR:
-  - HMAC-SHA256 検証 (constant-time比較) in doPost()
-  - timestamp ±300秒 window チェック
-  - nonce CacheService 600s replay防止
-  - LockService 競合制御 (Phase C)
-  - request fields: cmd/args/timestamp/nonce/signature
-  - HMAC byte unsigned化: (byte + 256) % 256 (D-9 重要バグ防止)
-  - secret rotation: kid 2世代 (active/previous) + 6ヶ月 rotation 内包
-  - scripts/gas_invoke.py 新規作成 (Python urllib + hmac + hashlib)
-  secret_policy:
-    gas_side: GAS Script Propertiesに設定 (殿 manual操作)。コード内にsecretをハードコード禁止
-    never_in: task YAML / report YAML / git commit / Discord public
-    secret_setting_gate: '実HMAC秘密鍵の設定は殿 manual gate。
-
-      ash7はenv.exampleとコードを作成し、設定手順をreportに明記する。
-
-      実際のHMAC通信テストは殿deploy後の別subtaskで実施。
-
-      '
-    vps_side: /home/ubuntu/gas-mail-manager/env/gas_secret.env (chmod 600、git-ignored)
-  status: done
-  target_path: /home/ubuntu/gas-mail-manager
-  task_id: subtask_712i_phase_bcd_hmac_implementation
-  timestamp: '2026-05-17T11:38:00+09:00'
-  title: 'cmd_712 Phase B+C+D: HMAC三重防御 webapp.gs実装 + gas_invoke.py作成'
