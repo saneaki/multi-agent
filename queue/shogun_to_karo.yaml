@@ -30667,3 +30667,33 @@
     - cmd_638 (in_progress_monitor)
     - cmd_716 (殿判断 gate × Alert dedup)
     - cmd_730 (本日完遂、直接動機)
+- id: cmd_732
+  timestamp: '2026-05-17T00:05:00+09:00'
+  north_star: |
+    cmd_712 Phase A は ash3 報告 (5/12) で「clasp push 完遂」と扱われたが、実は remote 反映ゼロのまま 4 日間 SLA 超過。
+    軍師 QC + 家老中継 + 将軍承認の全段で reality verification が抜け、殿の手作業着手で初発覚した。
+    local 完遂 ≠ remote 反映 を軍師 QC で必ず見破り、deploy/push/upload 系 silent failure の構造的再発を絶つ。
+  purpose: |
+    軍師 instructions + cmd template + skill に Reality Verification 規律を明文化し、
+    「Skipping push.」「clasp status Tracked files」等を PASS 扱いせず remote 実態確認を強制する。
+  acceptance_criteria:
+    - "AC-1: instructions/gunshi.md に L022 (Reality Verification Rule) 追加 — remote 反映を要する作業 QC では ash 報告の local 完遂証跡のみで PASS せず、remote 実態確認手順 (clasp pull / API GET / 殿目視 等) を AC として必須要求"
+    - "AC-2: instructions/common/silent_failure_pattern.md (新規 or 既存追記) に cmd_712 事案 (Skipping push. 誤読 + clasp status Tracked 誤認) を incident として記載"
+    - "AC-3: 既存 F007 (unverified_report) との整合性確認 + cross-reference 明記"
+    - "AC-4: skills/shogun-silent-failure-audit-pattern/SKILL.md 更新で本事案を pattern 化"
+    - "AC-5: deploy/push 系 cmd template の QC AC に reality_verify_step を default 内蔵"
+    - "AC-6: cmd_712 を再開する subtask_712h (clasp push --force) は本 cmd 完遂後の新規 ash 作業時に L022 適用テストの位置付け"
+  command: |
+    軍師主体で instructions/gunshi.md + instructions/common/silent_failure_pattern.md を改修。
+    skill 更新は軍師指示で ash に振っても可。F007 拡張部分は instructions/shogun.md にも cross-reference を入れる。
+    全 AC 完遂後、本 cmd 完遂報告に「次回 clasp 系作業 (cmd_712 Phase A 再試験) で本規律が機能するか実地検証する」と明記。
+  project: shogun
+  priority: high
+  status: in_progress
+  started_at: '2026-05-17T10:51:16+09:00'
+  phase_status: gunshi_dispatched
+  decomposition_hint:
+    parallel: 1
+    gunshi_task: true
+    note: "instructions+skill 同時編集は race risk ゆえ直列。軍師が主導し、ash は補助的に skill 更新を担う構成。"
+  context_policy: preserve_across_stages
