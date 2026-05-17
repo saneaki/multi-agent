@@ -1,27 +1,18 @@
 worker_id: gunshi
 latest:
   worker_id: gunshi
-  task_id: gunshi_qc_712i_supplement
+  task_id: gunshi_qc_712j
   parent_cmd: cmd_712
-  timestamp: '2026-05-17T12:02:07+09:00'
+  timestamp: '2026-05-17T12:46:57+09:00'
   status: done
   result:
-    type: quality_check_supplement
-    ashigaru_task_id: subtask_712i_phase_bcd_hmac_implementation
+    type: quality_check
+    ashigaru_task_id: subtask_712j_phase_e_backupmaster_whitelist
     ashigaru_worker_id: ashigaru7
     qa_decision: pass
     verdict: go
-    previous_qc_ref: gunshi_qc_712i (11:53:46 PARTIAL_PASS)
-    karo_request_ref: msg_20260517_030302_a9183318
-    supplemental_commit: d4dc8fb
-    git_push_evidence: 72236e1..d4dc8fb main -> main (PASS)
-    cross_source_verification:
-      method: 家老指定行番号を gunshi 直接 Read で確認
-      files_directly_read:
-      - /home/ubuntu/gas-mail-manager/env/gas_secret.env.example (L12-19, L21-26)
-      - /home/ubuntu/gas-mail-manager/src/webapp.gs (L183-205)
-      result: 全 3 箇所で task YAML R1/R2/R3 要求文言を満たす実コード/docstring を確認。ash7 self-report
-        と gunshi 直接 Read 結果が完全一致。
+    implementation_commit: cc9e6ff
+    git_push_evidence: d4dc8fb..cc9e6ff main -> main (PASS)
     issues_found: []
     deliverables_verified: true
     tests_status: all_pass
@@ -29,175 +20,236 @@ latest:
     scope_match: complete
     skill_candidate_inherited:
       found: false
-      notes: 走査済 + 該当なし。L022 + silent_failure_pattern.md で既に体系化済。
+      notes: ash7 report skill_candidate.reason 通り、既存の L022/reality verification 規律範囲内のため新規
+        skill 候補なし。走査済 + 該当なし。
     acceptance_criteria_verification:
+    - id: AC-E1
+      status: PASS
+      evidence: "gunshi 直接 Read 確認 (src/webapp.gs:15-47):\n  L42-46: backupMasterSheet:\
+        \ { sideEffects: true, lock: true, handler: handleWebAppBackupMasterSheet_\
+        \ }\nWEBAPP_ALLOWED_PHASE_B_COMMANDS は ping/triggerProcessAllCustomers/processCustomerBackfill/\n\
+        dryRunCmd676/verifyCmd676A5/backupMasterSheet の 6 件。task YAML AC-E1 要求 (5\
+        \ 件 → 6 件) 充足。\n"
+    - id: AC-E2
+      status: PASS
+      evidence: "gunshi 直接 Read 確認 (src/webapp.gs:289-300):\n  L289: function handleWebAppBackupMasterSheet_()\
+        \ {\n  L290: var result = backupMasterSheet();\n  L291-293: !result || !result.backupFileId\
+        \ || !result.backupUrl → RUNTIME_ERROR throw\n  L294-300: return {invoked,\
+        \ backupFileId, backupUrl, sourceRowCount, backupName}\ndispatcher 確認 (L78-90):\n\
+        \  L88-89: dispatchWebAppCommand_(command, request, startedAt) で handler 呼出\n\
+        \  L91-95: catch で webAppError or RUNTIME_ERROR envelope 返却\ntask YAML AC-E2\
+        \ 要求 'backupFileId/backupUrl 返却 + エラー時 RUNTIME_ERROR' 充足。\n"
+    - id: AC-E3
+      status: PASS
+      evidence: 'ash7 report: ''python3 scripts/gas_invoke.py backupMasterSheet --dry-run
+        --pretty で HMAC 署名 payload 生成 PASS''。
+
+        scripts/gas_invoke.py は位置引数 cmd を署名対象とする汎用構造で、backupMasterSheet --dry-run
+        --pretty
+
+        で signed payload (signature redacted) を確認。実 HMAC POST は殿 manual gate (新 deploy
+        後) 担当。
+
+        '
+    - id: AC-Q1
+      status: PASS
+      evidence: '**L022 適用第二号 模範例**。task YAML AC-Q1 で ''Skipping push.'' → FAIL (L022適用)
+        明記。
+
+        ash7 は初回 ''clasp push → Skipping push.'' を FAIL 証跡として正しく記録。
+
+        Google clasp guide + @google/clasp npm README を調査 (批判的思考ルール#6 web search 必須準拠)。
+
+        clasp push -f で ''Pushed 10 files at 12:42:31 PM; includes src/webapp.gs''
+        取得。
+
+        pushed_file_count: 10, webapp_included: true。L022 reality verify 完遂。
+
+        cmd_712i (第一号 11:48 push) → cmd_712j (第二号 12:42 push) の連続成功で
+
+        ash7 が L022 規律を完全身体化していることを示す。
+
+        '
+    - id: AC-Q2
+      status: PASS
+      evidence: 'git diff --cached の rg scan (HMAC_SECRET/WEBAPP_URL/script.google.com/macros/s/AKfy/signature/secret)
+
+        no matches。commit 対象は src/webapp.gs のみ。push 後 tracked diff なし。git status clean。
+
+        '
+    - id: AC-Q3
+      status: PASS
+      evidence: 'ash7 code_review_evidence: whitelist (L15-47) + dispatcher (L78-90)
+        + return_json (L289-300)
+
+        + runtime_error (L91-95) を自己レビュー。gunshi も同行番号を直接 Read で再確認し整合確認。
+
+        '
     - id: AC-R1
       status: PASS
-      evidence: "家老指定: env/gas_secret.env.example:12-19。gunshi 直接 Read で確認:\n  L12:\
-        \ # Kid rotation verification:\n  L13: 1. On GAS, set previous kid/secret\
-        \ to the old pair and active kid/secret to the new pair.\n  L14-16: 2. Temporarily\
-        \ set HMAC_KID/HMAC_SECRET below to the previous pair and run:\n         \
-        \    python3 scripts/gas_invoke.py ping --env env/gas_secret.env --pretty\n\
-        \             Expected: ok=true, because GAS accepts the previous kid for\
-        \ verification.\n  L17-18: 3. Restore HMAC_KID/HMAC_SECRET below to the active\
-        \ pair and run the same ping.\n             Expected: ok=true, confirming\
-        \ new requests are signed with the active kid.\n  L19: 4. After the rotation\
-        \ grace period, remove HMAC_KID_PREVIOUS/HMAC_SECRET_PREVIOUS from GAS.\n\
-        previous kid verify + active kid signing 手順が完全記載。supplement_commit d4dc8fb\
-        \ で origin/main 反映済。\ntask YAML R1 要求 'kid 2世代切替の実動作試験手順を report に記載' を充足。\n"
-    - id: AC-R2
-      status: PASS
-      evidence: "家老指定: env/gas_secret.env.example:21-26。gunshi 直接 Read で確認:\n  L21:\
-        \ # Access policy redeploy runbook:\n  L22: 1. If Web App access/execution\
-        \ policy changes, create or update the deployment first.\n  L23: 2. Update\
-        \ WEBAPP_URL if the deployment URL changed.\n  L24: 3. Re-run the active-kid\
-        \ ping above and verify ok=true.\n  L25-26: 4. Re-run negative checks with\
-        \ a bad signature, stale timestamp, and reused nonce.\n             Expected\
-        \ errors: INVALID_SIGNATURE, STALE_TIMESTAMP, REPLAY.\ndeploy/WEBAPP_URL更新/positive\
-        \ ping/negative checks の 4 step が完全記載。\ntask YAML R2 要求 'runbook に access\
-        \ policy 変更時の再検証手順を記載' を充足。\n"
-    - id: AC-R3
-      status: PASS
-      evidence: "家老指定: src/webapp.gs:183-205。gunshi 直接 Read で確認:\n  L183: function\
-        \ dispatchWebAppCommand_(command, request, startedAt) {\n  L189: var lock\
-        \ = LockService.getScriptLock();\n  L190: if (!lock.tryLock(WEBAPP_LOCK_WAIT_MS))\
-        \ {\n  L191:   throwWebAppError_('LOCK_BUSY', 'Another customer-data operation\
-        \ is running.', true);\n  L194-197: if (command.releaseLockBeforeHandler)\
-        \ { lock.releaseLock(); lock = null; }\n  L199-205: try { return command.handler(...)\
-        \ } finally { if (lock) lock.releaseLock(); }\nLockService.getScriptLock()\
-        \ + tryLock + LOCK_BUSY 返却 + try-finally で確実な解放 = Phase C\ncmd dispatcher\
-        \ (customer-data route) 設計範囲内の AC-C1 実装。\ntask YAML R3 要求 'LockService競合制御\
-        \ (AC-C1) がPhase C設計範囲内であることを確認し\nreport に明記' を充足。\n"
+      evidence: 'ash7 report: ''cmd_709 action-2 解消条件: 殿が新 deploy + HMAC POST backupMasterSheet
+        試験 PASS 後に
+
+        action-2 削除。現時点では manual gate 待ち'' を明記。task YAML AC-R1 要求充足。
+
+        '
     reality_verification:
       applies: true
       category: clasp
       ac_reality_verify_step_present: true
       ash_evidence_pattern: pass
       reality_artifact:
-        type: git_log_diff
-        value: '補強 commit d4dc8fb + git push 72236e1..d4dc8fb main -> main で origin/main
-          反映確認。
+        type: clasp_pushed_files_count_plus_gunshi_direct_read
+        value: 'ash7: clasp push -f → ''Pushed 10 files at 12:42:31 PM; includes src/webapp.gs'',
+          git push d4dc8fb..cc9e6ff main -> main
 
-          本補強の編集対象は env/gas_secret.env.example (VPS 側) + report YAML のみ。GAS 側 src/webapp.gs
-
-          変更なしのため clasp push は不要 (env/ は clasp untracked)。
+          gunshi 直接 Read: src/webapp.gs:42-46 (backupMasterSheet whitelist), L289-300
+          (handler), L78-95 (dispatcher + catch)
 
           '
       verdict: pass
-      reason: 補強は documentation/runbook 系で GAS remote 反映を要さず。git remote (origin/main)
-        への反映 ends は git push sha 一致で確認済。
+      reason: 'L022 適用第二号として ash7 が Forbidden Pattern 回避 (Skipping push. → research
+        → push -f) +
+
+        reality 証跡取得 (Pushed 10 files + git push sha) を完遂。gunshi も指定行番号を直接 Read で
+
+        cross-source verification を実施。実 HMAC POST ends は殿 manual gate 後に正規委譲。
+
+        '
     means_ends_classification:
       schema_version: '1.0'
       ac_classification:
+      - id: AC-E1
+        type: means
+        rationale: whitelist 追加は backupMasterSheet 受付可能化の means
+        corresponding_ends_ac: AC-E3
+      - id: AC-E2
+        type: means
+        rationale: handler 実装は dispatch 経路の means。実 backup ends は殿 manual gate 後
+        corresponding_ends_ac: null
+      - id: AC-E3
+        type: ends
+        rationale: scripts/gas_invoke.py 汎用構造で署名 dry-run PASS は VPS → GAS 呼出 ends
+          部分達成
+        corresponding_ends_ac: null
+      - id: AC-Q1
+        type: ends
+        rationale: clasp push reality verify ends (Pushed 10 files + git push sha
+          一致)
+        corresponding_ends_ac: null
+      - id: AC-Q2
+        type: ends
+        rationale: secret/URL 漏洩なし ends
+        corresponding_ends_ac: null
+      - id: AC-Q3
+        type: means
+        rationale: code review means
+        corresponding_ends_ac: null
       - id: AC-R1
         type: ends
-        rationale: kid 2世代切替の実動作試験手順 documentation は HMAC rotation 運用継続性の ends。実 rotation
-          試験 ends は殿 manual gate (Script Properties 設定) 後の別 subtask
+        rationale: cmd_709 action-2 解消条件明記は documentation ends
         corresponding_ends_ac: null
-      - id: AC-R2
-        type: ends
-        rationale: access policy 変更時 runbook は運用継続性 ends
-        corresponding_ends_ac: null
-      - id: AC-R3
-        type: means
-        rationale: Phase C 範囲内明記は scope 整合 means
-        corresponding_ends_ac: null
-      ends_coverage_note: AC-R1/R2 は documentation ends として PASS。実 HMAC rotation/policy
-        変更 ends は殿 manual gate + 別 subtask 担当。
+      ends_coverage_note: 'ends 系: AC-E3/AC-Q1/AC-Q2/AC-R1 PASS。実 backup 実行 ends は殿
+        manual gate (Web App 新 deploy + Script Properties + HMAC POST 実行) 後に正規委譲。'
       both_systems_verified: true
-      verdict: AC-R1/R2/R3 全 3 件 PASS。前 QC PARTIAL_PASS の指摘事項を完全解消。旧 QC で確認した Implementation
-        AC 16 件 + 補強 3 件 = 全 19 AC PASS、SKIP=0。
+      verdict: means 系 4/4 PASS。ends 系 4/4 PASS (但し実 backup ends は manual gate 後)。
     north_star_alignment:
       status: aligned
-      reason: '北極星 (VPS → GAS 完全自動化 + RAPT/ブラウザ認証脱却) に対し、本補強は HMAC rotation
+      reason: '北極星 (VPS → GAS 完全自動化 + RAPT/ブラウザ認証脱却) に対し、本 task は cmd_709 action-2
 
-        手順と access policy 変更時 runbook を追加することで、長期運用継続性を担保。
+        の根本解決を Web App 経由で実現。clasp run RAPT 問題を回避し、backupMasterSheet を HMAC
 
-        cmd_712 Phase B+C+D の implementation 完遂 + documentation 整備で、Phase E (殿 deploy
-        + 実通信検証) への引継ぎ準備完了。
+        認証付き Web App 経由で呼出可能化。Phase B HMAC dispatcher + Phase E whitelist 追加で
+
+        完全自動化基盤が成立。
 
         '
       risks_to_north_star:
-      - 実 HMAC 通信 ends 検証は殿 manual gate (Web App deploy + Script Properties 設定) 後の次
-        subtask 担当。本補強で完全自動化の前段は確立、最終 ends は manual gate 次第。
-      - kid rotation の自動 unit test は未実装 (gas-mail-manager 別 cmd 担当推奨、本 QC scope 外)。
+      - Web App deployment は versioned のため、clasp push 済みでも殿の新 deploy 完了まで公開 URL 側に反映されない。実
+        backup 試験は殿 manual gate 後。
+      - backupMasterSheet は Drive コピー副作用を持つため、実 POST 試験は殿 manual gate 後に 1 回のみ実施推奨。
+      - scripts/__pycache__/ は作業開始時点から未追跡だが、git commit に含まれず管理上問題なし。
     north_star_outcome_evidence:
       status: pass
       evidence_type: e2e
-      command_or_artifact: '・git push 72236e1..d4dc8fb main -> main (補強 commit origin/main
-        到達済)
+      command_or_artifact: '・clasp push -f → ''Pushed 10 files at 12:42:31 PM'', src/webapp.gs
+        included (実 remote 反映 ends 確認済)
 
-        ・ash7 supplement_commit: d4dc8fb 確認
+        ・git push d4dc8fb..cc9e6ff main -> main (origin/main 反映 ends 確認済)
 
-        ・env/gas_secret.env.example に rotation/runbook 追記済 (ash7 self-evidence)
+        ・gunshi 直接 Read: src/webapp.gs:15-47 (whitelist) + L289-300 (handler) + L78-95
+        (dispatcher) で実コード確認
 
-        ・clasp push 不要 (env/ は clasp untracked)
+        ・python3 scripts/gas_invoke.py backupMasterSheet --dry-run --pretty PASS (署名
+        payload 生成 ends 部分確認)
+
+        ・実 backup 実行 ends は殿 manual gate 後の HMAC POST で取得予定
 
         '
-      reason: 補強は documentation 系で GAS remote 反映を要さず。git remote 到達 ends 確認済。実 HMAC
-        通信 ends は殿 manual gate 後の次 subtask に正規委譲。
+      reason: 実装 + clasp push + git push + 署名 dry-run の各 ends は確認済。実 backup ends は殿
+        manual gate に正規委譲。
     deploy_verify_cycle_check:
       stage1_commit_or_placement: pass
       stage2_artifact_placement: pass
       stage3_registration_check: not_applicable
       stage4_runtime_log: deferred_manual_gate
     l022_application_assessment:
-      is_first_real_test: true
-      final_assessment: 'cmd_732 で制定した L022 (Reality Verification Rule) の**第一号適用が完全成立**。
+      is_second_real_test: true
+      assessment: 'cmd_732 L022 (Reality Verification Rule) の**第二号適用**。cmd_712i (第一号)
+        と全く同じ
 
-        task YAML AC-Q1 の Forbidden Pattern 明示 (''Skipping push.'' = FAIL) → ash7
-        の初回失敗
+        Forbidden Pattern 回避 → 公式 doc 調査 → clasp push -f で reality 取得という模範フロー。
 
-        正認識 → 公式 doc 調査 → clasp push --force で真の reality 取得という L022 想定の理想
+        ash7 が L022 規律を**完全身体化** (initial Skipping push を即座に FAIL 認識し research 移行)
 
-        フローを完遂。さらに前 QC の PARTIAL_PASS (AC-R1/R2/R3 未報告) に対する補強要請にも
+        していることを示す。task YAML AC-Q1 設計も第一号と同様に Forbidden Pattern 明示で
 
-        7分で完遂対応し、全 19 AC PASS で cmd_712 Phase B+C+D を完了。
-
-        L022 制定から第一号 PASS 完了まで約 2 時間 (10:51 cmd_732 受領 → 12:02 cmd_712i 完了)。
-
-        規律制定→実地適用→PASS の cycle が極めて短時間で成立。
+        task YAML 起案者 (将軍 + 家老) 側も L022 規律を浸透させている。
 
         '
-      historic_note: 'cmd_732 (10:55 完了) → cmd_712i 初回 QC (11:53 PARTIAL_PASS) → cmd_712i
-        補強 QC
-
-        (12:02 PASS) の 3 cycle が同日内で連結成立。L022 が単なる規律記述ではなく、実運用で
-
-        機能する gate であることを実証。
-
-        '
+      historic_note: "L022 milestone timeline:\n  10:55 JST cmd_732 完了 (L022 規律制定)\n\
+        \  11:53 JST cmd_712i 初回 QC PARTIAL_PASS (AC-R1/R2/R3 未報告)\n  12:01 JST ash7\
+        \ cmd_712i 補強完遂 (7分)\n  12:02 JST cmd_712i 補強 QC PASS (L022 第一号 PASS)\n  12:42\
+        \ JST ash7 cmd_712j 完遂 (L022 第二号適用)\n  12:46 JST cmd_712j QC PASS (L022 第二号\
+        \ PASS)\n規律制定から第二号 PASS まで約 1h51m。L022 の継続的適用が確立。\n"
     suggestions:
-    - id: sug_cmd_712i_supplement_001
+    - id: sug_cmd_712j_001
       priority: low
-      content: 'ash7 補強完遂時間は 7 分 (msg_20260517_115203 ← 私の 11:53 PARTIAL_PASS QC →
+      content: 'L022 適用第二号成立で ash7 が規律を完全身体化していることが実証された。task YAML
 
-        msg_20260517_120112 で完遂報告)。これは L022 適用後の正常な PASS フロー (初回
+        AC-Q1 (将軍 + 家老設計) と ash7 実装の二重 gate が安定動作。今後 deploy/push 系 cmd は
 
-        QC で gap 指摘 → 短時間で補強完遂) の好例。家老は ash7 の対応速度を評価可。
+        task YAML 起案時に cmd_template_reality_verify.md §2.1 を default 採用すべき。
 
-        本 pattern (PARTIAL_PASS → 補強 → PASS) を skill candidate (短時間補強サイクル
-
-        の標準パターン) として将来検討可能だが、現状の cmd_template_reality_verify.md
-
-        + L022 で十分なため新規 skill 化は不要。
+        家老の起案 checklist として明文化推奨。
 
         '
-      action_needed: 観察のみ。家老は ash7 評価 (短時間補強完遂) を dashboard 戦果 entry で言及可。
-    concerns_flagged:
-    - (解消済) AC-R1/R2 evidence は当初 ash7 self-report のみと懸念したが、家老 spot QC 依頼で行番号指定 →
-      gunshi 直接 Read で env/gas_secret.env.example および src/webapp.gs を確認 (cross-repo
-      Read は report 確認の implicit allowlist 範囲内)。真の reality verify 成立。L022 cross-repo
-      限界懸念は本 QC で解消。
+      action_needed: 家老が cmd 起案時に cmd_template_reality_verify.md §2 を必ず参照する運用を確立。家老
+        instructions/karo.md に「deploy/push 系 cmd 起案前 checklist」として template 参照を追記検討。
+    - id: sug_cmd_712j_002
+      priority: medium
+      content: '殿 manual gate (Web App 新 deploy + HMAC POST 試験) が cmd_712 系の最終 ends
+        達成 gate に
+
+        集中。殿 manual gate を待つ間、ash7 / 家老は他 cmd へ着手可能。但し manual gate 後の
+
+        ends 検証 task (cmd_709 action-2 削除条件確認等) を予め task YAML として準備しておくと、
+
+        殿の manual gate 完了通知後すぐに ends 検証 cycle を始められる。
+
+        '
+      action_needed: '家老が ''cmd_712 manual gate 後 ends 検証 task'' を pending として準備 (ash7
+        担当: HMAC POST backupMasterSheet 実行 + result 確認 + cmd_709 action-2 削除)。'
+    concerns_flagged: []
   files_modified:
   - queue/inbox/gunshi.yaml (read 化)
-  - queue/reports/gunshi_report.yaml (本 entry append)
-  - queue/suggestions.yaml (1 件 append)
+  - queue/reports/gunshi_report.yaml (本 entry append, history=14)
+  - queue/suggestions.yaml (2 件 append)
   - logs/daily/2026-05-17.md (entry append)
   skill_candidate:
     found: false
-    notes: 走査済 + 該当なし。前 QC で既に skill 検討終了 (cmd_template_reality_verify.md §2.1 模範例追記
-      sug_cmd_712i_002 で対応済)。本補強 QC では追加 skill 候補なし。
+    notes: 走査済 + 該当なし。L022 + silent_failure_pattern.md で既に体系化済。cmd_712j は L022 第二号適用として既存規律の継続実証。新規
+      skill 不要。
 history:
 - worker_id: gunshi
   task_id: subtask_723_gunshi_ac11_completion_qc_reconstructed
@@ -3226,3 +3278,201 @@ history:
       の規律を適用したため新規 skill 候補なし。但し task YAML AC-Q1 設計 pattern (Forbidden Pattern 明記)
       は cmd_template_reality_verify.md §2.1 模範例として追記推奨 (sug_cmd_712i_002 参照)。走査済 +
       該当なし。
+- worker_id: gunshi
+  task_id: gunshi_qc_712i_supplement
+  parent_cmd: cmd_712
+  timestamp: '2026-05-17T12:02:07+09:00'
+  status: done
+  result:
+    type: quality_check_supplement
+    ashigaru_task_id: subtask_712i_phase_bcd_hmac_implementation
+    ashigaru_worker_id: ashigaru7
+    qa_decision: pass
+    verdict: go
+    previous_qc_ref: gunshi_qc_712i (11:53:46 PARTIAL_PASS)
+    karo_request_ref: msg_20260517_030302_a9183318
+    supplemental_commit: d4dc8fb
+    git_push_evidence: 72236e1..d4dc8fb main -> main (PASS)
+    cross_source_verification:
+      method: 家老指定行番号を gunshi 直接 Read で確認
+      files_directly_read:
+      - /home/ubuntu/gas-mail-manager/env/gas_secret.env.example (L12-19, L21-26)
+      - /home/ubuntu/gas-mail-manager/src/webapp.gs (L183-205)
+      result: 全 3 箇所で task YAML R1/R2/R3 要求文言を満たす実コード/docstring を確認。ash7 self-report
+        と gunshi 直接 Read 結果が完全一致。
+    issues_found: []
+    deliverables_verified: true
+    tests_status: all_pass
+    build_status: not_applicable
+    scope_match: complete
+    skill_candidate_inherited:
+      found: false
+      notes: 走査済 + 該当なし。L022 + silent_failure_pattern.md で既に体系化済。
+    acceptance_criteria_verification:
+    - id: AC-R1
+      status: PASS
+      evidence: "家老指定: env/gas_secret.env.example:12-19。gunshi 直接 Read で確認:\n  L12:\
+        \ # Kid rotation verification:\n  L13: 1. On GAS, set previous kid/secret\
+        \ to the old pair and active kid/secret to the new pair.\n  L14-16: 2. Temporarily\
+        \ set HMAC_KID/HMAC_SECRET below to the previous pair and run:\n         \
+        \    python3 scripts/gas_invoke.py ping --env env/gas_secret.env --pretty\n\
+        \             Expected: ok=true, because GAS accepts the previous kid for\
+        \ verification.\n  L17-18: 3. Restore HMAC_KID/HMAC_SECRET below to the active\
+        \ pair and run the same ping.\n             Expected: ok=true, confirming\
+        \ new requests are signed with the active kid.\n  L19: 4. After the rotation\
+        \ grace period, remove HMAC_KID_PREVIOUS/HMAC_SECRET_PREVIOUS from GAS.\n\
+        previous kid verify + active kid signing 手順が完全記載。supplement_commit d4dc8fb\
+        \ で origin/main 反映済。\ntask YAML R1 要求 'kid 2世代切替の実動作試験手順を report に記載' を充足。\n"
+    - id: AC-R2
+      status: PASS
+      evidence: "家老指定: env/gas_secret.env.example:21-26。gunshi 直接 Read で確認:\n  L21:\
+        \ # Access policy redeploy runbook:\n  L22: 1. If Web App access/execution\
+        \ policy changes, create or update the deployment first.\n  L23: 2. Update\
+        \ WEBAPP_URL if the deployment URL changed.\n  L24: 3. Re-run the active-kid\
+        \ ping above and verify ok=true.\n  L25-26: 4. Re-run negative checks with\
+        \ a bad signature, stale timestamp, and reused nonce.\n             Expected\
+        \ errors: INVALID_SIGNATURE, STALE_TIMESTAMP, REPLAY.\ndeploy/WEBAPP_URL更新/positive\
+        \ ping/negative checks の 4 step が完全記載。\ntask YAML R2 要求 'runbook に access\
+        \ policy 変更時の再検証手順を記載' を充足。\n"
+    - id: AC-R3
+      status: PASS
+      evidence: "家老指定: src/webapp.gs:183-205。gunshi 直接 Read で確認:\n  L183: function\
+        \ dispatchWebAppCommand_(command, request, startedAt) {\n  L189: var lock\
+        \ = LockService.getScriptLock();\n  L190: if (!lock.tryLock(WEBAPP_LOCK_WAIT_MS))\
+        \ {\n  L191:   throwWebAppError_('LOCK_BUSY', 'Another customer-data operation\
+        \ is running.', true);\n  L194-197: if (command.releaseLockBeforeHandler)\
+        \ { lock.releaseLock(); lock = null; }\n  L199-205: try { return command.handler(...)\
+        \ } finally { if (lock) lock.releaseLock(); }\nLockService.getScriptLock()\
+        \ + tryLock + LOCK_BUSY 返却 + try-finally で確実な解放 = Phase C\ncmd dispatcher\
+        \ (customer-data route) 設計範囲内の AC-C1 実装。\ntask YAML R3 要求 'LockService競合制御\
+        \ (AC-C1) がPhase C設計範囲内であることを確認し\nreport に明記' を充足。\n"
+    reality_verification:
+      applies: true
+      category: clasp
+      ac_reality_verify_step_present: true
+      ash_evidence_pattern: pass
+      reality_artifact:
+        type: git_log_diff
+        value: '補強 commit d4dc8fb + git push 72236e1..d4dc8fb main -> main で origin/main
+          反映確認。
+
+          本補強の編集対象は env/gas_secret.env.example (VPS 側) + report YAML のみ。GAS 側 src/webapp.gs
+
+          変更なしのため clasp push は不要 (env/ は clasp untracked)。
+
+          '
+      verdict: pass
+      reason: 補強は documentation/runbook 系で GAS remote 反映を要さず。git remote (origin/main)
+        への反映 ends は git push sha 一致で確認済。
+    means_ends_classification:
+      schema_version: '1.0'
+      ac_classification:
+      - id: AC-R1
+        type: ends
+        rationale: kid 2世代切替の実動作試験手順 documentation は HMAC rotation 運用継続性の ends。実 rotation
+          試験 ends は殿 manual gate (Script Properties 設定) 後の別 subtask
+        corresponding_ends_ac: null
+      - id: AC-R2
+        type: ends
+        rationale: access policy 変更時 runbook は運用継続性 ends
+        corresponding_ends_ac: null
+      - id: AC-R3
+        type: means
+        rationale: Phase C 範囲内明記は scope 整合 means
+        corresponding_ends_ac: null
+      ends_coverage_note: AC-R1/R2 は documentation ends として PASS。実 HMAC rotation/policy
+        変更 ends は殿 manual gate + 別 subtask 担当。
+      both_systems_verified: true
+      verdict: AC-R1/R2/R3 全 3 件 PASS。前 QC PARTIAL_PASS の指摘事項を完全解消。旧 QC で確認した Implementation
+        AC 16 件 + 補強 3 件 = 全 19 AC PASS、SKIP=0。
+    north_star_alignment:
+      status: aligned
+      reason: '北極星 (VPS → GAS 完全自動化 + RAPT/ブラウザ認証脱却) に対し、本補強は HMAC rotation
+
+        手順と access policy 変更時 runbook を追加することで、長期運用継続性を担保。
+
+        cmd_712 Phase B+C+D の implementation 完遂 + documentation 整備で、Phase E (殿 deploy
+        + 実通信検証) への引継ぎ準備完了。
+
+        '
+      risks_to_north_star:
+      - 実 HMAC 通信 ends 検証は殿 manual gate (Web App deploy + Script Properties 設定) 後の次
+        subtask 担当。本補強で完全自動化の前段は確立、最終 ends は manual gate 次第。
+      - kid rotation の自動 unit test は未実装 (gas-mail-manager 別 cmd 担当推奨、本 QC scope 外)。
+    north_star_outcome_evidence:
+      status: pass
+      evidence_type: e2e
+      command_or_artifact: '・git push 72236e1..d4dc8fb main -> main (補強 commit origin/main
+        到達済)
+
+        ・ash7 supplement_commit: d4dc8fb 確認
+
+        ・env/gas_secret.env.example に rotation/runbook 追記済 (ash7 self-evidence)
+
+        ・clasp push 不要 (env/ は clasp untracked)
+
+        '
+      reason: 補強は documentation 系で GAS remote 反映を要さず。git remote 到達 ends 確認済。実 HMAC
+        通信 ends は殿 manual gate 後の次 subtask に正規委譲。
+    deploy_verify_cycle_check:
+      stage1_commit_or_placement: pass
+      stage2_artifact_placement: pass
+      stage3_registration_check: not_applicable
+      stage4_runtime_log: deferred_manual_gate
+    l022_application_assessment:
+      is_first_real_test: true
+      final_assessment: 'cmd_732 で制定した L022 (Reality Verification Rule) の**第一号適用が完全成立**。
+
+        task YAML AC-Q1 の Forbidden Pattern 明示 (''Skipping push.'' = FAIL) → ash7
+        の初回失敗
+
+        正認識 → 公式 doc 調査 → clasp push --force で真の reality 取得という L022 想定の理想
+
+        フローを完遂。さらに前 QC の PARTIAL_PASS (AC-R1/R2/R3 未報告) に対する補強要請にも
+
+        7分で完遂対応し、全 19 AC PASS で cmd_712 Phase B+C+D を完了。
+
+        L022 制定から第一号 PASS 完了まで約 2 時間 (10:51 cmd_732 受領 → 12:02 cmd_712i 完了)。
+
+        規律制定→実地適用→PASS の cycle が極めて短時間で成立。
+
+        '
+      historic_note: 'cmd_732 (10:55 完了) → cmd_712i 初回 QC (11:53 PARTIAL_PASS) → cmd_712i
+        補強 QC
+
+        (12:02 PASS) の 3 cycle が同日内で連結成立。L022 が単なる規律記述ではなく、実運用で
+
+        機能する gate であることを実証。
+
+        '
+    suggestions:
+    - id: sug_cmd_712i_supplement_001
+      priority: low
+      content: 'ash7 補強完遂時間は 7 分 (msg_20260517_115203 ← 私の 11:53 PARTIAL_PASS QC →
+
+        msg_20260517_120112 で完遂報告)。これは L022 適用後の正常な PASS フロー (初回
+
+        QC で gap 指摘 → 短時間で補強完遂) の好例。家老は ash7 の対応速度を評価可。
+
+        本 pattern (PARTIAL_PASS → 補強 → PASS) を skill candidate (短時間補強サイクル
+
+        の標準パターン) として将来検討可能だが、現状の cmd_template_reality_verify.md
+
+        + L022 で十分なため新規 skill 化は不要。
+
+        '
+      action_needed: 観察のみ。家老は ash7 評価 (短時間補強完遂) を dashboard 戦果 entry で言及可。
+    concerns_flagged:
+    - (解消済) AC-R1/R2 evidence は当初 ash7 self-report のみと懸念したが、家老 spot QC 依頼で行番号指定 →
+      gunshi 直接 Read で env/gas_secret.env.example および src/webapp.gs を確認 (cross-repo
+      Read は report 確認の implicit allowlist 範囲内)。真の reality verify 成立。L022 cross-repo
+      限界懸念は本 QC で解消。
+  files_modified:
+  - queue/inbox/gunshi.yaml (read 化)
+  - queue/reports/gunshi_report.yaml (本 entry append)
+  - queue/suggestions.yaml (1 件 append)
+  - logs/daily/2026-05-17.md (entry append)
+  skill_candidate:
+    found: false
+    notes: 走査済 + 該当なし。前 QC で既に skill 検討終了 (cmd_template_reality_verify.md §2.1 模範例追記
+      sug_cmd_712i_002 で対応済)。本補強 QC では追加 skill 候補なし。

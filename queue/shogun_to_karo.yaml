@@ -28307,9 +28307,12 @@
     後 separate PR。
   project: gas-mail-manager
   priority: high
-  status: in_progress
+  status: done
+  completed_at: '2026-05-17T12:53:50+09:00'
+  completion_note: '全Phase (A+B+C+D+E) 完遂。殿手作業なし自動deploy確立。backupMasterSheet
+    Web App+HMAC経由実機PASS。docs整備・rotation自動化はcmd_733で継続。'
   dispatched_at: '2026-05-11T00:44:24+09:00'
-  phase_status: phase_e_lord_gate_passed_auto_deploy_established
+  phase_status: all_phases_complete
   phase_a_completed_at: '2026-05-17T11:19:22+09:00'
   phase_bcd_started_at: '2026-05-17T11:38:00+09:00'
   phase_bcd_code_completed_at: '2026-05-17T12:06:25+09:00'
