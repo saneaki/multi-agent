@@ -16029,3 +16029,43 @@ suggestions:
     6 category を網羅したが、Telegram bot 配信 / Slack webhook / GitHub Issue / Linear API
     等の追加 category が将来必要になる可能性。incident 発生時に append 推奨。
   action_needed: "新規 silent failure 事案が他 category で発生した場合、家老が cmd 起案して template に追記。"
+- id: sug_cmd_712i_001
+  from: gunshi
+  cmd_ref: cmd_712
+  task_ref: subtask_712i_phase_bcd_hmac_implementation
+  created_at: "2026-05-17T11:53:46+09:00"
+  status: pending
+  priority: high
+  content: |
+    ash7 report に AC-R1/R2/R3 (3件) が完全に未報告。家老は ash7 に以下を要求:
+    - AC-R1: env/gas_secret.env.example に kid rotation 手順を docstring として追加 (HMAC_KID_PREVIOUS 設定時の動作 + 旧 secret 廃棄 timing)
+    - AC-R2: env/gas_secret.env.example に access policy 変更時の再検証 checklist 追加 (or docs/runbook.md 新設)
+    - AC-R3: report に 1 行明記 'LockService 競合制御 (AC-C1) は Phase C 設計範囲内 (D-1 dopost timeout + customer-data route) で実装'
+  action_needed: "家老が ash7 に再報告 task を発令。AC-R1/R2 は env.example への docstring 追記で対応可能 (推定 15分)。AC-R3 は 1 行明記。"
+- id: sug_cmd_712i_002
+  from: gunshi
+  cmd_ref: cmd_712
+  task_ref: subtask_712i_phase_bcd_hmac_implementation
+  created_at: "2026-05-17T11:53:46+09:00"
+  status: pending
+  priority: high
+  content: |
+    L022 適用第一号として task YAML AC-Q1 設計 ('Skipping push.' = FAIL 明記) は完璧。
+    この設計 pattern を cmd_template_reality_verify.md §2.1 の **模範例** として登録すべき。
+    task YAML 起案者 (将軍 + 家老) は今後 clasp 系 cmd 起案時に AC-Q1 と同様の Forbidden
+    Pattern 明記を default 採用すること。
+  action_needed: "家老が cmd_template_reality_verify.md §2.1 に模範例として AC-Q1 task YAML 抜粋を追記 (本 cmd 内で対応 or 別 cmd で対応)。"
+- id: sug_cmd_712i_003
+  from: gunshi
+  cmd_ref: cmd_712
+  task_ref: subtask_712i_phase_bcd_hmac_implementation
+  created_at: "2026-05-17T11:53:46+09:00"
+  status: pending
+  priority: medium
+  content: |
+    ash7 report の verification.commands は 7 件で SKIP=0 だが、kid 2世代切替の自動試験
+    (verifyHmacRequest_() を kid_previous で呼出して PASS 確認) が含まれていない。
+    Phase B 設計上 kid 2世代対応は core feature だが、unit-level 試験が欠落。
+    現状は ScriptProperties 経由のため GAS runtime でしか試験できないが、純粋関数化して
+    node --check で試験可能にする refactor を将来検討。
+  action_needed: "別 cmd で kid 2世代切替の unit test 設計検討 (本 cmd scope 外)。"
