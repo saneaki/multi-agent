@@ -16185,3 +16185,77 @@ suggestions:
     [AC-8 軍師最終判断] sug_security_001 は cmd_733 統合せず別 cmd_734 起案推奨。
     scope/工数/緊急度/RACE-001 4 点で独立性を確認。家老の暫定判断 (別 cmd) を支持。
   action_needed: "家老が cmd_734 (discord_gateway.sh secret pattern auto-mask) を独立起案。cmd_733 と並行可能。"
+- id: sug_cmd_733_001
+  from: gunshi
+  cmd_ref: cmd_733
+  task_ref: gunshi_733_rotation_automation
+  created_at: "2026-05-17T13:52:41+09:00"
+  status: pending
+  priority: medium
+  content: |
+    rotate_hmac_secret.sh で GAS Script Properties 更新は manual gate のまま。rotation 全自動化には
+    GAS 側に setScriptProperty cmd を Web App whitelist に追加する必要 (cmd_712 Phase F 系)。
+    但しこれは GAS Script Properties を Web App 経由で書込可能化する設計判断であり、
+    security tradeoff (Web App endpoint から内部 secret 更新可能化) を慎重に評価必要。
+  action_needed: "将来 cmd で Web App 経由 setScriptProperty の security tradeoff を gunshi 戦略分析 (rotation 自動化 vs 攻撃面拡大)。"
+- id: sug_cmd_733_002
+  from: gunshi
+  cmd_ref: cmd_733
+  task_ref: gunshi_733_rotation_automation
+  created_at: "2026-05-17T13:52:41+09:00"
+  status: pending
+  priority: low
+  content: |
+    gas-mail-manager scripts/__pycache__/ が untracked 残存。本 cmd で .gitignore 追加 Edit 失敗
+    (Read 順序エラー、time 効率優先で skip)。次回 gas-mail-manager 作業時に追加推奨。
+  action_needed: "家老が次の gas-mail-manager cmd 起案時に .gitignore に scripts/__pycache__/ 追記を AC として含める (1 行追加で済む)。"
+- id: sug_cmd_733_003
+  from: gunshi
+  cmd_ref: cmd_733
+  task_ref: gunshi_733_rotation_automation
+  created_at: "2026-05-17T13:52:41+09:00"
+  status: pending
+  priority: high
+  content: |
+    AC-8 sug_security_001 entry が suggestions.yaml に存在せず。家老の task description が
+    架空 ID を参照していた可能性。家老は cmd_734 起案前に discord_gateway.sh secret pattern
+    mask の元 suggestion を改めて creator 確認 (誰が提案したのか、本当に必要か)。
+    誤起案防止のため suggestion ID 命名規則の見直しも検討余地。
+  action_needed: "家老が cmd_734 起案前に discord_gateway.sh secret mask の元提案を確認。元提案者 (将軍/軍師/ash) と内容を再確認し、誤起案でないことを保証。"
+- id: sug_cmd_709p1_001
+  from: gunshi
+  cmd_ref: cmd_709
+  task_ref: subtask_709p1_schema_migration_dry_run_setup
+  created_at: "2026-05-17T13:56:45+09:00"
+  status: pending
+  priority: medium
+  content: |
+    ash6 が env に GAS_DEPLOYMENT_ID 未設定で対応した経験は cmd_733 sug_cmd_733_001 (rotation
+    全自動化) と整合性課題。env/gas_secret.env に GAS_DEPLOYMENT_ID を確定追加して、今後
+    scripts/auto_deploy_gas.sh が常時動作可能な状態にすべき。
+  action_needed: "家老が env/gas_secret.env に GAS_DEPLOYMENT_ID を追加する subtask を起案。env file 編集 (chmod 600 維持) + scripts/auto_deploy_gas.sh --dry-run で preflight PASS 確認。"
+- id: sug_cmd_709p1_002
+  from: gunshi
+  cmd_ref: cmd_709
+  task_ref: subtask_709p1_schema_migration_dry_run_setup
+  created_at: "2026-05-17T13:56:45+09:00"
+  status: pending
+  priority: high
+  content: |
+    ash6 報告の skill_candidate 'gas-clasp-webapp-dry-run-migration-gate' は新規 pattern として
+    価値あり。既存 gas 系 skill (jsdoc-reference / rapt-reauth-fallback / automated-verification)
+    は dry-run + Gate 分離パターンを含まない。dashboard 🛠️ + dashboard.yaml.skill_candidates
+    への追記対象 (cmd_674 規律準拠)。
+  action_needed: "gunshi が cmd_674 7.5 step に従い dashboard 🛠️ + dashboard.yaml.skill_candidates に追記 (本 entry 完了直後に実施)。"
+- id: sug_cmd_709p1_003
+  from: gunshi
+  cmd_ref: cmd_709
+  task_ref: subtask_709p1_schema_migration_dry_run_setup
+  created_at: "2026-05-17T13:56:45+09:00"
+  status: pending
+  priority: medium
+  content: |
+    dry_run preview は 5 row 中 3 row のみ報告 (head 3)。本番元帳の全 row 数と migration 影響
+    範囲を Gate 2 殿判断時に確認すべき。次回 apply 前に rowCount=N の妥当性 (全 row が migration
+    対象か、部分 row のみか) を ash6 + 殿で再確認。
+  action_needed: "Gate 2 申請時に殿に rowCount=5 が想定通りか確認。本番元帳の全 customer 数と一致するか、または部分 row のみ対象か明確化。"

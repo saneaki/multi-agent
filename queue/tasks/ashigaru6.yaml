@@ -5,7 +5,7 @@ task:
   assigned_to: ashigaru6
   report_to: gunshi
   title: "cmd_709 Phase2-1: migration.gs確認+webapp whitelist追加+clasp push+dry run試験"
-  status: in_progress
+  status: completed_pending_karo
   timestamp: '2026-05-17T13:28:53+09:00'
   project: gas-mail-manager
   issue: https://github.com/saneaki/gas-mail-manager/issues/7

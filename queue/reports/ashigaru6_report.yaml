@@ -1,89 +1,209 @@
 worker_id: ashigaru6
-task_id: subtask_731q_runtime_wiring_repair
-parent_cmd: cmd_731
+task_id: subtask_709p1_schema_migration_dry_run_setup
+parent_cmd: cmd_709
 status: done
-timestamp: "2026-05-16T16:23:14+09:00"
-report_to: karo
+timestamp: '2026-05-17T13:45:54+09:00'
+report_to: gunshi
 skill_candidate:
-  found: false
-  notes: "crontab管理パターンは既存shogun-systemd-user-cron-healthcheck-patternで網羅済み"
+  found: true
+  name: gas-clasp-webapp-dry-run-migration-gate
+  description: GAS Web App の HMAC dispatcher に副作用なし migration dry-run を追加し、clasp push/version/deploy と Gate 判断用 preview を記録する手順。
+  reason: cmd_709/cmd_712 系で backup/dry-run/apply gate を分ける運用が再利用可能。deploy 変数欠落時に clasp deployments から既存 deployment を安全に選ぶ判断も含めて有用。
 result:
   verdict: pass
-  output_path: output/cmd_731q_runtime_wiring_repair.md
-  verification_refreshed_at: "2026-05-16T23:18:42+09:00"
-  verification_refresh:
-    crontab: "PASS: cmd_731 managed AC-5/AC-6/AC-10 lines present; cmd_603 existing reality_check line preserved"
-    karo_cmd_complete_audit_exit: 1
-    karo_cmd_complete_audit_note: "expected detection path: existing done cmds without cmd_complete are reported, so exit 1 confirms monitor fires"
-    shogun_completion_hook_dry_run_exit: 0
-    shogun_completion_hook_note: "dedup skip for existing alerts and no alerts due"
-    yaml_parse: "PASS: queue/reports/ashigaru6_report.yaml and queue/tasks/ashigaru6.yaml"
-    skip_count: 0
-  summary: |
-    cmd_731 AC-5/AC-6 runtime配線補修完了。
-    - AC-5: karo_cmd_complete_audit.sh を */10 cron 登録 (ログ: logs/karo_cmd_complete_audit.log)。手動実行 exit 1 = MISSING 24件検出（正常動作）。
-    - AC-6: shogun_completion_hook.sh を */10 cron 登録 (ログ: logs/shogun_completion_hook.log)。--dry-run exit 0 = アラート3件検出（正常動作）。
-    - AC-10: 21:00 JST (UTC 12:00) reality_check cron を cmd_731 managed行として追加。既存 cmd_603行 (06/12/18 JST) は変更せず。
-    crontab -l で全3スクリプト登録を確認。破壊的操作 (crontab -r) は実施していない。
+  summary: 'cmd_709 Phase2-1 AC-S1 dry run setup 完了。migration.gs の H/I/J schema を確認し、webapp.gs に dryRunMigrationToH8RunFlag
+    を副作用なし command として追加。clasp push/version/deploy、HMAC dry-run、Issue #7 comment、commit/push まで完了。applyMigrationToH8RunFlag
+    は未実行。'
+  output_path: output/cmd_709_container_bound_procedure.md
+  issue: https://github.com/saneaki/gas-mail-manager/issues/7
+  issue_comment: https://github.com/saneaki/gas-mail-manager/issues/7#issuecomment-4469366837
+  commit: 'ffcc0a5 feat(cmd_709): webapp whitelist に dryRunMigrationToH8RunFlag 追加 (Phase2 AC-S1)'
   changed_files:
-    - path: "user crontab (runtime only)"
-      change: "3行追加: karo_cmd_complete_audit.sh */10 + shogun_completion_hook.sh */10 + reality_check 0 12 (21:00 JST)"
-    - path: output/cmd_731q_runtime_wiring_repair.md
-      change: "本タスク成果物 (AC-5/AC-6/AC-10 全証跡)"
-    - path: queue/reports/ashigaru6_report.yaml
-      change: "top-level を subtask_731q に更新"
+  - path: /home/ubuntu/gas-mail-manager/src/webapp.gs
+    change: WEBAPP_ALLOWED_PHASE_B_COMMANDS に dryRunMigrationToH8RunFlag を追加し、handleWebAppDryRunMigration_ を実装。
+  - path: /home/ubuntu/gas-mail-manager/output/cmd_709_container_bound_procedure.md
+    change: 元帳 Spreadsheet へ container-bound script を attach し、clasp/deployment を切り替えるクリック単位手順を作成。
+  schema_check:
+    status: PASS
+    migration_file: /home/ubuntu/gas-mail-manager/src/migration.gs
+    confirmed: H=RUN_FLAG/実行対象, I=旧H 担当弁護士, J=旧I 担当事務。dryRunMigrationToH8RunFlag と applyMigrationToH8RunFlag の定義を確認。
+    apply_executed: false
+  clasp:
+    push: 'PASS: clasp push --force -> Pushed 10 files; src/migration.gs と src/webapp.gs を含む; Skipping push なし。'
+    version: 'PASS: Created version 12。'
+    deploy: 'PASS: 既存 deployment を version 12 へ更新。env/gas_secret.env に GAS_DEPLOYMENT_ID が無かったため、公式 clasp docs/GitHub README
+      で -i/-V を確認後、clasp deployments の最新運用 deployment を選択。deployment ID と Web App URL は未記載。'
+  dry_run:
+    status: PASS
+    cmd: dryRunMigrationToH8RunFlag
+    ok: true
+    phase: B
+    sideEffects: false
+    rowCount: 5
+    warnings: []
+    jColumnExistingValues: 0
+    preview:
+    - rowIndex: 2
+      beforeH: ''
+      beforeI: ''
+      afterI: ''
+      afterJ: ''
+    - rowIndex: 3
+      beforeH: 圓　真諒
+      beforeI: 信時　沙也香
+      afterI: 圓　真諒
+      afterJ: 信時　沙也香
+    - rowIndex: 4
+      beforeH: ''
+      beforeI: ''
+      afterI: ''
+      afterJ: ''
+    headerBefore_HIJ:
+    - 担当弁護士
+    - 担当事務
+    - ''
+    headerAfter_HIJ:
+    - 実行対象
+    - 担当弁護士
+    - 担当事務
+  verification:
+    diff_check: 'PASS: git diff --check 対象ファイルでエラーなし。'
+    hmac_post: 'PASS: python3 scripts/gas_invoke.py dryRunMigrationToH8RunFlag --pretty exit 0。'
+    issue_comment: 'PASS: gh issue comment 7 投稿済み。'
+    git_push: 'PASS: git push origin main -> ffcc0a5 が origin/main に反映。ahead=0。'
+    git_status_note: tracked files clean / ahead=0。作業開始時または並行作業由来の untracked scripts/__pycache__/,
+      scripts/archive_old_deployments.sh, scripts/auto_deploy_gas.sh, scripts/rotate_hmac_secret.sh は編集範囲外のため未変更。
+    skip_count: 0
+  research:
+  - https://developers.google.com/apps-script/guides/clasp
+  - https://github.com/google/clasp
   acceptance_criteria:
+  - id: AC-S1-1
+    status: PASS
+    evidence: 'migration.gs: H=RUN_FLAG/実行対象, I=旧H担当弁護士, J=旧I担当事務 を確認。'
+  - id: AC-S1-2
+    status: PASS
+    evidence: webapp.gs whitelist に dryRunMigrationToH8RunFlag 追加、handleWebAppDryRunMigration_ 実装。
+  - id: AC-S1-3
+    status: PASS
+    evidence: 'clasp push --force: Pushed 10 files; src/migration.gs + src/webapp.gs 含む; Skipping push なし。'
+  - id: AC-S1-4
+    status: PASS
+    evidence: 'clasp version: Created version 12; deploy: Deployed existing deployment @12。'
+  - id: AC-S1-5
+    status: PASS
+    evidence: 'HMAC POST: ok=true / phase=B / sideEffects=false / result.status=dry_run_complete。'
+  - id: AC-S1-6
+    status: PASS
+    evidence: rowCount=5、preview 3件、warnings=[] を本 report YAML に記録。
+  - id: AC-S1-7
+    status: PASS
+    evidence: output/cmd_709_container_bound_procedure.md 作成。
+  - id: AC-S1-8
+    status: PASS
+    evidence: 'GitHub Issue #7 comment: issuecomment-4469366837。'
+  - id: AC-S1-9
+    status: PASS_WITH_NOTE
+    evidence: commit ffcc0a5 pushed; branch ahead=0。untracked scripts/__pycache__/, scripts/archive_old_deployments.sh,
+      scripts/auto_deploy_gas.sh, scripts/rotate_hmac_secret.sh は本タスク編集範囲外/並行作業由来のため未変更。
+history:
+- task_id: subtask_731n_karo_audit_macos_gha_fix
+  parent_cmd: cmd_731
+  status: done
+  timestamp: '2026-05-16T13:40:58+09:00'
+  report_to: karo
+  skill_candidate:
+    found: false
+    notes: ''
+  result:
+    verdict: pass
+    output_path: /home/ubuntu/shogun/output/cmd_731n_karo_audit_macos_gha_fix.md
+    summary: 'cmd_731 GHA macOS補修完了。
+
+      根因: karo_cmd_complete_audit.sh が bare python3 を呼び macOS GHA system python3 に PyYAML なし → exit 2。
+
+      修正: ea59c9c で .venv/bin/python3 優先 fallback 実装済み。
+
+      GHA run 25952329686(ea59c9c) SUCCESS / 25952443099 / 25952495399 も全 SUCCESS 確認。
+
+      bats 4/4 PASS SKIP=0 (ローカル検証)。
+
+      テストファイル (test_karo_cmd_complete_audit.bats) 変更不要 — script 側修正のみで macOS 互換達成。
+
+      '
+    changed_files:
+    - path: scripts/karo_cmd_complete_audit.sh
+      change: 'ea59c9c: bare python3 → .venv/bin/python3 優先 fallback (macOS PyYAML 対応)'
+    - path: output/cmd_731n_karo_audit_macos_gha_fix.md
+      change: 本タスク成果物 (根因分析 + GHA PASS 確認)
+    acceptance_criteria:
+    - id: B3-1
+      status: PASS
+    - id: B3-2
+      status: PASS
+    - id: B3-3
+      status: PASS
+    - id: B3-4
+      status: PASS
+    - id: B3-5
+      status: PASS
+- task_id: subtask_731q_runtime_wiring_repair
+  parent_cmd: cmd_731
+  status: done
+  timestamp: '2026-05-16T16:23:14+09:00'
+  report_to: karo
+  skill_candidate:
+    found: false
+    notes: crontab管理パターンは既存shogun-systemd-user-cron-healthcheck-patternで網羅済み
+  result:
+    verdict: pass
+    output_path: output/cmd_731q_runtime_wiring_repair.md
+    verification_refreshed_at: '2026-05-16T23:18:42+09:00'
+    verification_refresh:
+      crontab: 'PASS: cmd_731 managed AC-5/AC-6/AC-10 lines present; cmd_603 existing reality_check line preserved'
+      karo_cmd_complete_audit_exit: 1
+      karo_cmd_complete_audit_note: 'expected detection path: existing done cmds without cmd_complete are reported, so exit
+        1 confirms monitor fires'
+      shogun_completion_hook_dry_run_exit: 0
+      shogun_completion_hook_note: dedup skip for existing alerts and no alerts due
+      yaml_parse: 'PASS: queue/reports/ashigaru6_report.yaml and queue/tasks/ashigaru6.yaml'
+      skip_count: 0
+    summary: 'cmd_731 AC-5/AC-6 runtime配線補修完了。
+
+      - AC-5: karo_cmd_complete_audit.sh を */10 cron 登録 (ログ: logs/karo_cmd_complete_audit.log)。手動実行 exit 1 = MISSING 24件検出（正常動作）。
+
+      - AC-6: shogun_completion_hook.sh を */10 cron 登録 (ログ: logs/shogun_completion_hook.log)。--dry-run exit 0 = アラート3件検出（正常動作）。
+
+      - AC-10: 21:00 JST (UTC 12:00) reality_check cron を cmd_731 managed行として追加。既存 cmd_603行 (06/12/18 JST) は変更せず。
+
+      crontab -l で全3スクリプト登録を確認。破壊的操作 (crontab -r) は実施していない。
+
+      '
+    changed_files:
+    - path: user crontab (runtime only)
+      change: '3行追加: karo_cmd_complete_audit.sh */10 + shogun_completion_hook.sh */10 + reality_check 0 12 (21:00 JST)'
+    - path: output/cmd_731q_runtime_wiring_repair.md
+      change: 本タスク成果物 (AC-5/AC-6/AC-10 全証跡)
+    - path: queue/reports/ashigaru6_report.yaml
+      change: top-level を subtask_731q に更新
+    acceptance_criteria:
     - id: Q-1
       status: PASS
-      evidence: "バックアップ /tmp/crontab_backup_20260516_162240.txt (43行)。crontab -r 未使用。cmd_731 managed comment付き3行のみ追加。"
+      evidence: バックアップ /tmp/crontab_backup_20260516_162240.txt (43行)。crontab -r 未使用。cmd_731 managed comment付き3行のみ追加。
     - id: Q-2
       status: PASS
-      evidence: "*/10 * * * * bash .../karo_cmd_complete_audit.sh --quiet >> logs/karo_cmd_complete_audit.log 2>&1 登録。手動実行 exit 1 (MISSING 24件検出 = 正常)。"
+      evidence: '*/10 * * * * bash .../karo_cmd_complete_audit.sh --quiet >> logs/karo_cmd_complete_audit.log 2>&1 登録。手動実行
+        exit 1 (MISSING 24件検出 = 正常)。'
     - id: Q-3
       status: PASS
-      evidence: "*/10 * * * * bash .../shogun_completion_hook.sh >> logs/shogun_completion_hook.log 2>&1 登録。--dry-run exit 0 (アラート3件検出 = 正常)。"
+      evidence: '*/10 * * * * bash .../shogun_completion_hook.sh >> logs/shogun_completion_hook.log 2>&1 登録。--dry-run exit
+        0 (アラート3件検出 = 正常)。'
     - id: Q-4
       status: PASS
-      evidence: "0 12 * * * bash .../shogun_reality_check.sh >> logs/reality_check.log 2>&1 追加。不整合原因と解決策を output に明記。"
+      evidence: 0 12 * * * bash .../shogun_reality_check.sh >> logs/reality_check.log 2>&1 追加。不整合原因と解決策を output に明記。
     - id: Q-5
       status: PASS
-      evidence: "crontab -l | grep: karo_cmd_complete_audit/shogun_completion_hook/reality_check 全3件確認済み。"
+      evidence: 'crontab -l | grep: karo_cmd_complete_audit/shogun_completion_hook/reality_check 全3件確認済み。'
     - id: Q-6
       status: PASS
-      evidence: "YAML parse OK / SKIP=0 (crontab操作のみ、unit test不要)。"
-
-history:
-  - task_id: subtask_731n_karo_audit_macos_gha_fix
-    parent_cmd: cmd_731
-    status: done
-    timestamp: "2026-05-16T13:40:58+09:00"
-    report_to: karo
-    skill_candidate:
-      found: false
-      notes: ""
-    result:
-      verdict: pass
-      output_path: /home/ubuntu/shogun/output/cmd_731n_karo_audit_macos_gha_fix.md
-      summary: |
-        cmd_731 GHA macOS補修完了。
-        根因: karo_cmd_complete_audit.sh が bare python3 を呼び macOS GHA system python3 に PyYAML なし → exit 2。
-        修正: ea59c9c で .venv/bin/python3 優先 fallback 実装済み。
-        GHA run 25952329686(ea59c9c) SUCCESS / 25952443099 / 25952495399 も全 SUCCESS 確認。
-        bats 4/4 PASS SKIP=0 (ローカル検証)。
-        テストファイル (test_karo_cmd_complete_audit.bats) 変更不要 — script 側修正のみで macOS 互換達成。
-      changed_files:
-        - path: scripts/karo_cmd_complete_audit.sh
-          change: "ea59c9c: bare python3 → .venv/bin/python3 優先 fallback (macOS PyYAML 対応)"
-        - path: output/cmd_731n_karo_audit_macos_gha_fix.md
-          change: "本タスク成果物 (根因分析 + GHA PASS 確認)"
-      acceptance_criteria:
-        - id: B3-1
-          status: PASS
-        - id: B3-2
-          status: PASS
-        - id: B3-3
-          status: PASS
-        - id: B3-4
-          status: PASS
-        - id: B3-5
-          status: PASS
+      evidence: YAML parse OK / SKIP=0 (crontab操作のみ、unit test不要)。

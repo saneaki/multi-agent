@@ -382,3 +382,21 @@ inbox:
   user_id: '495636202943152139'
   username: akisame4842
   received_at: '2026-05-17T13:25:16+09:00'
+- id: '1505430551828369448'
+  message: claudecodeとcodexのアカウントの残量をダッシュボードに表示するようにしたい。まず、どういう数字を表示できるか調査して
+  timestamp: '2026-05-17T13:43:33+09:00'
+  status: pending
+  discord_message_id: '1505430551828369448'
+  channel_id: '1491959535768703097'
+  user_id: '495636202943152139'
+  username: akisame4842
+  received_at: '2026-05-17T13:43:33+09:00'
+- id: '1505434480708554803'
+  message: claudeの5h,7d,codexの5hの制限を6時間ごとに読み取る自動化をして、ダッシュボードの記載ルールの上の段に、自動で更新するようにしてほしい
+  timestamp: '2026-05-17T13:59:10+09:00'
+  status: pending
+  discord_message_id: '1505434480708554803'
+  channel_id: '1491959535768703097'
+  user_id: '495636202943152139'
+  username: akisame4842
+  received_at: '2026-05-17T13:59:10+09:00'
