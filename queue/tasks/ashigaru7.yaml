@@ -1,92 +1,92 @@
 task:
-  task_id: subtask_712j_phase_e_backupmaster_whitelist
-  title: 'cmd_712 Phase E: backupMasterSheet → Web App whitelist追加 + 殿 manual gate'
-  parent_cmd: cmd_712
-  assigned_to: ashigaru7
-  timestamp: '2026-05-17T12:37:28+09:00'
-  status: assigned
-  priority: high
-  project: gas-mail-manager
-  target_path: /home/ubuntu/gas-mail-manager
-  context_policy: preserve_across_stages
+  acceptance_criteria:
+  - check: 'src/webapp.gs の WEBAPP_ALLOWED_PHASE_B_COMMANDS に ''backupMasterSheet''
+      を追加。 whitelist 5件 → 6件。(triggerProcessAllCustomers / processCustomerBackfill
+      / dryRunCmd676 / verifyCmd676A5 / ping → + backupMasterSheet)
 
-  background: |
-    cmd_712 Phase B+C+D 完遂 (12:26 JST PASS)。殿 reality check により、cmd_709 の
-    clasp run backupMasterSheet が 'permission' エラーで失敗する根因は executionApi.access=MYSELF
+      '
+    id: AC-E1
+  - check: 'dispatcher が backupMasterSheet を呼び出し、返却 JSON に backupFileId / backupUrl
+      (または相当フィールド) を含む。エラー時は RUNTIME_ERROR を返す。
+
+      '
+    id: AC-E2
+  - check: 'scripts/gas_invoke.py で cmd=backupMasterSheet が HMAC署名付きで叩けること。 (実試験は殿
+      manual gate で実施)
+
+      '
+    id: AC-E3
+  - check: 'clasp push 実行 → "Pushed N files." (N >= 1, src/webapp.gs含む) が PASS条件。
+      "Skipping push." → FAIL (L022適用: reality verification必須)
+
+      '
+    id: AC-Q1
+    note: RAPT無効の場合はFAILと記録し殿に再認証を要請。clasp push自体はスキップ不可。
+  - check: git diff/status でHMAC secret文字列 + Web App URL が含まれないことを確認
+    id: AC-Q2
+  - check: 実装コードのコードレビュー証跡 (whitelist追加・dispatcher・返却JSON正確性を自己確認)
+    id: AC-Q3
+  - check: 'report に ''cmd_709 action-2 解消条件: 殿が新 deploy + HMAC POST backupMasterSheet
+      試験 PASS 後に action-2 削除'' と明記
+
+      '
+    id: AC-R1
+  assigned_to: ashigaru7
+  background: 'cmd_712 Phase B+C+D 完遂 (12:26 JST PASS)。殿 reality check により、cmd_709
+    の
+
+    clasp run backupMasterSheet が ''permission'' エラーで失敗する根因は executionApi.access=MYSELF
+
     設計 (cmd_712c で意図的除外) であり、clasp run 経路は復旧不可能と判明。
+
     cmd_712 Web App 経由で backupMasterSheet を呼ぶのが正道。
+
     本 subtask で WEBAPP_ALLOWED_PHASE_B_COMMANDS に backupMasterSheet を追加し、
+
     cmd_709 action-2 の根本解決を図る。
 
+    '
+  completed_at: '2026-05-17T12:45:16+09:00'
+  context_policy: preserve_across_stages
   editable_files:
-    - src/webapp.gs
-    - scripts/gas_invoke.py
-
-  acceptance_criteria:
-    - id: AC-E1
-      check: >
-        src/webapp.gs の WEBAPP_ALLOWED_PHASE_B_COMMANDS に 'backupMasterSheet' を追加。
-        whitelist 5件 → 6件。(triggerProcessAllCustomers / processCustomerBackfill /
-        dryRunCmd676 / verifyCmd676A5 / ping → + backupMasterSheet)
-    - id: AC-E2
-      check: >
-        dispatcher が backupMasterSheet を呼び出し、返却 JSON に backupFileId / backupUrl
-        (または相当フィールド) を含む。エラー時は RUNTIME_ERROR を返す。
-    - id: AC-E3
-      check: >
-        scripts/gas_invoke.py で cmd=backupMasterSheet が HMAC署名付きで叩けること。
-        (実試験は殿 manual gate で実施)
-    - id: AC-Q1
-      check: >
-        clasp push 実行 → "Pushed N files." (N >= 1, src/webapp.gs含む) が PASS条件。
-        "Skipping push." → FAIL (L022適用: reality verification必須)
-      note: RAPT無効の場合はFAILと記録し殿に再認証を要請。clasp push自体はスキップ不可。
-    - id: AC-Q2
-      check: git diff/status でHMAC secret文字列 + Web App URL が含まれないことを確認
-    - id: AC-Q3
-      check: 実装コードのコードレビュー証跡 (whitelist追加・dispatcher・返却JSON正確性を自己確認)
-    - id: AC-R1
-      check: >
-        report に 'cmd_709 action-2 解消条件: 殿が新 deploy + HMAC POST backupMasterSheet 試験
-        PASS 後に action-2 削除' と明記
-
-  instructions: |
-    1. /home/ubuntu/gas-mail-manager/src/webapp.gs を読んで Phase B 実装を把握せよ
-       (WEBAPP_PHASE='B', WEBAPP_ALLOWED_PHASE_B_COMMANDS を確認)
-    2. WEBAPP_ALLOWED_PHASE_B_COMMANDS に 'backupMasterSheet' を追加
-    3. dispatcher の switch/if 文に backupMasterSheet ケースを追加:
-       - backupMasterSheet 関数を呼び出し
-       - 返却値 (backupFileId + backupUrl 等) を JSON に含める
-       - エラー時は RUNTIME_ERROR を返す
-    4. scripts/gas_invoke.py が cmd=backupMasterSheet に対応していることを確認
-       (既存の汎用 cmd/args 構造で対応可能なはず)
-    5. git diff で secret/URL 漏洩チェック (AC-Q2)
-    6. git add src/webapp.gs (scripts/gas_invoke.py に変更があれば追加)
-    7. clasp push 実行 → "Pushed N files." を確認 (AC-Q1 L022適用)
-    8. git commit -m "feat(cmd_712): Phase E backupMasterSheet whitelist追加"
-    9. git push origin main (secret漏洩チェック後のみ)
-    10. karo inbox へ task_completed 報告
-
+  - src/webapp.gs
+  - scripts/gas_invoke.py
+  instructions: "1. /home/ubuntu/gas-mail-manager/src/webapp.gs を読んで Phase B 実装を把握せよ\n\
+    \   (WEBAPP_PHASE='B', WEBAPP_ALLOWED_PHASE_B_COMMANDS を確認)\n2. WEBAPP_ALLOWED_PHASE_B_COMMANDS\
+    \ に 'backupMasterSheet' を追加\n3. dispatcher の switch/if 文に backupMasterSheet ケースを追加:\n\
+    \   - backupMasterSheet 関数を呼び出し\n   - 返却値 (backupFileId + backupUrl 等) を JSON\
+    \ に含める\n   - エラー時は RUNTIME_ERROR を返す\n4. scripts/gas_invoke.py が cmd=backupMasterSheet\
+    \ に対応していることを確認\n   (既存の汎用 cmd/args 構造で対応可能なはず)\n5. git diff で secret/URL 漏洩チェック\
+    \ (AC-Q2)\n6. git add src/webapp.gs (scripts/gas_invoke.py に変更があれば追加)\n7. clasp\
+    \ push 実行 → \"Pushed N files.\" を確認 (AC-Q1 L022適用)\n8. git commit -m \"feat(cmd_712):\
+    \ Phase E backupMasterSheet whitelist追加\"\n9. git push origin main (secret漏洩チェック後のみ)\n\
+    10. karo inbox へ task_completed 報告\n"
   key_design_decisions:
     e1_whitelist: WEBAPP_ALLOWED_PHASE_B_COMMANDS に backupMasterSheet 追加
     e2_dispatcher: backupMasterSheet dispatcher で実関数呼出 + backupFileId/backupUrl返却
     e3_rapt_bypass: Web App HMAC経由により clasp run RAPT問題を根本回避
-
-  secret_policy:
-    gas_side: GAS Script Propertiesに設定済 (殿 manual操作完了)
-    vps_side: /home/ubuntu/gas-mail-manager/env/gas_secret.env (chmod 600、git-ignored)
-    never_in: task YAML / report YAML / git commit / Discord public
-
-  report_format:
-    command: bash /home/ubuntu/shogun/scripts/inbox_write.sh karo "[報告内容]" task_completed ashigaru7
-    must_include:
-      - 各AC PASS/FAILと証跡 (コード断片・行番号)
-      - clasp push結果 (Pushed N files or FAIL理由)
-      - secret_leak_check結果 (git diff出力)
-      - 殿へのmanual gate依頼事項 (新 deploy + HMAC POST backupMasterSheet 試験手順)
-    to: karo inbox
-  report_to: karo
-
+  parent_cmd: cmd_712
+  priority: high
+  project: gas-mail-manager
   race001:
     conflict_risk: cmd_709 owns src/sheets.gs + src/migration.gs。重複なし
     owner: cmd_712 owns src/webapp.gs exclusively
+  report_format:
+    command: bash /home/ubuntu/shogun/scripts/inbox_write.sh karo "[報告内容]" task_completed
+      ashigaru7
+    must_include:
+    - 各AC PASS/FAILと証跡 (コード断片・行番号)
+    - clasp push結果 (Pushed N files or FAIL理由)
+    - secret_leak_check結果 (git diff出力)
+    - 殿へのmanual gate依頼事項 (新 deploy + HMAC POST backupMasterSheet 試験手順)
+    to: karo inbox
+  report_to: karo
+  secret_policy:
+    gas_side: GAS Script Propertiesに設定済 (殿 manual操作完了)
+    never_in: task YAML / report YAML / git commit / Discord public
+    vps_side: /home/ubuntu/gas-mail-manager/env/gas_secret.env (chmod 600、git-ignored)
+  status: done
+  target_path: /home/ubuntu/gas-mail-manager
+  task_id: subtask_712j_phase_e_backupmaster_whitelist
+  timestamp: '2026-05-17T12:37:28+09:00'
+  title: 'cmd_712 Phase E: backupMasterSheet → Web App whitelist追加 + 殿 manual gate'
