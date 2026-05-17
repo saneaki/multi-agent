@@ -407,6 +407,44 @@ acceptance_criteria:
 
 **例外**: 純粋なドキュメント更新 / refactor (実行系に影響しない) cmd は Stage 1-2 のみで可。判定基準 = task YAML に `editable_files` で `scripts/` `hooks/` `crontab` 等の実行系パスが含まれるか。
 
+### Production Deploy Update Checklist (cmd_733)
+
+<!-- cmd_733 (2026-05-17) で制定。HMAC Web App 本番 deploy 更新時の rotation + archive 規律 -->
+<!-- 出典: cmd_712 Phase E + cmd_733 rotation 自動化整備 -->
+
+GAS Web App や外部 endpoint を持つ system (gas-mail-manager 等) の **本番 deploy 更新を伴う cmd** を発令する際、家老は以下のチェックリストを task YAML 設計時に確認する。
+
+| # | チェック項目 | 必須確認 |
+|---|------------|---------|
+| 1 | **rotation 期限** | 前回 secret rotation から 6ヶ月以上経過していないか確認。経過していれば `scripts/rotate_hmac_secret.sh` を本 cmd 内 or 別 cmd で実施 |
+| 2 | **旧 deployment archive** | 新 deployment 作成前に既存 `clasp deployments` 一覧を取得し、不要な旧 deployment を archive 対象としてリストアップ。完了後 `scripts/archive_old_deployments.sh --check-url <旧URL>` で 404 確認 |
+| 3 | **自動 deploy script 採用** | 殿 manual deploy を撤廃するため、`scripts/auto_deploy_gas.sh` を deploy 手順として task YAML AC に明記。手動 clasp 操作は避ける (cmd_712 Phase E で実機検証済) |
+| 4 | **L022 reality verify** | clasp push `Pushed N files.` + production ping `ok=true` を AC として明示。`Skipping push.` 単独成功扱い禁止 (`instructions/gunshi.md §L022` 適用) |
+| 5 | **env file 整合性** | `env/gas_secret.env` に `WEBAPP_URL` / `HMAC_KID` / `HMAC_SECRET` / `GAS_DEPLOYMENT_ID` が揃っているか preflight 確認。不足は manual gate として task YAML notes に明記 |
+| 6 | **runbook 同期** | 新規 deploy 手順 / rotation 手順を `docs/RUNBOOK_ja.md` に記載済か確認。差分があれば本 cmd で同期 |
+
+#### task YAML 記載例 (本番 deploy 更新 cmd)
+
+```yaml
+acceptance_criteria:
+  - id: AC1
+    check: "scripts/auto_deploy_gas.sh で deploy 実行 (Pushed N files. + Created version N. + production ping ok=true)"
+  - id: AC2
+    check: "前回 rotation から 6ヶ月未経過なら rotation skip / 6ヶ月超なら scripts/rotate_hmac_secret.sh 実施"
+  - id: AC3
+    check: "scripts/archive_old_deployments.sh --list で live deployments 数を確認、旧 deployment があれば 404 verify"
+  - id: AC4
+    check: "L022: clasp push Skipping push. = FAIL 扱い、Pushed N files. のみ PASS"
+  - id: AC5
+    check: "docs/RUNBOOK_ja.md §HMAC Web App 運用 と差分なく同期"
+```
+
+#### Cross-Reference
+
+- `/home/ubuntu/gas-mail-manager/docs/RUNBOOK_ja.md` §HMAC Web App 運用 — 3 script の詳細仕様 + Operations Checklist
+- `instructions/common/cmd_template_reality_verify.md` §2.1 — clasp 系 reality_verify_step テンプレート
+- `instructions/gunshi.md` §L022 — Reality Verification Rule
+
 ## Task YAML Format
 
 **CRITICAL**: `report_to: gunshi` は全タスクに必須。`assigned_to` で担当足軽IDを必ず指定すること。

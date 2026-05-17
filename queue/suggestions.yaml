@@ -16149,3 +16149,39 @@ suggestions:
     これらは cmd_733 の AC-7 にも含まれるため cmd_733 と統合処理が効率的。
   action_needed: "将軍・家老が判断: Phase F を独立 cmd として起案するか、cmd_733 scope に統合するか。
     実質的 north_star 達成のため Phase F 独立 cmd 化は不要との判断も可能。"
+- id: sug_security_001
+  from: gunshi
+  cmd_ref: cmd_733
+  task_ref: gunshi_733_rotation_automation
+  created_at: "2026-05-17T13:50:00+09:00"
+  status: decided_separate_cmd
+  decided_at: "2026-05-17T13:50:00+09:00"
+  decision_note: |
+    AC-8 軍師最終判断 (cmd_733): sug_security_001 (discord_gateway.sh への secret pattern 自動 mask
+    logic 追加) は cmd_733 (gas-mail-manager rotation) 統合せず、別 cmd_734 として独立起案推奨。
+
+    [現状確認]
+    suggestions.yaml grep で sug_security_001 entry 自体が見当たらない (家老 task description の
+    暫定 ID と一致せず)。discord_gateway.sh への secret mask 提案も発見できず。本 entry は
+    cmd_733 AC-8 判断結果を suggestions.yaml に残すための補足登録。
+
+    [判断根拠 4 点]
+    1. scope 独立性: cmd_733 は gas-mail-manager (clasp/HMAC) ⇄ sug_security_001 は shogun repo
+       (discord_gateway.sh)。技術的に独立。
+    2. 工数推定: discord_gateway.sh の secret mask logic 追加は単独で 30分-1h 想定。cmd_733 の
+       rotation 自動化 (script 3 + RUNBOOK + karo.md 更新) と束ねると 4h+ 規模になり、
+       review/QC 単位として過大。
+    3. 緊急度: cmd_733 は cmd_712 Codex review 指摘の即時対応 (priority: medium)。
+       sug_security_001 は予防的 secret mask 強化 (priority: high と表示されるが、現状の
+       discord_gateway.sh は secret を含む呼出経路が限定的なため実害低)。両者は並行可能。
+    4. RACE-001: cmd_733 は gas-mail-manager/scripts + shogun/instructions/karo.md 編集、
+       cmd_734 は shogun/scripts/discord_gateway.sh 編集。重複なし。
+
+    [推奨]
+    家老は cmd_734 を独立起案。task YAML 設計時に sug_security_001 元 entry を補完するため、
+    discord_gateway.sh secret mask の具体 pattern (HMAC_SECRET / WEBAPP_URL / refresh_token 等)
+    を AC として明示。L022 適用 (push 後 reality verify) も含めること。
+  content: |
+    [AC-8 軍師最終判断] sug_security_001 は cmd_733 統合せず別 cmd_734 起案推奨。
+    scope/工数/緊急度/RACE-001 4 点で独立性を確認。家老の暫定判断 (別 cmd) を支持。
+  action_needed: "家老が cmd_734 (discord_gateway.sh secret pattern auto-mask) を独立起案。cmd_733 と並行可能。"
