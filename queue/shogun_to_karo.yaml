@@ -28304,9 +28304,10 @@
   priority: high
   status: in_progress
   dispatched_at: '2026-05-11T00:44:24+09:00'
-  phase_status: phase_a_complete_starting_phase_bcd
+  phase_status: phase_bcd_code_complete_lord_gate_pending
   phase_a_completed_at: '2026-05-17T11:19:22+09:00'
   phase_bcd_started_at: '2026-05-17T11:38:00+09:00'
+  phase_bcd_code_completed_at: '2026-05-17T12:02:00+09:00'
   phase: dual_review
   dual_review_status: complete_pending_gunshi_consolidation
   gunshi_consolidation_status: done
