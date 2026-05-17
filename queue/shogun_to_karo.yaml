@@ -28304,6 +28304,8 @@
   priority: high
   status: done
   dispatched_at: '2026-05-11T00:44:24+09:00'
+  phase_status: phase_a_manual_gate_passed
+  phase_a_completed_at: '2026-05-17T11:19:22+09:00'
   phase: dual_review
   dual_review_status: complete_pending_gunshi_consolidation
   gunshi_consolidation_status: done
