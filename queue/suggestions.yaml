@@ -16069,3 +16069,16 @@ suggestions:
     現状は ScriptProperties 経由のため GAS runtime でしか試験できないが、純粋関数化して
     node --check で試験可能にする refactor を将来検討。
   action_needed: "別 cmd で kid 2世代切替の unit test 設計検討 (本 cmd scope 外)。"
+- id: sug_cmd_712i_supplement_001
+  from: gunshi
+  cmd_ref: cmd_712
+  task_ref: subtask_712i_phase_bcd_hmac_implementation
+  created_at: "2026-05-17T12:02:07+09:00"
+  status: pending
+  priority: low
+  content: |
+    ash7 補強完遂時間 7 分 (11:53 PARTIAL_PASS → 12:01 完遂報告)。L022 適用後の正常な PASS
+    フロー (初回 QC で gap 指摘 → 短時間で補強完遂) の好例。家老は ash7 の対応速度を評価可。
+    本 pattern (PARTIAL_PASS → 補強 → PASS) を skill candidate として将来検討可能だが、現状の
+    cmd_template_reality_verify.md + L022 で十分なため新規 skill 化は不要。
+  action_needed: "観察のみ。家老は ash7 評価 (短時間補強完遂) を dashboard 戦果 entry で言及可。"
