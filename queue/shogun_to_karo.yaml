@@ -30689,9 +30689,10 @@
     全 AC 完遂後、本 cmd 完遂報告に「次回 clasp 系作業 (cmd_712 Phase A 再試験) で本規律が機能するか実地検証する」と明記。
   project: shogun
   priority: high
-  status: in_progress
+  status: completed
   started_at: '2026-05-17T10:51:16+09:00'
-  phase_status: gunshi_dispatched
+  completed_at: '2026-05-17T11:03:27+09:00'
+  phase_status: gunshi_qc_pass_all_complete
   decomposition_hint:
     parallel: 1
     gunshi_task: true
