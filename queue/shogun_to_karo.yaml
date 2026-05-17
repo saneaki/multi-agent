@@ -28049,6 +28049,11 @@
   priority: high
   status: done
   dispatched_at: '2026-05-10T22:51:22+09:00'
+  completed_at: '2026-05-17T12:53:50+09:00'
+  resolution_note: 'clasp run 経路は executionApi.access=MYSELF 制約で復旧不可と判明、cmd_712 Web App 拡張で
+    backupMasterSheet を HMAC POST 経由実行する代替経路を確立。Stage1 backup は将軍試験で実機 PASS
+    (backupFileId=1tNoywbqCoYn9i1bcLjejtgt-P7y4-cA8QV6vsmeZTPU / sourceRowCount=6 / 12:53:47 JST)。
+    北の星: 殿手作業なしの clasp version + clasp deploy -i -V 自動 deploy も確立。'
   phase: dual_review
   dual_review_status: complete
   design_confirmed:
@@ -28304,13 +28309,14 @@
   priority: high
   status: in_progress
   dispatched_at: '2026-05-11T00:44:24+09:00'
-  phase_status: phase_e_code_complete_lord_gate_pending
+  phase_status: phase_e_lord_gate_passed_auto_deploy_established
   phase_a_completed_at: '2026-05-17T11:19:22+09:00'
   phase_bcd_started_at: '2026-05-17T11:38:00+09:00'
   phase_bcd_code_completed_at: '2026-05-17T12:06:25+09:00'
   phase_bcd_completed_at: '2026-05-17T12:26:30+09:00'
   phase_e_started_at: '2026-05-17T12:37:28+09:00'
   phase_e_code_completed_at: '2026-05-17T12:45:16+09:00'
+  phase_e_completed_at: '2026-05-17T12:53:50+09:00'
   phase: dual_review
   dual_review_status: complete_pending_gunshi_consolidation
   gunshi_consolidation_status: done
@@ -30723,6 +30729,8 @@
     - "AC-3: scripts/archive_old_deployments.sh — 旧 anonymous (Phase A 時代) deployment を一括 archive する"
     - "AC-4: 旧 deployment archive 後の reality verification (urllib で 404/Page not found 化確認)"
     - "AC-5: instructions/karo.md or runbook に '本番 deploy 更新時の rotation + archive チェックリスト' を追記"
+    - "AC-6: scripts/auto_deploy_gas.sh — clasp version + clasp deploy -i -V を 1 command にラップ。deployment_id を引数 or env で受け、Phase E で実機検証済の自動 deploy 経路を標準化 (殿手作業不要化)"
+    - "AC-7: docs/RUNBOOK_ja.md に '自動 deploy 手順 (殿手作業不要化)' を記載。Phase E auto deploy 実機検証済の事実を根拠として明示"
   command: |
     軍師主体で設計・実装。rotation script と archive script の両方を gas-mail-manager repo に追加。
     RUNBOOK_ja.md に手順を集約し、karo.md にチェックリストを追記。

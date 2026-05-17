@@ -16108,3 +16108,44 @@ suggestions:
     URL が複数存在し、どの URL が有効か不明になるリスクがある。
     deployment ID の台帳管理 + 旧 deployment 削除手順を runbook として整備することを推奨。
   action_needed: "将軍が次の GAS 運用 cmd 起案時に deployment 台帳管理を scope に含める。旧 anonymous deployment の削除は殿 manual 操作 (clasp undeploy) が必要なため action-required 化を検討。"
+- id: sug_cmd_712j_001
+  from: gunshi
+  cmd_ref: cmd_712
+  task_ref: subtask_712j_phase_e_backupmaster_whitelist
+  created_at: "2026-05-17T12:46:57+09:00"
+  status: pending
+  priority: low
+  content: |
+    L022 適用第二号成立で ash7 が規律を完全身体化していることが実証された。task YAML
+    AC-Q1 (将軍 + 家老設計) と ash7 実装の二重 gate が安定動作。今後 deploy/push 系 cmd は
+    task YAML 起案時に cmd_template_reality_verify.md §2.1 を default 採用すべき。
+    家老の起案 checklist として明文化推奨。
+  action_needed: "家老が cmd 起案時に cmd_template_reality_verify.md §2 を必ず参照する運用を確立。家老 instructions/karo.md に「deploy/push 系 cmd 起案前 checklist」として template 参照を追記検討。"
+- id: sug_cmd_712j_002
+  from: gunshi
+  cmd_ref: cmd_712
+  task_ref: subtask_712j_phase_e_backupmaster_whitelist
+  created_at: "2026-05-17T12:46:57+09:00"
+  status: pending
+  priority: medium
+  content: |
+    殿 manual gate (Web App 新 deploy + HMAC POST 試験) が cmd_712 系の最終 ends 達成 gate に
+    集中。殿 manual gate を待つ間、ash7 / 家老は他 cmd へ着手可能。但し manual gate 後の
+    ends 検証 task (cmd_709 action-2 削除条件確認等) を予め task YAML として準備しておくと、
+    殿の manual gate 完了通知後すぐに ends 検証 cycle を始められる。
+  action_needed: "家老が 'cmd_712 manual gate 後 ends 検証 task' を pending として準備 (ash7 担当: HMAC POST backupMasterSheet 実行 + result 確認 + cmd_709 action-2 削除)。"
+- id: sug_cmd_712_006
+  from: karo
+  cmd_ref: cmd_712
+  task_ref: subtask_712j_phase_e_backupmaster_whitelist
+  created_at: "2026-05-17T12:57:15+09:00"
+  status: pending
+  priority: medium
+  content: |
+    Phase F 残件 (gas_invoke.py 整備 + docs sync) は本日の Phase E 自動 deploy 確立で大半達成。
+    将軍が clasp version + clasp deploy -i -V で殿手作業不要な自動 deploy を実機確立したため、
+    Phase F の VPS → GAS 完全自動化目標は事実上達成済み。
+    残りは docs/RUNBOOK_ja.md の同期 + gas_invoke.py の軽微な整備のみで、
+    これらは cmd_733 の AC-7 にも含まれるため cmd_733 と統合処理が効率的。
+  action_needed: "将軍・家老が判断: Phase F を独立 cmd として起案するか、cmd_733 scope に統合するか。
+    実質的 north_star 達成のため Phase F 独立 cmd 化は不要との判断も可能。"
